@@ -1,0 +1,32 @@
+[Buildset]
+BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\x14\x00c\x00h\x00o\x00m\x00b\x00o\x00t\x00e\x00s\x00t)
+
+[CMake]
+BuildDirs=/home/mwelter/testprograms/chombotest/build
+CMakeDir=/usr/share/cmake-2.8/Modules
+Current CMake Binary=file:///usr/bin/cmake
+CurrentBuildDir=file:///home/mwelter/testprograms/chombotest/build
+CurrentBuildType=Debug
+CurrentInstallDir=
+ProjectRootRelative=./
+
+[Launch]
+Launch Configurations=Launch Configuration 0
+
+[Launch][Launch Configuration 0]
+Configured Launch Modes=execute
+Configured Launchers=nativeAppLauncher
+Name=New Native Application Configuration
+Type=Native Application
+
+[Launch][Launch Configuration 0][Data]
+Arguments=
+Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x00)
+Dependency Action=Nothing
+EnvironmentGroup=default
+Project Target=chombotest,chombotest
+Working Directory=
+isExecutable=false
+
+[MakeBuilder]
+Number Of Jobs=1

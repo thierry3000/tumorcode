@@ -1,0 +1,43 @@
+[Buildset]
+BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\x14\x00o\x00p\x00e\x00n\x00m\x00p\x00t\x00e\x00s\x00t)
+
+[CMake]
+BuildDirs[$e]=$HOME/testprograms/openmptest/build
+CMakeDir=/usr/share/cmake-2.8/Modules
+Current CMake Binary=file:///usr/bin/cmake
+CurrentBuildDir=file:///home/mwelter/testprograms/openmptest/build
+CurrentBuildType=Release
+CurrentInstallDir=file:///usr/local
+ProjectRootRelative=./
+
+[Launch]
+Launch Configurations=Launch Configuration 0
+
+[Launch][Launch Configuration 0]
+Configured Launch Modes=execute
+Configured Launchers=nativeAppLauncher
+Name=New Native Application Configuration
+Type=Native Application
+
+[Launch][Launch Configuration 0][Data]
+Arguments=
+Debugger Shell=
+Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x00)
+Dependency Action=Nothing
+Display Demangle Names=true
+Display Static Members=false
+EnvironmentGroup=default
+GDB Path=
+Project Target=openmptest,openmptest
+Remote GDB Config Script=
+Remote GDB Run Script=
+Remote GDB Shell Script=
+Try Setting Breakpoints On Loading Libraries=true
+Working Directory=
+isExecutable=false
+
+[MakeBuilder]
+Number Of Jobs=1
+
+[Project]
+VersionControlSupport=kdevsubversion

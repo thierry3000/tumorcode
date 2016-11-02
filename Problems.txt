@@ -1,0 +1,93 @@
+Following Errormessages were produced by using a h5py without parallel support:
+
+submitBulkTissue.py
+thierry3000@dema3000:/localdisk/output$ python2 /localdisk/tc_install/py/krebsjobs/submitBulkTissue.py prez3 vessels-q2d_mini_test_Pdefault-typeI-13x5L130-sample00.h5
+
+
+EPETRA_MPI flag is set!
+omp num threads <- 1
+generating tumor run with
+  vessel: vessels-q2d_mini_test_Pdefault-typeI-13x5L130-sample00.h5
+  output: /media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/output/tum-q2d_mini_test_Pdefault-typeI-sample00-prez3.h5
+ paramset: prez3
+Traceback (most recent call last):
+  File "/localdisk/tc_install/py/krebsjobs/submitBulkTissue.py", line 209, in <module>
+    run_with_vessels(fn, goodArguments.tumParamSet, factory, '1GB', 2.)
+  File "/localdisk/tc_install/py/krebsjobs/submitBulkTissue.py", line 142, in run_with_vessels
+    config_ = set_lattice_size(config_, vessel_fn)
+  File "/localdisk/tc_install/py/krebsjobs/submitBulkTissue.py", line 131, in set_lattice_size
+    sx, sy, sz = vess_size_to_tum_size(vesselfilename, c['lattice_scale'])
+  File "/localdisk/tc_install/py/krebsjobs/submitBulkTissue.py", line 54, in vess_size_to_tum_size
+    ld = krebsutils.read_lattice_data_from_hdf(krebsutils.find_lattice_group_(vesselgroup))
+RuntimeError: initialization of Object with invalid handle. Error Stack:
+
+thierry3000@dema3000:/localdisk/output$ python2 /localdisk/tc_install/py/krebsjobs/submitDetailedO2.py default vessels-q2d_mini_test_Pdefault-typeI-13x5L130-sample00.h5 vessels
+
+
+EPETRA_MPI flag is set!
+omp num threads <- 1
+submitting ... default
+solubility_plasma 3.1e-05
+rd_tum 50.0
+conductivity_coeff1 8.0
+conductivity_coeff2 4.7
+conductivity_coeff3 0.0
+rd_norm 150.0
+po2init_r0 55.0
+rd_necro 150.0
+c0 0.5
+S_n 2.7
+num_threads 4
+solubility_tissue 2.8e-05
+debug_zero_o2field false
+name "default"
+S_p50 27.0
+massTransferCoefficientModelNumber 1
+grid_lattice_const 50.0
+po2init_dr 1.0
+axial_integration_step_factor 0.25
+calcflow {
+  viscosityPlasma 1.2e-06
+  rheology "RheologySecomb2005"
+  includePhaseSeparationEffect true
+  inletHematocrit 0.45
+}
+D_tissue 2000.0
+po2init_cutoff 100.0
+max_iter 50
+
+for files ['vessels-q2d_mini_test_Pdefault-typeI-13x5L130-sample00.h5']
+and resolved groups therein: vessels
+detailedo2 on vessels-q2d_mini_test_Pdefault-typeI-13x5L130-sample00.h5 / vessels
+omp num threads <- 4
+Traceback (most recent call last):
+  File "/localdisk/tc_install/py/krebsjobs/submitDetailedO2.py", line 172, in <module>
+    run(goodArguments.o2params, filenames, goodArguments.grp_pattern, systemsize)
+  File "/localdisk/tc_install/py/krebsjobs/submitDetailedO2.py", line 112, in run
+    change_cwd = True)
+  File "/media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/tc_install/py/krebsjobs/../qsub.py", line 412, in submit
+    submit_qsub(obj, prog, **qsubopts)
+  File "/media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/tc_install/py/krebsjobs/../qsub.py", line 356, in submit_qsub
+    return submit_(obj.interpreter, submission_program, f.getvalue())
+  File "/media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/tc_install/py/krebsjobs/../qsub.py", line 203, in submit_
+    exec script in dict(), dict()
+  File "<string>", line 20, in <module>
+  File "/localdisk/tc_install/py/krebsjobs/submitDetailedO2.py", line 46, in worker_on_client
+    o2_refs = detailedo2.doit(fn, pattern, (o2params, o2params['name']))
+  File "/media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/tc_install/py/krebsjobs/../krebs/detailedo2/__init__.py", line 275, in doit
+    ref = computePO2(f, group_path, parameters, cachelocation)
+  File "/media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/tc_install/py/krebsjobs/../krebs/detailedo2/__init__.py", line 234, in computePO2
+    new_flow_data_ref = myutils.hdf_data_caching(read1, write1, fm, ('recomputed_flow', cachelocation[1]), (0, 1))
+  File "/media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/tc_install/py/krebsjobs/../myutils.py", line 461, in hdf_data_caching
+    ret = hdf_data_caching(read, write, g, path[1:], versions[1:])
+  File "/media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/tc_install/py/krebsjobs/../myutils.py", line 448, in hdf_data_caching
+    write(f, p)
+  File "/media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/tc_install/py/krebsjobs/../krebs/detailedo2/__init__.py", line 229, in write1
+    copyVesselnetworkAndComputeFlow(gdst, vesselgroup1, parameters.get("calcflow"))
+  File "/media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/tc_install/py/krebsjobs/../krebs/detailedo2/__init__.py", line 99, in copyVesselnetworkAndComputeFlow
+    pressure, flow, shearforce, hematocrit, flags = krebsutils.calc_vessel_hydrodynamics(gv, return_flags = True, bloodflowparams = bloodflowparams)
+  File "/media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/tc_install/py/krebsjobs/../krebsutils/__init__.py", line 506, in calc_vessel_hydrodynamics
+    return calc_vessel_hydrodynamics_(vesselgroup, calc_hematocrit, return_flags, override_hematocrit, bloodflowparams )
+  File "/media/thierry3000/276f915f-9344-48ef-9da2-6a32cbe67da6/tc_install/py/krebsjobs/../krebsutils/__init__.py", line 529, in calc_vessel_hydrodynamics_
+    return calc_vessel_hydrodynamics_Ccode(vesselgroup, return_flags, bloodflowparams, simple)
+RuntimeError: initialization of Object with invalid handle. Error Stack:
