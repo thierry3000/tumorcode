@@ -31,6 +31,8 @@ import krebsutils
 from krebs.vesselgenerator import *
 import krebsjobs.parameters.vesselGenParams as vParams
 
+from krebsutils import typelist
+
 def run_vesselgen_client(configstring_file, workdir, vesselfilename):
   qsub.printClientInfo()
   os.chdir(workdir)
@@ -122,10 +124,12 @@ if (not qsub.is_client) and __name__=="__main__":
   import argparse
   parser = argparse.ArgumentParser(description='Compute an artificial blood vessel network.')
   #default is False
-  parser.add_argument('-t','--tutorial', help='creates the tutorial configuration', action='store_true')
-  parser.add_argument('-p','--VesselParamSet', help='specify Parameterset for creation, by default the configs writen in the file are use!')
-  parser.add_argument('-s','--cube_width', help='Size of vesselcube you want to create', default=1000, type=float)
-  parser.add_argument('-i','--hiter', help='Number of hieracial iterations', default=1, type=int)  
+  parser.add_argument('-t','--type', nargs='+', help='Type of root node configurations, range from 0 to 8', default=[8], type=int)
+  parser.add_argument('-p','--VesselParamSet', help='specify Parameterset for creation, possible configs are found in /krebsjobs/parameters/vesselGenParams.py')
+  parser.add_argument('-w','--width_cube', help='Size of vesselcube you want to create', default=1000, type=float)
+  parser.add_argument('-i','--iter_h', help='Number of hieracial iterations', default=1, type=int)  
+  parser.add_argument('-e','--ensemble_size', help='Number of realizations', default=1, type=int)  
+  
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
 
@@ -144,115 +148,117 @@ if (not qsub.is_client) and __name__=="__main__":
    run_config_samples(real_factory, index_range, run_vesselgen_client)
 
   
-  if not goodArguments.tutorial:
-    index_range = range(0, 1)
-    if goodArguments.VesselParamSet:
-      #check if specified paramSet exists
-      try:
-        if not goodArguments.VesselParamSet in dir(vParams):
-          raise AssertionError('Unknown parameter set %s!' % goodArguments.VesselParamSet)
-      except Exception, e:
-        print e.message
-        sys.exit(-1)
-      factory = getattr(vParams, goodArguments.VesselParamSet)
-      nums_points = int(goodArguments.cube_width / (2**goodArguments.hiter * factory['scale']) + 1)
+  
+  index_range = range(0, goodArguments.ensemble_size)
+  if goodArguments.VesselParamSet:
+    #check if specified paramSet exists
+    try:
+      if not goodArguments.VesselParamSet in dir(vParams):
+        raise AssertionError('Unknown parameter set %s!' % goodArguments.VesselParamSet)
+    except Exception, e:
+      print e.message
+      sys.exit(-1)
+    factory = getattr(vParams, goodArguments.VesselParamSet)
+    nums_points = int(goodArguments.width_cube / (2**goodArguments.iter_h * factory['scale']) + 1)
+    #for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
+    for type_index in goodArguments.type:
+      doit(goodArguments.VesselParamSet, typelist[type_index], (nums_points,nums_points,nums_points), goodArguments.iter_h, factory)
+  
+  else: #this was used befor the release and is here for compatibilty reasons
+    print('Falling back to default configs from .py file!')
+    print('No VesselParamSet provided')
+    if 0:
+      doit('4mm-P3-q2d', 'typeA', (7,7,2), 2, vParams.paramset3)
+  
+    if 0:
+      doit('q2d-30mm-P2', 'typeA', (13, 13, 2), 4, vParams.paramset2)
+      doit('q2d-30mm-P2', 'typeB', (13, 13, 2), 4, vParams.paramset2)
+      doit('q2d-30mm-P2', 'typeC', (13, 13, 2), 4, vParams.paramset2)
+      doit('q2d-30mm-P2', 'typeD', (13, 13, 2), 4, vParams.paramset2)
+      doit('q2d-30mm-P2', 'typeE', (13, 13, 2), 4, vParams.paramset2)
+      doit('q2d-30mm-P2', 'typeF', (13, 13, 2), 4, vParams.paramset2)
+  
+    if 0:
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH'.split():
+        doit('3d-8mm-P2', t, (14, 14, 14), 2, vParams.paramset2)
+  
+    if 0:
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH'.split():
+        doit('q2d-8mm-P3', t, (14, 14, 2), 2, vParams.paramset3)
+        doit('3d-8mm-P3', t, (14, 14, 14), 2, vParams.paramset3)
+  
+    if 0:
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH'.split():
+        doit('q2d-8mm-P4', t, (14, 14, 2), 2, vParams.paramset4)
+        doit('3d-8mm-P4', t, (14, 14, 14), 2, vParams.paramset4)
+  
+    if 0:
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH'.split():
+        doit('q2d-15mm-P4', t, (8, 8, 1), 3, vParams.paramset11)
+  
+    if 0:
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH'.split():
+        #doit('q2d-8mm-P6', t, (13, 13, 2), 2, paramset6)
+        doit('3d-8mm-P7', t, (13, 13, 13), 2, vParams.paramset7)
+  
+    if 0:
+      #for t in 'typeD'.split():
       for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-        #doit('vessBigTras-P13', t, (nums_points,nums_points,nums_points), hiter, vParams.paramset13)
-        doit(goodArguments.VesselParamSet, t, (nums_points,nums_points,nums_points), goodArguments.hiter, factory)
-    else:
-      print('Falling back to default configs from .py file!')
-      if 0:
-        doit('4mm-P3-q2d', 'typeA', (7,7,2), 2, vParams.paramset3)
+        doit('r2d-P12-5mm', t, (21, 21, 1), 2, vParams.paramset12)
+        #doit('3d-8mm-P10', t, (13, 13, 13), 2, paramset10)
+    if 0:
+      for t in 'typeI'.split():
+        doit('r2d-8mm-P10', t, (13, 13, 1), 1, vParams.paramset12)
+        
+    if 0:
+      #for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
+      for t in 'typeA'.split():
+        #doit('q2d-mini-2layer-H2-P10', t, (14, 14, 2), 2, paramset10)
+        doit('3d-bigger-H2-P10', t, (17, 17, 17), 2, vParams.paramset10)
+        
+    if 0:
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
+        doit('3d-mini-P10', t, (14, 14, 14), 1, vParams.paramset10)
+    if 0:
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
+        doit('3d-mini-mini-P10', t, (7, 7, 7), 1, vParams.paramset10)
+    if 0:
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
+      #for t in 'typeI'.split():
+        #doit('3d-swine-H1-P21', t, (8, 8, 8), 1, paramset21)
+        #doit('3d-swine-H2-P21', t, (8, 8, 8), 2, paramset21)
+        doit('3d-big-swine-H2-P24', t, (16, 16, 16), 2, vParams.paramset24)
+    if 0:# adaption configuration
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
+        doit('3d-P11', t, (9, 9, 9), 2, vParams.paramset11)
+    if 0:# adaption configuration
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
+        doit('q2d-P11', t, (9, 9, 2), 2, vParams.paramset11)
+    if 0:# trastuzumab configurations --> MVD \approx 100
+      #from submitVesseltreeCalibration.py
+      hiter = 2
+      cube_width  = 4000.
+      scale = 88 #see run2 results from submitVesseltreeCalibration.py
+      paramset13['scale']=scale
+      nums_points = int(cube_width / (2**hiter * scale) + 1)
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
+        doit('vessTras-P13', t, (nums_points,nums_points,nums_points), hiter, vParams.paramset13)
+    if 0:# trastuzumab configurations --> MVD \approx 100
+      #from submitVesseltreeCalibration.py
+      hiter = 2
+      cube_width  = 10000.
+      scale = 88 #see run2 results from submitVesseltreeCalibration.py
+      paramset13['scale']=scale
+      nums_points = int(cube_width / (2**hiter * scale) + 1)
+      for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
+        doit('vessBigTras-P13', t, (nums_points,nums_points,nums_points), hiter, vParams.paramset13)
     
-      if 0:
-        doit('q2d-30mm-P2', 'typeA', (13, 13, 2), 4, vParams.paramset2)
-        doit('q2d-30mm-P2', 'typeB', (13, 13, 2), 4, vParams.paramset2)
-        doit('q2d-30mm-P2', 'typeC', (13, 13, 2), 4, vParams.paramset2)
-        doit('q2d-30mm-P2', 'typeD', (13, 13, 2), 4, vParams.paramset2)
-        doit('q2d-30mm-P2', 'typeE', (13, 13, 2), 4, vParams.paramset2)
-        doit('q2d-30mm-P2', 'typeF', (13, 13, 2), 4, vParams.paramset2)
-    
-      if 0:
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH'.split():
-          doit('3d-8mm-P2', t, (14, 14, 14), 2, vParams.paramset2)
-    
-      if 0:
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH'.split():
-          doit('q2d-8mm-P3', t, (14, 14, 2), 2, vParams.paramset3)
-          doit('3d-8mm-P3', t, (14, 14, 14), 2, vParams.paramset3)
-    
-      if 0:
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH'.split():
-          doit('q2d-8mm-P4', t, (14, 14, 2), 2, vParams.paramset4)
-          doit('3d-8mm-P4', t, (14, 14, 14), 2, vParams.paramset4)
-    
-      if 0:
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH'.split():
-          doit('q2d-15mm-P4', t, (8, 8, 1), 3, vParams.paramset11)
-    
-      if 0:
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH'.split():
-          #doit('q2d-8mm-P6', t, (13, 13, 2), 2, paramset6)
-          doit('3d-8mm-P7', t, (13, 13, 13), 2, vParams.paramset7)
-    
-      if 0:
-        #for t in 'typeD'.split():
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-          doit('r2d-P12-5mm', t, (21, 21, 1), 2, vParams.paramset12)
-          #doit('3d-8mm-P10', t, (13, 13, 13), 2, paramset10)
-      if 0:
-        for t in 'typeI'.split():
-          doit('r2d-8mm-P10', t, (13, 13, 1), 1, vParams.paramset12)
-          
-      if 0:
-        #for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-        for t in 'typeA'.split():
-          #doit('q2d-mini-2layer-H2-P10', t, (14, 14, 2), 2, paramset10)
-          doit('3d-bigger-H2-P10', t, (17, 17, 17), 2, vParams.paramset10)
-          
-      if 0:
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-          doit('3d-mini-P10', t, (14, 14, 14), 1, vParams.paramset10)
-      if 0:
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-          doit('3d-mini-mini-P10', t, (7, 7, 7), 1, vParams.paramset10)
-      if 0:
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-        #for t in 'typeI'.split():
-          #doit('3d-swine-H1-P21', t, (8, 8, 8), 1, paramset21)
-          #doit('3d-swine-H2-P21', t, (8, 8, 8), 2, paramset21)
-          doit('3d-big-swine-H2-P24', t, (16, 16, 16), 2, vParams.paramset24)
-      if 0:# adaption configuration
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-          doit('3d-P11', t, (9, 9, 9), 2, vParams.paramset11)
-      if 0:# adaption configuration
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-          doit('q2d-P11', t, (9, 9, 2), 2, vParams.paramset11)
-      if 0:# trastuzumab configurations --> MVD \approx 100
-        #from submitVesseltreeCalibration.py
-        hiter = 2
-        cube_width  = 4000.
-        scale = 88 #see run2 results from submitVesseltreeCalibration.py
-        paramset13['scale']=scale
-        nums_points = int(cube_width / (2**hiter * scale) + 1)
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-          doit('vessTras-P13', t, (nums_points,nums_points,nums_points), hiter, vParams.paramset13)
-      if 0:# trastuzumab configurations --> MVD \approx 100
-        #from submitVesseltreeCalibration.py
-        hiter = 2
-        cube_width  = 10000.
-        scale = 88 #see run2 results from submitVesseltreeCalibration.py
-        paramset13['scale']=scale
-        nums_points = int(cube_width / (2**hiter * scale) + 1)
-        for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-          doit('vessBigTras-P13', t, (nums_points,nums_points,nums_points), hiter, vParams.paramset13)
-      
-      if 0:# mini_test
-        #for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-        for t in 'typeI'.split():
-          doit('q2d_mini_test_Pdefault', t, (7, 7, 3), 1, vParams.default)
-  else:
-  #this is the tutorial testing case quasi2D
-    index_range = range(0, 1)
-    for t in 'typeI'.split():
-      doit('q2d_mini_test_Pdefault', t, (7, 7, 3), 1, vParams.default)
+    if 0:# mini_test
+      #for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
+      for t in 'typeI'.split():
+        doit('q2d_mini_test_Pdefault', t, (7, 7, 3), 1, vParams.default)
+#  else:
+#  #this is the tutorial testing case quasi2D
+#    index_range = range(0, 1)
+#    for t in 'typeI'.split():
+#      doit('tutorialVessels', t, (5, 5, 5), 1, vParams.default)

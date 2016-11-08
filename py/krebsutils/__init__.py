@@ -99,6 +99,9 @@ fill_with_smooth_delta_ = libkrebs.fill_with_smooth_delta
 '''
 calculate_within_fake_tumor_lattice_based = libkrebs.calculate_within_fake_tumor_lattice_based
 
+#globals
+typelist = 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split()
+
 #----------------------------------------------------------------------------------#
 #  utility routines
 #----------------------------------------------------------------------------------#

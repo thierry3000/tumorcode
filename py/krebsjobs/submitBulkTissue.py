@@ -138,7 +138,7 @@ def set_lattice_size(c, vesselfilename):
   return c
 
 def run_with_vessels(vessel_fn, name, config_, mem, days):
-  name, config_ = PrepareConfigurationForSubmission(vessel_fn, name, config_)
+  name, config_ = PrepareConfigurationForSubmission(vessel_fn, name, 'tumBulk', config_)
   config_ = set_lattice_size(config_, vessel_fn)
   
   sx, sy, sz = config_['lattice_size']
@@ -152,7 +152,7 @@ def run_with_vessels(vessel_fn, name, config_, mem, days):
                         num_cpus = config_['num_threads'],
                         change_cwd = True)
 def run_no_vessels(name, config_, mem, days):
-  name, config_ = PrepareConfigurationForSubmission(None, name, config_)
+  name, config_ = PrepareConfigurationForSubmission(None, name, 'tumBulk', config_)
   #config_ = set_lattice_size(config_, None)
   if 1: #HACK
     print('Warning: lattice_size not set properly')

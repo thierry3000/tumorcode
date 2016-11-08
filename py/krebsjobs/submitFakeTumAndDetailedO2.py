@@ -94,7 +94,7 @@ if __name__ == '__main__' and not qsub.is_client:
   o2ParameterSet = getattr(krebsjobs.parameters.parameterSetsO2, o2ParameterName)
   for vessel_fn in filenames:
     #for name, tumor_parameters in tumor_parameter_sets:
-    job_name, tumorParameterSet = krebsjobs.submitFakeTum.PrepareConfigurationForSubmission(vessel_fn, tumorParameterName, tumorParameterSet)
+    job_name, tumorParameterSet = krebsjobs.submitFakeTum.PrepareConfigurationForSubmission(vessel_fn, tumorParameterName, 'fakeTumDetailed', tumorParameterSet)
     qsub.submit(qsub.func(worker_on_client, vessel_fn, tumorParameterSet, o2ParameterName, num_threads),
                 name = ('job_%s_%s' % (tumorParameterName, o2ParameterName)),
                 num_cpus = num_threads,

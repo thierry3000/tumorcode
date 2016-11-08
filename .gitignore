@@ -1,0 +1,69 @@
+# Code files we want to ignore for now
+# I use symbolic links for these files
+# Their main developement is manage from another repository
+src/mwlib/hdf_wrapper.h
+src/mwlib/hdf_wrapper_stl.h
+bin
+lib
+
+# Other stuff
+.svn
+*.kdev4
+*~
+build
+buildopt
+trash
+.spyderworkspace
+.spyderproject
+*.kate-swp
+*.swp # create by vim
+.directory
+
+#CMake stuff
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+*.log
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app

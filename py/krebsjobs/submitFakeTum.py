@@ -47,6 +47,8 @@ dstdir = os.getcwd()
 import krebsjobs.parameters.fakeTumorParams as parameterSets
 from submitAdaption import create_auto_dicts
 
+from krebsutils import typelist
+
 
 def getDomainSizeFromVesselFile(fn):
   with h5files.open(fn, 'r') as f:
@@ -73,12 +75,12 @@ def MakeVesselFilenamePart(fn):
   return name
 
 
-def PrepareConfigurationForSubmission(vessel_fn, name, config_):
+def PrepareConfigurationForSubmission(vessel_fn, name, prepend, config_):
   if vessel_fn is not None: 
     dstdir = os.getcwd()  
     c = deepcopy(config_)
     vessel_fn_part = MakeVesselFilenamePart(vessel_fn)
-    out_fn = join(dstdir, 'tum-%s-%s.h5' % (vessel_fn_part, name))
+    out_fn = join(dstdir, '%s-%s-%s.h5' % (prepend,vessel_fn_part, name))
     print 'generating tumor run with'
     print '  vessel:', vessel_fn
     print '  output:', out_fn
@@ -91,7 +93,7 @@ def PrepareConfigurationForSubmission(vessel_fn, name, config_):
     dstdir = os.getcwd()  
     c = deepcopy(config_)
     #vessel_fn_part = MakeVesselFilenamePart(vessel_fn)
-    out_fn = join(dstdir, 'tum-%s.h5' % name)
+    out_fn = join(dstdir, '%s-%s.h5' % (prepend,name))
     print 'generating tumor run no vessels'
     print '  output:', out_fn
     print ' paramset:', name
@@ -111,7 +113,7 @@ def worker_on_client(fn, grp_pattern, tumParams, num_threads):
   h5files.closeall() # just to be sure
 
 def run(vessel_fn, name, config_, mem, days):
-  name, c = PrepareConfigurationForSubmission(vessel_fn, name, config_)
+  name, c = PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTum', config_)
   configstr = dicttoinfo(c)
   qsub.submit(qsub.func(krebs.tumors.run_faketum, configstr),
                             name = 'job_'+name,
@@ -124,7 +126,7 @@ def run(vessel_fn, name, config_, mem, days):
 if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Compute Fake tumor. Vessels are needed for that')  
-  parser.add_argument('tumParamSet')
+  parser.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/fakeTumorParams.py')
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
 
   goodArguments, otherArguments = parser.parse_known_args()
@@ -136,7 +138,6 @@ if __name__ == '__main__':
   for fn in goodArguments.vesselFileNames:
     filenames.append(fn.name)
     
-  typelist = 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split()
   try:
     if not (tumorParameterName in dir(parameterSets)) and (not 'auto' in tumorParameterName):
         raise AssertionError('Unknown parameter set %s!' % tumorParameterName)
