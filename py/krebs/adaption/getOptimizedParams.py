@@ -26,7 +26,7 @@ if __name__ == '__main__':
   
 import os, sys
 import h5files
-from krebsjobs.submitAdaption import typelist
+from krebsutils import typelist
 
 def createParamFileFromSlurm(label):
   writepath = '/localdisk/thierry/tmp/%s_parms.py' % label

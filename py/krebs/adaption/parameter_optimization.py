@@ -59,7 +59,7 @@ else:
   adaption_cpp = __import__('libadaption_', globals(), locals())
 
 #globals
-typelist = 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split()
+from krebsutils import typelist
 calculated_mean_cap_flow = 0.0
 use_initial_guess = False
 

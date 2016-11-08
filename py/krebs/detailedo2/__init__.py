@@ -271,7 +271,7 @@ def doit(fn, pattern, (parameters, parameters_name)):
   dirs = myutils.walkh5(f['.'], pattern)
   for group_path in dirs:
     #cachelocation = (outfn_no_ext+'.h5', group_path+'_'+parameters_name)
-    cachelocation = (fnbase+'_'+parameters_name+'.h5', group_path)
+    cachelocation = ('o2_' + fnbase+'_'+parameters_name+'.h5', group_path)
     ref = computePO2(f, group_path, parameters, cachelocation)
     print 'computed po2 stored in:', ref
     output_links.append(ref)

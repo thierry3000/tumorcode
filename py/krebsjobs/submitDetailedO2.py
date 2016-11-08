@@ -115,7 +115,7 @@ def run(parameter_set_name, filenames, grp_pattern, systemsize):
 if not qsub.is_client and __name__=='__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Compute po2 distributions and analyze them. In normal mode it takes arguments: parameter set name, filenames, h5 group pattern. In analysis mode -a, it takes arguments: filenames, h5 group pattern.')  
-  parser.add_argument('o2params', help = 'choose the parameter for the simulation')  
+  parser.add_argument('o2params', help = 'choose the parameter for the simulation. found at /py/krebsjobs/parameters/parameterSetsO2.py')  
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')   
   parser.add_argument('grp_pattern',help='Where to find the vessel group in the file')  
   parser.add_argument('-a', '--analyze', help = 'loop through all files analyze data and make plot', default=False, action='store_true')

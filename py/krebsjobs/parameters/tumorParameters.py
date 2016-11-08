@@ -401,6 +401,11 @@ bulktissue_snowden = deepcopy(defaultconfig_bulktissue)
 bulktissue_snowden.update(
   num_threads = 12,
 )
+bulktissue_tutorial = deepcopy(defaultconfig_bulktissue)
+bulktissue_tutorial.update(
+  tend = 101.,
+  out_intervall = 50,
+)
 prez2 = dict(
   # this is the configuration which is used in submit-bulktissue-w-vessels
   lattice_size  = "set me to match the vessel domain",

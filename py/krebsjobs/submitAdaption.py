@@ -41,8 +41,7 @@ import krebs.adaption
 
 from krebsjobs.parameters import parameterSetsAdaption
 
-#globals
-typelist = 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split()
+from krebsutils import typelist
 
 def create_auto_dicts(param_group):
   cadidatesList = []
