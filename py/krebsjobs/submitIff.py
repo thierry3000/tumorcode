@@ -134,7 +134,7 @@ def run_simple(name, config):
                 name = 'job_iff'+name,
                 num_cpus = config['num_threads'],
                 days = days,
-                change_cwd = True)
+                change_cwd = True,)
   else:
     fn = splitext(config['fn_out'])[0]
     import json
@@ -340,8 +340,9 @@ if not qsub.is_client and __name__=='__main__':
   parser.add_argument('Iffparams', help = 'choose the parameter for the simulation')  
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')   
   parser.add_argument('grp_pattern',help='Where to find the tumor. Usually this is somthing with out*')      
-  parser.add_argument('-a', '--analyze', help = 'loop through all files analyze data and make plot', default=False, action='store_true')  
-  
+  #this enables access to the default values  
+  atest = parser.add_argument('-a', '--analyze', help = 'loop through all files analyze data and make plot', default=False, action='store_true')  
+  #parser.add_argument('-m', '--memory', help= 'Memory assigned by the queing system', type=str, default = '2GB')
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
   

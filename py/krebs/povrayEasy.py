@@ -437,7 +437,8 @@ def clipFactory(args):
 ##############################################################################
 ## Interoperability with matplotlib ...
 ##############################################################################
-def OverwriteImageWithColorbar(image_fn, cm, label, output_filename, wbbox, fontcolor = 'black', dpi = 90.):
+''' if cm=None, we only plot a sizebar'''
+def OverwriteImageWithColorbar(image_fn, cm, label, output_filename, wbbox, fontcolor = 'black', dpi = 90.):  
   import matplotlib
   '''
   due to no graphics on the clusters, we have to use a differetn renderer
@@ -463,6 +464,7 @@ def OverwriteImageWithColorbar(image_fn, cm, label, output_filename, wbbox, font
   rc('savefig', facecolor = 'none', edgecolor = 'none') # no background so transparency is preserved no matter what the config file settings are
   img = matplotlib.image.imread(image_fn)
   resy, resx, _ = img.shape
+  mytextsize=resx/float(dpi)*5  
   fig = matplotlib.pyplot.figure(figsize = (resx/dpi, resy/dpi), dpi=dpi)
   ax = fig.add_axes([0, 0, 1, 1])
   ax.imshow(img, interpolation = 'nearest')
@@ -472,29 +474,31 @@ def OverwriteImageWithColorbar(image_fn, cm, label, output_filename, wbbox, font
   ax.xaxis.set_visible(True)
   ax.set_axis_off()
   #measured in fractions of figure width and height
-  ax2 = fig.add_axes([0.1, 0.1, 0.26, 0.018]) # left bottom width height
-  c = np.linspace(0, 1, 256).reshape(1,-1)
-  c = np.vstack((c,c))
-  ax2.imshow(c, aspect='auto', cmap = cm.get_cmap(), vmin = 0, vmax = 1)
-  ax2.yaxis.set_visible(False)
-  xticks = np.linspace(0., 256., 5)
-  #xticklabels = [ myutils.f2s(v,prec=1) for v in np.linspace(*cm.get_clim(), num = 5) ]
-  ''' TODO:
-      border of colorbar 
-      still not resolution independent
-  '''
-  xticklabels = [ '%0.1f'%v for v in np.linspace(*cm.get_clim(), num = 5) ] 
-  mytextsize=resx/float(dpi)*3
-  ax2.set(xticks = xticks)
-  ax2.set(xticklabels=xticklabels)
-  ax2.tick_params(labelsize=mytextsize/2)
-  #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
-  
-  ax2.text(0.1,0.9,label,
-           horizontalalignment='left',
-           verticalalignment='bottom',
-           transform=ax.transAxes,
-           size=mytextsize)
+  if not cm==None:
+    ax2 = fig.add_axes([0.1, 0.1, 0.26, 0.018]) # left bottom width height
+    c = np.linspace(0, 1, 256).reshape(1,-1)
+    c = np.vstack((c,c))
+    ax2.imshow(c, aspect='auto', cmap = cm.get_cmap(), vmin = 0, vmax = 1)
+    ax2.yaxis.set_visible(False)
+    xticks = np.linspace(0., 256., 5)
+    #xticklabels = [ myutils.f2s(v,prec=1) for v in np.linspace(*cm.get_clim(), num = 5) ]
+    ''' TODO:
+        border of colorbar 
+        still not resolution independent
+    '''
+    xticklabels = [ '%0.1f'%v for v in np.linspace(*cm.get_clim(), num = 5) ] 
+    
+    ax2.set(xticks = xticks)
+    ax2.set(xticklabels=xticklabels)
+    ax2.tick_params(labelsize=mytextsize/2, colors='white')
+    #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
+    
+    ax2.text(0.1,0.9,label,
+             horizontalalignment='left',
+             verticalalignment='bottom',
+             transform=ax.transAxes,
+             size=mytextsize,
+             fontweight='bold')
   ''' length of ax is in dots
   how many dots correlates to 200mu m?
   1 pixel length im inch = 1/float(resx)/float(dpi)

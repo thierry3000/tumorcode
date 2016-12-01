@@ -5,7 +5,7 @@ include_directories(../common)
 include_directories(${ADDITIONAL_INCLUDE_DIRS})
 
 add_executable(tests tests.cpp)
-target_link_libraries(tests mwlib)
+target_link_libraries(tests ${myLibs})
 
 # add_executable(test_convection test_convection1.cpp)
 # target_link_libraries(test_convection ${myLibs})

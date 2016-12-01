@@ -1277,7 +1277,7 @@ def plot_snapshots(f, dataman_, pdfpages):
       contour(ax, imslice(tc['dist_viabletumor']), ld, levels=[0], colors='w')
       ax.set(xticklabels = [], yticklabels = [])
 
-      at = mpl_utils.AnchoredText('%s h' % f2s(dataman('time', group)), loc=2 if num<=3 else 3, frameon=True, borderpad = 0.1)
+      at = AnchoredText('%s h' % f2s(dataman('time', group)), loc=2 if num<=3 else 3, frameon=True, borderpad = 0.1)
       at.patch.set_boxstyle("square,pad=0.")
       at.patch.set_linewidth(0)
       ax.add_artist(at)
@@ -1305,6 +1305,7 @@ def plot_snapshots_linear(f, dataman_, pdfpages):
     timepoints = [ 0.5, 1., 3., 6., 12.,  24., 48., 96. ]
     timepoints = [ 0.5, 1., 1.5, 2., 2.5,  3., 3.5, 4. ]
     timepoints = np.arange(0.5,6.5,0.5)
+    timepoints = np.arange(0.2,3,0.2)
     mygroups = myutils.closest_items(groupbasenames, lambda q: (f[q].attrs['time']/3600.), timepoints)
     mygroups = np.unique(mygroups)
 
@@ -1338,7 +1339,7 @@ def plot_snapshots_linear(f, dataman_, pdfpages):
         cax = mpl_utils.inset_axes(ax, width="5%", height="100%", loc=3,
                                    bbox_to_anchor = (1.02, 0, 1, 1), bbox_transform = ax.transAxes, borderpad = 0)
         fig.colorbar(p1, cax = cax)
-      if num == 7:
+      if num == (len(timepoints)-1):
         mpl_utils.add_sizebar(ax)
     pdfpages.savefig(fig, 'drugsnapshots')
     
@@ -1376,11 +1377,11 @@ def plot_snapshots_linear(f, dataman_, pdfpages):
         cax = mpl_utils.inset_axes(ax, width="5%", height="100%", loc=3,
                                    bbox_to_anchor = (1.02, 0, 1, 1), bbox_transform = ax.transAxes, borderpad = 0)
         fig.colorbar(p1, cax = cax)
-      if num == 7:
+      if num == (len(timepoints)-1):
         mpl_utils.add_sizebar(ax)
     pdfpages.savefig(fig, 'drugsnapshots2')
     
-    timepoints = [ 0.25, 3., 26 ]
+    timepoints = [ 0.1, 1., 8, 26 ]
     mygroups = myutils.closest_items(groupbasenames, lambda q: (f[q].attrs['time']/3600.), timepoints)
     mygroups = np.unique(mygroups)
 
@@ -1414,9 +1415,47 @@ def plot_snapshots_linear(f, dataman_, pdfpages):
         cax = mpl_utils.inset_axes(ax, width="5%", height="100%", loc=3,
                                    bbox_to_anchor = (1.02, 0, 1, 1), bbox_transform = ax.transAxes, borderpad = 0)
         fig.colorbar(p1, cax = cax)
-      if num == 7:
+      if num == (len(timepoints)-1):
         mpl_utils.add_sizebar(ax)
     pdfpages.savefig(fig, 'drugsnapshots3')
+    
+    timepoints = [ 0.1, 8., 24, 72 ]
+    mygroups = myutils.closest_items(groupbasenames, lambda q: (f[q].attrs['time']/3600.), timepoints)
+    mygroups = np.unique(mygroups)
+
+    fig, allaxes = pyplot.subplots(1, 4, subplot_kw = dict(aspect='equal', adjustable='box-forced'), figsize = (mastersize[0], mastersize[0]*0.52))
+    mpl_utils.subplots_adjust_abs(fig,
+                                  wspace = mpl_utils.mm_to_inch*2.,
+                                  hspace = mpl_utils.mm_to_inch*2.,
+                                  left   = mpl_utils.mm_to_inch*10.,
+                                  right  = -mpl_utils.mm_to_inch*20.,
+                                  top    = -mpl_utils.mm_to_inch*10.,
+                                  bottom = mpl_utils.mm_to_inch*10.
+                                  )
+    axes = allaxes.ravel()
+    mpl_utils.remove_frame(*axes)
+
+    maxval = max(dataman('conc', group, 'imslice').max() for group in mygroups)
+
+    for num, group in enumerate(mygroups):
+      ax = axes[num]
+      conc = dataman('conc', group, 'imslice')
+      p1 = imshow(ax, conc, ld, vmin = 0., vmax = maxval, cmap = CM.spectral) #
+      contour(ax, imslice(tc['dist_viabletumor']), ld, levels=[0], colors='w')
+      ax.set(xticklabels = [], yticklabels = [])
+
+      at = mpl_utils.AnchoredText('%s h' % f2s(dataman('time', group)), loc=2 if num<=3 else 3, frameon=True, borderpad = 0.1)
+      at.patch.set_boxstyle("square,pad=0.")
+      at.patch.set_linewidth(0)
+      ax.add_artist(at)
+
+      if num == 3:
+        cax = mpl_utils.inset_axes(ax, width="5%", height="100%", loc=3,
+                                   bbox_to_anchor = (1.02, 0, 1, 1), bbox_transform = ax.transAxes, borderpad = 0)
+        fig.colorbar(p1, cax = cax)
+      if num == (len(timepoints)-1):
+        mpl_utils.add_sizebar(ax)
+    pdfpages.savefig(fig, 'drugsnapshots4')
 
 
 
@@ -1443,7 +1482,7 @@ def measure_and_plot(filenames):
                                          plotIff.DataGlobalIff(), 
                                          DataDrugAverages2(path) ])
     plot_single_values(files, dataman, pdfpages)
-    plot_global_average_over_time(files, dataman, pdfpages)
+    #plot_global_average_over_time(files, dataman, pdfpages)
     plot_averaged_data(files, dataman, pdfpages)
     #plot_snapshots(files[0], dataman, pdfpages)
     plot_snapshots_linear(files[0], dataman, pdfpages)

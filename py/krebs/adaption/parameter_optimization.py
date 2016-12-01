@@ -50,6 +50,7 @@ from os.path import basename
 import krebs.adaption
 
 from krebsjobs.parameters import parameterSetsAdaption
+import krebsjobs.submitAdaption
 #import krebsjobs.parameters.tumorParameters as parameterSets_tum
 
 import krebsutils
@@ -358,31 +359,72 @@ def run2(parameter_set, filenames, grp_pattern):
                   mem = '3500MB',
                   change_cwd = True)
 
+def run_reproduze(filenames):
+  for fn in filenames:
+    root_grp = h5files.open(fn, 'r', search = False)['/']
+    param_grp = h5files.open(fn, 'r', search = False)['/data_50/parameters']
+    parameter_name_set = param_grp['name'].value
+    try:
+      if not parameter_name_set in dir(parameterSetsAdaption):
+        raise AssertionError('Unknown parameter set %s!' % parameter_name_set)
+      if not 'xopt' in root_grp.attrs.keys():
+        raise AssertionError('Are you sure %s is successfully optimized?' % fn)
+      else:
+        xopt = np.asarray(root_grp.attrs.get('xopt'))
+    except Exception, e:
+        print e.message
+        sys.exit(-1)
+    factory = getattr(parameterSetsAdaption, parameter_name_set)
+    factory['name'] = parameter_name_set
+    factory['adaption'].update(
+      k_m = xopt[0],
+      k_c = xopt[1],
+      k_s = xopt[2],
+      cond_length = xopt[3],
+      max_nun_iterations = 200,
+    )
+    num_threads = 1
+    if 'num_threads' in factory:
+      num_threads = factory['num_threads']
+    qsub.submit(qsub.func(krebsjobs.submitAdaption.worker_on_client, fn, '/data_50/recomputed', factory, num_threads),
+                  name = 'job_adaption_'+factory['name']+'_'+basename(fn),
+                  num_cpus = num_threads,
+                  days = 4.,
+                  mem = '3500MB',
+                  change_cwd = True)
 
 if not qsub.is_client and __name__=='__main__':
   import argparse
-  parser = argparse.ArgumentParser(description='runs particle swarm optimization for all files in file in filenames')  
-  parser.add_argument('AdaptionParamSet')  
-  parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
-  parser.add_argument('grp_pattern',help='Where to find the vessel group in the file')  
-  parser.add_argument('-a', '--analyze', help = 'loop through all files analyze data and make plot', default=False, action='store_true')
+  parser = argparse.ArgumentParser(description='particle swarm optimization for all files in file in filenames')  
+  #parser.add_argument('AdaptionParamSet')  
+  parser.add_argument('fileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
+  subparsers = parser.add_subparsers(dest='subcommand')
+  parser_run = subparsers.add_parser('run')  
+  parser_run.add_argument('AdaptionParamSet')  
+  parser_run.add_argument('grp_pattern',help='Where to find the vessel group in the file')  
+  #parser.add_argument('-a', '--analyze', help = 'loop through all files analyze data and make plot', default=False, action='store_true')
+  parser_rep =  subparsers.add_parser('rep')   
+  #parser.add_argument('-r', '--reproduze', help = 'reproduced vesselnetwork with optimized parameters', default = False, action='store_true')  
   
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
   
   #create filename due to former standards
   filenames=[]
-  for fn in goodArguments.vesselFileNames:
+  for fn in goodArguments.fileNames:
     filenames.append(fn.name)
-    
-  try:
-    if not goodArguments.AdaptionParamSet in dir(parameterSetsAdaption):
-      raise AssertionError('Unknown parameter set %s!' % goodArguments.AdaptionParamSet)
-  except Exception, e:
-      print e.message
-      sys.exit(-1)
-      
-  factory = getattr(parameterSetsAdaption, goodArguments.AdaptionParamSet)
-  factory['name'] = goodArguments.AdaptionParamSet
-  run2(factory, filenames, goodArguments.grp_pattern)
+  
+  if goodArguments.subcommand == 'rep':
+    run_reproduze(filenames)
+  if goodArguments.subcommand == 'run':
+    try:
+      if not goodArguments.AdaptionParamSet in dir(parameterSetsAdaption):
+        raise AssertionError('Unknown parameter set %s!' % goodArguments.AdaptionParamSet)
+    except Exception, e:
+        print e.message
+        sys.exit(-1)
+        
+    factory = getattr(parameterSetsAdaption, goodArguments.AdaptionParamSet)
+    factory['name'] = goodArguments.AdaptionParamSet
+    run2(factory, filenames, goodArguments.grp_pattern)
       

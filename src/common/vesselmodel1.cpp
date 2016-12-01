@@ -43,11 +43,17 @@ namespace VesselModel1
 inline float GetMaturation( const VesselNode *node )
 {
     float vcMat = 0;
-    for( int i=0; i<node->Count(); ++i )
+    //myAssert(node->Count()>0);
+    //T.F. I think this was a bug, maybe even related to the bad 
+    //multithread behaviour during the adaption stuff????
+    if(node->Count()>0)
     {
-      vcMat += node->GetEdge(i)->maturation;
+      for( int i=0; i<node->Count(); ++i )
+      {
+	vcMat += node->GetEdge(i)->maturation;
+      }
+      vcMat /= node->Count();
     }
-    vcMat /= node->Count();
     return vcMat;
 }
 

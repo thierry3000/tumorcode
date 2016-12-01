@@ -319,6 +319,7 @@ class Graph(object):
     self.edges = {}
     self.edgelist = edgelist
     self.roots = None
+    self.from_fn = None
   def __getitem__(self, name):
     if name == 'edgelist':
       item = self.edgelist
@@ -492,6 +493,7 @@ def read_vessels_from_hdf(f, prop_names, return_graph=False, return_not_found=Fa
         not_found.discard(x)
 
   if return_graph:
+    g.from_fn = f.file.filename
     r = g
   else:
     r = [g.edgelist] + [ (g[name] if name in g else None) for name in prop_names ]

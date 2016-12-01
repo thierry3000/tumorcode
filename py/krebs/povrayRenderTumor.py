@@ -32,6 +32,7 @@ from os.path import basename, splitext
 from povrayRenderVessels import *
 import myutils
 import math
+import copy
 
 
 def addBulkTissueTumor(epv, tumorgroup, trafo, **kwargs):
@@ -83,6 +84,9 @@ def renderScene(vesselgroup, tumorgroup, imagefn, **kwargs):
       wbbox = krebsutils.read_lattice_data_from_hdf(tumorgroup.file['field_ld']).worldBox
     trafo = calc_centering_normalization_trafo(wbbox)
     zsize = (wbbox[5]-wbbox[4])
+    
+    vessel_ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])  
+    kwargs['wbbox'] = vessel_ld.GetWorldBox() 
 
     with EasyPovRayRender(**kwargs) as epv:
       epv.setBackground(kwargs.pop('background',0.0))
@@ -125,8 +129,14 @@ def renderScene(vesselgroup, tumorgroup, imagefn, **kwargs):
       
       if (tumorgroup is not None and tumorgroup.attrs['TYPE'] == 'faketumor'):
         print('nix')
+      overlay = kwargs.get('overlay')
 
-      epv.render(imagefn+'.png')
+      overlay=True
+      if overlay:
+        RenderImageWithOverlay(epv, imagefn+'.png', None, 'tumor', **kwargs)
+      else:
+        epv.render(imagefn+'.png')
+      
 
 
 
@@ -136,7 +146,7 @@ if __name__ == '__main__':
     filenames = sys.argv[1:-1]
     grp_pattern = sys.argv[-1]
     import povrayRenderSettings
-    settings = copy(povrayRenderSettings.image)
+    settings = copy.deepcopy(povrayRenderSettings.image)
     settings.update(povrayRenderSettings.tumor)
     for fn in filenames:
       with h5py.File(fn, 'r') as f:

@@ -49,6 +49,8 @@ from quantities import Prettyfier
 import analyzeGeneral
 import analyzeBloodFlow
 
+import krebsjobs.submitVesseltreeCalibration
+
 ##----------------------------------------------------------------------
 ## to plot the measuremnt data within the original vessel tree files
 ##----------------------------------------------------------------------
@@ -504,9 +506,8 @@ def PrintGlobalData(pdfpages, vesselgroups, f_measure, dataman):
   #prop_list = ['mvd', 'mvd_a', 'mvd_v', 'mvd_c', 'rBV', 'rBV_a', 'rBV_v', 'rBV_c', 'venous_rBV_fraction', 'rBF', 'meanCapillaryDistance', 'mean_r']  
   #prop_list = ['rBV',  'rBF', ]  
   #prop_list = 'phi_a phi_v phi_c mvd_a mvd_v mvd_c mean_r'.split()
-  #prop_list2 = ['shearforce', 'velocity']
-  #prop_list2 = ['velocity']
-  prop_list2 = ['avg_cap_dist','mvd_linedensity','phi_vessels','total_perfusion']
+ 
+  prop_list2 = ['radius','shearforce','velocity','flow','avg_cap_dist','mvd_linedensity','phi_vessels','total_perfusion']
  
   try:
     os.remove('initialvesseldata.h5')
@@ -522,11 +523,12 @@ def PrintGlobalData(pdfpages, vesselgroups, f_measure, dataman):
   def suggest_bins_from_world(ld):
     avg_size=np.average(ld.GetWorldSize())
     center = avg_size/2.
-    lower=center-0.3*avg_size
-    upper=center+0.3*avg_size
-    stepsize = 0.1*avg_size
-    bins_spec   = analyzeGeneral.BinsSpecRange(lower, upper, stepsize)
-    bins_spec   = analyzeGeneral.BinsSpecRange(100., 1000., 100.)
+    half_center = center/2.
+    #lower=center-0.3*avg_size
+    #upper=center+0.3*avg_size
+    #stepsize = 0.1*center
+    #bins_spec   = analyzeGeneral.BinsSpecRange(center-stepsize, center, stepsize)
+    bins_spec   = analyzeGeneral.BinsSpecRange(half_center, center, 200.)
     return bins_spec
   for name in prop_list2:
     data = []
@@ -536,12 +538,16 @@ def PrintGlobalData(pdfpages, vesselgroups, f_measure, dataman):
       bbox_vessels.append(ld_vessels.worldBox)
     result_string.append(r'$<%s>$ = $%s$%s' %
       (Prettyfier.get_sym(name), Format(name, data), Prettyfier.get_munit(name)))
+  mvd_exp=[]
   for gvessels in vesselgroups:
     ld = krebsutils.read_lattice_data_from_hdf(gvessels.parent['field_ld'])
-    mvd_sampling_results = dataman.obtain_data('sphere_vessel_density',  gvessels, None, suggest_bins_from_world(ld), 'radial', ld, cachelocation(gvessels))
-    mvd_exp=np.average(np.asarray(mvd_sampling_results[0]))*1e6
-    result_string.append(r'$<%s>$ = $%s$%s' %
-      (Prettyfier.get_sym('mvd_exp'), Format('mvd_exp', [mvd_exp]), Prettyfier.get_munit('mvd_exp')))
+    mvd_sampling_results, mvd_bins = dataman.obtain_data('sphere_vessel_density',  gvessels, None, suggest_bins_from_world(ld), 'radial', ld, cachelocation(gvessels))
+    #print(mvd_sampling_results)    
+    mvd_exp.append(np.mean(np.asarray(mvd_sampling_results)*1e6))
+  #mvd_exp=np.asarray(mvd_exp)
+  #print(mvd_exp)
+  result_string.append(r'$<%s>$ = $%s$%s' %
+    (Prettyfier.get_sym('mvd_exp'), Format('mvd_exp', mvd_exp), Prettyfier.get_munit('mvd_exp')))
       
   ld = krebsutils.read_lattice_data_from_hdf(vesselgroups[0]['lattice'])
   bbox_vessels.append(ld.worldBox)
@@ -855,16 +861,16 @@ def DoIt(filenames, pattern, with_o2):
       #dataman = myutils.DataManager(20, [ analyzeGeneral.DataBasicVessel(), analyzeGeneral.DataVesselSamples(), analyzeGeneral.DataVesselGlobal()])
       vesselgroups = groups
     
-      if 0:
+      if 1:
         res = getMultiScatter(300. * len(filenames), vesselgroups)
         plotMultiScatterBeauty(res, pdfpages)
-      if 0:
+      if 1:
         PlotRadiusHistogram2(dataman, vesselgroups, pdfpages)
             
       if 0:
         text = FormatGeometricAndPerfusionData()
 
-        prop_list2 = ['shearforce', 'velocity', 'avg_cap_dist']
+        prop_list2 = ['shearforce', 'velocity', 'avg_cap_dist',]
         bbox_vessels = list()
         bbox_field   = list()
         
@@ -900,13 +906,41 @@ def DoIt(filenames, pattern, with_o2):
 
 
 if __name__ == "__main__":
-  import optparse  #Note: Deprecated since version 2.7. Use argparse instead
-  parser = optparse.OptionParser()
-  parser.add_option("-O","--with-o2", dest="with_o2", help="look at detailed o2 data", default=False, action="store_true")
-  parser.add_option("-T","--only_two_root", dest="two", help="flag to change the considered types", default=False, action="store_true")  
-  parser.add_option("-a","--with_all_types", dest="all_types", help="take all types",default=False, action="store_true")  
-  parser.add_option("-s","--singel_type", dest="single", help="", default=False, action="store_true")    
-  options, args = parser.parse_args()
+  import argparse
+  parser = argparse.ArgumentParser(description='Plot/ Analyze infos about vessel network.')
+  parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
+  parser.add_argument('grp_pattern',help='Where to find the vessel group in the file')    
+  parser.add_argument("-O","--with-o2", dest="with_o2", help="look at detailed o2 data", default=False, action="store_true")
+  parser.add_argument("-T","--only_two_root", dest="two", help="flag to change the considered types", default=False, action="store_true")  
+  parser.add_argument("-a","--with_all_types", dest="all_types", help="take all types",default=False, action="store_true")  
+  parser.add_argument("-s","--singel_type", dest="single", help="", default=False, action="store_true")    
+  goodArguments, otherArguments = parser.parse_known_args()
 
-  filenames, pattern = args[:-1], args[-1]
-  DoIt(filenames, pattern, options.with_o2)
+  try:
+    dirs = set()
+    for fn in goodArguments.vesselFileNames:
+      if not os.path.isfile(fn.name):
+        raise AssertionError('The file %s is not present!'%fn)
+      with h5py.File(fn.name, 'r') as f:
+        d = myutils.walkh5(f, goodArguments.grp_pattern)
+        if not len(d)>0:
+          raise AssertionError('pattern "%s" not found in "%s"!' % (grp_pattern, fn))
+        else:
+          dirs = set.union(dirs,d)
+  except Exception, e:
+    print e.message
+    sys.exit(-1)
+  
+  print('Resolved groups: %s' % ','.join(dirs))
+  #create filename due to former standards
+  filenames=[]
+  for fn in goodArguments.vesselFileNames:
+    filenames.append(fn.name)
+    ''' hack to center'''
+    with h5py.File(fn.name, 'r+') as f:
+      # centering is needed because quantities are analyzed in dependence on the distance from the system origin!!
+      krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'field_ld')
+      krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'vessels/lattice')
+      f.flush()
+      krebsjobs.submitVesseltreeCalibration.ObtainDataOfVesselFile(f)
+  DoIt(filenames, goodArguments.grp_pattern, goodArguments.with_o2)

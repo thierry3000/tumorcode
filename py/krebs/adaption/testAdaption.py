@@ -367,7 +367,7 @@ def createAsymetric_world(fn):
     
     import krebsjobs.parameters.parameterSetsAdaption
     set_name = 'adaption_asymetric_world'
-    adaptionParams = getattr(parameterSets, set_name)
+    adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, set_name)
     #CALCULATE!!!!
     myutils.hdf_write_dict_hierarchy(f3['/'], 'Asymetric/parameters', adaptionParams)
     f3['Asymetric/parameters'].attrs.create('name', set_name)
@@ -376,7 +376,7 @@ def createAsymetric_world(fn):
     print('Calcflow done')
     
     #r = adap.computeAdaption(f3['vessels'], None, adaptionParams, adaptionParams['calcflow'], f3['/'] )
-    dd = adap.computeAdaption_(f3['Asymetric'].create_group('vessels_after_adaption'), f3['Asymetric/vessels'], None, adaptionParams)
+    dd = adap.computeAdaption_(f3['Asymetric'].create_group('vessels_after_adaption'), f3['Asymetric/vessels'], adaptionParams)
     
     
     #os.system("python2 /localdisk/thierry/tumorcode/py/krebs/hdfvessels2vtk.py test_configs.h5 'conduc' '/Asymetric/vessels_after_adaption/vessels_after_adaption'")
@@ -536,7 +536,7 @@ def createSymetric_worldA(fn):
     #set_name = 'adaption_symetric_world'
     set_name = 'adaption_symetricA_world_break'
     #set_name = 'adaption_symetric_world'
-    adaptionParams = getattr(parameterSets, set_name)
+    adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, set_name)
     #CALCULATE!!!!
     myutils.hdf_write_dict_hierarchy(f2['/'], 'symetricA/parameters', adaptionParams)
     f2['symetricA/parameters'].attrs.create('name', set_name)
@@ -547,7 +547,7 @@ def createSymetric_worldA(fn):
     
     #r = adap.computeAdaption(f3['vessels'], None, adaptionParams, adaptionParams['calcflow'], f3['/'] )
     #dst_grp = f2['/symetric'].create_group('symetric/vessels_after_adaption')
-    dd = adap.computeAdaption_(f2['/symetricA'].create_group('vessels_after_adaption'), f2['symetricA/vessels'], None, adaptionParams)
+    dd = adap.computeAdaption_(f2['/symetricA'].create_group('vessels_after_adaption'), f2['symetricA/vessels'], adaptionParams)
 
 #    a = os.system("python2 /localdisk/thierry/tumorcode/py/krebs/hdfvessels2vtk.py test_configs.h5 'conduc' /symetricA/vessels_after_adaption/vessels_after_adaption")
 #    os.system("python2 /localdisk/thierry/tumorcode/py/krebs/povrayRenderVessels.py test_configs.h5 /symetricA/vessels_after_adaption/vessels_after_adaption") 
@@ -703,7 +703,7 @@ def createSymetric_worldB(fn):
     
     import krebsjobs.parameters.parameterSetsAdaption
     set_name = 'adaption_symetricB_world'
-    adaptionParams = getattr(parameterSets, set_name)
+    adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, set_name)
     #CALCULATE!!!!
     myutils.hdf_write_dict_hierarchy(f2['/'], 'symetricB/parameters', adaptionParams)
     f2['symetricB/parameters'].attrs.create('name', set_name)
@@ -714,7 +714,7 @@ def createSymetric_worldB(fn):
     
     #r = adap.computeAdaption(f3['vessels'], None, adaptionParams, adaptionParams['calcflow'], f3['/'] )
     #dst_grp = f2['/symetric'].create_group('symetric/vessels_after_adaption')
-    dd = adap.computeAdaption_(f2['/symetricB'].create_group('vessels_after_adaption'), f2['symetricB/vessels'], None, adaptionParams)
+    dd = adap.computeAdaption_(f2['/symetricB'].create_group('vessels_after_adaption'), f2['symetricB/vessels'], adaptionParams)
     
 
     a = os.system("python2 /localdisk/thierry/tumorcode/py/krebs/hdfvessels2vtk.py test_configs.h5 /symetricB/vessels_after_adaption/vessels_after_adaption")
@@ -881,7 +881,7 @@ def createSymetricIrregular_world(fn):
     
     import krebsjobs.parameters.parameterSetsAdaption
     set_name = 'adaption_symetricIrregular_world'
-    adaptionParams = getattr(parameterSets, set_name)
+    adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, set_name)
     #CALCULATE!!!!
     myutils.hdf_write_dict_hierarchy(f2['/'], 'symetricIrregular/parameters', adaptionParams)
     f2['symetricIrregular/parameters'].attrs.create('name', set_name)
@@ -892,10 +892,171 @@ def createSymetricIrregular_world(fn):
     
     #r = adap.computeAdaption(f3['vessels'], None, adaptionParams, adaptionParams['calcflow'], f3['/'] )
     #dst_grp = f2['/symetric'].create_group('symetric/vessels_after_adaption')
-    dd = adap.computeAdaption_(f2['/symetricIrregular'].create_group('vessels_after_adaption'), f2['symetricIrregular/vessels'], None, adaptionParams)
+    dd = adap.computeAdaption_(f2['/symetricIrregular'].create_group('vessels_after_adaption'), f2['symetricIrregular/vessels'],  adaptionParams)
 
     a = os.system("python2 /localdisk/thierry/tumorcode/py/krebs/hdfvessels2vtk.py test_configs.h5 /symetricIrregular/vessels_after_adaption/vessels_after_adaption")
     os.system("python2 /localdisk/thierry/tumorcode/py/krebs/povrayRenderVessels.py test_configs.h5 /symetricIrregular/vessels_after_adaption/vessels_after_adaption") 
+
+def createMostBasic_world(fn):    
+    
+    points=[]
+    points.append([-5,0,0])
+    p1=[0,0,0]
+    p2=[2.5,3,0]
+    p3=[7.5,3,0]
+    
+    p4=[10,0,0]
+    
+    p5=[2.5,-3,0]
+    p6=[7.5,-3,0]
+    p7=[15,0,0]
+    
+    points.append(p1)
+    points.append(p2)
+    points.append(p3)
+    points.append(p4)
+    points.append(p5)
+    points.append(p6)
+    points.append(p7)
+    
+    
+    node_a_index=[0,1,2,3,1,5,6,4]
+    node_b_index=[1,2,3,4,5,6,4,7]
+    flags=[]
+    radii=[]
+
+    flags.append(int(ku.ARTERY))#0
+    radii.append(7)
+    flags.append(int(ku.ARTERY))#1
+    radii.append(5)
+    flags.append(int(ku.CAPILLARY))#2
+    radii.append(3)
+    flags.append(int(ku.VEIN))#3
+    radii.append(6)
+    flags.append(int(ku.ARTERY))#4
+    radii.append(5)
+    flags.append(int(ku.CAPILLARY))#5
+    radii.append(3)
+    flags.append(int(ku.VEIN))#6
+    radii.append(6)
+    flags.append(int(ku.VEIN))#7
+    radii.append(10)
+#    flags.append(int(ku.VEIN))#8
+#    radii.append(level1)
+#    flags.append(int(ku.ARTERY))#9
+#    radii.append(level2)
+#    flags.append(int(ku.ARTERY))#10
+#    radii.append(level3)
+#    flags.append(int(ku.CAPILLARY))#11
+#    radii.append(level3)
+#    flags.append(int(ku.VEIN))#12
+#    radii.append(level3)
+#    flags.append(int(ku.ARTERY))#13
+#    radii.append(level3)
+#    flags.append(int(ku.CAPILLARY))#14
+#    radii.append(level3)
+#    flags.append(int(ku.VEIN))#15
+#    radii.append(level3)
+#    flags.append(int(ku.VEIN))#16
+#    radii.append(level2)
+#    flags.append(int(ku.CAPILLARY))#17
+#    radii.append(level3)
+    
+#    #mirror x axis
+#    for i in range(len(points)):
+#        points.append([points[i][0],-points[i][1],points[i][2]])
+#               
+#        
+#    #double flags
+#    for i in range(len(flags)):
+#        flags.append(flags[i])
+#        radii.append(radii[i]) 
+#    
+#    #add entrence
+#    flags.append(int(ku.ARTERY))
+#    radii.append(level0)
+#    points.append([-13,0,0])
+#    flags.append(int(ku.VEIN))
+#    radii.append(level0)
+#    points.append([13,0,0])
+#    
+#    def reverse_xy(points):
+#        points2 = []
+#        scale = 100
+#        for point in points:
+#            points2.append([point[1]*scale,point[0]*scale,point[2]*scale])
+#        return points2
+#    
+#    #points = reverse_xy(points)    
+#    points = scale_points(points)
+#    #add circulated flag
+#    flags2=[]
+#    for aflag in flags:
+#        flags2.append(np.bitwise_or(ku.CIRCULATED,aflag))
+#       
+#    #this datalist is after successfull adaption with all signals   
+#    datalist=[13.301738,9.563003,7.1691427,7.108207,5.7596083,5.6054125,5.584573,6.330745,8.065095,9.596836,7.166868,
+#              5.7524166,5.6175594,7.166868,5.7524166,5.6175594,6.354387,5.704988,13.301738,9.563003,7.1691427,7.108207,
+#              5.7596083,5.6054125,5.584573,6.330745,8.065095,9.596836,7.166868,5.7524166,5.6175594,7.166868,5.7524166,
+#              5.6175594,6.354387,5.704988,17.057396,9.972254]
+#    #radii = np.array(datalist)        
+#    #radii=10*np.ones(len(node_a_index))
+#    #radii=6.5*np.ones(len(node_a_index))
+#    #write the data to a h5 file
+#    #f2 = h5files.open(fn,'w')
+    f2 = fn
+    f2.create_group('mostBasic_world/vessels')
+    
+    #edge stuff
+    N_edges=len(radii)
+    edgegrp = f2['mostBasic_world/vessels'].create_group("edges")
+    edgegrp.attrs.create('COUNT',N_edges)
+    ds_nodeA = edgegrp.create_dataset('node_a_index', data=node_a_index)
+    ds_nodeB = edgegrp.create_dataset('node_b_index', data= node_b_index)
+    ds_radius = edgegrp.create_dataset('radius', data=radii)
+    #ds_hema = edgegrp.create_dataset('hematocrit', data=hema)
+    #ds_flow = edgegrp.create_dataset('flow', data=flow)
+    
+    #mw_vessel_flags = get_flags_from_other_file()
+    
+    ds_vesselflags = edgegrp.create_dataset('flags', data = flags)
+    
+    #node stuff
+    N_nodes=len(points)
+    nodegrp = f2['mostBasic_world/vessels'].create_group("nodes")
+    nodegrp.attrs.create('COUNT', N_nodes)
+    ds_roots = f2['mostBasic_world/vessels/nodes'].create_dataset('roots', data = [0,7])
+    ds_bc_node_index = f2['mostBasic_world/vessels/nodes'].create_dataset('bc_node_index', data = [0,7])
+    
+    #dummy pressure for compatiblility
+    #ds_pressure = f3['vessels/nodes'].create_dataset('roots_pressure', data = roots_pressure)
+    #this works    
+    #ds_value_of_bc = f2['symetricA/vessels/nodes'].create_dataset('bc_value', data=[70*0.133,10*0.133])        
+    ds_value_of_bc = f2['mostBasic_world/vessels/nodes'].create_dataset('bc_value', data=[5, 3])        
+    ds_bctyp_of_roots = f2['mostBasic_world/vessels/nodes'].create_dataset('bc_type', data= [1,1])
+    ds_world_pos = f2['mostBasic_world/vessels/nodes'].create_dataset('world_pos', data = np.array(points))
+    f2['mostBasic_world/vessels'].attrs.create('CLASS','REALWORLD')
+    
+    import krebsjobs.parameters.parameterSetsAdaption
+    #set_name = 'adaption_symetric_world'
+    set_name = 'adaption_symetricA_world_break'
+    #set_name = 'adaption_symetric_world'
+    adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, set_name)
+    #CALCULATE!!!!
+    myutils.hdf_write_dict_hierarchy(f2['/'], 'mostBasic_world/parameters', adaptionParams)
+    f2['mostBasic_world/parameters'].attrs.create('name', set_name)
+    f2['/'].file.flush()
+    dd = ku.calc_vessel_hydrodynamics(f2['mostBasic_world/vessels'],adaptionParams['calcflow']['includePhaseSeparationEffect'] , False, None, adaptionParams['calcflow'])
+    
+    print('Calcflow done')
+    
+    #r = adap.computeAdaption(f3['vessels'], None, adaptionParams, adaptionParams['calcflow'], f3['/'] )
+    #dst_grp = f2['/symetric'].create_group('symetric/vessels_after_adaption')
+    #dd = adap.computeAdaption_(f2['/symetricA'].create_group('vessels_after_adaption'), f2['symetricA/vessels'], None, adaptionParams)
+
+#    a = os.system("python2 /localdisk/thierry/tumorcode/py/krebs/hdfvessels2vtk.py test_configs.h5 'conduc' /symetricA/vessels_after_adaption/vessels_after_adaption")
+#    os.system("python2 /localdisk/thierry/tumorcode/py/krebs/povrayRenderVessels.py test_configs.h5 /symetricA/vessels_after_adaption/vessels_after_adaption") 
+ 
 
 
 if __name__ == '__main__':
@@ -903,22 +1064,24 @@ if __name__ == '__main__':
 #create stuff  
   fn = 'test_configs.h5'
   f = h5py.File(fn)
-  if not 'symetricA' in f:
-    createSymetric_worldA(f)
-    print('Symetric_worldA done!')
-  if not 'symetricB' in f:
-    createSymetric_worldB(f)
-    print('Symetric_worldB done')
-  if not 'symetricIrregular' in f: 
-    createSymetricIrregular_world(f)
-    print('SymetricIrregular_world done')
-  if not 'Asymetric' in f:
-    createAsymetric_world(f)
-    print('Asymetric done')
+#  if not 'symetricA' in f:
+#    createSymetric_worldA(f)
+#    print('Symetric_worldA done!')
+#  if not 'symetricB' in f:
+#    createSymetric_worldB(f)
+#    print('Symetric_worldB done')
+#  if not 'symetricIrregular' in f: 
+#    createSymetricIrregular_world(f)
+#    print('SymetricIrregular_world done')
+#  if not 'Asymetric' in f:
+#    createAsymetric_world(f)
+#    print('Asymetric done')
+  if not 'mostBasic' in f:
+    createMostBasic_world(f)
   
 #look at stuff
-  common_filename = os.path.splitext(fn)[0]
-  pp = PdfPages(common_filename + '_results_test_configs.pdf')
+  #common_filename = os.path.splitext(fn)[0]
+  #pp = PdfPages(common_filename + '_results_test_configs.pdf')
 
 
   print("shit")

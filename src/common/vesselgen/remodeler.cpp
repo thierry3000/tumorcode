@@ -1297,8 +1297,12 @@ void Grower::UpscaleTrees()
 
 void Grower::HierarchicalGrowth()
 {
+  if (debug_output_every_configuration)
+    DebugOutVessels(*this, str(format("with_capillaries_hit_%i") % hierarchy_level));
   FlushCapillaries();
-
+  if (debug_output_every_configuration)
+    DebugOutVessels(*this, str(format("without_capillaries_hit_%i") % hierarchy_level));
+  
   UpscaleTrees();
   SplitSegmentsToOneLatticeBond(*vl);
 
@@ -1316,11 +1320,20 @@ void Grower::HierarchicalGrowth()
   
     RandomGrowth(ends, false);
   }
-
+  if (debug_output_every_configuration)
+    DebugOutVessels(*this, str(format("after_growth_hit_%i") % hierarchy_level));
+  
   AddCapillaries();
+  
+  if (debug_output_every_configuration)
+    DebugOutVessels(*this, str(format("after_capillaries_hit_%i")% hierarchy_level));
+  
   ComputeCirculatedComponents(vl.get());
   CalcRadi();
   CalcFlow();
+  
+  if (debug_output_every_configuration)
+    DebugOutVessels(*this, str(format("after_calcflow_hit_%i")% hierarchy_level));
 
 #if GFFIELD_ENABLE
   InitGfDistrib();
@@ -1341,7 +1354,9 @@ void Grower::RandomGrowth(OpenEnds &ends, bool isInitial)
       ends_other.swap(ends);
 
     if (debug_output_every_configuration && isInitial)
-      DebugOutVessels(*this, str(format("initial_growth_%02i") % iteration_number_on_level));
+      DebugOutVessels(*this, str(format("growth_initial_%02i")  %iteration_number_on_level));
+    if (debug_output_every_configuration && not isInitial)
+      DebugOutVessels(*this, str(format("growth_hit_%1i_%02i") % hierarchy_level %iteration_number_on_level));
 
     VESSGEN_MAXDBG(vl->IntegrityCheck();)
     ++iteration_number_on_level;

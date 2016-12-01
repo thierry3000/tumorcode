@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
 from os.path import basename, dirname, join, splitext
 import sys
 import os
@@ -673,7 +671,7 @@ class DataVesselGlobal(object):
           data = l*np.square(r)*math.pi
           data = (np.sum(data) / volume, 0.)
         elif property_name == 'total_perfusion':
-          data = getTotalPerfusion(vesselgroup)
+          data = getTotalPerfusion(vesselgroup)*60 #to minutes
         else:
           data   = dataman.obtain_data('basic_vessel_samples', property_name, vesselgroup, 30.)
           weight = dataman.obtain_data('basic_vessel_samples', 'weight', vesselgroup, 30.)

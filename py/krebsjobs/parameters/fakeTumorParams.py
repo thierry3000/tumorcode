@@ -25,7 +25,7 @@ from copy import deepcopy
 default = dict(
   num_threads = 6,
   out_intervall = 100,
-  tumor_speed = 1.,
+  tumor_speed = 1.42,
   tumor_radius = 50.,
   tissuePressureDistribution = 'shell',
   tissuePressureWidth = 500.,

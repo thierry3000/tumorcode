@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','..'))
@@ -72,9 +70,11 @@ def CenterLattice(g):
   '''
   print '------',g.name+'--------'
   ld = krebsutils.read_lattice_data_from_hdf(g)
-  bmin, bmax = ld.worldBox
+  #meanwhile worldBox is 3D
+  thisBox=ld.worldBox
+  bmin, bmax = thisBox[0:2]
   offset = -0.5*(bmin+bmax) # which is the negative center
-  offset[0] = 0 # don't move in x
+  #offset[0] = 0 # don't move in x
   orig = ld.GetOriginPosition()
   orig += offset
   ld.SetOriginPosition(orig)
@@ -93,7 +93,7 @@ def GenerateSingleCapillaryWPo2(dataman, f, config_name, config_version, (bfpara
     gmeasure = gmeasure.create_group(name)
     # --- create single capillary vessel system ---
     p = params['pgrad']*params['size'][0]*params['scale']
-    krebsutils.vesselgen_generate_single(gmeasure, params['size'], params['direction_mode'], params['scale'], params['ld_type'], params['r'], 0., p, params['size'][0]/10, bfparams)
+    krebsutils.vesselgen_generate_single(gmeasure, params['size'], params['direction_mode'], params['scale'], params['ld_type'], params['r'], 0.1, p, params['size'][0]/10, bfparams)
     vesselgroup = gmeasure['vessels']
     if params['direction_mode'] == 0:
       CenterLattice(vesselgroup['lattice'])

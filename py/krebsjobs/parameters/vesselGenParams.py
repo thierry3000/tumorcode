@@ -38,20 +38,23 @@ default = dict(
     includePhaseSeparationEffect = True,
   )
 )
-irinotecan = copy.deepcopy(default)
-irinotecan['calcflow'].update(
-includePhaseSeparationEffect=False,
-)
-irinotecan.update(scale = 100)
-paramset2 = dict(
-  tip_radius_arterial = 3.5,
-  tip_radius_capi = 3.5,
-  tip_radius_vein = 4.5,
+irino_vess = dict(
+  scale = 110., #as suggested by the runs of big_calibration_vol2 on snowden
+  tip_radius_arterial = 2.5,
+  tip_radius_capi = 2.5,
+  tip_radius_vein = 3.8,
+  # estimating from relative volume of blood in veins 65%, 
+  # one obtains a radius scale factor of r(vein) = 1.36 * r(arterial)
   murray_alpha_vein = 3.,
   murray_alpha_artery = 3.,
-  scale = 150.,
   max_sprout_radius_artery = 8.,
   max_sprout_radius_vein = 8.,
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6,
+    rheology = 'RheologySecomb2005', # WARNING: changed to new model of secomb
+    inletHematocrit = 0.45,
+    includePhaseSeparationEffect = False,
+  ),
 )
 
 f_ = math.sqrt(0.015/0.0139)
@@ -430,5 +433,25 @@ paramset24 = dict(
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
     includePhaseSeparationEffect = False,
+  )
+)
+video_create = dict(
+  seed = 1298762,
+  tip_radius_arterial = 2.0, #initial value to start recursive calculation of radii according to murrays law
+  tip_radius_capi = 2.0,
+  tip_radius_vein = 2.5,
+  murray_alpha_vein = 2.742,
+  murray_alpha_artery = 3.,
+  scale = 75.,
+  max_sprout_radius_artery = 100., #can only sprout if artery from which we sprout is less than this threshold, according to MW too small is not good
+  max_sprout_radius_vein = 100.,
+  o2range = 200.,
+  generate_more_capillaries = False,
+  full_debug_output = True,
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6,
+    rheology = 'RheologySecomb2005',
+    inletHematocrit = 0.45,
+    includePhaseSeparationEffect = True,
   )
 )

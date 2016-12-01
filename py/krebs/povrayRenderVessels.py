@@ -407,16 +407,17 @@ def render_different_data_types( vesselgroup, **kwargs):
   for data_name in datalist:
     cm, (datamin, datamax) = make_any_color_arrays(graph, data_name)
     fn = vesselgroup.file.filename
-    imagefn = splitext(basename(fn))[0]+myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix+'.'+kwargs.get('format','png')
+    imagefn = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix+'.'+kwargs.get('format','png')
     with EasyPovRayRender(**kwargs) as epv:
       CreateScene2(vesselgroup,epv, graph, imagefn, **kwargs)
       overlay = kwargs.get('overlay')
-      print('debug:')
-      print(identifycluster.getname())
-      if(identifycluster.getname() == 'snowden'):
-        print('snowden has no graphic BACKEND')
-        print('Overlay is not possible here')
-        overlay = False
+      ''' meanwhile we overcome the by changing mpl settings on snowden'''
+#      print('debug:')
+#      print(identifycluster.getname())
+#      if(identifycluster.getname() == 'snowden'):
+#        print('snowden has no graphic BACKEND')
+#        print('Overlay is not possible here')
+#        overlay = True
       if overlay:
         RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], **kwargs)
       else:

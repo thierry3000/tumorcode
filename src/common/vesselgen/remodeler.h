@@ -36,7 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define VESSGEN_MAXDBG(x) // x
 #define GFFIELD_ENABLE 1
-//#define WRITE_REMODELING_ACTIONS
+#define WRITE_REMODELING_ACTIONS
 
 enum ElemFlags
 {
@@ -250,7 +250,7 @@ private:
 
 h5cpp::Group DebugOutVessels(const Grower &grower, const string &name);
 typedef BasicHistogram1D<float> Histo;
-double MeasureMVD( const VesselList3d& vl, float dest_lattice_scale, int &n_sites, int &n_sites_occupied );
+double MeasureBloodVolume( const VesselList3d& vl, float dest_lattice_scale, int &n_sites, int &n_sites_occupied );
 const my::Averaged<float> MeasureBranchLengths( const VesselList3d& vl, Histo &distrib, Histo &byrad );
 const my::Averaged<float> MeasureRadiDistribution( const VesselList3d& vl, Histo &hrad );
 void MeasureBranchNumbers( const VesselList3d &vl,  Histo &hbranch );

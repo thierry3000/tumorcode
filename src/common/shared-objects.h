@@ -197,11 +197,11 @@ class CylinderNetworkSampler
 {
 public:
   typedef my::eqpair<Float3> WorldEdge;
-
   struct Sample {
     /*
      * fpos is a fractional coordinate,
-     * component 0 and 1 are cartesian coordinates perpendicular to the cylinder axis, and comp. 2 is the axial coordinate
+     * component 0 and 1 are cartesian coordinates perpendicular to the cylinder axis,
+     * and comp. 2 is the axial coordinate
      * all components \in [0,1]
      *
      * wpos is the world coordinate
@@ -210,7 +210,8 @@ public:
   };
 
   /*
-   * this works as a stream. once the arrays are set, you pull samples with these functions until it returns 0
+   * this works as a stream. once the arrays are set, 
+   * you pull samples with these functions until it returns 0
    * each iteration you access the current sample buffer with GetSample()
    * Reset() restarts the stream from the beginning
    */

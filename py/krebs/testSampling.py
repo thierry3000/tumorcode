@@ -56,7 +56,8 @@ position    = dataman.obtain_data('basic_vessel_samples', 'position', gvessels, 
 weight_smpl = dataman.obtain_data('basic_vessel_samples', 'weight', gvessels, 30.)
 flags       = dataman.obtain_data('basic_vessel_samples', 'flags', gvessels, 30.)
   
-dist_smpl, distmap, mask   = dataman.obtain_data('distancemap_samples', gvessels, gtumor, 30., 'radial', None)
+#dist_smpl, distmap, mask   = dataman.obtain_data('distancemap_samples', gvessels, gtumor, 30., 'radial', None)
+abc   = dataman.obtain_data('distancemap_samples', gvessels, gtumor, 30., 'radial', None)
 
 if 0:
   fig = pyplot.figure()

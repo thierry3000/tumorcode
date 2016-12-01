@@ -17,60 +17,79 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-// #include <fstream>
-// #include <boost/foreach.hpp>
+#include <fstream>
+#include <boost/foreach.hpp>
 
-//#include <boost/property_tree/info_parser.hpp>
-//#include "mwlib/ptree_ext.h"
+#include <boost/property_tree/info_parser.hpp>
+#include "mwlib/ptree_ext.h"
 
 #include "common.h"
-//#include "continuum-utils.h"
-//#include "continuum-grid.h"
+#include "continuum-utils.h"
+#include "continuum-grid.h"
 
 #include "mwlib/math_ext.h"
 
-using namespace std;
-
-#if 0
 #include "calcflow.h"
-#include "lattice-data.h"
+//#include "mwlib/lattice-data.h"
+#include "lattice-data-polymorphic.h"
 #include "vessels3d.h"
 #include <stdio.h>
+#include "shared-objects.h"
+//#include "mwlib/lattice-data.h"
+#include "shared-objects.h"
+#include "hdfio.h"
 
+using namespace std;
+//typedef VesselList3d::LatticeData LatticeData;
+typedef polymorphic_latticedata::LatticeData LatticeData;
+#if 0
 struct Tester
 {
-  LatticeDataQuad3d ld;
-  VesselList3d vl;
+  //create a lattice structure
+  //std::auto_ptr<LatticeData> myLatticeData = LatticeData::Make("quad",BBox3(0,0,0,64,64,64), 10.);
+  std::auto_ptr<LatticeData> myLatticeData = LatticeData::Make("quad",BBox3(0,0,0,64,64,64), 10.);
+  std::auto_ptr<VesselList3d> vl;
+  std::auto_ptr<LatticeData> ldp(LatticeData::Make("fcc", BBox3(0,0,0,10,10,10), 30.));
+//   Vessel *v, *v2;
+//   VesselNode *vc2;
+//   VesselList3d vl;
+//   vl.Init(*ldp);
+  
+  LatticeData &ld = *ldp;
+  //LatticeDataQuad3d ld;
   void init()
   {
     ld.Init(Vec<int,3>(10, 10, 1), 10.);
-    vl.Init(ld);
+    //vl->Init();
+    printf("here1\n");
+    vl->Init(*myLatticeData);
+    printf("here2\n");
     for (int i=0; i<4; ++i)
     {
-      Vessel* v  = vl.InsertVessel(
+      Vessel* v  = vl->InsertVessel(
         Vec<int,3>(i,0,0),
         Vec<int,3>(i+1,0,0)
         );
     }
     #if 1
     // a second pipe between same endings
-    vl.InsertVessel(Vec<int,3>(0,0,0), Vec<int,3>(0,1,0));
+    vl->InsertVessel(Vec<int,3>(0,0,0), Vec<int,3>(0,1,0));
     for (int i=0; i<4; ++i)
     {
-      Vessel* v  = vl.InsertVessel(
+      Vessel* v  = vl->InsertVessel(
         Vec<int,3>(i,1,0),
         Vec<int,3>(i+1,1,0)
         );
     }
-    vl.InsertVessel(Vec<int,3>(4,0,0), Vec<int,3>(4,1,0));
+    vl->InsertVessel(Vec<int,3>(4,0,0), Vec<int,3>(4,1,0));
     #endif
-    for (int i=0; i<vl.GetECount(); ++i)
+    for (int i=0; i<vl->GetECount(); ++i)
     {
-      vl.GetEdge(i)->r = 1.;
-      vl.GetEdge(i)->flags |= CIRCULATED;
+      vl->GetEdge(i)->r = 1.;
+      vl->GetEdge(i)->flags |= CIRCULATED;
     }
-    VesselNode* na = vl.FindNode(Vec<int,3>(0,0,0));
-    VesselNode* nb = vl.FindNode(Vec<int,3>(4,0,0));
+    VesselNode* na = vl->FindNode(Vec<int,3>(0,0,0));
+    VesselNode* nb = vl->FindNode(Vec<int,3>(4,0,0));
     na->press = 0;
     nb->press = 1;
     na->flags |= BOUNDARY;
@@ -79,28 +98,31 @@ struct Tester
   void solve_flow()
   {
     printf("testing flowsolver\n");
-    CalcFlow(&vl, 0, NULL);
+    BloodFlowParameters bfparams;
+    printf("bfparams.includePhaseSeparationEffect: %s\n",bfparams.includePhaseSeparationEffect);
+    printf("bfparams.inletHematocrit: %f\n",bfparams.inletHematocrit);
+    printf("bfparams.rheology: %s\n",bfparams.rheology);
+    printf("bfparams.viscosityPlasma: %f\n",bfparams.viscosityPlasma);
+    CalcFlow(*vl, bfparams);
   }
   void output()
   {
-    printf("viscos (1.,0.45) = %f\n", CalcRelViscosity(1., 0.45));
-    for (int i=0; i<vl.GetNCount(); ++i)
+    printf("viscos (1.,0.45) = %f\n", CalcRelViscosity(1., 0.45,Rheology::RheologyForHuman));
+    for (int i=0; i<vl->GetNCount(); ++i)
     {
-      const VesselNode* n = vl.GetNode(i);
+      const VesselNode* n = vl->GetNode(i);
       cout << boost::format("node: %i press = %f, pos = %s\n") % i % n->press % n->lpos;
     }
-    for (int i=0; i<vl.GetECount(); ++i)
+    for (int i=0; i<vl->GetECount(); ++i)
     {
-      const Vessel* v = vl.GetEdge(i);
+      const Vessel* v = vl->GetEdge(i);
       cout << boost::format("edge %i-%i q = %f, f=%f\n") % v->NodeA()->Index() % v->NodeB()->Index() % v->q % v->f;
     }
   }
 };
 #endif
 
-#if 0
-
-
+#if 0 //this used the dealii library
 #include <grid/tria.h>
 #include <grid/grid_tools.h>
 
@@ -252,12 +274,6 @@ void test_integrate_lines()
 
 #endif
 
-#if 0
-#include "mwlib/lattice-data.h"
-#include "shared-objects.h"
-#include "vessels3d.h"
-#include "hdfio.h"
-
 
 
 void TestLatticeData()
@@ -379,12 +395,9 @@ void TestInterpolation()
 }
 
 
-#include "vessels3d.h"
-
 
 void TestVesselList()
 {
-  typedef polymorphic_latticedata::LatticeData LatticeData;
   std::auto_ptr<LatticeData> ldp(LatticeData::Make("fcc", BBox3(0,0,0,10,10,10), 30.));
   Vessel *v, *v2;
   VesselNode *vc2;
@@ -435,18 +448,18 @@ void TestDeltaAndHeaviside()
 }
 
 
-typedef VesselList3d::LatticeData LatticeData;
-
-
 void TestVesselFieldCoupling()
 {
   //LatticeDataQuad3d vessel_ld;
+  //create a lattice structure
   std::auto_ptr<LatticeData> vessel_ld(LatticeData::Make("quad",BBox3(0,0,0,64,64,64), 10.));
-  
+  //create a vessel list
   VesselList3d vl;
+  //link the lattice and the vessel
   vl.Init(*vessel_ld);
+  //add a vessel
   Vessel* v = vl.InsertVessel(Int3(4,32,32), Int3(60, 32, 32));
-
+  //create a field and initialize it
   LatticeDataQuad3d ld;
   ld.Init(BBox3(0,0,0, 20, 20, 20), 30.);
   ld.SetCellCentering(Bool3(true));
@@ -458,33 +471,49 @@ void TestVesselFieldCoupling()
   for (int k=0; k<10; ++k)
   {
     v->r = 3. + k*10.;
+    v->flags |= CIRCULATED;
+    v->NodeA()->flags |= BOUNDARY;
+    v->NodeB()->flags |= BOUNDARY;
+    v->NodeA()->press = 1;
+    v->NodeA()->press = 2;
+//     for (int i=0; i<vl->GetECount(); ++i)
+//     {
+//       vl->GetEdge(i)->r = 1.;
+//       vl->GetEdge(i)->flags |= CIRCULATED;
+//     }
+//     VesselNode* na = vl->FindNode(Vec<int,3>(0,0,0));
+//     VesselNode* nb = vl->FindNode(Vec<int,3>(4,0,0));
+//     na->press = 0;
+//     nb->press = 1;
+//     na->flags |= BOUNDARY;
+//     nb->flags |= BOUNDARY;
     
     Array3d<float> volume_field(ld.Box());
     Array3d<float> surface_field(ld.Box());
     Array3d<float> length_field(ld.Box());
-
+    //set up a sampler
     CylinderNetworkSampler sampler; sampler.Init(ld.Scale(), make_ptree("seed", 12345)("samples_per_cell", 1));
     sampler.Set(vessel_ld->LatticeToWorld(v->LPosA()), vessel_ld->LatticeToWorld(v->LPosB()), v->r);
-    
+    //sample lines
     int line_cnt = sampler.GenerateLineSamples();
     for (int i=0; i<line_cnt; ++i)
       AddSmoothDelta(length_field,ld.Box(), ld, 3, sampler.GetSample(i).wpos, sampler.weight_per_volume);
-
     sampler.Restart();
+    //sample surface
     int surf_cnt = sampler.GenerateSurfaceSamples();
     for (int i=0; i<surf_cnt; ++i)
       AddSmoothDelta(surface_field,ld.Box(), ld, 3, sampler.GetSample(i).wpos, sampler.weight_per_volume);
-
     sampler.Restart();
+    //sample volume
     int vol_cnt = sampler.GenerateVolumeSamples();
     for (int i=0; i<vol_cnt; ++i)
       AddSmoothDelta(volume_field,ld.Box(), ld, 3, sampler.GetSample(i).wpos, sampler.weight_per_volume);
 
+    // compare real stuff with sampled
     float len = v->WorldLength(*vessel_ld);
     float surface = my::mconst::pi2()*v->r * len;
     float volume = my::mconst::pi()*my::sqr(v->r)*len;
     float estimated_volume = volume_field.valueStatistics().Sum() * my::cubed(ld.Scale());
-
     float estimated_surface = surface_field.valueStatistics().Sum() * my::cubed(ld.Scale());
     float estimated_length = length_field.valueStatistics().Sum() * my::cubed(ld.Scale());
     
@@ -499,6 +528,10 @@ void TestVesselFieldCoupling()
     WriteScalarField(g, "volume_field", volume_field[ld.Box()], ld, ld_group);
     WriteScalarField(g, "surface_field", surface_field[ld.Box()], ld, ld_group);
     WriteScalarField(g, "length_field", length_field[ld.Box()], ld, ld_group);
+    //to do some rendering with povray
+    h5cpp::Group vesselgrp = g.create_group("vessels");
+    vesselgrp.attrs().set<std::string>("CLASS","GRAPH");
+    WriteVesselList3d(vl, vesselgrp, make_ptree("w_all",false)("w_pressure",false)("w_flow",false));
   }
 }
 
@@ -568,6 +601,62 @@ void TestVesselFieldCoupling2(int argc, char** argv)
   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed2345"), make_ptree(params)("seed", 2345));
   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed3456"), make_ptree(params)("seed", 3456));
   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed4567"), make_ptree(params)("seed", 4567));
+}
+/* you need to provide an iff simulation dataset here */
+void TestVesselFieldCoupling3(int argc, char** argv)
+{
+  string fn = argv[1];
+  uint seed = 12345;
+  if (argc > 2)
+  {
+    std::istringstream ss;
+    //(argv[2]);
+    //ss >> seed;
+    //if (argc > 3)
+    {
+      ss.str(argv[2]);
+      int np;
+      ss >> np;
+      my::SetNumThreads(np);
+    }
+  }
+  
+  h5cpp::File f(fn, "r");
+  h5cpp::Group vess_grp = f.root().open_group("iff/vessels"),
+                ld_grp = f.root().open_group("iff/vessels/lattice");
+  std::auto_ptr<LatticeData> ldp(LatticeData::ReadHdf(ld_grp));
+  LatticeData &ld = *ldp;
+  ld.SetOriginPosition(-ld.GetWorldBox().max*0.5);
+  //VesselList3d vl;
+  //vl.Init(ld);
+  //ReadHdfGraph(vess_grp, vl);
+  std::auto_ptr<const VesselList3d> vl;
+  vl = ReadVesselList3d(vess_grp, make_ptree("filter", false));
+
+  cout << "read" << endl;
+  ld.print(cout);
+  cout << endl;
+
+  Int3 vlldsize = Size(vl->Ld().Box());
+  int dim = vlldsize[2]<=1 ? (vlldsize[1]<=1 ? 1 : 2) : 3;
+  LatticeDataQuad3d field_ld;
+  SetupFieldLattice(vl->Ld().GetWorldBox(), dim, 30, 0, field_ld);
+  cout << "field ld: "; field_ld.print(cout); cout << endl;
+  
+  f = h5cpp::File(RemovePath(RemoveExtension(fn))+"-rasterized.h5", "w");
+  h5cpp::Group ld_group = f.root().create_group("field_ld30");
+  WriteHdfLd(ld_group, field_ld);
+  
+  ptree params = make_ptree("seed", seed)("cut_at", 1.)("samples_per_cell", 1);
+  WriteSampling(*vl, field_ld, dim, ld_group, f.root(), ("basecase"), params);
+
+  //WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("noclip"), make_ptree(params)("cut_at", -1));
+  //WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("samples2"), make_ptree(params)("samples_per_cell", 4));
+
+  //WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed1234"), make_ptree(params)("seed", 1234));
+  //WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed2345"), make_ptree(params)("seed", 2345));
+  //WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed3456"), make_ptree(params)("seed", 3456));
+  //WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed4567"), make_ptree(params)("seed", 4567));
 }
 
 
@@ -700,7 +789,7 @@ void TestH5Overwrite()
   }
   // works all right
 }
-#endif
+//#endif
 
 void TestMath()
 {
@@ -719,40 +808,44 @@ void TestMath()
   cout << format("ifloor(%f) = %i\n") % -5.0 % my::ifloor(-5.);
   cout << format("ifloor(%f) = %i\n") % 5. % my::ifloor(5.);
 }
-
-
-int main(int argc, char **argv)
+void TestBB()
 {
-  TestMath();
-  //my::MultiprocessingInitializer mpinit(argc, argv, 1);
-#if 0  
   BBoxd<float, 2> bb;
   bb.Add(Vec<float,2>(-1, -1));
   bb.Add(Vec<float,2>(-0.5, 1));
   cout << bb << endl;
+}
+#if 0
+void TestTester()
+{
+  Tester test;
+  test.init();
+  test.solve_flow();
+  test.output();
+}
 #endif
-#ifdef USE_DEALII
-  dealii::deallog.depth_console (3);
+int main(int argc, char **argv)
+{
+  TestMath();
+  TestBB();
+#if 0
+  TestTester();
 #endif
-  //my::MultiprocessingInitializer mpinit(argc, argv, 4);
+  my::MultiprocessingInitializer mpinit(argc, argv, 4);
   //TestArray3dRemoveDims();
   //TestConvolution();
   //testptree();
   //TestDeltaAndHeaviside();
-  //TestVesselFieldCoupling();
+  TestVesselFieldCoupling();
   //TestVesselFieldCoupling2(argc, argv);
+  TestVesselFieldCoupling3(argc,argv);
   //TestVesselList();
   //TestLatticeData();
   //TestVecDebug();
   //TestInterpolation();
   //TestH5Overwrite();
   //TestDeltaFunctionAndInterpolation();
-  #if 0
-  Tester test;
-  test.init();
-  test.solve_flow();
-  test.output();
-  #endif
+  
   #if 0
   test_integrate_lines();
   #endif

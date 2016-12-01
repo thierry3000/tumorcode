@@ -25,6 +25,20 @@ Created on Thu Aug 11 16:09:05 2016
 
 @author: mwelter
 """
+'''
+NOTE:
+since synchronizing with the repository
+is to tedious when developing, we decided
+to spare rendering settings in the
+repository.
+
+Handle:
+copy povrayRenderSettingsTemplate.py
+to
+povrayRenderSettings.py
+
+and make changes as you wish.
+'''
 
 image = dict(
       #res=(3600,3600), # brauche ca. 3600 fuer 150mm bei 600 dpi
@@ -56,4 +70,20 @@ vessels = dict(
       background = 1.,
       #ambient_color = (0.5, 0.5, 0.5),
       ambient_color = (0.3, 0.3, 0.3),
+)
+dbg_vessels = dict(
+      res=(1024,1024),
+      aa=3,
+      #clip_pie=0,
+      #clip_zslice=(0.4, 0.6),
+      #cam='corner',
+      cam='topdown',
+      colored_slice=False,
+      out_alpha=False,
+      num_threads=7,
+      debug=True,
+      #colorfactory = colorfactory,
+      #colorfactory = colorfactory,
+      #keep_files = True,
+      #temp_file_dir = '.',
 )

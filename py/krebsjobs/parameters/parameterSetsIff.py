@@ -25,9 +25,11 @@ from copy import deepcopy
 import myutils
 cluster_threads = myutils.cluster_threads
 trastuzumab_factor = np.sqrt(540/145531.5)#see wikipedia
+topotecan_factor = np.sqrt(540./421.)
+irinotecan_factor = np.sqrt(540./587.)
 
 #from drug_variant42-inj   
-default = dict(
+iff_default = dict(
   num_threads = 6,
   tumor = dict(
     #out_intervall = 100,  #fake tumor only??
@@ -89,18 +91,34 @@ default = dict(
       osmotic_reflection_coeff = 0.9,
       osmotic_reflection_coeff_tumor = 0.,
     ),
-  ift = dict(),
+  ift = dict(
+    inject_mode = 'DF_INJECT_MODE_EXP',
+    uptake_mode = 'DF_UPTAKE_LINEAR',#this is default
+    kdiff = 16.,
+    inject_t = 1. * 3600., #10 * 3600,
+    inject_max = 1.,
+    stepper = 'vsimexbdf2',
+    stepper_compartments = 'vsimexbdf2',
+    capillary_permeability_normal = 0.00017,
+    capillary_permeability_tumor = 0.017,
+    comprates_k12 = 0.1,
+    comprates_k21 = 0.001
+  ),
+  ift_measure = dict(),
+  # out_times has to be a list for json to work
+  # timepoints are in seconds!!!
+  out_times = list(3600.*np.concatenate((np.arange(0., .5, 0.1),))),
+  message = "iff_default",
   out_intervall = 10. * 60.,
   fn_out = "set me",
   fn_tumor = "set me",
   #tend = -1,
-  message = "",
   h5_path_vessel = "set me",
   h5_path_lattice = "set me",
   h5_path_tumor = "set me",
 #  tend = 300
 )
-ifp_paper_config = deepcopy(default)
+ifp_paper_config = deepcopy(iff_default)
 iff_defaultconfig2 = deepcopy(ifp_paper_config)
 myutils.UpdateHierarchical(iff_defaultconfig2, dict(
   ift = dict(
@@ -194,6 +212,102 @@ myutils.UpdateHierarchical(iff_MW_guess_trastuzumab, dict(
   )
 )
 
+iff_topotecan_1 = deepcopy(iff_default)
+myutils.UpdateHierarchical(iff_topotecan_1, dict(
+  # out_times has to be a list for json to work
+  #out_times = list(3600.*np.concatenate((np.arange(0., 1., 0.25), np.arange(1., 6., 1.), np.arange(6., 36., 3.), np.arange(36., 97., 6.)))),
+  ift = dict(
+    inject_mode = 'DF_INJECT_MODE_EXP',
+    capillary_permeability_normal=1.7e-6 * topotecan_factor,
+    capillary_permeability_tumor=1.7e-4 * topotecan_factor,
+    comprates_k12 = 0.0,
+    comprates_k21 = 0.0,
+    inject_t = 1200, #about 0.3 hrs
+    kdiff = 0.16 * topotecan_factor,
+    ),  
+  out_times = list(3600.*(np.arange(0., 24., 0.5))),
+  message = "iff_topotecan_1",
+  num_threads = 16,
+  )
+)
+iff_topotecan_2 = deepcopy(iff_topotecan_1)
+iff_topotecan_2.update(message = "iff_topotecan_2",)
+iff_topotecan_2['ift'].update(
+  comprates_k12 = 0.2,
+  comprates_k21 = 0.002,
+)
+iff_topotecan_3 = deepcopy(iff_topotecan_1)
+iff_topotecan_3.update(message = "iff_topotecan_3",)
+iff_topotecan_3['ift'].update(
+  comprates_k12 = 0.05,
+  comprates_k21 = 0.0,
+)
+iff_topotecan_4 = deepcopy(iff_topotecan_1)
+iff_topotecan_4.update(
+  message = "iff_topotecan_4",
+  out_times = list(3600.*np.concatenate((np.arange(0.,2.0,0.2),np.arange(2., 24., 0.5)))),
+)
+iff_topotecan_4['ift'].update(
+  comprates_k12 = 0.1,
+  comprates_k21 = 0.0,
+  kdiff = 0.16 * topotecan_factor *0.5,
+)
+iff_topotecan_5 = deepcopy(iff_topotecan_1)
+iff_topotecan_5.update(
+  message = "iff_topotecan_5",
+  out_times = list(3600.*np.concatenate((np.arange(0.,2.0,0.1),np.arange(2., 24., 0.5)))),
+)
+iff_topotecan_5['ift'].update(
+  comprates_k12 = 0.01,
+  comprates_k21 = 0.0,
+  kdiff = 0.16 * topotecan_factor,
+)
+iff_topotecan_6 = deepcopy(iff_topotecan_5)
+iff_topotecan_6.update(
+  message = "iff_topotecan_6",
+)
+iff_topotecan_6['ift'].update(
+  comprates_k12 = 0.01 * topotecan_factor,
+  comprates_k21 = 0.005 * topotecan_factor,
+  kdiff = 0.16 * topotecan_factor,
+)
+iff_topotecan_7 = deepcopy(iff_topotecan_5)
+iff_topotecan_7.update(
+  message = "iff_topotecan_7",
+)
+iff_topotecan_7['ift'].update(
+  comprates_k12 = 0.01 * topotecan_factor,
+  comprates_k21 = 0.001 * topotecan_factor,
+  kdiff = 0.16 * topotecan_factor,
+)
+iff_topotecan_8 = deepcopy(iff_topotecan_7)
+iff_topotecan_8.update(
+  message = "iff_topotecan_8",
+  out_times = list(3600.*np.concatenate((np.arange(0.,2.0,0.1),np.arange(2., 73., 0.5)))),
+)
+iff_irinotecan_1 = deepcopy(iff_default)
+myutils.UpdateHierarchical(iff_irinotecan_1, dict(
+  # out_times has to be a list for json to work
+  #out_times = list(3600.*np.concatenate((np.arange(0., 1., 0.25), np.arange(1., 6., 1.), np.arange(6., 36., 3.), np.arange(36., 97., 6.)))),
+  ift = dict(
+    inject_mode = 'DF_INJECT_MODE_EXP',
+    capillary_permeability_normal=1.7e-6 * irinotecan_factor,
+    capillary_permeability_tumor=1.7e-4 * irinotecan_factor,
+    comprates_k12 = 0.01 * irinotecan_factor,
+    comprates_k21 = 0.001 * irinotecan_factor,
+    inject_t = 3240, #about 0.9 hrs
+    kdiff = 0.16 * irinotecan_factor,
+    ),  
+  out_times = list(3600.*np.concatenate((np.arange(0.,2.0,0.1),np.arange(2., 24., 0.5)))),
+  message = "iff_irinotecan_1",
+  num_threads = 16,
+  )
+)
+iff_irinotecan_2 = deepcopy(iff_irinotecan_1)
+iff_irinotecan_2.update(
+  message = "iff_irinotecan_2",
+  out_times = list(3600.*np.concatenate((np.arange(0.,2.0,0.1),np.arange(2., 73., 0.5)))),
+)
 iff_small = deepcopy(iff_defaultconfig2)
 myutils.UpdateHierarchical(iff_small, dict(
   ift = dict(

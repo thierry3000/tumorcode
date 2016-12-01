@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
@@ -546,7 +544,7 @@ class DataRadialIff(object):
             vesselgroup[name][...] = data
           else:
             vesselgroup.create_dataset(name, data = data, compression = 9)
-        (pressure, flow, shearforce, hematocrit, flags) = krebsutils.calc_vessel_hydrodynamics(vesselgroup, return_flags=True)
+        (pressure, flow, hematocrit, flags) = krebsutils.calc_vessel_hydrodynamics(vesselgroup, return_flags=True)
         vesselgroup.create_dataset('edges/flow', data = flow, compression = 9)
         replace_ds('nodes/pressure', pressure)
         replace_ds('edges/flags', flags)

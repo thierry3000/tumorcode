@@ -41,6 +41,8 @@ import krebs.analyzeBloodFlow
 import h5py
 import numpy as np
 
+import krebsjobs.parameters.vesselGenParams
+
 
 def ObtainDataOfVesselFile(f):
   dataman = myutils.DataManager(20, [krebs.analyzeGeneral.DataTumorTissueSingle(), 
@@ -53,6 +55,7 @@ def ObtainDataOfVesselFile(f):
   vesselgroup = f['vessels'] 
   ld = krebsutils.read_lattice_data_from_hdf(f['field_ld'])
   #print 'field_box = ', ld.worldBox
+  #bins_spec   = krebs.analyzeGeneral.BinsSpecRange(100., 1000., 100.)
   bins_spec   = krebs.analyzeGeneral.BinsSpecRange(100., 1000., 100.)
   mvd, mvd_bins = dataman.obtain_data('sphere_vessel_density',  vesselgroup, None, bins_spec, 'radial', ld, (f, 'data'))
   rbf, rbf_bins = dataman.obtain_data('cum_rbf_radial', vesselgroup, None, bins_spec, 'radial', ld, (f, 'data'))
@@ -195,6 +198,23 @@ if not qsub.is_client:
       hiters      = [ 1,    1,   1,    1,]
       scales      = [60., 80., 100., 120.]
       cube_width  = 1100.
+    '''try to match luedemann et al'''
+    if 0:
+      params = getattr(krebsjobs.parameters.vesselGenParams, 'paramset24')
+      params['calcflow'].update(
+        rheology = 'RheologySecomb2005' #irrelevant since includePhaseSeparationEffect = False
+      )
+      hiters      = [ 2,    2,   2,    2,   2,]
+      scales      = [50., 75., 100., 125.,150,]
+      cube_width  = 1100.
+    if 1:
+      params = getattr(krebsjobs.parameters.vesselGenParams, 'paramset24')
+      params['calcflow'].update(
+        rheology = 'RheologySecomb2005' #irrelevant since includePhaseSeparationEffect = False
+      )
+      hiters      = [ 2,    2,   2,    2,   2,]
+      scales      = [40., 45., 50.,  55.,  60,]
+      cube_width  = 2000.
     # estimated size:
     # 2^hiter * scale * (num_points - 1)  =  S
     # num_points = S / 2^hiter / scale + 1
@@ -205,8 +225,9 @@ if not qsub.is_client:
     supplementary Fig. S2
     6mm^2 tumor, try 1cm^2 tissue
     MVD \aprox 70
+    Result: seems like scale 110 is doing a decent job!
     '''
-    if 1:
+    if 0:
 #      hiters      = [   2,  2,   2,    2,]
 #      scales      = [140.,80.,100., 120.]
       hiters      = [   2,  2,   2,    2,]
@@ -309,8 +330,8 @@ if not qsub.is_client:
         # plot things
         ax = axes[0]
         ya = data['mvd']
-        scale = scales['mvd']
-        ax.errorbar(x, scale*np.average(ya, axis=0), yerr = scale*np.std(ya, axis=0), label = ('h = %0.f' % scale))
+        ax.errorbar(x, scales['mvd']*np.average(ya, axis=0), yerr = scales['mvd']*np.std(ya, axis=0), label = ('h = %0.f' % scale))
+        legend = ax.legend(loc=4, fontsize='xx-small')        
         ax = axes[1]
         scale = scales['rbv']
         ya = data['rbv']
@@ -377,12 +398,12 @@ if not qsub.is_client:
 
 
 if (not qsub.is_client) and __name__ == '__main__':
-  argv = qsub.parse_args(sys.argv)
   import argparse   # for example see sync.py
   parser = argparse.ArgumentParser(description = 'Run a number of vessel tree generation jobs and analyze the resulting MVD, rBV and rBF')
   parser.add_argument('-a', '--analyze', help = 'analyze data, supply filenames', action='store_true')
   parser.add_argument('FILES',  nargs='*')
-  parseResult = parser.parse_args(argv[1:])
+  goodArguments, otherArguments = parser.parse_known_args()
+  qsub.parse_args(otherArguments)
   
   #mode = 'scaleVariation_nein'
   mode = 'scaleVariation'
@@ -393,8 +414,8 @@ if (not qsub.is_client) and __name__ == '__main__':
     submitFunction = SubmitOtherVariationJobs
     analyzeFunction = AnalyzeOtherVariations
 
-  if parseResult.analyze:
-    filenames = parseResult.FILES
+  if goodArguments.analyze:
+    filenames = goodArguments.FILES
     analyzeFunction(filenames)
   else:
     submitFunction()

@@ -135,17 +135,17 @@ VessGenApp::VessGenApp()
 void VessGenApp::RecordData(const Grower& grower)
 {
   int sites;
-  float mvd, frac_sites;
+  float bloodVolume, frac_sites;
 
   const VesselList3d &vl = grower.get_vl();
   const VesselList3d::LatticeData &ld = vl.Ld();
   int dummy1;
-  mvd = MeasureMVD(vl, 10.0f, dummy1, sites);
+  bloodVolume = MeasureBloodVolume(vl, 10.0f, dummy1, sites);
   frac_sites = (float(sites)/Volume(ld.Box()));
   iter_data.put("num_iter", grower.iteration_number);
   boost::property_tree::atree p, &iter_array = boost::property_tree::require_child(iter_data, "iters");
   p.put("iter", grower.iteration_number);
-  p.put("mvd", mvd);
+  p.put("rBV", bloodVolume);
   p.put("sites", sites);
   p.put("frac_sites", frac_sites);
   last_iter_data = p;
@@ -161,8 +161,9 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
   
   RecordData(grower);
         
-  cout << format("hit: %i/%i, it: %i, mvd: %f, sites: %f ") % grower.iteration_number_on_level % grower.hierarchy_level % grower.iteration_number % last_iter_data.get<float>("mvd") % last_iter_data.get<float>("frac_sites");
-  qa.print(cout); cout << endl;
+  cout << format("hit: %i/%i, it: %i, rBV: %f, sites: %f ") % grower.iteration_number_on_level % grower.hierarchy_level % grower.iteration_number % last_iter_data.get<float>("rBV") % last_iter_data.get<float>("frac_sites");
+  qa.print(cout); 
+  cout << endl;
 
   if (qa.testStop() || (grower.iteration_number_on_level >= grower.max_num_iter - (quality_buff_size)))
     ++finished_countdown;
@@ -171,7 +172,7 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
   
   //if (grower.hierarchy_level < grower.max_hierarchy_level) return true;
 
-  if (finished_countdown > 0 && last_iter_data.get<float>("mvd")>last_saved_quality && grower.hierarchy_level>=grower.max_hierarchy_level)
+  if (finished_countdown > 0 && last_iter_data.get<float>("rBV")>last_saved_quality && grower.hierarchy_level>=grower.max_hierarchy_level)
   {
     iter_data.put<my::Time>("real_start_time", real_start_time);
     h5cpp::File file(outfilename+".h5", "w");

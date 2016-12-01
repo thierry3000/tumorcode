@@ -39,35 +39,27 @@ def printClientInfo():
 
 __all__ = [ 'parse_args', 'submit', 'exe', 'func', 'is_client']
 
-opts_ = dict(
-  installed_queue_system = None,
-  run_locally = False,
-  run_dry = False,
-  run_verbose = False,
-)
-
-
-
+''' globals '''
+defaultMemory = '1MB'
+global goodArgumentsQueue
+goodArgumentsQueue = {} #empty namespace
+installed_queue_system = 'foo'
 is_client = False
-
-def set(run_locally = None):
-  if run_locally is not None:
-    opts_['run_locally'] = run_locally
 
 
 def parse_args(argv):
-  global opts_
-  ret = [] # args with known options removed
-  for a in argv:
-    if a == '--q-local':
-      opts_['run_locally'] = True
-    elif a == '--q-dry':
-      opts_['run_dry'] = True
-    elif a == '--q-verbose':
-      opts_['run_verbose'] = True
-    else:
-      ret.append(a)
-  return ret
+  import argparse
+  parserQueue = argparse.ArgumentParser(prog='qsub',description='Queing system parser.')
+  memory_option = parserQueue.add_argument('-m', '--memory', help= 'Memory assigned by the queing system', type=str, default = '2GB')
+  global defaultMemory
+  defaultMemory = memory_option.default
+  parserQueue.add_argument('--q-local', help= ' Do not submit to queue, even if queuing system is pressent', default=False, action='store_true')
+  parserQueue.add_argument('--q-dry', help= 'Do not run but print configuration to be submitted', default=False, action='store_true')
+  parserQueue.add_argument('--q-verbose', help= 'more output', default=False, action='store_true')
+  localgoodArgumentsQueue, otherArgumentsQueue = parserQueue.parse_known_args()  
+  global goodArgumentsQueue
+  goodArgumentsQueue = localgoodArgumentsQueue
+
 
 
 def identify_installed_submission_program_():
@@ -81,7 +73,7 @@ def identify_installed_submission_program_():
   try:
     subprocess.Popen(['qsub', '--version'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()
   except OSError, e:
-    if opts_['run_verbose']:
+    if goodArgumentsQueue.q_verbose:
       print ('qsub.py: we are not using qsub.')
   else:
     return 'qsub'
@@ -89,29 +81,26 @@ def identify_installed_submission_program_():
   try:
     subprocess.Popen(['srun','--version'],stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()
   except OSError, e:
-    if opts_['run_verbose']:
+    if goodArgumentsQueue.q_verbose:
       print('qsub.py: we are not using slurm')
   else:
     return 'sbatch'
-  if opts_['run_verbose']:
+  if goodArgumentsQueue.q_verbose: #opts_['run_verbose']:
     print('qsub.py: no supported queue system found.')
   return None
 
   
 def determine_submission_program_():
-  global opts_
-  if opts_['run_locally']:
-    return 'run_locally'
+  returnstring = 'return'
+  if goodArgumentsQueue.q_local:
+    returnstring = 'run_locally'
   else:
-    already_identified = opts_['installed_queue_system']
-    if already_identified:
-      return already_identified
-    else:
-      identified = identify_installed_submission_program_()
-      if not identified:  # might just throw an exception and require the user to explicitly run locally
-        identified = 'run_locally'
-      opts_['installed_queue_system'] = identified
-      return identified
+    returnstring = identify_installed_submission_program_()
+    if returnstring is None:
+      print('Warning: no supported queueing system found -> run locally')
+      returnstring = 'run_locally'
+  return returnstring
+
 
 
 def fmtDate_(days, hours):
@@ -131,7 +120,8 @@ def fmtDate_(days, hours):
     return days, hours
     
 
-def write_directives_qsub_(f, name=None, days=None, hours=None, num_cpus=1, mem=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False, dependsOnJob = None):
+def write_directives_qsub_(f,name=None, days=None, hours=None, num_cpus=1, outdir=None, export_env=False, jobfiledir=None, change_cwd=False, dependsOnJob = None):
+  mem =goodArgumentsQueue.memory  
   print >>f, '#PBS -j oe'
   if jobfiledir and not outdir: #DEPRECATED
     outdir = jobfiledir
@@ -144,6 +134,7 @@ def write_directives_qsub_(f, name=None, days=None, hours=None, num_cpus=1, mem=
   if days or hours:
     days, hours = fmtDate_(days, hours)
     print >>f, '#PBS -l walltime=%i:00:00' % max(1, hours + days*24)
+  mem =goodArgumentsQueue.memory
   if mem:
     if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
       raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
@@ -154,13 +145,15 @@ def write_directives_qsub_(f, name=None, days=None, hours=None, num_cpus=1, mem=
     print >>f, '#PBS -W depend=afterok:%s' % dependsOnJob
     
     
-def write_directives_slurm_(f, name=None, days=None, hours=None, num_cpus=1, mem=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False):
+def write_directives_slurm_(f, name=None, days=None, hours=None, num_cpus=1, outdir=None, export_env=False, jobfiledir=None, change_cwd=False):
   #print >>f, '#PBS -j oe'
   #if jobfiledir and not outdir: #DEPRECATED
   #  outdir = jobfiledir
   #if outdir is not None:
   #  print >>f, '#PBS -o %s' % (outdir)
   #print >>f, 'cd $SLURM_SUBMIT_DIR'
+  
+  mem =goodArgumentsQueue.memory  
   if name:
     print >>f, '#SBATCH --job-name=%s' % name
   if num_cpus == 1:
@@ -192,12 +185,12 @@ def submit_(interpreter, submission_program, script):
   if submission_program == 'run_locally':
     submission_program = interpreter
   # verbose output
-  if opts_['run_verbose'] or opts_['run_dry']:
+  if goodArgumentsQueue.q_verbose or goodArgumentsQueue.q_dry:
     print (' submission to %s ' % submission_program).center(30,'-')
     print script
     print ''.center(30,'-')
   # run stuff
-  if not opts_['run_dry']:
+  if not goodArgumentsQueue.q_dry:
     time.sleep(1.1)
     if submission_program == 'python': # running python script with python locally?!! We can do it like so
       exec script in dict(), dict()
@@ -405,6 +398,17 @@ def submit_slurm(obj, submission_program, **slurmopts):
 
 
 def submit(obj, **qsubopts):
+    if 'mem' in qsubopts and goodArgumentsQueue.memory == defaultMemory:
+      print('Memory setting provided by program')
+      global goodArgumentsQueue
+      goodArgumentsQueue.memory = qsubopts.pop('mem')
+    if not goodArgumentsQueue.memory == defaultMemory:
+      if 'mem' in qsubopts:
+        print('OVERRIDE Memory setting provided by program')
+        qsubopts.pop('mem') #pop and not storing!!!
+    print(goodArgumentsQueue.memory)
+    print(defaultMemory)
+    
     prog = determine_submission_program_()
     if prog == 'sbatch':
       submit_slurm(obj, prog, **qsubopts)

@@ -90,7 +90,7 @@ h5cpp::Group DebugOutVessels(const Grower &grower, const string &name)
     {
       tmp2[i] = vl.GetNode(i)->flags;
     }
-    h5::create_dataset(vesselgrp.open_group("nodes"), "nodeflags", tmp2);
+    //h5::create_dataset(vesselgrp.open_group("nodes"), "nodeflags", tmp2);
 #ifdef WRITE_REMODELING_ACTIONS    
     for (int i=0; i<vl.GetNCount(); ++i)
     {
@@ -111,7 +111,7 @@ void DoOutput(h5::Group root,
   const VesselList3d::LatticeData &ld = vl.Ld();
 
   int num_sites,num_occ_sites;
-  float mvd = MeasureMVD(vl, 10.0f, num_sites, num_occ_sites );
+  float bloodVolume = MeasureBloodVolume(vl, 10.0f, num_sites, num_occ_sites );
   BasicHistogram1D<float> plen,hrad,hbranch,hlenbyrad;
   my::Averaged<float> mlen = MeasureBranchLengths(vl, plen, hlenbyrad );
   my::Averaged<float> mrad = MeasureRadiDistribution(vl, hrad );
@@ -155,7 +155,7 @@ void DoOutput(h5::Group root,
     WriteHdfHistogram(g,"radii_prob",hrad);
     WriteHdfHistogram(g,"num_branches_by_rad",hbranch);
     a = g.attrs();
-    a.set("MVD",mvd);
+    a.set("rBV",bloodVolume);
     a.set("SITES_OCCUPIED",num_occ_sites);
     a.set("SITES_TOTAL",num_sites);
     a.set("MEAN_BRANCH_LENGTH",mlen.Avg());
@@ -226,14 +226,14 @@ void DoOutput(h5::File &file,
           BOOST_FOREACH(const boost::property_tree::atree::value_type &vv, additional_data.get_child("iters"))
           {
             t(0,i,0) = vv.second.get<int>("iter");
-            t(1,i,0) = vv.second.get<float>("mvd");
+            t(1,i,0) = vv.second.get<float>("rBV");
             t(2,i,0) = vv.second.get<int>("sites");
             ++i;
           }
-          h5::Dataset ds = WriteArray3D(g,"mvd_by_iter",t);
+          h5::Dataset ds = WriteArray3D(g,"rBV_by_iter",t);
           a = ds.attrs();
           a.set<string>("FIELD_0_NAME","iter");
-          a.set<string>("FIELD_1_NAME","mvd");
+          a.set<string>("FIELD_1_NAME","rBV");
         }
 
         // parameters
@@ -268,7 +268,7 @@ void DoOutput(h5::File &file,
 
 /* Apparently this measures BLOOD VOLUME NOT MVD??!!!
  */
-double MeasureMVD( const VesselList3d& vl, float dest_lattice_scale, int &n_sites, int &n_sites_occupied )
+double MeasureBloodVolume( const VesselList3d& vl, float dest_lattice_scale, int &n_sites, int &n_sites_occupied )
 {
   n_sites = Volume(vl.Ld().Box());
   n_sites_occupied = 0;
@@ -308,9 +308,9 @@ double MeasureMVD( const VesselList3d& vl, float dest_lattice_scale, int &n_site
     double l = v->WorldLength(vl.Ld());
     vol += l * v->r*v->r * my::mconst::pi();
   }
-  double mvd = vol / dom_vol;
-  myAssert(mvd>0.);
-  return mvd;
+  double bloodVolume = vol / dom_vol;
+  myAssert(bloodVolume>0.);
+  return bloodVolume;
 }
 
 

@@ -107,7 +107,8 @@ void WriteHdfGraph( h5::Group g, const VesselList3d &vl )
   DynArray<int> roots(16,ConsTags::RESERVE);
   for(int i=0; i<ncnt; ++i) 
   {
-    if(vl.GetNode(i)->IsBoundary()) roots.push_back(i);
+    if(vl.GetNode(i)->IsBoundary())
+      roots.push_back(i);
   }
   if(!gg.exists("roots"))
   {

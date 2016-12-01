@@ -29,10 +29,12 @@ import identifycluster
 if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
   matplotlib.use('agg')
 
-#from mpl_toolkits.axes_grid.inset_locator import inset_axes
+''' pay attention: most likely this functions are imported somewhere else'''
+from mpl_toolkits.axes_grid.inset_locator import inset_axes
 from mpl_toolkits.axes_grid.anchored_artists import AnchoredSizeBar
-#from mpl_toolkits.axes_grid1 import make_axes_locatable
-#import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid.anchored_artists import AnchoredText
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib.gridspec as gridspec
 from matplotlib.offsetbox import AnchoredOffsetbox, AuxTransformBox, VPacker,\
      TextArea, DrawingArea
 
@@ -381,9 +383,10 @@ def SetSensibleAxLimits(ax, xbounds, ybounds):
     ax.set(**arg)
 
 
-def add_sizebar(ax, size = 200, text = ur"200 \u03BCm", color = 'white', loc = 4, myfontsize='normal', size_vertical=1.0):
+def add_sizebar(ax, size = 200, text = ur"200 \u03BCm", color = 'white', loc = 4, myfontsize='smaller', size_vertical=1.0):
   '''adds a size bar into an image plot'''
   a = matplotlib.font_manager.FontProperties(size=myfontsize)
+  #a = matplotlib.font_manager.FontProperties()
   asb = AnchoredSizeBar(ax.transData, size, text, loc=4, pad=0.1, borderpad = 0.5, sep=5, frameon=False,fontproperties=a,size_vertical=size_vertical)
   asb.get_child().get_children()[1].get_children()[0].set(color = color)
   asb.get_child().get_children()[0].get_children()[0].set(color = color)

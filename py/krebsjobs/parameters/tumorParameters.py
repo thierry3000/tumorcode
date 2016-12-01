@@ -406,6 +406,20 @@ bulktissue_tutorial.update(
   tend = 101.,
   out_intervall = 50,
 )
+colorectal=deepcopy(defaultconfig_bulktissue)
+colorectal.update(
+  lattice_scale  = 50,
+)
+colorectal['tumor'].update(
+  tumor_diameter = 500,
+)
+colorectal2 = deepcopy(colorectal)
+colorectal2.update(
+tend = 4000.,
+)
+colorectal2['calcflow'].update(
+  rheology = 'RheologyForRats',
+)
 prez2 = dict(
   # this is the configuration which is used in submit-bulktissue-w-vessels
   lattice_size  = "set me to match the vessel domain",
