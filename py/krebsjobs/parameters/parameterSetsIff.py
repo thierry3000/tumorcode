@@ -308,6 +308,10 @@ iff_irinotecan_2.update(
   message = "iff_irinotecan_2",
   out_times = list(3600.*np.concatenate((np.arange(0.,2.0,0.1),np.arange(2., 73., 0.5)))),
 )
+iff_irinotecan_3 = deepcopy(iff_irinotecan_2)
+iff_irinotecan_3.update(
+  num_threads = 8,
+)
 iff_small = deepcopy(iff_defaultconfig2)
 myutils.UpdateHierarchical(iff_small, dict(
   ift = dict(

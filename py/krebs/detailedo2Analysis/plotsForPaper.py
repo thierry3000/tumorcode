@@ -1044,6 +1044,62 @@ def PlotConvergenceData(pdfwriter, dataman, (items, path, time)):
   ax.set(xlabel = 'Iteration $n$', ylabel = r'$|P^{(n+1)} - P^{(n)}|_\infty + |P_t^{(n+1)} - P_t^{(n)}|_\infty$', title = title, yscale = 'log')
   pdfwriter.savefig(fig, postfix='_convergence_'+path)
 
+## restored from earlier work ;-)
+# need to be worked through
+def CalcOxygenVsVessels(dataman, po2grouplist, binspec_tumor, binspec_vessels):
+  bins_tumor          = binspec_tumor.arange()
+  bins_vessels        = binspec_vessels.arange()
+  results             = collections.defaultdict(list)
+  results_phi_vessels = collections.defaultdict(list)
+  for po2group in po2grouplist:
+    gvessels, gtumor = detailedo2.OpenVesselAndTumorGroups(h5files, po2group)
+    tumor_ld = dataman.obtain_data('ld', gtumor.file)
+    _, po2ld, po2field, parameters = dataman.obtain_data('detailedPO2', po2group)
+    if 0:
+      phi_vessels   = CalcPhiVesselsCached(dataman, gvessels, po2ld)
+      dist_vessels  = CalcDistVesselsCached(dataman, gvessels, phi_vessels, po2ld)
+      theta_tumor   = dataman.obtain_data('fieldvariable', gtumor.file, 'theta_tumor', gtumor.name)
+      theta_tumor   = krebsutils.resample_field(theta_tumor, tumor_ld.GetWorldBounds(), po2ld.Shape(), po2ld.GetWorldBounds(), order=1, mode = 'constant', cval=0.)
+      dist_tumor    = CalcDistTumorCached(dataman, theta_tumor, po2ld, (po2group.file, gtumor.name))
+    elif 0:
+      po2field      = krebsutils.resample_field(po2field, po2ld.GetWorldBounds(), tumor_ld.Shape(), tumor_ld.GetWorldBounds(), order=1, mode = 'nearest')
+      phi_vessels   = CalcPhiVesselsCached(dataman, gvessels, tumor_ld)
+      dist_vessels  = CalcDistVesselsCached(dataman, gvessels, phi_vessels, tumor_ld)
+      theta_tumor   = dataman.obtain_data('fieldvariable', gtumor.file, 'theta_tumor', gtumor.name)
+      dist_tumor    = CalcDistTumorCached(dataman, theta_tumor, tumor_ld, (po2group.file, gtumor.name))
+    else:
+      ld            = krebsutils.LatticeData('quad', tuple(2*np.asarray(tumor_ld.Box())), 0.5*tumor_ld.Scale())
+      ld.SetWorldPosition(tumor_ld.GetWorldBounds()[0])
+      ld.SetCellCentering((True,True,True))
+      po2field      = krebsutils.resample_field(po2field, po2ld.GetWorldBounds(), ld.Shape(), ld.GetWorldBounds(), order=1, mode = 'nearest')
+      phi_vessels   = CalcPhiVesselsCached(dataman, gvessels, ld)
+      dist_vessels  = CalcDistVesselsCached(dataman, gvessels, phi_vessels, ld)
+      theta_tumor   = dataman.obtain_data('fieldvariable', gtumor.file, 'theta_tumor', gtumor.name)
+      theta_tumor   = krebsutils.resample_field(theta_tumor, tumor_ld.GetWorldBounds(), ld.Shape(), ld.GetWorldBounds(), order=1, mode = 'constant', cval=0.)
+      dist_tumor    = CalcDistTumorCached(dataman, theta_tumor, tumor_ld, (po2group.file, gtumor.name))
+    del theta_tumor
+    for i, (x1,x2) in enumerate(zip(bins_tumor[:-1], bins_tumor[1:])):
+      mask = np.ravel((dist_tumor>x1) & (dist_tumor<x2))
+      data = myutils.MeanValueArray.fromHistogram1d(bins_vessels, np.ravel(dist_vessels)[mask], np.ravel(po2field)[mask])
+      results[i].append(data)
+      data = myutils.MeanValueArray.fromHistogram1d(bins_vessels, np.ravel(dist_vessels)[mask], np.ravel(phi_vessels)[mask])
+      results_phi_vessels[i].append(data)
+  for i in results.keys():
+    results[i] = myutils.MeanValueArray.fromSummation(c.avg for c in results[i])
+    results_phi_vessels[i] = myutils.MeanValueArray.fromSummation(c.avg for c in results_phi_vessels[i])
+  return results, results_phi_vessels
+
+def CalcOxygenVsVesselsCached(dataman, po2grouplist, binspec_tumor, binspec_vessels, cachelocation):
+  def read(gmeasure, name):
+    a = dict((int(k),myutils.MeanValueArray.read(v)) for k,v in gmeasure[name]['oxy'].iteritems())
+    b = dict((int(k),myutils.MeanValueArray.read(v)) for k,v in gmeasure[name]['phi_vessels'].iteritems())
+    return a,b
+  def write(gmeasure, name):
+    a, b = CalcOxygenVsVessels(dataman, po2grouplist, binspec_tumor, binspec_vessels)
+    for k,v in a.iteritems(): v.write(gmeasure, posixpath.join(name,'oxy',str(k)))
+    for k,v in b.iteritems(): v.write(gmeasure, posixpath.join(name,'phi_vessels',str(k)))
+  return myutils.hdf_data_caching(read, write, cachelocation[0], ('oxy_vs_vessels','hrld',cachelocation[1]), (2,1,1))
+
 
 def doit(filenames, pattern, normalTissueEnsembleInput = None):
   dataman = myutils.DataManager(50, map(lambda x: x(), detailedo2Analysis.O2DataHandlers) + [ analyzeGeneral.DataTumorTissueSingle(), analyzeGeneral.DataDistanceFromCenter(), analyzeGeneral.DataBasicVessel(), analyzeGeneral.DataVesselSamples(), analyzeGeneral.DataVesselRadial(), analyzeGeneral.DataVesselGlobal(), analyzeBloodFlow.DataTumorBloodFlow()])

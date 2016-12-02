@@ -409,6 +409,7 @@ bulktissue_tutorial.update(
 colorectal=deepcopy(defaultconfig_bulktissue)
 colorectal.update(
   lattice_scale  = 50,
+  num_threads = 8,
 )
 colorectal['tumor'].update(
   tumor_diameter = 500,

@@ -206,4 +206,4 @@ if __name__ == '__main__':
     run_no_vessels(goodArguments.tumParamSet, factory, '1GB', 2.)
   else:
     for fn in filenames:
-      run_with_vessels(fn, goodArguments.tumParamSet, factory, '64GB', 2.)
+      run_with_vessels(fn, goodArguments.tumParamSet, factory, '5GB', 2.)

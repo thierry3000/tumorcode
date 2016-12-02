@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
@@ -83,6 +81,7 @@ def text2(ax, txt):
 class DataDrugAverages(object):
   keywords = [
     'drug_radial_average', 'drug_vs_vessel_distance_average',
+    'drug_vs_vessel_distance_no_tumor_sep_average',
     'drug_global_series_average',
     'radial_average',
     'exposure_histograms_average',
@@ -94,7 +93,7 @@ class DataDrugAverages(object):
     args = args[1:]
     assert isinstance(files, list)
     #####
-    if dataname in ('drug_radial_average', 'drug_vs_vessel_distance_average'):
+    if dataname in ('drug_radial_average', 'drug_vs_vessel_distance_average', 'drug_vs_vessel_distance_no_tumor_sep_average'):
       group, name = args # time group
       avg_conc = myutils.MeanValueArray.empty()
       for f in files:
@@ -177,7 +176,7 @@ class DataDrugSingle(object):
   'peclet_number',
   'conc', 'conc_ex', 'conc_cell', 'src_flow_vess', 'src_diff_vess', 'src_lymph', 'conc_ratio',
   'drug_vessel_correlation', 'drug_vessel_correlation_minus_avg',
-  'drug_vs_vessel_distance', 'drug_global', 'drug_global_series', 'time', 'local_integral', 'exposure_histograms', 'drug_radial',
+  'drug_vs_vessel_distance', 'drug_vs_vessel_distance_no_tumor_sep', 'drug_global', 'drug_global_series', 'time', 'local_integral', 'exposure_histograms', 'drug_radial',
   ]
   for w in ['tumor_distance', 'vessel_distance']:
     for v in ['vessels', 'tissue', 'auc_in', 'c_max_in']:
@@ -238,6 +237,31 @@ class DataDrugSingle(object):
       return myutils.hdf_data_caching(read, write, fm, ('measurements', dataname, group), (0,4,0))
 
     ######
+    if dataname == 'drug_vs_vessel_distance_no_tumor_sep':
+      def read(gmeasure, dsname):
+        corr = myutils.MeanValueArray.read(gmeasure, dsname)
+        r = np.asarray(gmeasure['r'])
+        return r, corr
+
+      def write(gmeasure, dsname):
+        tc     = obtain_data('tissue_composition')
+        conc   = obtain_data(name, group)
+        #do not sort inside an outsite tumor kyle 2014
+        #mask   = (tc['dist_tumor'] < 0.).ravel()
+        dist   = tc['dist_vessels'].ravel()
+        conc   = conc.ravel()
+        bins = np.arange(0., 200., 10.)
+        
+        corr = myutils.MeanValueArray.fromHistogram1d(bins, dist, conc)
+        corr.write(gmeasure, dsname)
+        r = np.average((bins[1:], bins[:-1]), axis=0)
+        if not 'r' in gmeasure:
+          gmeasure.create_dataset('r', data = r)
+
+      group, name, = args # time group
+
+      fm = myutils.MeasurementFile(f, h5files)
+      return myutils.hdf_data_caching(read, write, fm, ('measurements', dataname, group, name), (0,9,0,0))
     if dataname == 'drug_vs_vessel_distance':
       def read(gmeasure, dsname):
         corr = myutils.MeanValueArray.read(gmeasure, dsname)
@@ -252,6 +276,7 @@ class DataDrugSingle(object):
         conc   = conc.ravel()[mask]
 
         bins = np.arange(-1000., 1000., 20.)
+
         corr = myutils.MeanValueArray.fromHistogram1d(bins, dist, conc)
         corr.write(gmeasure, dsname)
         r = np.average((bins[1:], bins[:-1]), axis=0)
@@ -601,7 +626,7 @@ def plot_averaged_data(files, dataman, pdfpages):
   groups = [ files[0][g] for g in groupbasenames ]
   time = lambda q: dataman.obtain_data('time',files[0], q)
 
-  timepoints = [ 0.5, 3., 24., 96. ]
+  timepoints = [ 0.1, 1., 2., 4., 8.,24., 72.]
   mygroups = myutils.closest_items(groupbasenames, lambda q: time(q), timepoints)
 
   if 1 and 'measurements/drug_local_integral' in f: # auc & max histogram
@@ -632,8 +657,10 @@ def plot_averaged_data(files, dataman, pdfpages):
     return fig, axes
 
   def plot(ax, style_num, x, y, **kwargs):
-    markers = 'sDo<>d'
-    colors  = 'krgbm'
+    markers = 'sDo<>d2h'
+    #markers=markers+r'$\bowtie$'+r'$\circlearrowleft$',
+    colors  = 'krgbmyck'
+    #colors = colors+'#eeefff'
     xscale = kwargs.pop('xscale', 1.e-3)
     pp = mpl_utils.errorbar(ax, xscale*x, y,
                 marker = markers[style_num], color  = colors[style_num],
@@ -711,6 +738,39 @@ def plot_averaged_data(files, dataman, pdfpages):
         ax.plot(xx, func(xx), color = p[0].get_color(), scalex = False, scaley = False, label = title)
     ax.set(xlim = (-100., 300.))
     ax.legend()
+    
+  def plt_drug_vs_vessels_timeline(axes): # drug vs distance from vessels
+    getdata = lambda g: dataman('drug_vs_vessel_distance_average', files, g, 'conc') if is_averaging else dataman('drug_vs_vessel_distance', files[0], g, 'conc')
+    for style_num, group in enumerate(mygroups):
+      ax = axes[style_num-1]
+      title = r't = %s' % f2s(time(group))
+      #tissue thing
+      label_radial_conc = LF.math(LF.avgOver('s', ur'\rho'))
+      ax.set(xlabel = ur'$\rho$ [\u03BCm]', ylabel = label_radial_conc)
+      x, data_from_manager = dataman('radial_average', files, 'vessel_distance', 'tissue') if is_averaging else dataman(('radial', 'vessel_distance', 'tissue'), files[0])
+      p = mpl_utils.errorbar(ax, x, data_from_manager.avg, linestyle = '-', label = '$\phi_T$', color = (0.5,0.5,0.5), marker = None)
+      #solutes       
+      x, data_from_manager = getdata(group)
+      title = r't = %s' % f2s(time(group))
+      p = plot(ax, style_num, x, data_from_manager.avg, yerr = data_from_manager.std, linestyle = 'none', label = title, xscale = 1.)
+      ax.legend()
+      ax.legend(fontsize='x-small')
+  def plt_drug_vs_vessels_timeline_no_tumor_sep(axes): # drug vs distance from vessels
+    getdata = lambda g: dataman('drug_vs_vessel_distance_no_tumor_sep_average', files, g, 'conc') if is_averaging else dataman('drug_vs_vessel_distance_no_tumor_sep', files[0], g, 'conc')
+    for style_num, group in enumerate(mygroups):
+      ax = axes[style_num-1]
+      title = r't = %s' % f2s(time(group))
+      #tissue thing
+#      label_radial_conc = LF.math(LF.avgOver('s', ur'\rho'))
+#      ax.set(xlabel = ur'$\rho$ [\u03BCm]', ylabel = label_radial_conc)
+#      x, data_from_manager = dataman('radial_average', files, 'vessel_distance', 'tissue') if is_averaging else dataman(('radial', 'vessel_distance', 'tissue'), files[0])
+#      p = mpl_utils.errorbar(ax, x, data_from_manager.avg, linestyle = '-', label = '$\phi_T$', color = (0.5,0.5,0.5), marker = None)
+      #solutes       
+      x, data_from_manager = getdata(group)
+      title = r't = %s' % f2s(time(group))
+      p = plot(ax, style_num, x, data_from_manager.avg, yerr = data_from_manager.std, linestyle = 'none', label = title, xscale = 1.)
+      ax.legend()
+      ax.legend(fontsize='x-small')
 
 
   def plt_quali(ax, quali): # auc, max_conc vs distance from vessels
@@ -762,7 +822,19 @@ def plot_averaged_data(files, dataman, pdfpages):
     ax.grid(linestyle=':', linewidth=0.5, color=gridcolor)
     mpl_utils.add_crosshair(ax, (0, 0), color = gridcolor)
     text2(ax, fig_numbering[i])
+    #ax.legend(loc=2)
+    ax.legend(fontsize='x-small')
   pdfpages.savefig(fig, 'drugradial')
+  
+  fig, axes = mkfig(6, 1, 0.22)
+  axes = axes.ravel()
+  plt_drug_vs_vessels_timeline(axes)
+  pdfpages.savefig(fig, 'drug_from_vessel_radial')
+  
+  fig, axes = mkfig(6, 1, 0.22)
+  axes = axes.ravel()
+  plt_drug_vs_vessels_timeline_no_tumor_sep(axes)
+  pdfpages.savefig(fig, 'drug_from_vessel_radial_no_tumor_sep')
 
   fig, axes = mkfig(2,1, 0.16)
   axes = axes.ravel()
@@ -1481,12 +1553,12 @@ def measure_and_plot(filenames):
                                          plotIff.DataTissue(), 
                                          plotIff.DataGlobalIff(), 
                                          DataDrugAverages2(path) ])
-    plot_single_values(files, dataman, pdfpages)
+    #plot_single_values(files, dataman, pdfpages)
     #plot_global_average_over_time(files, dataman, pdfpages)
     plot_averaged_data(files, dataman, pdfpages)
     #plot_snapshots(files[0], dataman, pdfpages)
-    plot_snapshots_linear(files[0], dataman, pdfpages)
-    plot_drug_with_vessels(files[0], dataman, pdfpages)
+    #plot_snapshots_linear(files[0], dataman, pdfpages)
+    #plot_drug_with_vessels(files[0], dataman, pdfpages)
 
 
 

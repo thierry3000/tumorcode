@@ -405,9 +405,11 @@ def submit(obj, **qsubopts):
     if not goodArgumentsQueue.memory == defaultMemory:
       if 'mem' in qsubopts:
         print('OVERRIDE Memory setting provided by program')
+        print('was: %s, will be: %s '%(qsubopts['mem'], goodArgumentsQueue.memory))
         qsubopts.pop('mem') #pop and not storing!!!
-    print(goodArgumentsQueue.memory)
-    print(defaultMemory)
+        
+    #print(goodArgumentsQueue.memory)
+    #print(defaultMemory)
     
     prog = determine_submission_program_()
     if prog == 'sbatch':
