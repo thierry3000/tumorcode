@@ -310,7 +310,7 @@ iff_irinotecan_2.update(
 )
 iff_irinotecan_3 = deepcopy(iff_irinotecan_2)
 iff_irinotecan_3.update(
-  num_threads = 8,
+  num_threads = cluster_threads,
 )
 iff_small = deepcopy(iff_defaultconfig2)
 myutils.UpdateHierarchical(iff_small, dict(

@@ -129,7 +129,7 @@ if (not qsub.is_client) and __name__=="__main__":
   import argparse
   parser = argparse.ArgumentParser(prog='submitVesselgeneration',description='Compute an artificial blood vessel network.')
   #default is False
-  parser.add_argument('-t','--type', nargs='+', help='Type of root node configurations, range from 0 to 8', default=[8], type=int)
+  parser.add_argument('-t','--type', nargs='+', help='Type of root node configurations, range from 0 to 8 \n negative value will create \'ensemble_size samples\' for each type', default=[8], type=int)
   parser.add_argument('-p','--VesselParamSet', help='specify Parameterset for creation, possible configs are found in /krebsjobs/parameters/vesselGenParams.py')
   parser.add_argument('-w','--width_cube', help='Size of vesselcube you want to create', default=1000, type=float)
   parser.add_argument('--twoD', help='Creates only 2D network, default is 3D', default=False, action='store_true')  
@@ -172,14 +172,30 @@ if (not qsub.is_client) and __name__=="__main__":
       print e.message
       sys.exit(-1)
     
-    #for t in 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split():
-    for type_index in goodArguments.type:
-      #default nums_points for 3D defined here
-      if goodArguments.twoD: # 2D flag enabled
-        print('2D forced!')
-        doit(goodArguments.VesselParamSet, typelist[type_index], (nums_points,nums_points,1), goodArguments.iter_h, factory)
-      else:
-        doit(goodArguments.VesselParamSet, typelist[type_index], (nums_points,nums_points,nums_points), goodArguments.iter_h, factory)
+    if len(goodArguments.type)==1 and goodArguments.type[0]<0:
+      '''we will do 'ensemble_size' number of of each type'''
+      for aType in typelist:
+        #default nums_points for 3D defined here
+        if goodArguments.twoD: # 2D flag enabled
+          print('2D forced!')
+          doit(goodArguments.VesselParamSet, aType, (nums_points,nums_points,1), goodArguments.iter_h, factory)
+        else:
+          doit(goodArguments.VesselParamSet, aType, (nums_points,nums_points,nums_points), goodArguments.iter_h, factory)
+  
+    else:
+      for type_index in goodArguments.type:
+        #default nums_points for 3D defined here
+        if goodArguments.twoD: # 2D flag enabled
+          print('2D forced!')
+          doit(goodArguments.VesselParamSet, typelist[type_index], (nums_points,nums_points,1), goodArguments.iter_h, factory)
+        else:
+          doit(goodArguments.VesselParamSet, typelist[type_index], (nums_points,nums_points,nums_points), goodArguments.iter_h, factory)
+  
+  
+  
+  
+  
+  
   else: #this was used befor the release and is here for compatibilty reasons
     print('Falling back to default configs from .py file!')
     print('No VesselParamSet provided')

@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
@@ -38,6 +36,7 @@ import posixpath
 import math
 import collections
 import itertools
+import qsub
 
 import matplotlib
 import matplotlib.cm
@@ -172,9 +171,9 @@ def PlotRadialCurves(pdfwriter, bins_spec, snapshotlist, measurementinfo, world_
 #    plot(axtwin, 'theta_tumor', colors = [(0.5,0.5,0.5)]*7, errorbars=False)
   plot(axes[0], 'mvd', label = True)
   fmt_axis_labels(axes[0], 'mvd')
-  theLegend = axes[0].legend()
-  theLegend.get_title().set_fontsize('2')
-  pyplot.setp(axes[0].get_legend().get_texts(),fontsize='2')
+  theLegend = axes[0].legend(loc='lower right',prop={'size':6})
+  #theLegend.get_title().set_fontsize('2')
+  #pyplot.setp(axes[0].get_legend().get_texts(),fontsize='2')
   theLegend.__sizes = [1]
 
   plot(axes[1], 'phi_vessels')
@@ -244,5 +243,12 @@ def doit(filenames, pattern):
 
 if __name__ == '__main__':
   krebsutils.set_num_threads(2)
-  filenames, pattern = sys.argv[1:-1], sys.argv[-1]
-  doit(filenames, pattern)
+  
+  import argparse
+  parser = argparse.ArgumentParser(description='Sample morpholical data.') 
+  parser.add_argument('files', nargs='+', type=str, help='files to calculate')
+  parser.add_argument('grp_pattern',help='Where to find the data in the file\n several out groups are allowed \n e.g out000* each group will give a singel timepoint line')  
+  goodArguments, otherArguments = parser.parse_known_args()
+  qsub.parse_args(otherArguments)
+  
+  doit(goodArguments.files, goodArguments.grp_pattern)

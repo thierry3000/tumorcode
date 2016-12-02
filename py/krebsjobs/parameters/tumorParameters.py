@@ -322,8 +322,8 @@ defaultconfig_bulktissue = dict(
   # this is the configuration which is used in submit-bulktissue-w-vessels
   lattice_size  = "set me to match the vessel domain",
   fn_out = "set_me",
-  tend = 1200.,
-  out_intervall = 100,
+  tend = 300.,
+  out_intervall = 60,
   num_threads = cluster_threads,
   lattice_scale  = 30,
 

@@ -129,7 +129,7 @@ def runs_on_client(name,config):
 
 def run_simple(name, config):
   if 1:
-    days = 5. if config['ift'] else 0.5
+    days = 10. if config['ift'] else 0.5
     qsub.submit(qsub.func(runs_on_client, name, config),
                 name = 'job_iff'+name,
                 num_cpus = config['num_threads'],
@@ -336,19 +336,19 @@ if 0: # drug stuff
         
 if not qsub.is_client and __name__=='__main__':
   import argparse
-  parser = argparse.ArgumentParser(description='Compute IFF distributions and drugs analyze them. In normal mode it takes arguments: parameter_set_name, filenames, h5_group_pattern. In analysis mode -a, it takes arguments: filenames, h5 group pattern.')  
-  parser.add_argument('Iffparams', help = 'choose the parameter for the simulation')  
-  parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')   
+  parser = argparse.ArgumentParser(description='Compute IFF distributions and drugs analyze them.')  
+  parser.add_argument('Iffparams', help = 'choose the parameter for the simulation,\n possible configs are found in /krebsjobs/parameters/parameterSetsIff.py')  
+  parser.add_argument('tumorFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='tumor files to calculate')   
   parser.add_argument('grp_pattern',help='Where to find the tumor. Usually this is somthing with out*')      
   #this enables access to the default values  
-  atest = parser.add_argument('-a', '--analyze', help = 'loop through all files analyze data and make plot', default=False, action='store_true')  
+  #atest = parser.add_argument('-a', '--analyze', help = 'loop through all files analyze data and make plot', default=False, action='store_true')  
   #parser.add_argument('-m', '--memory', help= 'Memory assigned by the queing system', type=str, default = '2GB')
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
   
   #create filename due to former standards
   filenames=[]
-  for fn in goodArguments.vesselFileNames:
+  for fn in goodArguments.tumorFileNames:
     filenames.append(fn.name)
   
   def find_tum(name, obj):

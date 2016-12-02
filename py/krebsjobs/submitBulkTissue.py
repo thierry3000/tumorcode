@@ -181,7 +181,7 @@ if __name__ == '__main__':
 
   import argparse
   parser = argparse.ArgumentParser(description='Compute BulkTissue tumor. Either with or without vessels')  
-  parser.add_argument('tumParamSet')
+  parser.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/fakeTumorParams.py')
   #this is not needed in the case without vessels
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
   parser.add_argument('-n', '--no_vessel', help = 'compute the continuum model of tumor cells, no vessels needed for that', default=False, action='store_true')

@@ -19,8 +19,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+
 import os,sys
 from os.path import join, basename, dirname, splitext
 #import time
@@ -97,7 +96,8 @@ def integrate_surface(vtkds):
 
 def generate_data(statedata, dstgroup):
   """
-    main routine that does all the measurement. Enable Individual parts. Computed date overwrites old data.
+    main routine that does all the measurement. 
+    Enable Individual parts. Computed date overwrites old data.
   """
   print statedata.file.filename, statedata.name
 
@@ -116,7 +116,7 @@ def generate_data(statedata, dstgroup):
     area = integrate_surface(vtkds)
     del vtkds
     vol = np.sum(ptc)*cellvol
-    radius = np.average(radialmap[np.nonzero(np.logical_and(distmap>-2*tum_ld.scale, distmap<2*tum_ld.Scale()))])
+    radius = np.average(radialmap[np.nonzero(np.logical_and(distmap>-2*tum_ld.scale, distmap<2*tum_ld.scale))])
     sphere_equiv_radius = math.pow(vol*3./(4.*math.pi), 1./3.)
     sphere_equiv_area = 4.*math.pi*(sphere_equiv_radius ** 2)
     sphericity = sphere_equiv_area / area
@@ -134,7 +134,7 @@ def generate_data(statedata, dstgroup):
 
     print 'geometry data for %s/%s' % (statedata.file.filename, statedata.name)
     g = dstgroup.recreate_group('geometry')
-    myutils.hierarchy_to_hdf(g,'.',d)
+    myutils.hdf_write_dict_hierarchy(g,'.',d)
 
 
   if 1:

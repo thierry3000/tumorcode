@@ -191,7 +191,7 @@ def submit_(interpreter, submission_program, script):
     print ''.center(30,'-')
   # run stuff
   if not goodArgumentsQueue.q_dry:
-    time.sleep(1.1)
+    time.sleep(0.2)
     if submission_program == 'python': # running python script with python locally?!! We can do it like so
       exec script in dict(), dict()
     else: # all the other cases go like so!
@@ -414,5 +414,10 @@ def submit(obj, **qsubopts):
     prog = determine_submission_program_()
     if prog == 'sbatch':
       submit_slurm(obj, prog, **qsubopts)
-    else:
+    elif prog == 'qsub':
       submit_qsub(obj, prog, **qsubopts)
+    elif prog == 'run_locally':
+      submit_qsub(obj, prog, **qsubopts)
+    else:
+      print("unknow submission sytem")
+      

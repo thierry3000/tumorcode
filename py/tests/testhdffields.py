@@ -19,9 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import os,sys
 import h5py
 import numpy as np
@@ -35,24 +32,29 @@ def print_array(g):
   for i in np.ndindex(g.shape):
     print '%s = %03i' % (i, g[i])
 
+""" needs to run "test_hdf" on c++ side 
+to create test.h5
+"""
+
 f = h5py.File('test.h5','r')
 #g = f['test_field']
 
 print '-----------------'
 print 'the hdf field as array:'
-print_array(np.asarray(f['test_field']))
+print_array(np.asarray(f['dataset_from_list']))
 print '-----------------'  
 print 'the dataset made from the array'
-(dataset,) = extractVtkFields.Extractor(f, ['test_field']).asVtkDataSets()
-print dataset
-for i, t in enumerate(
-  vtkcommon.vtkIterTuples(dataset.GetCellData().GetArray(0))
-  ):
-    a = np.zeros((6,), dtype=np.float32)
-    dataset.GetCellBounds(i, a)
-    a = 0.5 * (a[::2] + a[1::2])
-    print '%03i' % t, a
-print '-----------------'
-print 'the dataset converted back to numpy'
-(img,) = vtkcommon.vtkStructuredGridToNumpy(dataset, ['test_field'])
-print_array(img)
+if 0:
+  (dataset,) = extractVtkFields.Extractor(f, ['test_field']).asVtkDataSets()
+  print dataset
+  for i, t in enumerate(
+    vtkcommon.vtkIterTuples(dataset.GetCellData().GetArray(0))
+    ):
+      a = np.zeros((6,), dtype=np.float32)
+      dataset.GetCellBounds(i, a)
+      a = 0.5 * (a[::2] + a[1::2])
+      print '%03i' % t, a
+  print '-----------------'
+  print 'the dataset converted back to numpy'
+  (img,) = vtkcommon.vtkStructuredGridToNumpy(dataset, ['test_field'])
+  print_array(img)

@@ -20,6 +20,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 from __future__ import print_function
+
+""" DESCRIPTION 
+This tool is designed to debug the vessel generator.
+You have to switch the flag 
+
+full_debug_output = True,
+
+in the vesselGenParams.py set to True in order to produce
+a file called dbgvessels.h5
+there all intermediate steps from the vessel creation process 
+are stored.
+"""
+
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
@@ -40,13 +53,16 @@ import qsub
 import third_party
 import third_party.ffmpy
 import collections
+import shutil
+import h5files
 
 #import krebs.povrayRenderVessels
 from krebs.povrayRenderVessels import  addVesselTree, cm_redblue
 from krebs.povrayEasy import *
 import krebs.povrayRenderSettings
+from krebsjobs.submitPovrayRender import RenderJob  
+from krebsjobs.submitPovrayRender import clientfunc
 
-import subprocess as sp
 import datetime
 import identifycluster
 if(identifycluster.getname()=='snowden'):
@@ -63,66 +79,7 @@ cm_gf = matplotlib.colors.LinearSegmentedColormap('', {
 }, N = 256, gamma = 1.)
 
 
-def colorfactory(vesselgraph):
-  is_set = lambda flags_,flag: np.asarray(np.bitwise_and(flags_, flag), np.bool)
-  
-  edges = vesselgraph.edgelist
-  num_nodes = len(vesselgraph.nodes['position'])
-  flags = vesselgraph.edges['flags']
-  data = vesselgraph.nodes['pressure']
-  nflags = vesselgraph.nodes['nodeflags']
-  #action = vesselgraph.nodes['action']
-  #data = vesselgraph.edges['shearforce']
-  #data = krebsutils.edge_to_node_property(num_nodes, edges, data, 'avg')  
-  #nflags = krebsutils.edge_to_node_property(num_nodes, edges, flags, 'and')
-  #ncirc  = krebsutils.edge_to_node_property(num_nodes, edges, np.bitwise_and(flags, krebsutils.CIRCULATED), 'or')
-  #nflags = np.bitwise_or(nflags, ncirc)
 
-  gray = np.asarray((0.1,0.1,0.1))
-  ltgray = np.asarray((0.0, 0.8, 0.0))
-  boundarycol = np.asarray((1., 1., 0))
-
-  circulated = is_set(flags,krebsutils.CIRCULATED)
-  has_circ = circulated.max()==True
-  if 0:
-    DIE = 0
-    GROW = 1
-    IDLE = 2
-    edgecolors = np.zeros((len(edges),3), dtype = np.float)
-    nodecolors = np.zeros((num_nodes,3), dtype = np.float)
-    edgecolors[:,:] = gray
-    nodecolors[:,:] = gray
-    nodecolors[action == DIE] = np.asarray((1.,0.,0.))
-    nodecolors[action == GROW] = np.asarray((0.,1.,0.))
-    nodecolors[action == IDLE] = np.asarray((0.,0.,1.))
-    
-  elif has_circ:
-    ncirculated = is_set(nflags,krebsutils.CIRCULATED)
-    p0 = np.amin(data[ncirculated])
-    p1 = np.amax(data[ncirculated])
-    cm = matplotlib.cm.ScalarMappable(cmap=cm_redblue)
-    cm.set_clim(p0, p1)
-
-    edgedata = np.average((data[edges[:,0]], data[edges[:,1]]), axis=0)
-    edgecolors = cm.to_rgba(edgedata)[:,:3]
-    edgecolors[np.where(circulated==0)] = gray
-
-    nodecolors = cm.to_rgba(data)[:,:3]
-    nodecolors[np.where(ncirculated==0)] = gray
-  else:
-    edgecolors = np.zeros((len(edges),3), dtype = np.float)
-    nodecolors = np.zeros((num_nodes,3), dtype = np.float)
-    edgecolors[is_set(flags,krebsutils.ARTERY),0] = 1
-    nodecolors[is_set(nflags,krebsutils.ARTERY),0] = 1
-    edgecolors[is_set(flags,krebsutils.VEIN),2] = 1
-    nodecolors[is_set(nflags,krebsutils.VEIN),2] = 1
-  edgecolors[is_set(flags,krebsutils.CAPILLARY)] = ltgray
-  nodecolors[is_set(nflags,krebsutils.CAPILLARY)] = ltgray
-  nodecolors[is_set(nflags,krebsutils.BOUNDARY)] = boundarycol
-  edgecolors[is_set(flags,krebsutils.BOUNDARY)] = boundarycol
-
-  vesselgraph.edges['colors'] = edgecolors
-  vesselgraph.nodes['colors'] = nodecolors
 
 
 def renderSliceWithDistribution(vesselgroup, imagefn, options):
@@ -177,103 +134,99 @@ def renderSliceWithDistribution(vesselgroup, imagefn, options):
 
 def create_movie(options):
   vessel_file = h5py.File(options.filename.name,'r')
+  extension = '-vessels_pressure'
   num_hier = int(vessel_file['parameters'].attrs['num_hierarchical_iterations'])
-  if os.path.isfile('dbgvesselsafter_initial_capillaries.png'):
-    os.rename('dbgvesselsafter_initial_capillaries.png','dbgvesselsafter_initial_capillaries_0.png')
-  if os.path.isfile('dbgvesselsafter_initial_growth.png'):  
-    os.rename('dbgvesselsafter_initial_growth.png','dbgvesselsafter_initial_capillaries_1.png')
-  
+  if not os.path.isfile('dbgvessels_after_initial_capillaries_0%s.png' % extension):
+    if os.path.isfile('dbgvessels_after_initial_capillaries%s.png'% extension):
+      shutil.copyfile('dbgvessels_after_initial_capillaries%s.png'% extension,'dbgvessels_after_initial_capillaries_0%s.png'% extension)
+  if not os.path.isfile('dbgvessels_after_initial_capillaries_1%s.png'% extension):
+    if os.path.isfile('dbgvessels_after_initial_growth%s.png'% extension):
+      shutil.copyfile('dbgvessels_after_initial_growth%s.png'% extension,'dbgvessels_after_initial_capillaries_1%s.png'% extension)
   print('num_hier read: %i' % num_hier)  
   stamp = datetime.datetime.now().time()
   stamp = 'a_stamp'
   fn_1 = 'out_initial_%s.webm' % stamp
-  #frame  after_initial_growth
-  #frame  after_initial_capillaries
-  #frame  after_initial_calcflow
-  #frame  after_remodel_ii_IIIII
-  #fn_2 = 'out_after_initial_growth_%s.webm' % stamp
   fn_3 = 'out_after_initial_capillaries_%s.webm' % stamp
   fn_4 = 'out_after_initial_calcflow_%s.webm' % stamp
   fn_5 = 'out_after_remodel_hit_%s_%s.webm'
   fn_6 = 'out_capillaries_hit_%s_%s.webm'
+  fn_7 = 'out_growth_hit_%s_%s.webm'
+  fn_8 = 'out_capillaries_after_growth_hit_%s_%s.webm'
   myframe_rate = str('2')
-  if 0: #direct command line approach
-    print("FFMPEG_BIN: %s" % FFMPEG_BIN)
-    command = [ FFMPEG_BIN,
-          '-y', # (optional) overwrite output file if it exists
-          '-framerate', myframe_rate,
-          '-i', 'dbgvesselsinitial_growth_%02d.png',
-          '-an', # Tells FFMPEG not to expect any audio
-          #'-c:v', 'libx264',
-          #'-s', 'WxH',
-          #'-r', '30',
-          #'-pix_fmt', 'yuv420p'
-          ]
-    command.append(fn_initial_movie)
-    sp.call(command)
-  else: #using ffmpy wrapper
-    if 1:
-      list_of_filenames=[]
-      optionstring_input = '-framerate %s -an' % myframe_rate
-      #optionstring_output = '-c:v libx264 -pix_fmt yuv420p'
-      #optionstring_output = '-c copy -f mpegts'
-      optionstring_output = None
-      ff_1 = third_party.ffmpy.FFmpeg(inputs={'dbgvesselsgrowth_initial_%02d.png':'-framerate 1 -an'},
-                        outputs={fn_1:'-r 1 -y'})
-      ff_1.run()
-      list_of_filenames.append(fn_1)
+  mydebug = True
+  
+  #using ffmpy wrapper
+  list_of_filenames=[]
+  optionstring_input = '-framerate %s -an' % myframe_rate
+  #optionstring_output = '-c:v libx264 -pix_fmt yuv420p'
+  #optionstring_output = '-c copy -f mpegts'
+  optionstring_output = None
+  ff_1 = third_party.ffmpy.FFmpeg(inputs={'dbgvessels_growth_initial_%%02d%s.png'% extension:'-framerate 1 -an'},
+                    outputs={fn_1:'-r 1 -y'})
+  ff_1.run()
+  list_of_filenames.append(fn_1)
 
-      ff_3 = third_party.ffmpy.FFmpeg(inputs={'dbgvesselsafter_initial_capillaries_%1d.png':'-an -t 3 -loop 1'},
-                        outputs={fn_3:'-r 5 -y'})
-      ff_3.run()
-      list_of_filenames.append(fn_3)
+  ff_3 = third_party.ffmpy.FFmpeg(inputs={'dbgvessels_after_initial_capillaries_%%1d%s.png'% extension:'-an -t 3 -loop 1'},
+                    outputs={fn_3:'-r 5 -y'})
+  ff_3.run()
+  list_of_filenames.append(fn_3)
+  
+  ff_4 = third_party.ffmpy.FFmpeg(inputs={'dbgvessels_after_initial_calcflow%s.png'% extension:'-loop 1 -an -t 4'},
+                    outputs={fn_4:'-an -r 10 -y'})
+  ff_4.run()
+  list_of_filenames.append(fn_4)
+  isInitialStep = True
+  for i in range(num_hier+1):
+    print('running hit %i'%i)
+    
+    ff_5 = third_party.ffmpy.FFmpeg(inputs={'dbgvessels_after_remodel_0%i_%%05d%s.png'%(i,extension):'-framerate %s'%myframe_rate},
+                    outputs={fn_5%(stamp,i):'-y'})
+    if mydebug:
+      ff_5.run()
+    del ff_5
+    list_of_filenames.append(fn_5%(stamp,i))
+    
+    if i < num_hier: # if there is a hierachical step and this continues
+      #this is inital growth not hierachical
+      if os.path.isfile('dbgvessels_with_capillaries_hit_%i%s.png' % (i,extension)):
+        #os.rename('dbgvesselswith_capillaries_hit_%i.png' % i, 'capillaries_0_hit_%i.png' % i)
+        shutil.copyfile('dbgvessels_with_capillaries_hit_%i%s.png' % (i,extension), 'capillaries_0_hit_%i%s.png' % (i,extension))
+      if os.path.isfile('dbgvessels_without_capillaries_hit_%i%s.png' % (i,extension)):
+        #os.rename('dbgvesselswithout_capillaries_hit_%i.png' % i, 'capillaries_1_hit_%i.png' % i)
+        shutil.copyfile('dbgvessels_without_capillaries_hit_%i%s.png' % (i,extension), 'capillaries_1_hit_%i%s.png' % (i,extension))
+      ff_6 = third_party.ffmpy.FFmpeg(inputs={'capillaries_%%1d_hit_%i%s.png' % (i,extension) : '-an -t 3 -loop 1'},
+                      outputs={fn_6%(stamp,i):'-r 5 -y'})
+      if mydebug:
+        ff_6.run()
+      list_of_filenames.append(fn_6%(stamp,i))
+      del ff_6
       
-      ff_4 = third_party.ffmpy.FFmpeg(inputs={'dbgvesselsafter_initial_calcflow.png':'-loop 1 -an -t 4'},
-                        outputs={fn_4:'-an -r 10 -y'})
-      ff_4.run()
-      list_of_filenames.append(fn_4)
-      for i in range(num_hier+1):
-        print('running hit %i'%i)
-        
-        ff_5 = third_party.ffmpy.FFmpeg(inputs={'dbgvesselsafter_remodel_0%i_%%05d.png'%i:'-framerate %s'%myframe_rate},
-                        outputs={fn_5%(stamp,i):None})
-        ff_5.run()
-        del ff_5
-        list_of_filenames.append(fn_5%(stamp,i))
-        
-        if i < num_hier:
-          if os.path.isfile('dbgvesselswith_capillaries_hit_%i.png' % i):
-            os.rename('dbgvesselswith_capillaries_hit_%i.png' % i, 'capillaries_0_hit_%i.png' % i)
-          if os.path.isfile('dbgvesselswithout_capillaries_hit_%i.png' % i):
-            os.rename('dbgvesselswithout_capillaries_hit_%i.png' % i, 'capillaries_1_hit_%i.png' % i)
-          ff_6 = third_party.ffmpy.FFmpeg(inputs={'capillaries_%%1d_hit_%i.png' % i : '-an -t 3 -loop 1'},
-                          outputs={fn_6%(stamp,i):'-r 5 -y'})
-          ff_6.run()
-          del ff_6
-          list_of_filenames.append(fn_6%(stamp,i))
-        
-        
-      with open('file.txt','w') as f:
-        for fn in list_of_filenames:
-          print('file %s' % fn, file=f)
+      if os.path.isfile('dbgvessels_growth_hit_%i_00%s.png' % (i,extension)):
+        ff_7 = third_party.ffmpy.FFmpeg(inputs={'dbgvessels_growth_hit_%i_%%2d%s.png' % (i,extension) : '-framerate 1 -an'},
+                      outputs={fn_7%(stamp,i):'-r 5 -y'})
+        ff_7.run()
+        del ff_7
+      list_of_filenames.append(fn_7%(stamp,i))
       
-    #merge
-    if 1:
-      ff = third_party.ffmpy.FFmpeg(inputs={'file.txt':'-f concat'},outputs={'construct_vessel_network.webm':'-codec copy -y'})
-      ff.run()
-    else:
-      command = [ FFMPEG_BIN,
-          '-y', # (optional) overwrite output file if it exists
-          '-i', 'concat:%s|%s|%s|%s'%(fn_1,fn_2,fn_3,fn_4),
-          '-an', # Tells FFMPEG not to expect any audio
-          '-c', 'copy',
-          #'-s', 'WxH',
-          #'-r', '30',
-          #'-pix_fmt', 'yuv420p'
-          ]
-      command.append('labber.mp4')
-      print(command)
-      sp.call(command)
+      if os.path.isfile('dbgvessels_after_growth_hit_%i%s.png' % (i,extension)):
+        shutil.copyfile('dbgvessels_after_growth_hit_%i%s.png' % (i,extension), 'capillaries_after_growth_0_hit_%i%s.png' % (i,extension))
+      if os.path.isfile('dbgvessels_after_capillaries_hit_%i%s.png' % (i,extension)):
+        shutil.copyfile('dbgvessels_after_capillaries_hit_%i%s.png' % (i,extension), 'capillaries_after_growth_1_hit_%i%s.png' % (i,extension))
+      if os.path.isfile('dbgvessels_growth_hit_%i_00%s.png' % (i,extension)):
+        ff_8 = third_party.ffmpy.FFmpeg(inputs={'capillaries_after_growth_%%1d_hit_%i%s.png' % (i,extension) : '-an -t 3 -loop 1'},
+                      outputs={fn_8%(stamp,i):'-r 5 -y'})
+        ff_8.run()
+        del ff_8
+      list_of_filenames.append(fn_8%(stamp,i))
+    
+    
+  with open('file.txt','w') as f:
+    for fn in list_of_filenames:
+      print('file %s' % fn, file=f)
+    
+  #merge
+  ff = third_party.ffmpy.FFmpeg(inputs={'file.txt':'-f concat'},outputs={'construct_vessel_network.webm':'-codec copy -y'})
+  ff.run()
 
 if (__name__ == '__main__'):
   parser = argparse.ArgumentParser(description='Make snapshot of blood vessel network creation')  
@@ -284,59 +237,34 @@ if (__name__ == '__main__'):
   parser.add_argument('-v', '--movie', default=False, action='store_true')
 
   goodArguments, otherArguments = parser.parse_known_args()
-  #qsub.parse_args(otherArguments)
+  qsub.parse_args(otherArguments)
   dbg_fn = goodArguments.debug_filename.name
-  #pattern = sys.argv[2]
   options = getattr(krebs.povrayRenderSettings,'dbg_vessels')
   f = h5py.File(dbg_fn,'r')
-  dirs_list=[]
-  myDebug=False
-  dirs_list.append(myutils.walkh5(f['/'], 'growth_initial_*'))
-  dirs_list.append(myutils.walkh5(f['/'], 'after_initial_growth')) 
-  dirs_list.append(myutils.walkh5(f['/'], 'after_initial_capillaries')) 
-  dirs_list.append(myutils.walkh5(f['/'], 'after_initial_calcflow')) 
-  if myDebug:
-    dirs_list.append(myutils.walkh5(f['/'], 'after_remodel_00_0000*'))
-    dirs_list.append(myutils.walkh5(f['/'], 'after_remodel_01_0000*'))
-  else:
-    dirs_list.append(myutils.walkh5(f['/'], 'after_remodel_*'))
-  dirs_list.append(myutils.walkh5(f['/'], 'with_capillaries_hit_*'))
-  dirs_list.append(myutils.walkh5(f['/'], 'without_capillaries_hit_*'))
+  if not goodArguments.noPov:
+    jobs = []
+    a = jobs.append
   
-  dirs_list.append(myutils.walkh5(f['/'], 'growth_hit_*'))
-  dirs_list.append(myutils.walkh5(f['/'], 'after_growth_hit_*'))
-  dirs_list.append(myutils.walkh5(f['/'], 'after_capillaries_hit_*'))
-  dirs_list.append(myutils.walkh5(f['/'], 'after_calcflow_hit_*'))
+    #for fn in filenames:
+    with h5files.open(dbg_fn,'r') as f:
+      paths = myutils.walkh5(f, '*/vessels')
+      for path in paths:
+        j = RenderJob(f, path, '', options)
+        a(j)
   
-  for dirs in dirs_list:
-    for grpname in dirs:
-      vesselgrp = f[grpname]
-      output_fn = splitext(basename(dbg_fn))[0]+posixpath.basename(vesselgrp.name)
-      if not goodArguments.noPov:
-        renderSliceWithDistribution(vesselgrp, output_fn ,options )
+    for job in jobs:
+      t, m = job.runtime_and_mem
+      print('submit %s, %i mb, %f h' % (job.imageFilename, m, t))
+      qsub.submit(
+        qsub.func(clientfunc, job, os.getcwd()),
+        name='job_render_'+basename(job.imageFilename),
+        num_cpus=job.params['num_threads'],
+        mem=('%iMB' % m),
+        days=t/24.)
   
-#  for grpname in dirs2:
-#    vesselgrp = f[grpname]
-#    output_fn = splitext(basename(fn))[0]+posixpath.basename(vesselgrp.name)
-#    if debugWithPov and 1:
-#      renderSliceWithDistribution(vesselgrp, output_fn ,options )
-#  for grpname in dirs3:
-#    vesselgrp = f[grpname]
-#    output_fn = splitext(basename(fn))[0]+posixpath.basename(vesselgrp.name)
-#    if debugWithPov and 1:
-#      renderSliceWithDistribution(vesselgrp, output_fn ,options )
-#  for grpname in dirs4:
-#    vesselgrp = f[grpname]
-#    output_fn = splitext(basename(fn))[0]+posixpath.basename(vesselgrp.name)
-#    if debugWithPov and 1:
-#      renderSliceWithDistribution(vesselgrp, output_fn ,options )
-#  for grpname in dirs5:
-#    vesselgrp = f[grpname]
-#    output_fn = splitext(basename(fn))[0]+posixpath.basename(vesselgrp.name)
-#    if debugWithPov and 0:
-#      renderSliceWithDistribution(vesselgrp, output_fn ,options )
     
   if goodArguments.movie:
+    time.sleep(30) #wait 30 seconds for the queing system to finish
     create_movie(goodArguments)
     
   

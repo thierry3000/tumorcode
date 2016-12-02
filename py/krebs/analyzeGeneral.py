@@ -435,6 +435,8 @@ class DataBasicVessel(object):
         r,_    = dataman.obtain_data('vessel_graph_property', vesselgroup, 'edges', 'radius')
         flow,_ = dataman.obtain_data('vessel_graph_property', vesselgroup, 'edges', 'flow')
         return (flow/(math.pi*r*r)), 'edges'
+      #elif property_name == 'flags':
+      #  flags,_    = dataman.obtain_data('vessel_graph_property', vesselgroup, 'edges', 'flags')
       else:
         return np.asarray(vesselgroup[association][property_name]), association
 
@@ -477,7 +479,8 @@ class DataVesselSamples(object):
     def obtain_data(self, dataman, dataname, *args):
       if dataname == 'basic_vessel_samples':
         property_name, vesselgroup, sample_length = args
-        graph = dataman.obtain_data('vessel_graph', vesselgroup, ['position','flags'])
+        #graph = dataman.obtain_data('vessel_graph', vesselgroup, ['position','flags'])
+        graph = dataman.obtain_data('vessel_graph', vesselgroup, ['position'])
         if property_name == 'weight':
           smpl = krebsutils.sample_edges_weights(graph.nodes['position'], graph.edgelist, sample_length)
         else:
@@ -691,7 +694,7 @@ def ApproximateTumorRadius(dataman, tumorgroup):
     tumor_ld    = dataman.obtain_data('ld', tumorgroup.file)
     radial      = dataman.obtain_data('distance_from_center_distribution', tumor_ld)
     distancemap = dataman.obtain_data('fieldvariable', tumorgroup.file, 'dist_tumor', tumorgroup.name)
-    radius      = np.average(radial[np.nonzero(np.logical_and(distancemap>-2*tumor_ld.scale, distancemap<2*tumor_ld.Scale()))])
+    radius      = np.average(radial[np.nonzero(np.logical_and(distancemap>-2*tumor_ld.scale, distancemap<2*tumor_ld.scale))])
     return radius
 
 

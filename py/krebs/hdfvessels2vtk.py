@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
@@ -206,57 +204,3 @@ def ConvertMyHdfVesselsToVTKPolydata(graph, newflag_for_backward_compatibility, 
       else:
         print 'ignoring item %s because array size does not match' % (item.name)
   return polydata
-
-
-
-# now done by filter graph
-#def removeUncirculatedVessels(dataset):
-#  flagarr = fromVtkArray(dataset.GetCellData().GetArray("flags"))
-#  ids = [ i for i, f in enumerate(flagarr) if (f & krebs.CIRCULATED) ]
-#  return copyPolyDataCells(dataset, ids)
-
-
-
-if __name__ == '__main__':
-  from os.path import basename, dirname, join, splitext
-
-  import optparse
-  parser = optparse.OptionParser()
-  parser.add_option("-d","--data", dest="datalist", help="which data (pressure, flow, shearforce, hematocrit) as comma separated list", default='pressure', action="store")
-  parser.add_option("-f","--filter-uncirculated", dest="filteruncirculated", help="filter uncirculated vessels", default=False, action="store_true")
-  parser.add_option("--filter-radius-high-pass", dest="filterradiushighpass", action="store", type="float", default = -1)
-  parser.add_option("--no-overlay", dest="overlay", default = True, action="store_false")
-  parser.add_option("--dpi", dest="dpi", default=None, action="store")
-  parser.add_option("--format", dest="format", default=None, action="store")
-  parser.add_option("-n", dest="out_nl", default = False, action="store")  
-  options, args = parser.parse_args()
-  datalist = map(lambda s: s, map(str.strip, options.datalist.split(',')))
-  #fn = sys.argv[1]
-  filenames = args[:-1]
-  pattern   = args[-1]
-  for fn in filenames:
-    fn, _ = myutils.splitH5PathsFromFilename(fn)
-    f = h5py.File(fn, 'r')
-    dirs = myutils.walkh5(f['/'], pattern)
-  else:    
-    for d in dirs:
-      vesselgroup = f[join('/',d)]['.']
-      if 0:
-        datalist = datalist + ['metabolicSignal','conductivitySignal','S_tot']
-      new = False
-      if new:
-        graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
-      else:
-        graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
-      #if options.filteruncirculated:
-      if 1:
-        graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))      
-      polydata = ConvertMyHdfVesselsToVTKPolydata(graph, new, options);
-      writer = vtkPolyDataWriter()
-      print("use vtkVersion: %s" % vtkVersion.GetVTKVersion())
-      if(int(vtkVersion.GetVTKVersion()[0])>5):
-        writer.SetInputData(polydata)
-      else:
-        writer.SetInput(polydata)
-      writer.SetFileName("%s-vessels-%s.vtk" % (splitext(basename(fn))[0], d.replace('/','-')))
-      writer.Write()

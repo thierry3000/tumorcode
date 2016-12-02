@@ -118,10 +118,56 @@ if not qsub.is_client:
      if 0: # config file
        write_config(Factory)
      else:
-       index_range = range(2) # two samples per config
+       index_range = range(3) # two samples per config
        run_config_samples(Factory, index_range, RunsOnClient)      
 
-  
+  def SubmitOtherVariationJobsSwine():
+    cube_width=2000
+    hiter = 2
+    scale = 50
+    nums_points = int(cube_width / (2**hiter * scale) + 1)
+    baseparams = dict(
+      tip_radius_arterial = 2.0,
+      tip_radius_capi = 2.0,
+      tip_radius_vein = 3.72, #MW scale relation
+      murray_alpha_vein = 3.,
+      murray_alpha_artery = 3.,
+      max_sprout_radius_artery = 8.,
+      max_sprout_radius_vein = 8.,
+      calcflow = dict(
+        viscosityPlasma = 1.2e-6,
+        rheology = 'RheologySecomb2005', # WARNING: changed to new model of secomb
+        inletHematocrit = 0.45,
+        includePhaseSeparationEffect = False,
+      ),
+      scale = scale, #to obtain 300 MVD from scale jobs
+      name = 'base',
+      hiter = hiter,
+      num_points = nums_points,
+    )
+    variant1 = copy.deepcopy(baseparams)
+    variant1['max_sprout_radius_artery'] = 4.
+    variant1['max_sprout_radius_vein'] = 4.
+    variant1['name'] = 'lower_sprout_radius_limit'
+    
+    variant2 = copy.deepcopy(baseparams)
+    variant2['murray_alpha_vein'] = 2.7
+    variant2['murray_alpha_artery'] = 2.7
+    variant2['name'] = 'lower_murray_alpha'
+    
+    variant3 = copy.deepcopy(baseparams)
+    variant3['generate_more_capillaries'] = True
+    variant3['name'] = 'more_capillaries'
+    
+    variant4 = copy.deepcopy(baseparams)
+    variant4['murray_alpha_vein'] = 3.5
+    variant4['murray_alpha_artery'] = 3.0
+    variant4['name'] = 'higher_murray_alpha'
+    
+    for t in 'typeI typeA typeB typeC typeD typeE typeF typeG typeH'.split():
+      for params in [baseparams, variant1, variant2, variant3, variant4]:
+        filename = 'vess_calibr_%s_%s' % (params['name'], t)
+        SubmitEnsemble(t, filename, params)
   
   def SubmitOtherVariationJobs():
     baseparams = dict(
@@ -401,18 +447,18 @@ if (not qsub.is_client) and __name__ == '__main__':
   import argparse   # for example see sync.py
   parser = argparse.ArgumentParser(description = 'Run a number of vessel tree generation jobs and analyze the resulting MVD, rBV and rBF')
   parser.add_argument('-a', '--analyze', help = 'analyze data, supply filenames', action='store_true')
+  parser.add_argument('-n', '--no_scale_variation', help = 'No scale variation', default=False, action='store_true',)  
   parser.add_argument('FILES',  nargs='*')
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
   
-  #mode = 'scaleVariation_nein'
-  mode = 'scaleVariation'
-  if mode == 'scaleVariation':
+  if goodArguments.no_scale_variation:
+    #submitFunction = SubmitOtherVariationJobs
+    submitFunction = SubmitOtherVariationJobsSwine
+    analyzeFunction = AnalyzeOtherVariations
+  else:
     submitFunction = SubmitScaleVariationJobs
     analyzeFunction = AnalyzeScaleVariation
-  else:
-    submitFunction = SubmitOtherVariationJobs
-    analyzeFunction = AnalyzeOtherVariations
 
   if goodArguments.analyze:
     filenames = goodArguments.FILES

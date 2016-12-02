@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','..'))
@@ -38,6 +36,7 @@ import math
 import collections
 import itertools
 from copy import copy
+import qsub
 
 import matplotlib
 import matplotlib.cm
@@ -1145,7 +1144,8 @@ def doit(filenames, pattern, normalTissueEnsembleInput = None):
 #      data = CalcOxygenVsVesselsCached(dataman, po2groups, binspec_tumor, binspec_vessels, (f_measure, 'files'+myutils.checksum([g.name for g in po2groups])))
 #      PlotOxygenVsVessels(pdfwriter, data, binspec_vessels)
 
-    if 0:
+    #if 1:
+    if len(ensemble.tumor_snapshots) > 1:
         print 'getting radial curves'
         bins_spec, curves0 = CollectAllRadialData(dataman, items0, measurementinfo)
         bins_spec, curves1 = CollectAllRadialData(dataman, items1, measurementinfo)
@@ -1162,7 +1162,7 @@ def doit(filenames, pattern, normalTissueEnsembleInput = None):
       del smpl
 
 
-    if 1:
+    if 0:
       print 'getting global data'
       if items0:
         data0glob, data0tumor = CollectAllGlobalData(dataman, items0, measurementinfo)
@@ -1294,5 +1294,23 @@ def doit(filenames, pattern, normalTissueEnsembleInput = None):
 
 if __name__ == '__main__':
   krebsutils.set_num_threads(2)
-  filenames, pattern = sys.argv[1:-1], sys.argv[-1]
-  doit(filenames, pattern)
+  import argparse
+  parser = argparse.ArgumentParser(description='Analyze Drug distributions.')  
+  parser.add_argument('detailedO2FileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin, help='detailedO2 files to calculate')   
+  parser.add_argument('grp_pattern',help='Where to find the oxygendata. Usually this is somthing with po2/out*')        
+  goodArguments, otherArguments = parser.parse_known_args()
+  qsub.parse_args(otherArguments)
+  
+  #create filename due to former standards
+  filenames=[]
+  for fn in goodArguments.detailedO2FileNames:
+    filenames.append(fn.name)
+  try:
+    for fn in filenames:
+      if not os.path.isfile(fn):
+        raise AssertionError('The file %s is not present!'%fn)
+  except Exception, e:
+    print e.message
+    sys.exit(-1)
+  
+  doit(filenames, goodArguments.grp_pattern, normalTissueEnsembleInput = False)

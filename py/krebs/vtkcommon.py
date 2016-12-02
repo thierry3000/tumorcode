@@ -462,7 +462,7 @@ def vtkContour(dataset, values):
   """
   #dataset.GetPointData().SetActiveScalars(name)
   iso = vtk.vtkContourFilter()
-  iso.SetInput(dataset)
+  iso.SetInputData(dataset)
   if not hasattr(values, '__iter__'):
     values = [values]
   for i, v in enumerate(values):
@@ -490,7 +490,7 @@ def vtkCellDataToPointData(dataset):
   #f = vtk.vtkPointDataToCellData()
   f = vtk.vtkCellDataToPointData()
   f.PassCellDataOff()
-  f.SetInput(dataset)
+  f.SetInputData(dataset)
   f.Update()
   return f.GetOutput()
   

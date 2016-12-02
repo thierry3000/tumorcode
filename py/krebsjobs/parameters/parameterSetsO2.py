@@ -27,7 +27,7 @@ import myutils
 cluster_threads = myutils.cluster_threads
 c1_, c2_, c3_ = (0.0052*1.1, 16, 0.0078/math.exp(-4./16)*1.6) # hand adjusted parameters based on secomb
 
-default = dict(
+default_o2 = dict(
   num_threads = cluster_threads,
   po2init_r0 = 55., #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
   po2init_dr = 1., #  mmHg / um, these values are from yaseen 2011 for rat brain

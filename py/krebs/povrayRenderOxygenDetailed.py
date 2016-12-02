@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
@@ -115,95 +113,56 @@ def InsertGraphColors(vesselgraph, po2field, data_name):
   return cm
 
 
-#def CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, **kwargs):
-#    if kwargs.get('overlay', True):
-#      RenderImageWithOverlay(epv, imagefn, cm, label, **kwargs)      
-#    else:
-#      epv.render(imagefn)
-
-
-def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, kwargs_in):
-  kwargs = deepcopy(kwargs_in)
+def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, options):
   wbbox = volume_ld.worldBox
-  kwargs['wbbox']=wbbox
+  options.wbbox = wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
   volume_ld = transform_ld(trafo, volume_ld)
   vessel_ld = transform_ld(trafo, vessel_ld)
   cm = InsertGraphColors(vessel_graph, volumedata, data_name)  
 
-  def DoTheRendering(fn, kwargs):
-    with EasyPovRayRender(**kwargs) as epv:
-      epv.setBackground(kwargs.pop('background',1.0))
+  def DoTheRendering(fn, options):
+    with EasyPovRayRender(options) as epv:
+      epv.setBackground(options.background)
   
       cam_fov = 60.
-      cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, kwargs['res'], wbbox)
+      cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
       epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
-  
       epv.addLight(10.*Vec3(1,0.5,2), 1.2)
-      kwargs.update(vessel_clip =('zslice', -150*trafo.w, +150*trafo.w))
+      options.vessel_clip=('zslice', -150*trafo.w, +150*trafo.w)
   
       pvcm = matplotlibColormapToPovray('DATACOLORMAP', cm)
       epv.declareColorMap(pvcm)
-      print vessel_ld
-      print volume_ld
-      print vessel_ld.worldBox
-      print volume_ld.worldBox
-      if kwargs.get('render_volume_', True):
+      if not options.not_render_volume:
         epvvol = epv.declareVolumeData(volumedata, volume_ld.GetWorldBox())
         epv.addVolumeDataSlice(epvvol, (0,0,planeZCoord), (0, 0, 1.), pvcm)
-      if kwargs.get('render_vessels_', True):
-        addVesselTree(epv, vessel_graph, trafo = trafo, **kwargs)
+      if not options.not_render_vessels:
+        addVesselTree(epv, vessel_graph, trafo = trafo, options=options)
         
-      CallPovrayAndOptionallyMakeMPLPlot(epv, fn, cm, label, **kwargs)
+      CallPovrayAndOptionallyMakeMPLPlot(epv, fn, cm, label, options)
   
-  if kwargs.pop('projection_plot', False):
-    planeZCoord = vessel_ld.worldBox[4]+0.1*vessel_ld.scale
-    basefn, ext = splitext(fn)
-    tf1 = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True)
-    tf2 = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True)
-    fn1 = tf1.filename
-    fn2 = tf2.filename
-    kwargs['overlay'] = False
-    kwargs['render_volume_'] = False
-    DoTheRendering(fn1, kwargs)
-    kwargs['render_volume_'] = True
-    kwargs['render_vessels_'] = False
-    DoTheRendering(fn2, kwargs)
-    import subprocess
-    if kwargs_in.get('overlay', True):
-      tf3 = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True)
-      subprocess.call(['convert', '-page', '+0+0', fn2, '-page', '+0+0', fn1, '-flatten', tf3.filename])
-      plotsettings = dict(myutils.iterate_items(kwargs, ['dpi','fontcolor'], skip=True))
-      OverwriteImageWithColorbar(tf3.filename, cm, label, output_filename = imagefn, **plotsettings)
-    else:
-      subprocess.call(['convert', '-page', '+0+0', fn2, '-page', '+0+0', fn1, '-flatten', imagefn])
-    return
-  else:
-    planeZCoord = 0.
-    DoTheRendering(imagefn, kwargs)
+  planeZCoord = 0.
+  DoTheRendering(imagefn, options)
 
 
-def renderSlice((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, kwargs):
-  kwargs = deepcopy(kwargs)
-
+def renderSlice((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, options):
   wbbox = vessel_ld.worldBox
-  kwargs['wbbox']=wbbox
+  options.wbbox = wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
-
   cm = InsertGraphColors(vessel_graph, volumedata, data_name)
   
-  with EasyPovRayRender(**kwargs) as epv:
-    epv.setBackground(kwargs.pop('background',1.0))
+  with EasyPovRayRender(options) as epv:
+    epv.setBackground(options.background)
     cam_fov = 60.
-    cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, kwargs['res'], wbbox)
+    cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
     epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
     epv.addLight(10.*Vec3(1,0.5,2), 1.2)
     if (wbbox[1]-wbbox[0]) < (wbbox[5]-wbbox[4])*2.:
-      kwargs.update(vessel_clip =('zslice', -300*trafo.w, +300*trafo.w))
+      options.vessel_clip=('zslice', -300*trafo.w, +300*trafo.w)
 
-    addVesselTree(epv, vessel_graph, trafo = trafo, **kwargs)  
+    addVesselTree(epv, vessel_graph, trafo = trafo, options=options)  
     
-    CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, **kwargs)
+    CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, options)
 
 
 def renderVasculatureWTumor((vessel_ld, vessel_graph, data_name), gtumor, imagefn, label, kwargs):
@@ -259,9 +218,7 @@ def renderVasculatureWTumor((vessel_ld, vessel_graph, data_name), gtumor, imagef
 
 
 
-def renderScene(po2group, imagefn, kwargs):
-  #kwargs = myutils.updated(default_parameters, kwargs)
-
+def renderScene(po2group, imagefn, options):
   dataman = myutils.DataManager(2, [DataDetailedPO2(), DataBasicVessel()])
 
   gvessels, gtumor = OpenVesselAndTumorGroups(po2group)
@@ -278,51 +235,13 @@ def renderScene(po2group, imagefn, kwargs):
   vessel_graph.edges['saturation'] = PO2ToSaturation(po2vessels, parameters)
   vessel_graph.edges['hboconc'] = vessel_graph.edges['saturation']*vessel_graph.edges['hematocrit']*chb_of_rbcs*1.0e3
   vessel_graph = vessel_graph.get_filtered(edge_indices = myutils.bbitwise_and(vessel_graph['flags'], krebsutils.CIRCULATED))
-  if 'filterradiuslowpass' in kwargs.keys():
-    if kwargs['filterradiuslowpass'] >0:
-      print("lowpass filter activated:")
-      vessel_graph = vessel_graph.get_filtered(edge_indices = vessel_graph['radius']< kwargs['filterradiuslowpass'])
-      filenamepostfix = '_rlp'
+  if options.filterradiuslowpass>0:
+    print("lowpass filter activated:")
+    vessel_graph = vessel_graph.get_filtered(edge_indices = vessel_graph['radius']< options.filterradiuslowpass)
 
   imagefn, ext = splitext(imagefn)
-  ext = '.' + kwargs.get('format', ext[1:])
-  renderSliceWithDistribution((vessel_ld, vessel_graph, 'po2vessels'), (po2field_ld, po2field), imagefn+'_po2vessels'+ext, '', kwargs)
-  renderSlice((vessel_ld, vessel_graph, 'saturation'), (None, None), imagefn+'_saturation'+ext, '', kwargs)
-  renderSlice((vessel_ld, vessel_graph, 'hboconc'), (None, None), imagefn+'_hboconc'+ext, 'HbO [mmol/l blood]', kwargs)
-  #renderVasculatureWTumor((vessel_ld, vessel_graph, 'po2vessels'), gtumor, imagefn+'_po2vt'+ext, '', kwargs)
+  ext = '.' + options.format
+  renderSliceWithDistribution((vessel_ld, vessel_graph, 'po2vessels'), (po2field_ld, po2field), imagefn+'_po2vessels'+ext, '', options)
+  renderSlice((vessel_ld, vessel_graph, 'saturation'), (None, None), imagefn+'_saturation'+ext, '', options)
+  renderSlice((vessel_ld, vessel_graph, 'hboconc'), (None, None), imagefn+'_hboconc'+ext, 'HbO [mmol/l blood]', options)
 
-
-def doit(fn, pattern, parameters = dict()):
-  f = h5files.open(fn, 'r+')
-  paths = myutils.walkh5(f['.'], pattern)
-  for path in paths:
-    po2group = f[path]
-    imagefn = '-'.join([splitext(basename(f.filename))[0], po2group.attrs.get('SOURCE_PATH','').strip(posixpath.sep).replace(posixpath.sep,'-')])+'.'+parameters.pop('format', 'png')
-    renderScene(po2group, imagefn, parameters)
-
-
-if __name__ == '__main__':
-  import optparse #Note: Deprecated since version 2.7: The optparse module is deprecated and will not be developed further; development will continue with the argparse module.
-  parser = optparse.OptionParser()
-  parser.add_option("--dpi", dest="dpi", default=None, action="store")
-  parser.add_option("--format", dest="format", default=None, action="store")
-  parser.add_option("--no-overlay", dest="overlay", default=True, action="store_false")
-  options, args = parser.parse_args()  
-  
-  krebsutils.set_num_threads(4)
-
-  import povrayRenderSettings
-  settings = deepcopy(povrayRenderSettings.image)
-  settings.update(povrayRenderSettings.tumor)
-
-  if options.dpi: 
-    settings['dpi'] = float(options.dpi)
-  if options.format:
-    settings['format'] = options.format
-  settings['overlay'] = options.overlay    
-  
-  settings['projection_plot'] = False
-    
-  filenames, pattern = args[:-1], args[-1]
-  for fn in filenames:
-    doit(fn, pattern, settings)

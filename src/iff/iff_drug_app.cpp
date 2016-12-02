@@ -79,6 +79,8 @@ void IffDrugApp3d::InitAsSimpleModels(Array3d<float> theta_tumor, Array3d<float>
 bool IffDrugApp3d::InitNewState()
 {
   cout << "--- starting new iff run ---\n";
+  cout << "--- input tum file: " << fn_tumor <<endl;
+  cout << "--- output iff file: " << fn_out <<endl;
   {
   iff_params.assign(all_pt_params.get_child("iff"));
   boost::optional<ptree&> pt_drug = all_pt_params.get_child_optional("drugflow");
