@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import os,sys
 from os.path import basename, dirname, join, splitext, commonprefix
 if __name__=='__main__': sys.path.append(join(dirname(__file__),'..'))
@@ -44,9 +42,10 @@ import mpl_utils
 from krebs.analyzeGeneral import DataVesselGlobal, DataTumorTissueSingle, DataDistanceFromCenter, DataBasicVessel, DataVesselSamples, DataVesselRadial, BinsSpecRange, BinsSpecArray, obtain_distmap_, generate_samples, combineSamples, HdfCacheRadialDistribution, CalcPhiVessels, calc_distmap
 
 
-dataman = myutils.DataManager(20, [ DataTumorTissueSingle(), DataDistanceFromCenter(), DataBasicVessel(), DataVesselSamples(), DataVesselRadial(), DataVesselGlobal()])
-
 filename, pattern = sys.argv[1], sys.argv[2]
+
+
+dataman = myutils.DataManager(20, [ DataTumorTissueSingle(), DataDistanceFromCenter(), DataBasicVessel(), DataVesselSamples(), DataVesselRadial(), DataVesselGlobal()])
 f = h5files.open(filename)
 group = f[pattern]
 gvessels, gtumor = group['vessels'], group['tumor']
@@ -56,8 +55,7 @@ position    = dataman.obtain_data('basic_vessel_samples', 'position', gvessels, 
 weight_smpl = dataman.obtain_data('basic_vessel_samples', 'weight', gvessels, 30.)
 flags       = dataman.obtain_data('basic_vessel_samples', 'flags', gvessels, 30.)
   
-#dist_smpl, distmap, mask   = dataman.obtain_data('distancemap_samples', gvessels, gtumor, 30., 'radial', None)
-abc   = dataman.obtain_data('distancemap_samples', gvessels, gtumor, 30., 'radial', None)
+dist_smpl, distmap, mask, ld   = dataman.obtain_data('distancemap_samples', gvessels, gtumor, 30., 'radial', None)
 
 if 0:
   fig = pyplot.figure()

@@ -129,7 +129,7 @@ def runs_on_client(name,config):
 
 def run_simple(name, config):
   if 1:
-    days = 5. if config['ift'] else 0.5
+    days = 10. if config['ift'] else 0.5
     qsub.submit(qsub.func(runs_on_client, name, config),
                 name = 'job_iff'+name,
                 num_cpus = config['num_threads'],

@@ -1554,11 +1554,11 @@ def measure_and_plot(filenames):
                                          plotIff.DataGlobalIff(), 
                                          DataDrugAverages2(path) ])
     #plot_single_values(files, dataman, pdfpages)
-    #plot_global_average_over_time(files, dataman, pdfpages)
+    plot_global_average_over_time(files, dataman, pdfpages)
     plot_averaged_data(files, dataman, pdfpages)
     #plot_snapshots(files[0], dataman, pdfpages)
-    #plot_snapshots_linear(files[0], dataman, pdfpages)
-    #plot_drug_with_vessels(files[0], dataman, pdfpages)
+    plot_snapshots_linear(files[0], dataman, pdfpages)
+    plot_drug_with_vessels(files[0], dataman, pdfpages)
 
 
 

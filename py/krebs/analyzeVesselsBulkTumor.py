@@ -172,9 +172,9 @@ def PlotRadialCurves(pdfwriter, bins_spec, snapshotlist, measurementinfo, world_
 #    plot(axtwin, 'theta_tumor', colors = [(0.5,0.5,0.5)]*7, errorbars=False)
   plot(axes[0], 'mvd', label = True)
   fmt_axis_labels(axes[0], 'mvd')
-  theLegend = axes[0].legend()
-  theLegend.get_title().set_fontsize('2')
-  pyplot.setp(axes[0].get_legend().get_texts(),fontsize='2')
+  theLegend = axes[0].legend(loc='lower right',prop={'size':6})
+  #theLegend.get_title().set_fontsize('2')
+  #pyplot.setp(axes[0].get_legend().get_texts(),fontsize='2')
   theLegend.__sizes = [1]
 
   plot(axes[1], 'phi_vessels')

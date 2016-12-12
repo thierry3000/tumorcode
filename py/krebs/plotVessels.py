@@ -19,8 +19,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
+
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
@@ -57,7 +56,7 @@ import krebsjobs.submitVesseltreeCalibration
 class VesselData(object):
   def __init__(self):
     self.data = Struct(
-      mvd_by_iter = [],
+      rBV_by_iter = [],
       radii_prob = [],
       lengths_by_rad = [],
       lengths_prob = [],
@@ -90,7 +89,7 @@ def plot_topological_stats_avg(data, output_writer):
     for d in dd:
       ax.plot(d[0,:,0], d[1,:,0])
 
-  plot_many(axes[0],'mvd_by_iter', dict(ylabel='mvd', xlabel='iteration', title='MVD evolution over time'))
+  plot_many(axes[0],'rBV_by_iter', dict(ylabel='rBV', xlabel='iteration', title='rBV evolution over time'))
   plot_curve(axes[1],'radii_prob', dict(ylabel='prob', xlabel='rad', yscale='log', title='radii distribution'))
   plot_curve(axes[2],'lengths_by_rad', dict(ylabel='length', xlabel='rad', title='branch length vs radius'))
   plot_curve(axes[3],'lengths_prob', dict(ylabel='prob', xlabel='length', yscale='log', title='branch length distribution'))
@@ -894,7 +893,7 @@ def DoIt(filenames, pattern, with_o2):
         text = FormatParameters(vesselgroups[0].file)
         fig, _ = mpl_utils.MakeTextPage(text,figsize = (mpl_utils.a4size[0]*0.8, mpl_utils.a4size[0]*0.8))
         pdfpages.savefig(fig, postfix='_vesselsparams')
-      if 0 and all(map(lambda g: 'data' in g.parent, vesselgroups)):
+      if 1 and all(map(lambda g: 'data' in g.parent, vesselgroups)):
         data = VesselData()
         for g in vesselgroups:
           data.add(g.parent['data'])

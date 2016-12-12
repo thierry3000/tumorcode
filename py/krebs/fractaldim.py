@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
@@ -35,9 +33,11 @@ import time
 import posixpath
 from mystruct import Struct
 import myutils
+import h5files
 
 import extensions
 import krebsutils
+import qsub
 
 
 def boxcountImage(arr, boxsize, max_boxsize):
@@ -151,7 +151,8 @@ def calcVesselBoxCounts(graph, spacing, spacing_max):
     cnt = 0
     for offset in offsets:
       ld = makeLd(graph, spacing, offset)
-      print 'boxcounting spacing=%f, gridsize=%i, offset=%s' % (ld.scale, max(ld.GetBox(ravel = True)), str(offset))
+      #print 'boxcounting spacing=%f, gridsize=%i, offset=%s' % (ld.scale, max(ld.GetBox(ravel = True)), str(offset))
+      print 'boxcounting spacing=%f, gridsize=%i, offset=%s' % (ld.scale, max(ld.GetBox()), str(offset))
       volume_factor = (ld.scale**3) / (5.**2*ld.scale)
       volume_threshold = 1.
       cnt += krebsutils.calc_vessel_boxcounts(graph.nodes['position'], graph.edgelist, graph.edges['radius'], ld, volume_factor, volume_threshold)
@@ -215,9 +216,12 @@ def boxcountTumorVessels(fn, opts):
         calcBoxCounts(data, g['vessels'], item_to_analyze, opts)
 
       with myutils.MeasurementFile(fn, h5files, opts.prefix) as fdst:
-        gdst = fdst.require_snapshot_group(g)
-        gdst = gdst.recreate_group('fractaldim')
-        myutils.hdf_write_dict_hierarchy(gdst, '.', data)
+        dstgroup = myutils.require_snapshot_group_(fdst,g)
+        fdst.attrs.create('tumorcode_file_type', data='fractaldim_analyze_bulktum')
+        #gdst = fdst.require_snapshot_group_(g)
+        #gdst = gdst.recreate_group('fractaldim')
+        #myutils.hdf_write_dict_hierarchy(gdst, '.', data)
+        myutils.hdf_write_dict_hierarchy(dstgroup, 'fractaldim', data)
 
 
 
@@ -232,12 +236,6 @@ def boxcountInitialVessels(fn, opts):
     with myutils.MeasurementFile(fn, h5files, opts.prefix) as fdst:
       gdst = fdst.recreate_group('fractaldim')
       myutils.hdf_write_dict_hierarchy(gdst, '.', data)
-
-
-
-
-
-
 
 
 class Df:
@@ -277,109 +275,128 @@ class Df:
 
 
 if __name__=='__main__':
-    from optparse import OptionParser
-    parser = OptionParser()
-    parser.add_option('--plot', dest='plot', action='store_true', default=False)
-    parser.add_option('--q-local', dest='q_local', action='store_true', default=False)
-    parser.add_option('--num_threads', dest='num_threads', default=1, type='int')
-    parser.add_option('--group', dest='group', default='vessels')
-    parser.add_option('--prefix', dest='prefix', default='fractaldim_')
-    opts, args = parser.parse_args()
-    opts = Struct( (k,getattr(opts, k)) for k in ['plot', 'q_local', 'num_threads', 'group', 'prefix'])
+  import argparse
+  parser = argparse.ArgumentParser(description='Compute fractal dimension')  
+  parser.add_argument('--plot', action='store_true', default=False)
+  #parser.add_argument('--q_local', action='store_true', default=False)
+  parser.add_argument('--num_threads', default=1)
+  #parser.add_argument('--group', default='vessels')
+  parser.add_argument('--prefix', default='fractaldim_')  
+  parser.add_argument('--spacing', type=float, default=8.)
+  
+  parser.add_argument('files', nargs='+', type=str, help='files to calculate')
+  parser.add_argument('grp_pattern',help='Where to find the data in the file')  
+  goodArguments, otherArguments = parser.parse_known_args()
+  qsub.parse_args(otherArguments)  
+  
+  
+#    from optparse import OptionParser
+#    parser = OptionParser()
+#    parser.add_option('--plot', dest='plot', action='store_true', default=False)
+#    parser.add_option('--q-local', dest='q_local', action='store_true', default=False)
+#    parser.add_option('--num_threads', dest='num_threads', default=1, type='int')
+#    parser.add_option('--group', dest='group', default='vessels')
+#    parser.add_option('--prefix', dest='prefix', default='fractaldim_')
+#    opts, args = parser.parse_args()
+#    opts = Struct( (k,getattr(opts, k)) for k in ['plot', 'q_local', 'num_threads', 'group', 'prefix'])
 
-    if opts.plot == False:
+  if goodArguments.plot == False:
+    #goodArgguments.spacing
+    #opts['spacing'] = 8.
+    if 'vessels' in goodArguments.grp_pattern:
+      boxcount_func = boxcountInitialVessels
+    elif 'out' in goodArguments.grp_pattern:
+      boxcount_func = boxcountTumorVessels
 
-      opts['spacing'] = 8.
-      if opts.group == 'vessels':
-        boxcount_func = boxcountInitialVessels
-      elif opts.group == 'tumorvessels':
-        boxcount_func = boxcountTumorVessels
+#    for fn in goodArguments.files:
+#      if goodArguments.q_local:
+#        boxcount_func(fn.name, goodArguments)
+#      else:
+#        qsub.submit(qsub.Func(boxcount_func, fn.name, goodArguments),
+#                    num_cpus = goodArguments.num_threads,
+#                    days = 1,
+#                    name = 'job_'+basename(fn.name),
+#                    change_cwd = True
+#                    )
+    for fn in goodArguments.files:
+      qsub.submit(qsub.Func(boxcount_func, fn, goodArguments),
+                  num_cpus = goodArguments.num_threads,
+                  days = 1,
+                  name = 'job_'+basename(fn),
+                  change_cwd = True
+                  )
 
-      import qsub
-      for fn in args:
-        if opts.q_local:
-          boxcount_func(fn, opts)
-        else:
-          qsub.submit(qsub.Func(boxcount_func, fn, opts),
-                      num_cpus = opts.num_threads,
-                      days = 1,
-                      name = 'job_'+basename(fn),
-                      change_cwd = True
-                      )
-
-    else: # plotting
-      filenames = args
-      group = opts.group
-
-      dflist = []
-      for fn in filenames:
+  else: # plotting
+    try:
+      for fn in goodArguments.files:
         with h5py.File(fn, 'r') as f:
-          dflist.append(Df(f[group]['fractaldim/withintumor']))
+          if not f.attrs.get('tumorcode_file_type') == 'fractaldim_analyze_bulktum':
+            raise AssertionError('This in not the right filetype %s!' % fn)
+    except Exception, e:
+      print e.message
+      sys.exit(-1)
+      
+    dflist = []
+    for fn in goodArguments.files:
+      with h5py.File(fn, 'r') as f:
+        dflist.append(Df(f[goodArguments.grp_pattern + '/fractaldim/withintumor']))
 
-      import matplotlib
-      matplotlib.use('Qt4Agg')
-      import matplotlib.pyplot as pyplot
-      import mpl_utils
+    import matplotlib
+    matplotlib.use('Qt4Agg')
+    import matplotlib.pyplot as pyplot
+    import mpl_utils
 
-      dpi = 80
-      rc = matplotlib.rc
-      rc('figure', figsize = list(np.asarray([1024, 768])/dpi), dpi=dpi)
-      rc('font', size = 11.)
-      rc('axes', titlesize = 13., labelsize = 13.)
-      rc('legend', fontsize=13.)
-      rc('pdf', compression = 6, fonttype = 42)
-      rc('savefig', facecolor='none', edgecolor='none', dpi=dpi)
-      rc('font', **{'family':'sans-serif'}) #,'sans-serif':['Helvetica']})
-      rc('path', simplify_threshold=0.01)
+    dpi = 80
+    rc = matplotlib.rc
+    rc('figure', figsize = list(np.asarray([1024, 768])/dpi), dpi=dpi)
+    rc('font', size = 11.)
+    rc('axes', titlesize = 13., labelsize = 13.)
+    rc('legend', fontsize=13.)
+    rc('pdf', compression = 6, fonttype = 42)
+    rc('savefig', facecolor='none', edgecolor='none', dpi=dpi)
+    rc('font', **{'family':'sans-serif'}) #,'sans-serif':['Helvetica']})
+    rc('path', simplify_threshold=0.01)
 
-      df_formula = lambda x : (r'$\propto \epsilon ^ {- %s}$'  % myutils.f2s(x, latex=True))
+    df_formula = lambda x : (r'$\propto \epsilon ^ {- %s}$'  % myutils.f2s(x, latex=True))
 
-      fig, ax = pyplot.subplots(1,1)
-      for df in dflist:
-        ax.plot(df.bs, df.bc, ':kx', label = 'measured' if df is dflist[0] else None)
+    fig, ax = pyplot.subplots(1,1)
+    for df in dflist:
+      ax.plot(df.bs, df.bc, ':kx', label = 'measured' if df is dflist[0] else None)
 
-      avg_y0 = np.average([df.params[1] for df in dflist])
+    avg_y0 = np.average([df.params[1] for df in dflist])
 #      ax.plot(dflist[0].bs, dflist[0].getY((-3., avg_y0)), 'r', label = df_formula(3.))
 #      ax.plot(dflist[0].bs, dflist[0].getY((-2., avg_y0)), 'g', label = df_formula(2.))
 #      ax.plot(dflist[0].bs, dflist[0].getY((-1., avg_y0)), 'b', label = df_formula(1.))
-      ax.plot(dflist[0].bs, dflist[0].getY((-3., avg_y0)), '-', color='k', label = '%s, %s, and %s' % (df_formula(1.), df_formula(2.), df_formula(3.)))
-      ax.plot(dflist[0].bs, dflist[0].getY((-2., avg_y0)), '-', color='k')
-      ax.plot(dflist[0].bs, dflist[0].getY((-1., avg_y0)), '-', color='k')
+    ax.plot(dflist[0].bs, dflist[0].getY((-3., avg_y0)), '-', color='k', label = '%s, %s, and %s' % (df_formula(1.), df_formula(2.), df_formula(3.)))
+    ax.plot(dflist[0].bs, dflist[0].getY((-2., avg_y0)), '-', color='k')
+    ax.plot(dflist[0].bs, dflist[0].getY((-1., avg_y0)), '-', color='k')
 
-      df_vals = []
-      for df in dflist:
-        df.fit(np.logical_and(df.bs > 100, df.bs < 1000.))
-        df_vals.append(df.get())
-      avg_df = np.average(df_vals)
-      std_df = np.std(df_vals)
+    df_vals = []
+    for df in dflist:
+      df.fit(np.logical_and(df.bs > 100, df.bs < 1000.))
+      df_vals.append(df.get())
+    avg_df = np.average(df_vals)
+    std_df = np.std(df_vals)
 
-      avg_y0 = np.average([df.params[1] for df in dflist])
+    avg_y0 = np.average([df.params[1] for df in dflist])
 
-      ax.plot(dflist[0].bs, dflist[0].getY((-avg_df-std_df, avg_y0)), 'r', linewidth = 1., label = (r'$\propto \epsilon ^ {- %s \pm %s }$'  % (myutils.f2s(avg_df, latex=True), myutils.f2s(std_df, latex=True, prec=1)))) #label =  df_formula(avg_df))
-      ax.plot(dflist[0].bs, dflist[0].getY((-avg_df+std_df, avg_y0)), 'r', linewidth = 1.)
+    ax.plot(dflist[0].bs, dflist[0].getY((-avg_df-std_df, avg_y0)), 'r', linewidth = 1., label = (r'$\propto \epsilon ^ {- %s \pm %s }$'  % (myutils.f2s(avg_df, latex=True), myutils.f2s(std_df, latex=True, prec=1)))) #label =  df_formula(avg_df))
+    ax.plot(dflist[0].bs, dflist[0].getY((-avg_df+std_df, avg_y0)), 'r', linewidth = 1.)
 
-      ax.set(xscale = 'log', yscale = 'log', xlabel = r'boxsize $\epsilon$', ylabel = r'boxcount', xlim = (10., 10000.))
-      ax.grid(linestyle=':', linewidth=0.5, color=(0.7,0.7,0.7))
+    ax.set(xscale = 'log', yscale = 'log', xlabel = r'boxsize $\epsilon$', ylabel = r'boxcount', xlim = (10., 10000.))
+    ax.grid(linestyle=':', linewidth=0.5, color=(0.7,0.7,0.7))
 
-      ax.legend(loc = 3)
+    ax.legend(loc = 3)
 
-      # dslee gets 2.52 +/- 0.05
-      print 'df = %f +/- %f' % (avg_df, std_df)
+    # dslee gets 2.52 +/- 0.05
+    print 'df = %f +/- %f' % (avg_df, std_df)
 
-      pyplot.show()
+    pyplot.show()
 
-      fig.subplots_adjust(left = 0.3, right = 1.-0.3, top = 1.-0.3, bottom = 0.3)
+    fig.subplots_adjust(left = 0.3, right = 1.-0.3, top = 1.-0.3, bottom = 0.3)
 
-      commonpath = os.path.commonprefix(filenames)
-      with mpl_utils.PdfWriter(commonpath+'.pdf') as pdfpages:
-        pdfpages.savefig(fig, )
+    commonpath = os.path.commonprefix(goodArguments.files)
+    with mpl_utils.PdfWriter(commonpath+'.pdf') as pdfpages:
+      pdfpages.savefig(fig, )
 
-#    df = Df(g)
-##    df.fit(df.bs < 200)
-#    print df.get()
-#    pyplot.plot(g['bs'], g['bc'], 'x')
-#    pyplot.plot(g['bs'], df.getY(), label=df.getStr())
-#    pyplot.gca().set(xscale='log', yscale='log')
-#    pyplot.legend()
-#    pyplot.show()
 

@@ -455,3 +455,30 @@ video_create = dict(
     includePhaseSeparationEffect = True,
   )
 )
+'''
+these parameters are inspired by the studies
+of luedemann et. al
+and gain by the calibration runs on snowden
+vessel_trees_better/swine/rough_calibration2
+'''
+swine = dict(
+  seed = 1298762,
+  tip_radius_arterial = 2.0, #initial value to start recursive calculation of radii according to murrays law
+  tip_radius_capi = 2.0,
+  tip_radius_vein = 2.5,
+  murray_alpha_vein = 2.742,
+  murray_alpha_artery = 3.,
+  scale = 50.,
+  max_sprout_radius_artery = 100., #can only sprout if artery from which we sprout is less than this threshold, according to MW too small is not good
+  max_sprout_radius_vein = 100.,
+  o2range = 200.,
+  generate_more_capillaries = False,
+  full_debug_output = False,
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6,
+    rheology = 'RheologySecomb2005',
+    inletHematocrit = 0.45,
+    includePhaseSeparationEffect = True,
+  )
+)
+

@@ -691,7 +691,7 @@ def ApproximateTumorRadius(dataman, tumorgroup):
     tumor_ld    = dataman.obtain_data('ld', tumorgroup.file)
     radial      = dataman.obtain_data('distance_from_center_distribution', tumor_ld)
     distancemap = dataman.obtain_data('fieldvariable', tumorgroup.file, 'dist_tumor', tumorgroup.name)
-    radius      = np.average(radial[np.nonzero(np.logical_and(distancemap>-2*tumor_ld.scale, distancemap<2*tumor_ld.Scale()))])
+    radius      = np.average(radial[np.nonzero(np.logical_and(distancemap>-2*tumor_ld.scale, distancemap<2*tumor_ld.scale))])
     return radius
 
 

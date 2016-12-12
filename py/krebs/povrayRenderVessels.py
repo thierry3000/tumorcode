@@ -389,7 +389,7 @@ def render_different_data_types( vesselgroup, **kwargs):
   datalist=kwargs.pop('datalist',['pressure'])
   print(kwargs)
   #ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])
-  graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius'] + datalist, return_graph=True)
+  graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'nodeflags'] + datalist, return_graph=True)
   vessel_ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])  
   kwargs['wbbox'] = vessel_ld.GetWorldBox() 
   filteruncirculated = kwargs.get('filteruncirculated')  
@@ -405,10 +405,17 @@ def render_different_data_types( vesselgroup, **kwargs):
     graph = graph.get_filtered(edge_indices = graph['radius']< filterradiuslowpass)
     filenamepostfix = '_rlp'
   for data_name in datalist:
+    if 'colorfactory' in kwargs:
+      colors_factory = kwargs['colorfactory']
+      colors_factory(graph)
+    
     cm, (datamin, datamax) = make_any_color_arrays(graph, data_name)
     fn = vesselgroup.file.filename
     imagefn = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix+'.'+kwargs.get('format','png')
     with EasyPovRayRender(**kwargs) as epv:
+      #pvcm = matplotlibColormapToPovray('DATACOLORMAP', cm)
+      #epv.declareColorMap(pvcm)
+      
       CreateScene2(vesselgroup,epv, graph, imagefn, **kwargs)
       overlay = kwargs.get('overlay')
       ''' meanwhile we overcome the by changing mpl settings on snowden'''

@@ -415,7 +415,7 @@ if __name__ == '__main__':
   groupnames = myutils.walkh5(files[0], pattern, return_h5objects=False)
   allgroups = list(itertools.chain.from_iterable((f[g] for g in groupnames) for f in files))
 
-  # determination of storage file, copied from analyzeVesselsRadial
+  # determination of storage file, copied from analyzeVesselsBulkTumor
   prefix, suffix = myutils.splitcommonpresuffix(map(lambda s: basename(s), filenames))
   outputbasename, _ = splitext(prefix+suffix)
   fn_measure = 'common-radial-cache.h5'

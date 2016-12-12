@@ -633,6 +633,7 @@ void StationaryDiffusionSolve(const LatticeDataQuad3d &ld,
                               DiffSolveBuildFuncType buildfunc,
                               const ptree &pt_params)
 {
+  cout << format("stationary diffusion solve called!\n");
   my::Time t_;
   FiniteVolumeMatrixBuilder mb;
   mb.Init7Point(ld, dim);
