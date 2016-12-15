@@ -39,6 +39,7 @@ import cPickle
 from collections import defaultdict
 from pprint import pprint
 import h5files
+import qsub
 
 #import vtkcommon
 from mystruct import Struct
@@ -1599,7 +1600,29 @@ def do_plotting(filenames):
 
 
 if __name__ == "__main__":
-  filenames = sys.argv[1:]
+  import argparse
+  parser = argparse.ArgumentParser(description='Analyze IFF distributions.')  
+  #parser.add_argument('Iffparams', help = 'choose the parameter for the simulation')  
+  parser.add_argument('iffFileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin, help='iff files to calculate')   
+  #parser.add_argument('grp_pattern',help='Where to find the tumor. Usually this is somthing with out*')      
+  #this enables access to the default values  
+  #atest = parser.add_argument('-a', '--analyze', help = 'loop through all files analyze data and make plot', default=False, action='store_true')  
+  #parser.add_argument('-m', '--memory', help= 'Memory assigned by the queing system', type=str, default = '2GB')
+  goodArguments, otherArguments = parser.parse_known_args()
+  qsub.parse_args(otherArguments)
+  
+  #create filename due to former standards
+  filenames=[]
+  for fn in goodArguments.iffFileNames:
+    filenames.append(fn.name)
+  try:
+    for fn in filenames:
+      if not os.path.isfile(fn):
+        raise AssertionError('The file %s is not present!'%fn)
+  except Exception, e:
+    print e.message
+    sys.exit(-1)
+  
   do_plotting(filenames)
 
 else:

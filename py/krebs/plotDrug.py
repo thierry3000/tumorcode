@@ -39,6 +39,7 @@ import md5
 import cPickle
 import pprint
 import h5files
+import qsub
 
 import extensions # for asarray with h5py support
 import krebsutils
@@ -1817,5 +1818,21 @@ def plot_comparison(path):
 
 
 if __name__ == "__main__":
-  filenames = sys.argv[1:]
+  import argparse
+  parser = argparse.ArgumentParser(description='Analyze Drug distributions.')  
+  parser.add_argument('iffFileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin, help='iff files to calculate')   
+  goodArguments, otherArguments = parser.parse_known_args()
+  qsub.parse_args(otherArguments)
+  
+  #create filename due to former standards
+  filenames=[]
+  for fn in goodArguments.iffFileNames:
+    filenames.append(fn.name)
+  try:
+    for fn in filenames:
+      if not os.path.isfile(fn):
+        raise AssertionError('The file %s is not present!'%fn)
+  except Exception, e:
+    print e.message
+    sys.exit(-1)
   measure_and_plot(filenames)

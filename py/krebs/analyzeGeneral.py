@@ -435,6 +435,8 @@ class DataBasicVessel(object):
         r,_    = dataman.obtain_data('vessel_graph_property', vesselgroup, 'edges', 'radius')
         flow,_ = dataman.obtain_data('vessel_graph_property', vesselgroup, 'edges', 'flow')
         return (flow/(math.pi*r*r)), 'edges'
+      #elif property_name == 'flags':
+      #  flags,_    = dataman.obtain_data('vessel_graph_property', vesselgroup, 'edges', 'flags')
       else:
         return np.asarray(vesselgroup[association][property_name]), association
 
@@ -477,7 +479,8 @@ class DataVesselSamples(object):
     def obtain_data(self, dataman, dataname, *args):
       if dataname == 'basic_vessel_samples':
         property_name, vesselgroup, sample_length = args
-        graph = dataman.obtain_data('vessel_graph', vesselgroup, ['position','flags'])
+        #graph = dataman.obtain_data('vessel_graph', vesselgroup, ['position','flags'])
+        graph = dataman.obtain_data('vessel_graph', vesselgroup, ['position'])
         if property_name == 'weight':
           smpl = krebsutils.sample_edges_weights(graph.nodes['position'], graph.edgelist, sample_length)
         else:

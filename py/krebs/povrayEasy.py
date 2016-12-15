@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 #from plottools import Vec3
 from vec import Vec3
@@ -33,11 +31,22 @@ import numpy as np
 import math
 import myutils
 
+import matplotlib
+'''
+due to no graphics on the clusters, we have to use a differetn renderer
+http://matplotlib.org/faq/usage_faq.html
+'''
+import identifycluster
+if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
+  matplotlib.use('agg')
+import matplotlib.pyplot
+import mpl_utils
+
 ##############################################################################
 
-def CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, **kwargs):
-    if kwargs.get('overlay', True):
-      RenderImageWithOverlay(epv, imagefn, cm, label, **kwargs)      
+def CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, options):
+    if options.overlay:
+      RenderImageWithOverlay(epv, imagefn, cm, label, options)      
     else:
       epv.render(imagefn)
 
@@ -169,7 +178,7 @@ class EasyPovRayRender(object):
     args = dict(suffix=suffix,prefix='mwpov_main',text=text)
     if self.tempfiledir:
       args['dir'] = self.tempfiledir
-    args['keep'] = self.params.get('keep_files', False)
+    args['keep'] = self.params.keep_files
     tf = mkstemp.File(**args)
     self.tempfiles.append(tf)
     return tf
@@ -181,9 +190,12 @@ class EasyPovRayRender(object):
     self.clear()
 
 
-  def __init__(self, **params):
+  def __init__(self, params):
     self.params = params
-    self.tempfiledir = params.get("temp_file_dir", None)
+    if 'temp_file_dir' in params:
+      self.tempfiledir = params.temp_file_dir
+    else:
+      self.tempfiledir = None
     self.tempfiles = []
     tf = self.makeTmpFile()
     self.f = open(tf.filename, 'w')
@@ -191,8 +203,8 @@ class EasyPovRayRender(object):
     #self.pvfile.write('#include "rad_def.inc"')
     self.pvfile.write('#version 3.6;')
     pv.Item("global_settings",
-            assumed_gamma = params.get('assumed_gamma', 1.),
-            ambient_light = params.get('ambient_color', (0.1, 0, 0)),
+            assumed_gamma = params.assumed_gamma,
+            ambient_light = params.ambient_color,
             #radiosity = '{Rad_Settings(Radiosity_OutdoorHQ, 1, 1)}'
             ).write(self.pvfile)
     #self.pvfile.write("""sky_sphere { pigment {color rgb <1,1,1> } }""")
@@ -206,18 +218,18 @@ class EasyPovRayRender(object):
     self.f.close()
     # call povray
     povray = 'povray %s'
-    aa = self.params.get('aa', None)
-    if aa:
-      aa = '+A +R%i' % aa
+    if 'aa' in self.params:
+      aa = self.params.aa
+      aa = '+A +R%i' % aa  
     else:
       aa = ''
-    if self.params.get("out_alpha", False):
+    if self.params.out_alpha:
       alpha = "+UA"
     else:
       alpha = ""
-    num_threads = self.params.get("num_threads", 1)
+    num_threads = self.params.num_threads
     num_threads = ("+WT%i" % num_threads) if num_threads>1 else ""
-    res = self.params.get('res', (800, 600))
+    res = self.params.res
     res = '+W%i +H%i' % res
     imgfn = imgfn.replace('=',r'-') # povray does not like = in filenames
     cmd = povray % ('%s +FN8 %s %s -D %s +O"%s" "%s"' % (res,alpha,num_threads,aa,imgfn, scenefilename))
@@ -234,7 +246,7 @@ class EasyPovRayRender(object):
 
 
   def setCamera(self, pos, lookat, fov, projection='perspective', **kwargs):
-    W, H = self.params['res']
+    W, H = self.params.res
     ratio = float(W)/H
     a = dict(
         angle = fov,
@@ -438,22 +450,15 @@ def clipFactory(args):
 ## Interoperability with matplotlib ...
 ##############################################################################
 ''' if cm=None, we only plot a sizebar'''
-def OverwriteImageWithColorbar(image_fn, cm, label, output_filename, wbbox, fontcolor = 'black', dpi = 90.):  
-  import matplotlib
-  '''
-  due to no graphics on the clusters, we have to use a differetn renderer
-  http://matplotlib.org/faq/usage_faq.html
-  '''
-  import identifycluster
-  if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
-    matplotlib.use('agg')
-  import matplotlib.pyplot
-  import myutils
-  import mpl_utils
+#def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, wbbox, fontcolor = 'black', dpi = 90.):  
+def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename): 
   '''
     overlays a small colorbar and adds a label on top of the image and writes it over the original location
   '''
   rc = matplotlib.rc
+  fontcolor=options.fontcolor
+  dpi = options.dpi
+  wbbox = options.wbbox
   rc('lines', color = fontcolor)
   rc('text', color = fontcolor)
   rc('axes', edgecolor = fontcolor, labelcolor = fontcolor)
@@ -464,9 +469,13 @@ def OverwriteImageWithColorbar(image_fn, cm, label, output_filename, wbbox, font
   rc('savefig', facecolor = 'none', edgecolor = 'none') # no background so transparency is preserved no matter what the config file settings are
   img = matplotlib.image.imread(image_fn)
   resy, resx, _ = img.shape
-  mytextsize=resx/float(dpi)*5  
-  fig = matplotlib.pyplot.figure(figsize = (resx/dpi, resy/dpi), dpi=dpi)
-  ax = fig.add_axes([0, 0, 1, 1])
+  mytextsize=resx/float(dpi)*4
+  if not options.cam == 'pie':
+    fig = matplotlib.pyplot.figure(figsize = (resx/dpi, resy/dpi*1.1), dpi=dpi)
+    ax = fig.add_axes([0.0, 0.05, 1, 1.0])
+  else:
+    fig = matplotlib.pyplot.figure(figsize = (resx/dpi, resy/dpi*1.0), dpi=dpi)
+    ax = fig.add_axes([0.0, 0.0, 1, 1.0]) #[left, bottom, width, height] 
   ax.imshow(img, interpolation = 'nearest')
 #  ax.yaxis.set_visible(False)
 #  ax.xaxis.set_visible(False)
@@ -475,7 +484,7 @@ def OverwriteImageWithColorbar(image_fn, cm, label, output_filename, wbbox, font
   ax.set_axis_off()
   #measured in fractions of figure width and height
   if not cm==None:
-    ax2 = fig.add_axes([0.1, 0.1, 0.26, 0.018]) # left bottom width height
+    ax2 = fig.add_axes([0.05, 0.05, 0.26, 0.018]) # left bottom width height
     c = np.linspace(0, 1, 256).reshape(1,-1)
     c = np.vstack((c,c))
     ax2.imshow(c, aspect='auto', cmap = cm.get_cmap(), vmin = 0, vmax = 1)
@@ -490,42 +499,34 @@ def OverwriteImageWithColorbar(image_fn, cm, label, output_filename, wbbox, font
     
     ax2.set(xticks = xticks)
     ax2.set(xticklabels=xticklabels)
-    ax2.tick_params(labelsize=mytextsize/2, colors='white')
+    ax2.tick_params(labelsize=mytextsize/2, colors='black')
     #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
     
-    ax2.text(0.1,0.9,label,
+    ax2.text(0.5,-0.09,label,
              horizontalalignment='left',
              verticalalignment='bottom',
              transform=ax.transAxes,
-             size=mytextsize,
+             size=mytextsize*0.7,
              fontweight='bold')
   ''' length of ax is in dots
   how many dots correlates to 200mu m?
   1 pixel length im inch = 1/float(resx)/float(dpi)
   '''
-  if 0:
-    from matplotlib_scalebar.scalebar import ScaleBar
-    #resx/dpi --> total length so one pixel is reciproce of this
-    complete_length_in_inch = 1/float(resx)/float(dpi)
-    complete_length_in_meters = complete_length_in_inch * 0.0254
-    one_px_in_meters = complete_length_in_meters
-    scalebar = ScaleBar(complete_length_in_inch,
-                        scale_loc='right',
-                        location='lower right',
-                        frameon=True,) # 1 pixel = 0.2 meter
-    ax.add_artist(scalebar)
-  if 1:
+  if options.cam in ('topdown', 'topdown_slice'):
+    #haven't thought about adjustion the sizebar for rotated systems
     '''resx units = x_length_in_mum
     '''
     x_length_in_mum = abs(wbbox[1]-wbbox[0])
+    y_length_in_mum = abs(wbbox[3]-wbbox[2])
     length_of_size_bar_in_mum = 250;
     length_in_data_space = float(resx)*length_of_size_bar_in_mum/x_length_in_mum
+    length_in_data_spaceY = float(resy)*length_of_size_bar_in_mum/y_length_in_mum    
     mpl_utils.add_sizebar(ax,
-                          color = 'white',
+                          color = 'black',
                           size=length_in_data_space,
                           text=r'$%i\mu m$'% length_of_size_bar_in_mum,
-                          myfontsize=mytextsize,
-                          size_vertical=0.1*length_of_size_bar_in_mum,
+                          myfontsize=mytextsize/2,
+                          size_vertical=0.05*length_in_data_space,
                           )
   if not output_filename:
     output_filename = image_fn
@@ -537,8 +538,8 @@ def OverwriteImageWithColorbar(image_fn, cm, label, output_filename, wbbox, font
   fig.savefig(output_filename, dpi=dpi, bbox_inches=None ) # overwrite the original
 
 
-def RenderImageWithOverlay(epv, imagefn, colormap, label, **kwargs):
-  tf = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True)
+def RenderImageWithOverlay(epv, imagefn, colormap, label, options):
+  tf = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True) 
   epv.render(tf.filename)
-  plotsettings = dict(myutils.iterate_items(kwargs, ['dpi','fontcolor','wbbox'], skip=True))    
-  OverwriteImageWithColorbar(tf.filename, colormap, label, output_filename = imagefn, **plotsettings)
+  #plotsettings = dict(myutils.iterate_items(kwargs, ['dpi','fontcolor','wbbox'], skip=True))    
+  OverwriteImageWithColorbar(options,tf.filename, colormap, label, output_filename = imagefn)

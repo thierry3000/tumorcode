@@ -157,3 +157,17 @@ dbg_vessels = dict(
       #keep_files = True,
       #temp_file_dir = '.',
 )
+iff = dict(
+    #res=(512,512),
+    #res=(2048, 2048),
+    aa=4,
+    res = (1024, 1024),
+    #aa = 1,
+    dpi = 320,
+    num_threads=5,
+    background = 1.0,
+    out_alpha=False,
+    colored_slice=True,
+    ambient_color=(0.5, 0.5, 0.5),
+    plot_auc = False,
+)

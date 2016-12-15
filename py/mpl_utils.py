@@ -19,7 +19,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-# -*- coding: utf-8 -*-
+
 import os
 import numpy as np
 
@@ -387,7 +387,10 @@ def add_sizebar(ax, size = 200, text = ur"200 \u03BCm", color = 'white', loc = 4
   '''adds a size bar into an image plot'''
   a = matplotlib.font_manager.FontProperties(size=myfontsize)
   #a = matplotlib.font_manager.FontProperties()
-  asb = AnchoredSizeBar(ax.transData, size, text, loc=4, pad=0.1, borderpad = 0.5, sep=5, frameon=False,fontproperties=a,size_vertical=size_vertical)
+  #4 lower right
+  #8 lower center
+  asb = AnchoredSizeBar(ax.transData, size, text, loc=8, pad=-1.2, frameon=False,fontproperties=a,size_vertical=size_vertical)
+  #asb = AnchoredSizeBar(ax.transData, size, text, loc=10,bbox_to_anchor=(300,100), pad=0, frameon=False,fontproperties=a,size_vertical=size_vertical)  
   asb.get_child().get_children()[1].get_children()[0].set(color = color)
   asb.get_child().get_children()[0].get_children()[0].set(color = color)
   ax.add_artist(asb)

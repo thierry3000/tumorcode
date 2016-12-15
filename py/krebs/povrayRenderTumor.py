@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
@@ -35,7 +33,7 @@ import math
 import copy
 
 
-def addBulkTissueTumor(epv, tumorgroup, trafo, **kwargs):
+def addBulkTissueTumor(epv, tumorgroup, trafo, options):
     ld = krebsutils.read_lattice_data_from_hdf(tumorgroup.file[tumorgroup['conc'].attrs['LATTICE_PATH']])
     ld = transform_ld(trafo, ld)
 
@@ -51,8 +49,10 @@ def addBulkTissueTumor(epv, tumorgroup, trafo, **kwargs):
 #    pyplot.imshow(ds_levelset[:,:,8])
 #    pyplot.contour(ds_levelset[:,:,8],[0.])
 #    pyplot.show()
-
-    clip = clipFactory(kwargs.get('tumor_clip', None))
+    if 'tumor_clip' in options:
+      clip = clipFactory(options.tumor_clip)
+    else:
+      clip = clipFactory('None')
 
     voldata_ls    = epv.declareVolumeData(ds_levelset, ld.GetWorldBox())
     voldata_cells = epv.declareVolumeData(data, ld.GetWorldBox())
@@ -77,7 +77,7 @@ def addBulkTissueTumor(epv, tumorgroup, trafo, **kwargs):
 
 
 
-def renderScene(vesselgroup, tumorgroup, imagefn, **kwargs):
+def renderScene(vesselgroup, tumorgroup, imagefn, options):
     if vesselgroup is not None:
       wbbox = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice']).worldBox
     else:
@@ -86,19 +86,19 @@ def renderScene(vesselgroup, tumorgroup, imagefn, **kwargs):
     zsize = (wbbox[5]-wbbox[4])
     
     vessel_ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])  
-    kwargs['wbbox'] = vessel_ld.GetWorldBox() 
+    options.wbbox = vessel_ld.GetWorldBox()     
 
-    with EasyPovRayRender(**kwargs) as epv:
-      epv.setBackground(kwargs.pop('background',0.0))
-      cam = kwargs.pop('cam','topdown')
+    with EasyPovRayRender(options) as epv:
+      epv.setBackground(options.background)
+      cam = options.cam
       if cam in ('topdown', 'topdown_slice'):
         cam_fov = 60.
-        cam_distance_factor = kwargs.pop('cam_distance_multiplier', 1.) * ComputeCameraDistanceFactor(cam_fov, kwargs['res'], wbbox)
+        cam_distance_factor = options.cam_distance_multiplier * ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
         epv.addLight(10*Vec3(1.7,1.2,2), 1., area=(4, 4, 3, 3), jitter=True)
         if cam == 'topdown_slice':
           imagefn += '_slice'
-          kwargs.update(vessel_clip =('zslice', -201*trafo.w, 201*trafo.w),
-                        tumor_clip =('zslice', -100*trafo.w, 100*trafo.w))
+          options.vessel_clip =('zslice', -201*trafo.w, 201*trafo.w)
+          options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
           epv.setCamera((0,0,cam_distance_factor*0.5*(200.*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
         else:
           imagefn += '_top'
@@ -106,34 +106,37 @@ def renderScene(vesselgroup, tumorgroup, imagefn, **kwargs):
       else:
         imagefn += '_pie'
         cam_fov = 60.
-        basepos = kwargs.pop('cam_distance_multiplier', 1.) * np.asarray((0.6,0.7,0.55))*(1./1.4)*math.tan(math.pi*0.25)/math.tan(math.pi/180./2.*cam_fov)
+        basepos = options.cam_distance_multiplier * np.asarray((0.6,0.7,0.55))*(1./1.4)*math.tan(math.pi*0.25)/math.tan(math.pi/180./2.*cam_fov)
         epv.setCamera(basepos, (0,0,0), cam_fov, up = (0,0,1))
         num_samples_large_light = 4
         num_samples_small_light = 2
         epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
         epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
-        kwargs.update(vessel_clip = ('pie', 0.),
-                      tumor_clip = ('pie', -50*trafo.w))
+        options.vessel_clip =('pie', 0.)
+        options.tumor_clip = ('pie', -50*trafo.w)
 
       if vesselgroup is not None:
         graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'pressure'], return_graph=True)
-        filteruncirculated = kwargs.get('filteruncirculated')  
-        if filteruncirculated:
+        if options.filteruncirculated:
           graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))        
-        colorfactory = kwargs.pop('colorfactory', make_pressure_color_arrays)
+        if 'colorfactory' in options:
+          colorfactory = options.colorfactory
+        else:
+          colorfactory = make_pressure_color_arrays
         colorfactory(graph)
-        addVesselTree(epv, graph, trafo, vesselgroup = vesselgroup, **kwargs)
-
+        #addVesselTree(epv, graph, trafo, vesselgroup = vesselgroup, options)
+        addVesselTree(epv, graph, trafo, options)
+        
       if tumorgroup is not None and 'conc' in tumorgroup:
-        addBulkTissueTumor(epv, tumorgroup, trafo, **kwargs)
+        addBulkTissueTumor(epv, tumorgroup, trafo, options)
       
       if (tumorgroup is not None and tumorgroup.attrs['TYPE'] == 'faketumor'):
         print('nix')
-      overlay = kwargs.get('overlay')
+      #overlay = kwargs.get('overlay')
 
-      overlay=True
-      if overlay:
-        RenderImageWithOverlay(epv, imagefn+'.png', None, 'tumor', **kwargs)
+      #overlay=True
+      if options.overlay:
+        RenderImageWithOverlay(epv, imagefn+'.png', None, 'tumor', options)
       else:
         epv.render(imagefn+'.png')
       

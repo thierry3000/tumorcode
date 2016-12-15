@@ -42,6 +42,8 @@ from copy import deepcopy
 import myutils
 import identifycluster
 
+from krebs import povrayRenderSettings
+
 def clientfunc(job, cwd):
   os.chdir(cwd)
   job.render()
@@ -64,7 +66,7 @@ def estimateRuntimeAndMemory(g):
 
 
 class RenderJob(object):
-  def __init__(self, f, group_name, postfix, params = dict()):
+  def __init__(self, f, group_name, postfix, params):
     self.fn = f.filename
     self.postfix = postfix
     self.group_name = group_name
@@ -72,16 +74,19 @@ class RenderJob(object):
       my_threads = 16
     else:
       my_threads = 4
-    self.params = dict(
-      res=(1400,1400),
-      aa=4,
-      colored_slice=True,
-      out_alpha=True,
-      num_threads=my_threads, 
-      temp_file_dir = '/tmp',
-      cam = 'topdown'
-    )
-    self.params.update(params)
+    
+#    self.params = dict(
+#      res=(1400,1400),
+#      aa=4,
+#      colored_slice=True,
+#      out_alpha=True,
+#      num_threads=my_threads, 
+#      temp_file_dir = '/tmp',
+#      cam = 'topdown'
+#    )
+#    self.params.update(params)
+    params.threads = my_threads
+    self.params = params
     self.runtime_and_mem = estimateRuntimeAndMemory(f[self.group_name])
 
   @property
@@ -102,7 +107,7 @@ class RenderJob(object):
         renderScene(f[self.group_name]['vessels'],
                     f[self.group_name]['tumor'],
                     self.imageFilename,
-                    **self.params)
+                    self.params)
 #      else:
 #        from krebs.povrayRenderVessels import renderScene
 #        renderScene(f[self.group_name],
@@ -116,62 +121,94 @@ class RenderJob(object):
                     self.params)
       else:
         from krebs.povrayRenderVessels import render_different_data_types
-        render_different_data_types(f[self.group_name],
-                    **self.params )
+        render_different_data_types(f[self.group_name],self.params )
 
 
 
 if __name__ == '__main__':
   import qsub
   import argparse
-  parser = argparse.ArgumentParser(description='Povray wrapper')
+  parser = argparse.ArgumentParser(description='Povray wrapper',
+                                   formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   
-  parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin)
+  parser.add_argument('vesselFileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin)
   parser.add_argument('grp_pattern')
-  parser.add_argument("-d","--data", dest="datalist", help="which data (pressure, flow, shearforce, hematocrit) as comma separated list", default='pressure', action="store")
+  parser.add_argument('-p', '--povParamsSet', default=None, help='use parameters found in povrayRenderSettings.py')
+  parser.add_argument("-d","--data", dest="datalist", help="which data (pressure, flow, shearforce, hematocrit) as comma separated list", default=['pressure'], action="store")
   parser.add_argument("-f","--filter-uncirculated", dest="filteruncirculated", help="filter uncirculated vessels", default=False, action="store_true")
-  parser.add_argument("--filter-radius-high-pass", dest="filterradiushighpass", action="store", default = -1., type=float)
-  parser.add_argument("--filter-radius-low-pass", dest="filterradiuslowpass", action="store",  default = -1., type=float)     
-  parser.add_argument("--no-overlay", dest="overlay", default = True, action="store_false")
-  parser.add_argument("--dpi", dest="dpi", default=None, action="store")
-  parser.add_argument("--format", dest="format", default=None, action="store")
-  parser.add_argument("-c","--cam", dest="cam", help="camera mode: topdown, pie, topdown_slice", default='topdown_slice', action="store", type=str)
-  parser.add_argument("-u","--auc", dest="plot_auc", help="for area under curve, we have only a single timepoint", default=False, action="store_true")
-  parser.add_argument("-a","--auto_color", dest="auto_colorscale", help="", default=False, action="store_true")  
+  parser.add_argument("--filterradiushighpass", help='filter vessels from tree above this value', default = -1., type=float)
+  parser.add_argument("--filterradiuslowpass", help='filter vessels from tree below this value',  default = -1., type=float)     
+  parser.add_argument("--overlay", help='decide if mpl overlay is created', default = True, action="store_false")
+  #note this would be helpfull for debuging, but needs data cache
+  #not yet done  
+  #parser.add_argument("--only_overlay", default = False, action="store_true")  
+  parser.add_argument("--dpi", help='dpi for the rendering', default=300.)
+  parser.add_argument("--format", help='output format of image', default='png', action="store")
+  parser.add_argument("-c","--cam", help="camera mode: topdown, pie, topdown_slice", default='topdown_slice', action="store", type=str)
+  parser.add_argument("-u","--plot_auc", help="for area under curve, we have only a single timepoint", default=False, action="store_true")
+  parser.add_argument("-a","--auto_colorscale", help=" ", default=False, action="store_true")  
+  parser.add_argument("--fontcolor", help='fontcolor in overlay, use mpl style colors', default='black')  
+  parser.add_argument("--temp_file_dir", help='dir for temp povray scene', default=None)
+  parser.add_argument("--keep_files", help='keep tmp file?', default=False, action="store_true")
+  parser.add_argument("--assumed_gamma", help=" ", default=1.0)
+  parser.add_argument("--background", help=" ", default=1.0)
+  parser.add_argument("--ambient_color", help=" ", default=(0.1, 0, 0))
+  parser.add_argument("--res", help=" ", default=(1024,1024))
+  parser.add_argument("--num_threads", help=" ", default=7)
+  parser.add_argument("--out_alpha", help=" ", default=False, action="store_true")
+  parser.add_argument("--cam_distance_multiplier", help=" ", default=1.0 )
+  parser.add_argument("--colored_slice", help=" ", default=True)
+  #parser.add_argument("--projection_plot", help=" ", default=True)
+  parser.add_argument("--render_volume", help="For combined images", default=True)
+  parser.add_argument("--render_vessels", help="For combined images", default=True)
+  
   
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
   
-  #options, args = parser.parse_args()
-  parameters = dict(
-    cam = goodArguments.cam,
-    datalist = map(lambda s: s, map(str.strip, goodArguments.datalist.split(','))),
-    filteruncirculated = goodArguments.filteruncirculated,
-    filterradiushighpass = goodArguments.filterradiushighpass,
-    filterradiuslowpass = goodArguments.filterradiuslowpass,
-    overlay = goodArguments.overlay,
-    plot_auc = goodArguments.plot_auc,
-    auto_colorscale = goodArguments.auto_colorscale,
-  )
-
+  if not parser.get_default('datalist') == goodArguments.datalist:
+    goodArguments.datalist= goodArguments.datalist.split(',')
+  
+  """ read parameters from file """
   #create filename due to former standards
   filenames=[]
   for fn in goodArguments.vesselFileNames:
     filenames.append(fn.name)
+  goodArguments.vesselFileNames = filenames
   pattern = goodArguments.grp_pattern
   postfix = ''
-
+  try:
+    if not goodArguments.povParamsSet is None:
+      if not goodArguments.povParamsSet in dir(povrayRenderSettings):
+        raise AssertionError('Unknown parameter set %s!' % goodArguments.povParamsSet)
+      else:
+        """ apply found parameters from file"""
+        params_from_file = getattr(povrayRenderSettings, goodArguments.povParamsSet)
+        for key in params_from_file.keys():
+          print('found %s with %s in file\n' %(key,params_from_file[key]))
+          if not key in goodArguments:
+            raise AssertionError('Unknown key %s in file\n' % key)
+          else:
+            setattr(goodArguments,key,params_from_file[key])
+          
+    for fn in filenames:
+        if not os.path.isfile(fn):
+            raise AssertionError('The file %s is not present!'%fn)
+  except Exception, e:
+    print e.message
+    sys.exit(-1)
+  
+  """ create job"""
   jobs = []
   a = jobs.append
-
   for fn in filenames:
     with h5files.open(fn,'r') as f:
       paths = myutils.walkh5(f, pattern)
       if goodArguments.plot_auc:
         path = myutils.walkh5(f, 'out0000')
-        j = RenderJob(f, path[0], postfix, parameters)
+        j = RenderJob(f, path[0], postfix, goodArguments)
       for path in paths:
-        j = RenderJob(f, path, postfix, parameters)
+        j = RenderJob(f, path, postfix, goodArguments)
         a(j)
 
   for job in jobs:
@@ -180,6 +217,6 @@ if __name__ == '__main__':
     qsub.submit(
       qsub.func(clientfunc, job, os.getcwd()),
       name='job_render_'+basename(job.imageFilename),
-      num_cpus=job.params['num_threads'],
+      num_cpus=job.params.threads,
       mem=('%iMB' % m),
       days=t/24.)

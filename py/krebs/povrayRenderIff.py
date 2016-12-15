@@ -47,21 +47,6 @@ import matplotlib.cm
 #import matplotlib.pyplot as pyplot #not good on cluster without graphics!!!
 
 
-default_parameters = dict(
-    #res=(512,512),
-    #res=(2048, 2048),
-    aa=4,
-    res = (1024, 1024),
-    #aa = 1,
-    dpi = 320,
-    num_threads=5,
-    background = 1.0,
-    out_alpha=False,
-    colored_slice=True,
-    ambient_color=(0.5, 0.5, 0.5),
-    plot_auc = False,
-)
-
 colors = [(0, 0.1,0,0.4), (0.7, 0.8,0,0.05), (1., 0.9, 0.7, 0.7) ]
 #cm_po2 = matplotlib.colors.LinearSegmentedColormap('', {
 #  'red'   : [(x, r, r) for (x,r,g,b) in colors],
@@ -178,23 +163,24 @@ def InsertGraphColors(vesselgraph, ifffield, data_name, automatic_scale=False, m
 #      epv.render(imagefn)
 
 
-def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, kwargs_in):
-  kwargs = deepcopy(kwargs_in)
+def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, options, max_conc=None):
+  #kwargs = deepcopy(kwargs_in)
   wbbox = volume_ld.worldBox
-  kwargs['wbbox']=wbbox
+  #kwargs['wbbox']=wbbox
+  options.wbbox=wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
   volume_ld = transform_ld(trafo, volume_ld)
   vessel_ld = transform_ld(trafo, vessel_ld)
-  cm = InsertGraphColors(vessel_graph, volumedata, data_name, automatic_scale = kwargs['auto_colorscale'], max_conc=kwargs['max_conc'])  
+  cm = InsertGraphColors(vessel_graph, volumedata, data_name, automatic_scale = options.auto_colorscale, max_conc=max_conc)  
 
-  def DoTheRendering(fn, kwargs):
-    with EasyPovRayRender(**kwargs) as epv:
-      epv.setBackground(kwargs.pop('background',1.0))
+  def DoTheRendering(fn, options):
+    with EasyPovRayRender(options) as epv:
+      epv.setBackground(options.background)
       central_position = wbbox[4]+planeZCoord/100.*(wbbox[5]-wbbox[4])
       central_position = central_position*trafo.w
       
       cam_fov = 60.
-      cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, kwargs['res'], wbbox)
+      cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
       epv.setCamera((0,0,cam_distance_factor*1.0), lookat = (0,0,0), fov = cam_fov, up = 'y')
   
       epv.addLight(10.*Vec3(1,0.5,2), 1.2)
@@ -203,42 +189,53 @@ def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld
       central_position = wbbox[4]+planeZCoord/100.*(wbbox[5]-wbbox[4])
       central_position = central_position*trafo.w
       half_thikness_of_slice = 5
-      vessel_clip = ('zslice', central_position-half_thikness_of_slice*trafo.w,central_position+half_thikness_of_slice*trafo.w)
-      kwargs.update(vessel_clip=vessel_clip)      
+      #vessel_clip = ('zslice', central_position-half_thikness_of_slice*trafo.w,central_position+half_thikness_of_slice*trafo.w)
+      #options.vessel_clip = ('zslice', central_position-half_thikness_of_slice*trafo.w,central_position+half_thikness_of_slice*trafo.w)      
+      options.vessel_clip=('zslice', -150*trafo.w, +150*trafo.w)      
+      #kwargs.update(vessel_clip=vessel_clip)      
   
       pvcm = matplotlibColormapToPovray('DATACOLORMAP', cm)
       epv.declareColorMap(pvcm)
-      if 0:
-        print vessel_ld
-        print volume_ld
-        print vessel_ld.worldBox
-        print volume_ld.worldBox
-      if 0:# I do not really know, why this is here???, see renderSlice
-        if (wbbox[1]-wbbox[0]) < (wbbox[5]-wbbox[4])*2.:
-          kwargs.update(vessel_clip =('zslice', -300*trafo.w, +300*trafo.w))
-
-      if kwargs.get('render_volume_', True) and 1:
+#      if 0:
+#        print vessel_ld
+#        print volume_ld
+#        print vessel_ld.worldBox
+#        print volume_ld.worldBox
+#      if 0:# I do not really know, why this is here???, see renderSlice
+#        if (wbbox[1]-wbbox[0]) < (wbbox[5]-wbbox[4])*2.:
+#          kwargs.update(vessel_clip =('zslice', -300*trafo.w, +300*trafo.w))
+      if options.render_volume:
         epvvol = epv.declareVolumeData(volumedata, volume_ld.GetWorldBox())
-        absolut_coordinate = wbbox[4]+planeZCoord/100.*(wbbox[5]-wbbox[4])
-        absolut_coordinate =absolut_coordinate*trafo.w
-        epv.addVolumeDataSlice(epvvol, (0,0,absolut_coordinate), (0, 0, 1), pvcm)
-      if kwargs.get('render_vessels_', True) and 1:
-        addVesselTree(epv, vessel_graph, trafo = trafo, **kwargs)
+        #absolut_coordinate = wbbox[4]+planeZCoord/100.*(wbbox[5]-wbbox[4])
+        #absolut_coordinate =absolut_coordinate*trafo.w
+        #epv.addVolumeDataSlice(epvvol, (0,0,absolut_coordinate), (0, 0, 1), pvcm)
+        epv.addVolumeDataSlice(epvvol, (0,0,planeZCoord), (0, 0, 1), pvcm)        
         
-      CallPovrayAndOptionallyMakeMPLPlot(epv, fn, cm, label, **kwargs)
-  
-  if kwargs.pop('projection_plot', False):
+      if options.render_vessels:
+        addVesselTree(epv, vessel_graph, trafo = trafo, options=options)
+#      if kwargs.get('render_volume_', True) and 1:
+#        epvvol = epv.declareVolumeData(volumedata, volume_ld.GetWorldBox())
+#        absolut_coordinate = wbbox[4]+planeZCoord/100.*(wbbox[5]-wbbox[4])
+#        absolut_coordinate =absolut_coordinate*trafo.w
+#        epv.addVolumeDataSlice(epvvol, (0,0,absolut_coordinate), (0, 0, 1), pvcm)
+#      if kwargs.get('render_vessels_', True) and 1:
+#        addVesselTree(epv, vessel_graph, trafo = trafo, **kwargs)
+        
+      CallPovrayAndOptionallyMakeMPLPlot(epv, fn, cm, label, options)
+  ### I forgot this was good for???
+  #if options.projection_plot:
+  if False:
     planeZCoord = vessel_ld.worldBox[4]+0.1*vessel_ld.scale
-    basefn, ext = splitext(fn)
+    basefn, ext = splitext(imagefn)
     tf1 = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True)
     tf2 = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True)
     fn1 = tf1.filename
     fn2 = tf2.filename
-    kwargs['overlay'] = False
-    kwargs['render_volume_'] = False
+    options.overlay = False
+    options.render_volume_ = False
     DoTheRendering(fn1, kwargs)
-    kwargs['render_volume_'] = True
-    kwargs['render_vessels_'] = False
+    options.render_volume_ = True
+    options.render_vessels_ = False
     DoTheRendering(fn2, kwargs)
     import subprocess
     if kwargs_in.get('overlay', True):
@@ -251,8 +248,9 @@ def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld
     return
   else:
     planeZCoord = 50#measured in percent of total
+    planeZCoord = 0#measured in percent of total
     #kwargs['relative_z_height']=50 #measured in percent of total
-    DoTheRendering('slice_at_%0.1f_percent'%planeZCoord+imagefn, kwargs)
+    DoTheRendering('slice_at_%0.1f_percent'%planeZCoord+imagefn, options)
     #kwargs['relative_z_height']=20 #measured in percent of total
     #DoTheRendering('slice_at_%i_percent)'%kwargs['relative_z_height']+imagefn, kwargs)
 
@@ -332,9 +330,10 @@ def renderVasculatureWTumor((vessel_ld, vessel_graph, data_name), gtumor, imagef
 
 
 
-def renderScene(drug_grp, imagefn, kwargs):
-  kwargs = myutils.updated(default_parameters, kwargs)
-  kwargs['max_conc'] = getMaxConcentration(drug_grp.file)  
+def renderScene(drug_grp, imagefn, options):
+  #kwargs = myutils.updated(default_parameters, kwargs)
+  #kwargs['max_conc'] = getMaxConcentration(drug_grp.file)  
+  max_conc = getMaxConcentration(drug_grp.file)    
   
   dataman = myutils.DataManager(2, [DataBasicVessel()])
   
@@ -366,41 +365,46 @@ def renderScene(drug_grp, imagefn, kwargs):
   #vessel_graph.edges['saturation'] = PO2ToSaturation(po2vessels, parameters)
   #vessel_graph.edges['hboconc'] = vessel_graph.edges['saturation']*vessel_graph.edges['hematocrit']*chb_of_rbcs*1.0e3
   vessel_graph = vessel_graph.get_filtered(edge_indices = myutils.bbitwise_and(vessel_graph['flags'], krebsutils.CIRCULATED))
-  if 'filterradiuslowpass' in kwargs.keys():  
-    if kwargs['filterradiuslowpass'] >0.:
-      print("lowpass filter activated:")
-      vessel_graph = vessel_graph.get_filtered(edge_indices = vessel_graph['radius']< kwargs['filterradiuslowpass'])
-      filenamepostfix = '_rlp'
+  if options.filterradiuslowpass>0.0:
+    print("lowpass filter activated:")
+    vessel_graph = vessel_graph.get_filtered(edge_indices = vessel_graph['radius']< kwargs['filterradiuslowpass'])
+    filenamepostfix = '_rlp'
+#  if 'filterradiuslowpass' in kwargs.keys():  
+#    if kwargs['filterradiuslowpass'] >0.:
+#      print("lowpass filter activated:")
+#      vessel_graph = vessel_graph.get_filtered(edge_indices = vessel_graph['radius']< kwargs['filterradiuslowpass'])
+#      filenamepostfix = '_rlp'
 
   imagefn, ext = splitext(imagefn)
-  ext = '.' + kwargs.get('format', ext[1:])
+  #ext = '.' + kwargs.get('format', ext[1:])
+  ext = '.' + options.format
   if 1:
     if timepoint==0:
-      renderSliceWithDistribution((vessel_ld, vessel_graph, 'iff_pressure'), (iff_ld, iff_pressure_field), (imagefn+'_iff_pressure_t%0.1fh'%timepoint )+ext, 'IF pressure t=%.1f h'%timepoint, kwargs)
-    renderSliceWithDistribution((vessel_ld, vessel_graph, 'drug_conc'), (iff_ld, drug_conc_field), (imagefn+'_iff_drug_t%0.1fh'%timepoint )+ext, 'Tras. t=%.1f h'%timepoint, kwargs)
+      renderSliceWithDistribution((vessel_ld, vessel_graph, 'iff_pressure'), (iff_ld, iff_pressure_field), (imagefn+'_iff_pressure_t%0.1fh'%timepoint )+ext, 'IF pressure t=%.1f h'%timepoint, options, max_conc=max_conc)
+    renderSliceWithDistribution((vessel_ld, vessel_graph, 'drug_conc'), (iff_ld, drug_conc_field), (imagefn+'_iff_drug_t%0.1fh'%timepoint )+ext, '%s t=%.1f h'%(drug_grp.file.attrs.get('MESSAGE'),timepoint), options, max_conc=max_conc)
     #renderSliceWithDistribution((vessel_ld, vessel_graph, 'drug_conc'), (iff_ld, cell_drug_conc_field), (imagefn+'_iff_drug_incell_t%0.1fh'%timepoint)+ext, 'Tr. intr. t=%.1f h'%timepoint, kwargs)
     #renderSliceWithDistribution((vessel_ld, vessel_graph, 'drug_conc'), (iff_ld, ex_drug_conc_field), (imagefn+'_iff_drug_excell_t%0.1fh'%timepoint)+ext, 'Tr. extr. t=%.1f h'%timepoint, kwargs)
-    if kwargs['plot_auc']==True:
-      renderSliceWithDistribution((vessel_ld, vessel_graph, 'auc'), (iff_ld, ex_drug_auc_field), imagefn+'_iff_ex_drug_auc'+ext, 'Tr. extr. t=%.1f h'%timepoint, kwargs)
+    if options.plot_auc:
+      renderSliceWithDistribution((vessel_ld, vessel_graph, 'auc'), (iff_ld, ex_drug_auc_field), imagefn+'_iff_ex_drug_auc'+ext, 'Tr. extr. t=%.1f h'%timepoint, options, max_conc=max_conc)
     #renderSliceWithDistribution((vessel_ld, vessel_graph, 'auc'), (iff_ld, in_drug_auc_field), imagefn+'_iff_in_drug_auc'+ext, 'Tr. intr. t=%.1f h'%timepoint, kwargs)
   if 0:
-    renderSlice((vessel_ld, vessel_graph, 'radius'), (iff_ld, iff_pressure_field), imagefn+'_iff_pressure'+ext, '', kwargs)
-    renderSlice((vessel_ld, vessel_graph, 'radius'), (iff_ld, drug_conc_field), imagefn+'_iff_drug'+ext, '', kwargs)
-    renderSlice((vessel_ld, vessel_graph, 'radius'), (iff_ld, cell_drug_conc_field), imagefn+'_iff_drug_incell'+ext, '', kwargs)
-    renderSlice((vessel_ld, vessel_graph, 'radius'), (iff_ld, ex_drug_conc_field), imagefn+'_iff_drug_excell'+ext, '', kwargs)
+    renderSlice((vessel_ld, vessel_graph, 'radius'), (iff_ld, iff_pressure_field), imagefn+'_iff_pressure'+ext, '', options)
+    renderSlice((vessel_ld, vessel_graph, 'radius'), (iff_ld, drug_conc_field), imagefn+'_iff_drug'+ext, '', options)
+    renderSlice((vessel_ld, vessel_graph, 'radius'), (iff_ld, cell_drug_conc_field), imagefn+'_iff_drug_incell'+ext, '', options)
+    renderSlice((vessel_ld, vessel_graph, 'radius'), (iff_ld, ex_drug_conc_field), imagefn+'_iff_drug_excell'+ext, '', options)
   
   #renderSlice((vessel_ld, vessel_graph, 'saturation'), (None, None), imagefn+'_saturation'+ext, '', kwargs)
   #renderSlice((vessel_ld, vessel_graph, 'hboconc'), (None, None), imagefn+'_hboconc'+ext, 'HbO [mmol/l blood]', kwargs)
   #renderVasculatureWTumor((vessel_ld, vessel_graph, 'po2vessels'), gtumor, imagefn+'_po2vt'+ext, '', kwargs)
 
 
-def doit(fn, pattern, parameters = dict()):
-  f = h5files.open(fn, 'r+')
-  paths = myutils.walkh5(f['.'], pattern)
-  for path in paths:
-    drug_grp = f[path]
-    imagefn = '-'.join([splitext(basename(f.filename))[0], drug_grp.attrs.get('SOURCE_PATH','').strip(posixpath.sep).replace(posixpath.sep,'-')])+'.'+parameters.pop('format', 'png')
-    renderScene(drug_grp, imagefn, kwargs=parameters)
+#def doit(fn, pattern, parameters = dict()):
+#  f = h5files.open(fn, 'r+')
+#  paths = myutils.walkh5(f['.'], pattern)
+#  for path in paths:
+#    drug_grp = f[path]
+#    imagefn = '-'.join([splitext(basename(f.filename))[0], drug_grp.attrs.get('SOURCE_PATH','').strip(posixpath.sep).replace(posixpath.sep,'-')])+'.'+parameters.pop('format', 'png')
+#    renderScene(drug_grp, imagefn, kwargs=parameters)
 
 def getMaxConcentration(f):
   if 'max_conc' not in f.attrs.keys():
@@ -416,34 +420,34 @@ def getMaxConcentration(f):
   return f.attrs['max_conc']
     
   
-if __name__ == '__main__':
-  import optparse #Note: Deprecated since version 2.7: The optparse module is deprecated and will not be developed further; development will continue with the argparse module.
-  parser = optparse.OptionParser()
-  parser.add_option("--dpi", dest="dpi", default=None, action="store")
-  parser.add_option("--format", dest="format", default=None, action="store")
-  parser.add_option("--no-overlay", dest="overlay", default=True, action="store_false")
-  parser.add_option("--auc", dest="plot_auc", default=False, action="store_true")
-  options, args = parser.parse_args()  
-  
-  krebsutils.set_num_threads(5)
-
-  parameters = {}
-  if options.dpi: 
-    parameters['dpi'] = float(options.dpi)
-  if options.format:
-    parameters['format'] = options.format
-  parameters['overlay'] = options.overlay    
-  
-  parameters['projection_plot'] = False
-  parameters['auto_colorscale'] = True
-  
-  filenames, pattern = args[:-1], args[-1]
-  if options.plot_auc:
-    doit(fn,'out0000',parameters)
-    
-  
-  for fn in filenames:
-    if options.plot_auc:
-      doit(fn,'out0000',parameters)
-    else:
-      doit(fn, pattern, parameters)
+#if __name__ == '__main__':
+#  import optparse #Note: Deprecated since version 2.7: The optparse module is deprecated and will not be developed further; development will continue with the argparse module.
+#  parser = optparse.OptionParser()
+#  parser.add_option("--dpi", dest="dpi", default=None, action="store")
+#  parser.add_option("--format", dest="format", default=None, action="store")
+#  parser.add_option("--no-overlay", dest="overlay", default=True, action="store_false")
+#  parser.add_option("--auc", dest="plot_auc", default=False, action="store_true")
+#  options, args = parser.parse_args()  
+#  
+#  krebsutils.set_num_threads(5)
+#
+#  parameters = {}
+#  if options.dpi: 
+#    parameters['dpi'] = float(options.dpi)
+#  if options.format:
+#    parameters['format'] = options.format
+#  parameters['overlay'] = options.overlay    
+#  
+#  parameters['projection_plot'] = False
+#  parameters['auto_colorscale'] = True
+#  
+#  filenames, pattern = args[:-1], args[-1]
+#  if options.plot_auc:
+#    doit(fn,'out0000',parameters)
+#    
+#  
+#  for fn in filenames:
+#    if options.plot_auc:
+#      doit(fn,'out0000',parameters)
+#    else:
+#      doit(fn, pattern, parameters)

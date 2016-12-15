@@ -50,6 +50,14 @@ import analyzeBloodFlow
 
 import krebsjobs.submitVesseltreeCalibration
 
+""" for bin ing the MVD experimental calculation """
+def suggest_bins_from_world(ld):
+    avg_size=np.average(ld.GetWorldSize())
+    center = avg_size/2.
+    half_center = center/2.
+    bins_spec   = analyzeGeneral.BinsSpecRange(half_center, center, 200.)
+    return bins_spec
+
 ##----------------------------------------------------------------------
 ## to plot the measuremnt data within the original vessel tree files
 ##----------------------------------------------------------------------
@@ -427,7 +435,7 @@ def PrintGlobalDataWithOxygen(pdfpages, po2groups, vesselgroups, f_measure, data
 
 #  text = FormatGeometricAndPerfusionData()
 
-  prop_list2 = ['avg_cap_dist','mvd']
+  prop_list2 = ['avg_cap_dist','mvd_linedensity']
   #bbox_vessels = list()
   #bbox_field   = list()
   
@@ -439,6 +447,17 @@ def PrintGlobalDataWithOxygen(pdfpages, po2groups, vesselgroups, f_measure, data
       #bbox_vessels.append(ld.worldBox)
     result_string.append(r'$<%s>$ = $%s$%s' %
       (Prettyfier.get_sym(name), Format(name, data), Prettyfier.get_munit(name)))
+
+#""" some problems still exists here
+#need field_ld which in not consistently stored"""
+#  mvd_exp=[]
+#  for (gvessels,po2group) in zip(vesselgroups,po2groups):
+#    ld = krebsutils.read_lattice_data_from_hdf(po2group['field_ld'])
+#    mvd_sampling_results, mvd_bins = dataman.obtain_data('sphere_vessel_density',  gvessels, None, suggest_bins_from_world(ld), 'radial', ld, cachelocation(gvessels))
+#    mvd_exp.append(np.mean(np.asarray(mvd_sampling_results)*1e6))
+#  
+#  result_string.append(r'$<%s>$ = $%s$%s' %
+#    (Prettyfier.get_sym('mvd_exp'), Format('mvd_exp', mvd_exp), Prettyfier.get_munit('mvd_exp')))
         
   
 
@@ -518,17 +537,7 @@ def PrintGlobalData(pdfpages, vesselgroups, f_measure, dataman):
   
   result_string = []
 
-  #bins_spec   = analyzeGeneral.BinsSpecRange(100., 600., 100.)
-  def suggest_bins_from_world(ld):
-    avg_size=np.average(ld.GetWorldSize())
-    center = avg_size/2.
-    half_center = center/2.
-    #lower=center-0.3*avg_size
-    #upper=center+0.3*avg_size
-    #stepsize = 0.1*center
-    #bins_spec   = analyzeGeneral.BinsSpecRange(center-stepsize, center, stepsize)
-    bins_spec   = analyzeGeneral.BinsSpecRange(half_center, center, 200.)
-    return bins_spec
+  
   for name in prop_list2:
     data = []
     for gvessels in vesselgroups:
@@ -830,7 +839,14 @@ def DoIt(filenames, pattern, with_o2):
       import detailedo2Analysis as o2analysis
       import detailedo2Analysis.plotsForPaper
       import detailedo2
-      dataman = myutils.DataManager(20, [ o2analysis.DataDetailedPO2(), analyzeGeneral.DataTumorTissueSingle(), analyzeGeneral.DataDistanceFromCenter(), analyzeGeneral.DataBasicVessel(), analyzeGeneral.DataVesselSamples(), analyzeGeneral.DataVesselRadial(), analyzeGeneral.DataVesselGlobal()])
+      dataman = myutils.DataManager(20, [o2analysis.DataDetailedPO2(),
+                                         analyzeGeneral.DataTumorTissueSingle(), 
+                                         analyzeGeneral.DataDistanceFromCenter(),
+                                         analyzeGeneral.DataBasicVessel(),
+                                         analyzeGeneral.DataVesselSamples(),
+                                         analyzeBloodFlow.DataTumorBloodFlow(),
+                                         analyzeGeneral.DataVesselRadial(),
+                                         analyzeGeneral.DataVesselGlobal()])
 
       vesselgroups = list(detailedo2.OpenVesselAndTumorGroups(g)[0] for g in groups)
       #original_vesselgroups = list(h5files.openLink(g, 'SOURCE') for g in vesselgroups)
@@ -907,9 +923,9 @@ def DoIt(filenames, pattern, with_o2):
 if __name__ == "__main__":
   import argparse
   parser = argparse.ArgumentParser(description='Plot/ Analyze infos about vessel network.')
-  parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
+  parser.add_argument('vesselFileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
   parser.add_argument('grp_pattern',help='Where to find the vessel group in the file')    
-  parser.add_argument("-O","--with-o2", dest="with_o2", help="look at detailed o2 data", default=False, action="store_true")
+  parser.add_argument("-O","--with_o2", help="look at detailed o2 data", default=False, action="store_true")
   parser.add_argument("-T","--only_two_root", dest="two", help="flag to change the considered types", default=False, action="store_true")  
   parser.add_argument("-a","--with_all_types", dest="all_types", help="take all types",default=False, action="store_true")  
   parser.add_argument("-s","--singel_type", dest="single", help="", default=False, action="store_true")    
@@ -938,8 +954,14 @@ if __name__ == "__main__":
     ''' hack to center'''
     with h5py.File(fn.name, 'r+') as f:
       # centering is needed because quantities are analyzed in dependence on the distance from the system origin!!
-      krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'field_ld')
-      krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'vessels/lattice')
-      f.flush()
-      krebsjobs.submitVesseltreeCalibration.ObtainDataOfVesselFile(f)
+      if not goodArguments.with_o2:    
+        krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'field_ld')
+        krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'vessels/lattice')
+        f.flush()
+        krebsjobs.submitVesseltreeCalibration.ObtainDataOfVesselFile(f)
+      else:
+        krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, goodArguments.grp_pattern + '/field_ld')
+        #krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, goodArguments.grp_pattern + '/SOURCE_VESSELS/lattice')
+        f.flush()
+        #krebsjobs.submitVesseltreeCalibration.ObtainDataOfVesselFile(f)
   DoIt(filenames, goodArguments.grp_pattern, goodArguments.with_o2)
