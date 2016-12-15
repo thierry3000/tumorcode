@@ -19,8 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
@@ -261,9 +259,9 @@ if __name__ == '__main__':
   parser.add_argument("--format", dest="format", default=None, action="store")
   parser.add_argument("-n", dest="out_nl", default = False, action="store") 
   parser.add_argument("--outFilename", dest="outfn", default= None)
-  '''this option came from the tumor side'''
-  parser.add_argument("--writeVessels", dest="writeVessels", help="when doing the tumor, export vesesls", default=True, action="store_true")  
-  parser.add_argument("--writeFields", dest="writeFields", help="when doing the tumor, export vesesls", default=True, action="store_true")  
+  '''this option come from the tumor side'''
+  parser.add_argument("--writeVessels", help="when doing the tumor, export vesesls", default=True, action="store_true")  
+  parser.add_argument("--writeFields", help="when doing the tumor, export Fields", default=True, action="store_true")  
   goodArguments, otherArguments = parser.parse_known_args()
   #create filename due to former standards
   filenames=[]

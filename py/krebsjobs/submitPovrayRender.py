@@ -159,8 +159,8 @@ if __name__ == '__main__':
   parser.add_argument("--cam_distance_multiplier", help=" ", default=1.0 )
   parser.add_argument("--colored_slice", help=" ", default=True)
   #parser.add_argument("--projection_plot", help=" ", default=True)
-  parser.add_argument("--render_volume", help="For combined images", default=True)
-  parser.add_argument("--render_vessels", help="For combined images", default=True)
+  parser.add_argument("--not_render_volume", help="For combined images", default=False, action="store_true")
+  parser.add_argument("--not_render_vessels", help="For combined images", default=False, action="store_true")
   
   
   goodArguments, otherArguments = parser.parse_known_args()

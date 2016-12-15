@@ -164,9 +164,7 @@ def InsertGraphColors(vesselgraph, ifffield, data_name, automatic_scale=False, m
 
 
 def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, options, max_conc=None):
-  #kwargs = deepcopy(kwargs_in)
   wbbox = volume_ld.worldBox
-  #kwargs['wbbox']=wbbox
   options.wbbox=wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
   volume_ld = transform_ld(trafo, volume_ld)
@@ -184,76 +182,22 @@ def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld
       epv.setCamera((0,0,cam_distance_factor*1.0), lookat = (0,0,0), fov = cam_fov, up = 'y')
   
       epv.addLight(10.*Vec3(1,0.5,2), 1.2)
-      
-      #vessel_clip = ('zslice', -5*trafo.w, +5*trafo.w)
-      central_position = wbbox[4]+planeZCoord/100.*(wbbox[5]-wbbox[4])
-      central_position = central_position*trafo.w
-      half_thikness_of_slice = 5
-      #vessel_clip = ('zslice', central_position-half_thikness_of_slice*trafo.w,central_position+half_thikness_of_slice*trafo.w)
-      #options.vessel_clip = ('zslice', central_position-half_thikness_of_slice*trafo.w,central_position+half_thikness_of_slice*trafo.w)      
       options.vessel_clip=('zslice', -150*trafo.w, +150*trafo.w)      
-      #kwargs.update(vessel_clip=vessel_clip)      
   
       pvcm = matplotlibColormapToPovray('DATACOLORMAP', cm)
       epv.declareColorMap(pvcm)
-#      if 0:
-#        print vessel_ld
-#        print volume_ld
-#        print vessel_ld.worldBox
-#        print volume_ld.worldBox
-#      if 0:# I do not really know, why this is here???, see renderSlice
-#        if (wbbox[1]-wbbox[0]) < (wbbox[5]-wbbox[4])*2.:
-#          kwargs.update(vessel_clip =('zslice', -300*trafo.w, +300*trafo.w))
-      if options.render_volume:
+
+      if not options.not_render_volume:
         epvvol = epv.declareVolumeData(volumedata, volume_ld.GetWorldBox())
-        #absolut_coordinate = wbbox[4]+planeZCoord/100.*(wbbox[5]-wbbox[4])
-        #absolut_coordinate =absolut_coordinate*trafo.w
-        #epv.addVolumeDataSlice(epvvol, (0,0,absolut_coordinate), (0, 0, 1), pvcm)
         epv.addVolumeDataSlice(epvvol, (0,0,planeZCoord), (0, 0, 1), pvcm)        
         
-      if options.render_vessels:
-        addVesselTree(epv, vessel_graph, trafo = trafo, options=options)
-#      if kwargs.get('render_volume_', True) and 1:
-#        epvvol = epv.declareVolumeData(volumedata, volume_ld.GetWorldBox())
-#        absolut_coordinate = wbbox[4]+planeZCoord/100.*(wbbox[5]-wbbox[4])
-#        absolut_coordinate =absolut_coordinate*trafo.w
-#        epv.addVolumeDataSlice(epvvol, (0,0,absolut_coordinate), (0, 0, 1), pvcm)
-#      if kwargs.get('render_vessels_', True) and 1:
-#        addVesselTree(epv, vessel_graph, trafo = trafo, **kwargs)
-        
+      if not options.not_render_vessels:
+        addVesselTree(epv, vessel_graph, trafo = trafo, options=options)   
       CallPovrayAndOptionallyMakeMPLPlot(epv, fn, cm, label, options)
-  ### I forgot this was good for???
-  #if options.projection_plot:
-  if False:
-    planeZCoord = vessel_ld.worldBox[4]+0.1*vessel_ld.scale
-    basefn, ext = splitext(imagefn)
-    tf1 = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True)
-    tf2 = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True)
-    fn1 = tf1.filename
-    fn2 = tf2.filename
-    options.overlay = False
-    options.render_volume_ = False
-    DoTheRendering(fn1, kwargs)
-    options.render_volume_ = True
-    options.render_vessels_ = False
-    DoTheRendering(fn2, kwargs)
-    import subprocess
-    if kwargs_in.get('overlay', True):
-      tf3 = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True)
-      subprocess.call(['convert', '-page', '+0+0', fn2, '-page', '+0+0', fn1, '-flatten', tf3.filename])
-      plotsettings = dict(myutils.iterate_items(kwargs, ['dpi','fontcolor'], skip=True))
-      OverwriteImageWithColorbar(tf3.filename, cm, label, output_filename = imagefn, **plotsettings)
-    else:
-      subprocess.call(['convert', '-page', '+0+0', fn2, '-page', '+0+0', fn1, '-flatten', imagefn])
-    return
-  else:
-    planeZCoord = 50#measured in percent of total
-    planeZCoord = 0#measured in percent of total
-    #kwargs['relative_z_height']=50 #measured in percent of total
-    DoTheRendering('slice_at_%0.1f_percent'%planeZCoord+imagefn, options)
-    #kwargs['relative_z_height']=20 #measured in percent of total
-    #DoTheRendering('slice_at_%i_percent)'%kwargs['relative_z_height']+imagefn, kwargs)
-
+  
+  planeZCoord = 0
+  DoTheRendering('slice_at_%0.1f_percent'%planeZCoord+imagefn, options)
+    
 
 def renderSlice((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, kwargs):
   kwargs = deepcopy(kwargs)
@@ -330,11 +274,8 @@ def renderVasculatureWTumor((vessel_ld, vessel_graph, data_name), gtumor, imagef
 
 
 
-def renderScene(drug_grp, imagefn, options):
-  #kwargs = myutils.updated(default_parameters, kwargs)
-  #kwargs['max_conc'] = getMaxConcentration(drug_grp.file)  
+def renderScene(drug_grp, imagefn, options): 
   max_conc = getMaxConcentration(drug_grp.file)    
-  
   dataman = myutils.DataManager(2, [DataBasicVessel()])
   
   timepoint = drug_grp.attrs['time'] #comes in seconds
@@ -368,16 +309,9 @@ def renderScene(drug_grp, imagefn, options):
   if options.filterradiuslowpass>0.0:
     print("lowpass filter activated:")
     vessel_graph = vessel_graph.get_filtered(edge_indices = vessel_graph['radius']< kwargs['filterradiuslowpass'])
-    filenamepostfix = '_rlp'
-#  if 'filterradiuslowpass' in kwargs.keys():  
-#    if kwargs['filterradiuslowpass'] >0.:
-#      print("lowpass filter activated:")
-#      vessel_graph = vessel_graph.get_filtered(edge_indices = vessel_graph['radius']< kwargs['filterradiuslowpass'])
-#      filenamepostfix = '_rlp'
-
   imagefn, ext = splitext(imagefn)
-  #ext = '.' + kwargs.get('format', ext[1:])
   ext = '.' + options.format
+  
   if 1:
     if timepoint==0:
       renderSliceWithDistribution((vessel_ld, vessel_graph, 'iff_pressure'), (iff_ld, iff_pressure_field), (imagefn+'_iff_pressure_t%0.1fh'%timepoint )+ext, 'IF pressure t=%.1f h'%timepoint, options, max_conc=max_conc)
@@ -398,14 +332,6 @@ def renderScene(drug_grp, imagefn, options):
   #renderVasculatureWTumor((vessel_ld, vessel_graph, 'po2vessels'), gtumor, imagefn+'_po2vt'+ext, '', kwargs)
 
 
-#def doit(fn, pattern, parameters = dict()):
-#  f = h5files.open(fn, 'r+')
-#  paths = myutils.walkh5(f['.'], pattern)
-#  for path in paths:
-#    drug_grp = f[path]
-#    imagefn = '-'.join([splitext(basename(f.filename))[0], drug_grp.attrs.get('SOURCE_PATH','').strip(posixpath.sep).replace(posixpath.sep,'-')])+'.'+parameters.pop('format', 'png')
-#    renderScene(drug_grp, imagefn, kwargs=parameters)
-
 def getMaxConcentration(f):
   if 'max_conc' not in f.attrs.keys():
     max_conc=0.0
@@ -420,34 +346,4 @@ def getMaxConcentration(f):
   return f.attrs['max_conc']
     
   
-#if __name__ == '__main__':
-#  import optparse #Note: Deprecated since version 2.7: The optparse module is deprecated and will not be developed further; development will continue with the argparse module.
-#  parser = optparse.OptionParser()
-#  parser.add_option("--dpi", dest="dpi", default=None, action="store")
-#  parser.add_option("--format", dest="format", default=None, action="store")
-#  parser.add_option("--no-overlay", dest="overlay", default=True, action="store_false")
-#  parser.add_option("--auc", dest="plot_auc", default=False, action="store_true")
-#  options, args = parser.parse_args()  
-#  
-#  krebsutils.set_num_threads(5)
-#
-#  parameters = {}
-#  if options.dpi: 
-#    parameters['dpi'] = float(options.dpi)
-#  if options.format:
-#    parameters['format'] = options.format
-#  parameters['overlay'] = options.overlay    
-#  
-#  parameters['projection_plot'] = False
-#  parameters['auto_colorscale'] = True
-#  
-#  filenames, pattern = args[:-1], args[-1]
-#  if options.plot_auc:
-#    doit(fn,'out0000',parameters)
-#    
-#  
-#  for fn in filenames:
-#    if options.plot_auc:
-#      doit(fn,'out0000',parameters)
-#    else:
-#      doit(fn, pattern, parameters)
+

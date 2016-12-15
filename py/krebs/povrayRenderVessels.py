@@ -351,9 +351,6 @@ def CreateScene2(vesselgroup, epv, graph, imagefn, options):
   wbbox = ComputeBoundingBox(vesselgroup, graph)
   trafo = calc_centering_normalization_trafo(wbbox)
   zsize = (wbbox[5]-wbbox[4])
-
-#  epv.setBackground(kwargs.pop('background',1.0))
-#  cam = kwargs.pop('cam','topdown')
   epv.setBackground(options.background)
   cam = options.cam
   if cam in ('topdown', 'topdown_slice'):
@@ -364,8 +361,6 @@ def CreateScene2(vesselgroup, epv, graph, imagefn, options):
     if cam == 'topdown_slice':
       options.vessel_clip=('zslice', -301*trafo.w, 301*trafo.w)
       options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
-#      kwargs.update(vessel_clip =('zslice', -301*trafo.w, 301*trafo.w),
-#                    tumor_clip =('zslice', -100*trafo.w, 100*trafo.w))
       epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
     else:
       epv.setCamera((0,0,cam_distance_factor*0.5*(zsize*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
@@ -391,21 +386,14 @@ def render_different_data_types( vesselgroup, options):
     'conductivitySignal' : 'Conductivity Signal',
     'metabolicSignal' : 'Metabolic Signal',
   }
-  #print(kwargs)
-  #datalist=kwargs.pop('datalist',['pressure'])
-  #print(kwargs)
-  #ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])
   graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'nodeflags'] + options.datalist, return_graph=True)
   vessel_ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])  
   options.wbbox = vessel_ld.GetWorldBox() 
-  #filteruncirculated = kwargs.get('filteruncirculated')  
   if options.filteruncirculated:
     graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
-  #filterradiushighpass = kwargs.get('filterradiushighpass')
   if options.filterradiushighpass>0:
     graph = graph.get_filtered(edge_indices = graph['radius']> filterradiushighpass)
     filenamepostfix = '_rhp'
-  #filterradiuslowpass = kwargs.get('filterradiuslowpass')  
   if options.filterradiuslowpass>0:
     print("lowpass filter activated:")
     graph = graph.get_filtered(edge_indices = graph['radius']< filterradiuslowpass)
@@ -419,63 +407,8 @@ def render_different_data_types( vesselgroup, options):
     fn = vesselgroup.file.filename
     imagefn = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix+'.'+ options.format
     with EasyPovRayRender(options) as epv:
-      #pvcm = matplotlibColormapToPovray('DATACOLORMAP', cm)
-      #epv.declareColorMap(pvcm)
-      
       CreateScene2(vesselgroup,epv, graph, imagefn, options)
-      #overlay = kwargs.get('overlay')
-      ''' meanwhile we overcome the by changing mpl settings on snowden'''
-#      print('debug:')
-#      print(identifycluster.getname())
-#      if(identifycluster.getname() == 'snowden'):
-#        print('snowden has no graphic BACKEND')
-#        print('Overlay is not possible here')
-#        overlay = True
       if options.overlay:
         RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options)
       else:
         epv.render(imagefn)
-
-#dont use this anymore 
-#use submitPovrayRender.py instead
-#if (__name__ == '__main__'):
-#    import optparse #Note: Deprecated since version 2.7. Use argparse instead
-#    parser = optparse.OptionParser()
-#    parser.add_option("-d","--data", dest="datalist", help="which data (pressure, flow, shearforce, hematocrit, flags) as comma separated list", default='pressure', action="store")
-#    parser.add_option("-f","--filter-uncirculated", dest="filteruncirculated", help="filter uncirculated vessels", default=False, action="store_true")
-#    parser.add_option("--filter-radius-high-pass", dest="filterradiushighpass", action="store", type="float", default = -1)
-#    parser.add_option("--filter-radius-low-pass", dest="filterradiuslowpass", action="store", type="float", default = -1)    
-#    parser.add_option("--no-overlay", dest="overlay", default = True, action="store_false")
-#    parser.add_option("--dpi", dest="dpi", default=None, action="store")
-#    parser.add_option("--format", dest="format", default=None, action="store")
-#    options, args = parser.parse_args()
-#
-#    filenames = args[:-1]
-#    pattern   = args[-1]
-#    datalist = map(lambda s: s, map(str.strip, options.datalist.split(',')))
-#
-#    labels = {
-#      'flow' : '$log_{10}$ Flow Rate',
-#      'shearforce': '$log_{10}$ Shear Force',
-#      'hematocrit' : 'Hematocrit',
-#      'pressure' : 'Blood Pressure $mmHg$',
-#    }
-#
-#    import povrayRenderSettings
-#    settings = copy.deepcopy(povrayRenderSettings.image)
-#    settings.update(povrayRenderSettings.vessels)
-#    
-#    if options.dpi: 
-#      settings['dpi'] = float(options.dpi)
-#    if options.format:
-#      settings['format'] = options.format
-#
-#    settings['filteruncirculated'] = options.filteruncirculated
-#    settings['filterradiushighpass'] = options.filterradiushighpass
-#    settings['filterradiuslowpass'] = options.filterradiuslowpass
-#    settings['overlay'] = options.overlay
-#    for fn in filenames:
-#      f = h5py.File(fn,'r')
-#      dirs = myutils.walkh5(f['.'], pattern)
-#      for d in dirs:
-#        render_different_data_types(f[d], **settings)
