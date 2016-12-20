@@ -54,11 +54,15 @@ typedef long long llong;
 
 /**
 @brief Abstration of mathematical operations on state variables
+
+The default is to assume that the state type has corresponding members addScaled and initFrom. If it does not, this template may be specialized.
 */
 template<class State>
 struct Operations
 {
+  // @brief a = fa * a + fb * b
   void addScaled(double fa, State &a, double fb, const State &b) { a.addScaled(fb, b, fa); }
+  // @brief Init a from b. Can be used to initialize a to zeros using b as prototype for dimensions. Or can make a copy of b. 
   void initFrom(State &a, const State &b, ConsMode mode) { a.initFrom(b, mode); }
 };
 
@@ -71,7 +75,12 @@ struct Operations<double>
   void initFrom(State &a, const State &b, ConsMode mode)  { a = mode==ConsMode::AS_COPY ? b : 0.; }
 };
 
-/// messy structure to coordinate actions and for communication with callback functions.
+/**
+@brief messy structure to coordinate actions and for communication with callback functions.
+
+For instance, when the F in du/dt = F(u,t) is evaluated, t is supplied via this struct. On the other hand
+euler_dt should be set in the evaluation of F - normally in calcSlope.
+**/
 struct StepControl
 {
   double dt, t; /// Filled in by the stepper algorithm.
@@ -96,7 +105,18 @@ struct Callback
   typedef State_ State;
   boost::function<void (const State&, State&, StepControl&)> calcSlope; /// Compute application of rhs operator; F in du/dt = F(u)
   boost::function<void (const State&, State&, State&, StepControl&)> calcSlopesIMEX;  /// Compute first and second operators (F and G). See paper on imex methods.
-  boost::function<void (State&, const State&, double, double, StepControl &, State &)> invertImplicitOperator;  /// Compute the application of the inverse of the implicit operator on the input state. Return result in first argument.
+  /* Let our equation be du/dt = F(u_t, t), and the arguments to this function be
+     lhs - left hand side,
+     rhs - right hand side,
+     alpha - some factor,
+     beta - some factor,
+     stepctrl - StepControl 
+     extrapolation - used in vsimex method (see below), 
+     
+     Then the function should solve
+     (alpha I + beta F)[lhs] = rhs, for lhs.  
+     Return result in first argument. */
+  boost::function<void (State&, const State&, double, double, StepControl &, State &)> invertImplicitOperator; 
 };
 #endif
 
@@ -119,7 +139,10 @@ public:
   }
 };
 
-/// Used to remove the pointer quality from a pointer type. Unwrapped::type gives the type that is pointed to, if M is a pointer type. Else Unwrapped::type is equal to M.
+/**@brief Used to remove the pointer quality from a pointer type. 
+
+Unwrapped::type gives the type that is pointed to, if M is a pointer type. Else Unwrapped::type is equal to M.
+*/
 template<class M>
 struct Unwrapped
 {
@@ -144,12 +167,22 @@ struct Unwrapped<M*>
 
 
 /**
-@brief The base class that defines a common interface. Derived classes are polymorphic apparently.
+@brief The base class that defines a common interface.
+
+It takes template arguments for a model (Model) and operations (Ops). Model must contain methods
+to compute the rate of change of the state at the current state at the current time (e.g. see above, 
+the class Callbacks). Model should also contain a type called State, representing the system state under
+consideration. 
+Ops must contain mathematical operations on the state type (e.g. see OpsCallback).
 */
 template<STEPPER_TEMPLATE_ARGS>
 class Stepper
 {
 public:
+  /**@brief Typedefs for the Model describing the F in du/dt = F(u, t), the Operations on u, and the type of u.
+  Unwrapped<...> is used to allow the Stepper to either own these components as member variables, or take pointers
+  to externally supplied objects. In the latter case Model_ will be a pointer type, for intance.
+  */ 
   typedef typename Unwrapped<Model_>::type Model;
   typedef typename Unwrapped<Ops_>::type Ops;
   typedef typename Model::State State;
@@ -159,7 +192,7 @@ private:
   Model_ m_model;
   Ops_ m_ops;
   StepControl *m_ext_ctrl;
-  State *m_ext_u;
+  State *m_ext_u; // m_ext_ctrl and this are both owned by the caller, and supplied via doStep.
   bool first_step;
 
 protected:
@@ -167,7 +200,7 @@ protected:
   StepControl& ctrl() { return *m_ext_ctrl; }
 
   /**
-    @brief this function has to do the actual work of advancing the solution .
+    @brief This function has to do the actual work of advancing the solution. It must be overloaded in subclasses.
     ctrl.dt has been set with the requested step size
     ctrl.dt can be decreased if nessesary
     ctrl.euler_step will be set in the first call to calcSlope/calcSlopesIMEX
@@ -368,7 +401,8 @@ public:
 
 
 
-
+/* This is from [Asher et al. (1997) "Implicit-explicit Runge-Kutta methods for time-dependent partial differential equations"]
+*/
 template<STEPPER_TEMPLATE_ARGS>
 class VSImExBdf2 : public Stepper<STEPPER_TEMPLATE_ARGS2>
 {
@@ -438,16 +472,6 @@ public:
     var_f[0].reset();
     var_g[0].reset();
     
-    /* arguments are:
-        lhs aka state at next time (to be computed),
-        rhs,
-        coefficient before identity; a,
-        coefficient before operator; b,
-        current state,
-        control struct
-      todo:
-        solve: (a I + b g) lhs = rhs
-    */
     State* extrapolation = NULL; 
     if (Super::extrapolate)
     {

@@ -18,6 +18,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/**@brief This file contains mostly functions to obtains samples of various quantities 
+   distributed over blood vessel networks, e.g. blood pressure.
+**/
+
 #include "python-helpers.h"
 #include "numpy.hpp"
 #include "shared-objects.h"
@@ -30,12 +34,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 enum Mode {
-  DATA_PER_NODE = 1,
-  DATA_CONST = 2,
-  DATA_LINEAR = 4,
+  DATA_PER_NODE = 1, //@brief Associated with nodes. Should be linearly interpolated.
+  DATA_CONST = 2,  //@brief No interpolation. Should not be used together with DATA_PER_NODE.
+  DATA_LINEAR = 4, //@brief Interpolate. If not DATA_PER_NODE is not also set, then we expect a 2xn sized data array with values for both ends of each vessel.
 };
 
+/**@brief Generate sample data associated with vessels.
 
+pos - world position of nodes
+edges - n x 2 node indices
+data - data associated with edges or nodes, depending on mode
+sample_len - average distance between samples. The samples are taken in regular intervals if this value is smaller than the length of vessels. Otherwise the sampling becomes random.
+mode - see Mode enum
+*/
 template<class T>
 np::arraytbase sample_edges(np::arrayt<float> pos, np::arrayt<int> edges, np::arrayt<T> data, float sample_len, int mode)
 
@@ -223,6 +234,8 @@ np::arraytbase make_position_field(const py::object &py_ldobj)
 }
 
 
+/**@brief Approximately fill a grid with how much of each voxel is occupied by vessels.
+*/
 np::arraytbase compute_vessel_volume_fraction_field(np::arrayt<float> pos, np::arrayt<int> edges, np::arrayt<float> radius, const py::object &py_ldfield, int samples_per_cell)
 {
   LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldfield);
@@ -262,6 +275,8 @@ np::arraytbase compute_vessel_volume_fraction_field(np::arrayt<float> pos, np::a
 }
 
 
+/**@brief Used to determine the Fractal Dimension of the network. (Or more correctly the box counting dimension.)
+*/
 double compute_vessel_boxcounts(nm::array pypos, nm::array pyedges, nm::array pyradius, const py::object &py_ldfield, double volume_scaling, double volume_threshold)
 {
   LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldfield);

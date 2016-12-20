@@ -67,7 +67,11 @@ namespace NewSteppers
 {
 
 
-
+/* Implementes the split step method using the 2nd order accurate strange splitting scheme.
+   Given an ODE like
+    du/dt = A[u,t] + B[u,t] + C[u,t] + ... 
+   with operators A, B, C and so on, the method applies integration steps for A, B, C, etc. individually one after another.
+*/
 template<class State>
 static bool doStrangeSplittingStepsNoBackup(
     State &state, NewSteppers::StepControl &ctrl, int num_operators,
@@ -84,6 +88,9 @@ static bool doStrangeSplittingStepsNoBackup(
     bool res = stepfunc(idx, state, c);
     if (!my::compare_approx_less(c.euler_dt, ctrl.euler_dt) ||
         !my::compare_approx_equal(ctrl.dt, c.dt)) res = false;
+    // There is a little caveat. If one of the steppers needs a smaller time step than anticipated,
+    // the results of previously evaluated steppers is invalid since they used an inconsistently large step size.
+    // In case of this we remember the smaller step size and note that we cannot use the results.
     ctrl.euler_dt = c.euler_dt;
     //cout << format("substep %i, t = %f, dt = %f, euler_dt = %f, eval ok = %i, is_rewind = %i") % idx % ctrl.t % c.dt % c.euler_dt % res % ctrl.is_rewind_step << endl;
     return res;
@@ -108,6 +115,9 @@ static bool doStrangeSplittingStepsNoBackup(
   return ok;
 }
 
+/* This is a variant of the split step method which can handle mistakenly overestimated step sizes.
+   It does so by keeping a copy of the initial state as backup and rewinds if needed, using the smallest
+   valid step size reported by the individual steppers. */
 template<class State>
 static bool doStrangeSplittingSteps(
     State &state, NewSteppers::StepControl &ctrl, int num_operators,
