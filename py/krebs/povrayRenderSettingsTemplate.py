@@ -45,7 +45,7 @@ if __name__ == '__main__':
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
 import krebsutils
 import matplotlib
-from krebs.povrayRenderVessels import  cm_redblue
+from krebs.povrayRenderVessels import cm_redblue
 
 def colorfactory_vessel_debug(vesselgraph):
   is_set = lambda flags_,flag: np.asarray(np.bitwise_and(flags_, flag), np.bool)
@@ -152,7 +152,7 @@ dbg_vessels = dict(
       debug=True,
       background = 0.0,
       colorfactory = colorfactory_vessel_debug,
-      overlay = False,
+      noOverlay = True,
       #colorfactory = colorfactory,
       #keep_files = True,
       #temp_file_dir = '.',
@@ -170,4 +170,16 @@ iff = dict(
     colored_slice=True,
     ambient_color=(0.5, 0.5, 0.5),
     plot_auc = False,
+)
+figure_plos_tumor = dict(
+  res = (2548,2548),
+  cam = 'pie',
+  dpi = 700,
+)
+figure_plos_vessels = dict(
+  res = (2548,2548),
+  cam = 'topdown_slice',
+  dpi = 700,
+  out_alpha=False,
+  background = 1.0,
 )

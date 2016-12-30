@@ -152,7 +152,7 @@ def create_movie(options):
   fn_6 = 'out_capillaries_hit_%s_%s.webm'
   fn_7 = 'out_growth_hit_%s_%s.webm'
   fn_8 = 'out_capillaries_after_growth_hit_%s_%s.webm'
-  myframe_rate = str('2')
+  myframe_rate = str('35')
   mydebug = True
   
   #using ffmpy wrapper
@@ -229,6 +229,10 @@ def create_movie(options):
   ff.run()
 
 if (__name__ == '__main__'):
+  """ note: when using the submitPovray.py the
+            -f filter options is not applicable for
+            the initial stage since the pressure is not yet calculated
+  """
   parser = argparse.ArgumentParser(description='Make snapshot of blood vessel network creation')  
   parser.add_argument('filename', type=argparse.FileType('r'), default=sys.stdin)
   parser.add_argument('debug_filename', type=argparse.FileType('r'), default=sys.stdin) 

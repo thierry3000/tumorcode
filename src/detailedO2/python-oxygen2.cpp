@@ -344,13 +344,15 @@ static void PyComputePO2world(py::object py_vesselgroup, py::object py_tumorgrou
  */
 static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
 {
-  bool world = false;
+  //bool world = false;
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
   
   //h5cpp::Group group = PythonToCppGroup(py_group);
   //h5cpp::Group vesselgroup = group.open_group(path_vessels);
   h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
+  bool world = vesselgroup.attrs().get<string>("CLASS") == "REALWORLD";
+  
   
   // THIIIIRYYYYY, filter muss = false sein sonst stimmt in der Ausgabe in der Hdf5 Datei die Anzahl der Vessels nicht mehr mit den daten im recomputed_flow Verzeichnis ueberein!
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
@@ -362,7 +364,17 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
   double safety_layer_size               = py::extract<double>(py_parameters.get("safety_layer_size", grid_lattice_const*3.));
   boost::optional<Int3> grid_lattice_size = getOptional<Int3>("grid_lattice_size", py_parameters);
   {
-    int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
+    //this worked only for lattices
+    //int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
+    int dim=0;
+    if (world)
+    {
+      dim = 3;
+    }
+    else
+    {
+      int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
+    }
     LatticeDataQuad3d ld;
     if (grid_lattice_size)
     {
@@ -376,7 +388,14 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
     else
     {
       //added safety space to reduce boundary errors
-      SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld); 
+      if (world)
+      {
+	SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
+      }
+      else
+      {
+	SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
+      }
     }
     grid.init(ld, dim);
     mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
@@ -391,7 +410,14 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
   if (params.loglevel > 0)
   {
     cout << "vessel lattice" << endl;
-    vl->Ld().print(cout);
+    if (world)
+    {
+      cout<<vl->GetWorldBoxFromVesselsOnly()<<endl;
+    }
+    else
+    {
+      vl->Ld().print(cout);
+    }
     cout << endl;
   }
 

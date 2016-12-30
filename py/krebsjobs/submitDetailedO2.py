@@ -44,9 +44,10 @@ def worker_on_client(fn, pattern, o2params):
   num_threads = o2params.pop('num_threads')
   krebsutils.set_num_threads(num_threads)
   o2_refs = detailedo2.doit(fn, pattern, (o2params, o2params['name']))
-  for ref in o2_refs:
-    po2group = h5files.open(ref.fn)[ref.path]
-    detailedo2Analysis.WriteSamplesToDisk(po2group)
+  if 0: #this is for data analysis on the clusters
+    for ref in o2_refs:
+      po2group = h5files.open(ref.fn)[ref.path]
+      detailedo2Analysis.WriteSamplesToDisk(po2group)
   h5files.closeall() # just to be sure
 
 

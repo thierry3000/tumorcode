@@ -19,7 +19,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-# -*- coding: utf-8 -*-
+'''
+Needs the file Network_New_version.dat
+provided in the tumorcode repository.
+measurement data provided by Secomb et. al.
+'''
 import krebsutils as ku
 import h5files
 import math
@@ -27,13 +31,17 @@ import numpy as np
 import scipy.spatial.distance as sdist
 import sys
 
-
+def correct_bc_type_from_secomb_to_MW(anArray):
+  for i,v in enumerate(anArray):
+    if v == 0:
+      anArray[i] = 1
+  return anArray
+#measurement file
 f_more=open('Network_New_version.dat','r')
 
+#input stream
 data = f_more.readlines()
-
 cropped_edges = data[8:453]
-
 secomb_type=[]
 node_a_index=[]
 node_b_index=[]
@@ -63,19 +71,6 @@ for line in cropped_edges:
         if k==7:
             hema.append(float(value))
         k=k+1
-        
-#for (i, aflow) in enumerate(flow):
-#    if( aflow ==0.):
-#        j=i-1
-#        print("deleting : %i" %j)
-#        node_a_index.pop(j)
-#        node_b_index.pop(j)
-#        for k in range(j,len(node_a_index)):
-#            node_a_index[k]= node_a_index[k]-1
-#            node_b_index[k]= node_a_index[k]-1
-#        radii.pop(j)
-#        flow.pop(j)
-#        hema.pop(j)
 
 
 mw_vessel_flags=[]
@@ -173,7 +168,7 @@ for line in cropped_roots:
         if k==3:
             value_of_bc.append(float(value))
         k=k+1
-f_more.close
+f_more.close()
 
 dummy_pressure=np.zeros(len(positions_of_nodes))
 roots_pressure=np.zeros(len(positions_of_nodes))
@@ -213,6 +208,9 @@ print("indeces_of_roots: %s " % indeces_of_roots)
 print("bctyp: %s " % bctyp_of_roots)
 print("with value mul/s: %s" % value_of_bc)
 
+print("*********")
+print("*** start creating vessel file")
+print("*********")
 fn = 'mesentry_secomb_test_more_data.h5'
 f3 = h5files.open(fn,'w')
 f3.create_group('vessels')
@@ -236,18 +234,26 @@ ds_vesselflags = edgegrp.create_dataset('flags', data = mw_vessel_flags)
 
 ds_roots = f3['vessels/nodes'].create_dataset('roots', data = indeces_of_roots)
 #dummy pressure
-ds_pressure = f3['vessels/nodes'].create_dataset('roots_pressure', data = roots_pressure)
-ds_value_of_bc = f3['vessels/nodes'].create_dataset('value_of_boundary_condition', data=value_of_bc)        
-ds_bctyp_of_roots = f3['vessels/nodes'].create_dataset('bctyp_of_roots', data= bctyp_of_roots)
+#ds_pressure = f3['vessels/nodes'].create_dataset('roots_pressure', data = roots_pressure)
+ds_node_index = f3['vessels/nodes'].create_dataset('bc_node_index', data = indeces_of_roots)
+ds_value_of_bc = f3['vessels/nodes'].create_dataset('bc_value', data=value_of_bc)        
+ds_bctyp_of_roots = f3['vessels/nodes'].create_dataset('bc_type', data=correct_bc_type_from_secomb_to_MW(bctyp_of_roots))
 ds_world_pos = f3['vessels/nodes'].create_dataset('world_pos', data = np.array(positions_of_nodes))
+ds_cond = f3['vessels/nodes'].create_dataset('bc_conductivity_value', data=np.zeros_like(value_of_bc))
 
 
 
-import krebs.adaption.parameterSets
-adaptionParams = getattr(krebs.adaption.parameterSets, 'default_rats')
+print("*********")
+print("*** vessel file created ")
+print("*********")
+#f3.close()
 
-#pressure, flow, force, hema = ku.calc_vessel_hydrodynamics_world(f3['vessels'], False, False, None, adaptionParams['calcflow'])
-f3.close()
+import krebsjobs.parameters.parameterSetsAdaption
+adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, 'secomb_mesentry')
+
+f3['vessels'].attrs.create('CLASS','WORLD')
+pressure, flow, force, hema = ku.calc_vessel_hydrodynamics(f3['vessels'], False, False, None, adaptionParams['calcflow'],storeCalculationInHDF=True)
+
 
 
 #print(dd[1])
@@ -267,4 +273,4 @@ f3.close()
 
 
 
-print "ende"
+print("ende")

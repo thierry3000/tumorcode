@@ -155,13 +155,6 @@ def InsertGraphColors(vesselgraph, ifffield, data_name, automatic_scale=False, m
     vesselgraph.nodes['colors'] = theNodeColors
   return cm
 
-#
-#def CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, **kwargs):
-#    if kwargs.get('overlay', True):
-#      RenderImageWithOverlay(epv, imagefn, cm, label, **kwargs)      
-#    else:
-#      epv.render(imagefn)
-
 
 def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, options, max_conc=None):
   wbbox = volume_ld.worldBox

@@ -132,29 +132,27 @@ def renderScene(vesselgroup, tumorgroup, imagefn, options):
       
       if (tumorgroup is not None and tumorgroup.attrs['TYPE'] == 'faketumor'):
         print('nix')
-      #overlay = kwargs.get('overlay')
-
-      #overlay=True
-      if options.overlay:
-        RenderImageWithOverlay(epv, imagefn+'.png', None, 'tumor', options)
-      else:
+      
+      if options.noOverlay:
         epv.render(imagefn+'.png')
+      else:
+        RenderImageWithOverlay(epv, imagefn+'.png', None, 'tumor', options)
       
 
 
 
-if __name__ == '__main__':
-    print("Note: works only with vessels!")
-    print("Usage: filenames group")
-    filenames = sys.argv[1:-1]
-    grp_pattern = sys.argv[-1]
-    import povrayRenderSettings
-    settings = copy.deepcopy(povrayRenderSettings.image)
-    settings.update(povrayRenderSettings.tumor)
-    for fn in filenames:
-      with h5py.File(fn, 'r') as f:
-        dirs = myutils.walkh5(f['.'], grp_pattern)
-        outname = splitext(basename(fn))[0]
-        for d in dirs:
-          print 'rendering %s %s' % (f.filename, d)
-          renderScene(f[d]['vessels'], f[d]['tumor'], '%s-%s' % (outname,d), **settings)
+#if __name__ == '__main__':
+#    print("Note: works only with vessels!")
+#    print("Usage: filenames group")
+#    filenames = sys.argv[1:-1]
+#    grp_pattern = sys.argv[-1]
+#    import povrayRenderSettings
+#    settings = copy.deepcopy(povrayRenderSettings.image)
+#    settings.update(povrayRenderSettings.tumor)
+#    for fn in filenames:
+#      with h5py.File(fn, 'r') as f:
+#        dirs = myutils.walkh5(f['.'], grp_pattern)
+#        outname = splitext(basename(fn))[0]
+#        for d in dirs:
+#          print 'rendering %s %s' % (f.filename, d)
+#          renderScene(f[d]['vessels'], f[d]['tumor'], '%s-%s' % (outname,d), **settings)

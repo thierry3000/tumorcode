@@ -381,7 +381,7 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
 #ifdef DEBUG
   for (auto iter = flownet.bcs.begin(); iter != flownet.bcs.end(); ++iter)
   {
-    cout << format("boundary node id: %i, press = %f") % iter->first % iter->second.val << endl;
+    cout << format("boundary node id: %i, value = %f") % iter->first % iter->second.val << endl;
   }
 #endif
   //cout << "max relative mass loss: " << CalcFlowResidual(flownet, cond) << endl;

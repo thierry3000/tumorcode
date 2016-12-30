@@ -301,7 +301,7 @@ def ComputeBoundingBox(vesselgroup, vesselgraph):
     vess_ldgroup = vesselgroup['lattice']
     wbbox = krebsutils.read_lattice_data_from_hdf(vess_ldgroup).worldBox
   else:
-    pos = graph['position']
+    pos = vesselgraph['position']
     minval = np.amin(pos, axis=0)
     maxval = np.amax(pos, axis=0)
     wbbox = np.vstack((minval, maxval)).transpose().ravel()  # xmin ,xmax, ymin, ymax, zmin ,zmax ...
@@ -348,7 +348,8 @@ def renderScene(vesselgroup, imagefn, **kwargs):
 
 
 def CreateScene2(vesselgroup, epv, graph, imagefn, options):
-  wbbox = ComputeBoundingBox(vesselgroup, graph)
+  #wbbox = ComputeBoundingBox(vesselgroup, graph)
+  wbbox = options.wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
   zsize = (wbbox[5]-wbbox[4])
   epv.setBackground(options.background)
@@ -387,8 +388,12 @@ def render_different_data_types( vesselgroup, options):
     'metabolicSignal' : 'Metabolic Signal',
   }
   graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'nodeflags'] + options.datalist, return_graph=True)
-  vessel_ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])  
-  options.wbbox = vessel_ld.GetWorldBox() 
+  #if vesselgroup.attrs.get('CLASS') == 'GRAPH':  
+  #  vessel_ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])  
+  #  options.wbbox = vessel_ld.GetWorldBox()
+  #if vesselgroup.attrs.get('CLASS') == 'REALWORLD':    
+  #  options.wbbox = np.max(np.asarray(vesselgroup['nodes/world_pos']),0)
+  options.wbbox = ComputeBoundingBox(vesselgroup, graph)
   if options.filteruncirculated:
     graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
   if options.filterradiushighpass>0:
@@ -408,7 +413,7 @@ def render_different_data_types( vesselgroup, options):
     imagefn = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix+'.'+ options.format
     with EasyPovRayRender(options) as epv:
       CreateScene2(vesselgroup,epv, graph, imagefn, options)
-      if options.overlay:
-        RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options)
-      else:
+      if options.noOverlay:
         epv.render(imagefn)
+      else:
+        RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options)

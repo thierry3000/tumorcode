@@ -375,17 +375,6 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
     if (grid_scale > 0)
     {
       myAssert(ldp->Scale()/grid_scale - int(ldp->Scale()/grid_scale) < 1.e-3  && ldp->Scale()/grid_scale > 1.);
-      
-      #if 1
-#ifdef DEBUG
-//typedef boost::unordered_map<int, FlowBC> BcsMap;
-    for(auto bc: vl->GetBCMap())
-    {
-      printf("first: %i, second: %f\n", bc.first->Index(), bc.second.val);
-    }
-#endif
-#endif
-      
       vl = GetSubdivided( vl, grid_scale);
 
     #ifdef DEBUG
@@ -398,6 +387,15 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
     ReadHdfGraph(vesselgroup, *vl);
   }
 
+#if 1
+#ifdef DEBUG
+//typedef boost::unordered_map<int, FlowBC> BcsMap;
+    for(auto bc: vl->GetBCMap())
+    {
+      printf("first: %i, second: %f\n", bc.first->Index(), bc.second.val);
+    }
+#endif
+#endif
   
   
   {//hdf failscope
@@ -483,13 +481,16 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
 	    vl->GetNode(nodeFromBCMap->Index())->press=theBC.val;
 	    break;
 	  case FlowBC::CURRENT:
-	    cout<<"not implemented yet"<<endl;
+	    const Vessel* theEdgeToTheNode=nodeFromBCMap->GetEdge(0);
+	    vl->GetEdge(theEdgeToTheNode->Index())->q = theBC.val;
+	    //cout<<"not implemented yet"<<endl;
 	    break;
 	}
       }
     }
     else
     {
+      cout<<"Warning vl->GetBCMap().empty() "<<endl;
       //go through complete list
       for(int i=0; i<vcnt; ++i)
       {

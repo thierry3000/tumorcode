@@ -416,10 +416,12 @@ colorectal['tumor'].update(
 )
 colorectal2 = deepcopy(colorectal)
 colorectal2.update(
-tend = 4000.,
+tend = 58000.,
 )
+
 colorectal2['calcflow'].update(
   rheology = 'RheologyForRats',
+  includePhaseSeparationEffect = True,
 )
 prez2 = dict(
   # this is the configuration which is used in submit-bulktissue-w-vessels

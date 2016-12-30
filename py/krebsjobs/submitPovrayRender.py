@@ -138,7 +138,7 @@ if __name__ == '__main__':
   parser.add_argument("-f","--filter-uncirculated", dest="filteruncirculated", help="filter uncirculated vessels", default=False, action="store_true")
   parser.add_argument("--filterradiushighpass", help='filter vessels from tree above this value', default = -1., type=float)
   parser.add_argument("--filterradiuslowpass", help='filter vessels from tree below this value',  default = -1., type=float)     
-  parser.add_argument("--overlay", help='decide if mpl overlay is created', default = True, action="store_false")
+  parser.add_argument("--noOverlay", help='decide if mpl overlay is created', default = False, action="store_true")
   #note this would be helpfull for debuging, but needs data cache
   #not yet done  
   #parser.add_argument("--only_overlay", default = False, action="store_true")  
@@ -153,7 +153,7 @@ if __name__ == '__main__':
   parser.add_argument("--assumed_gamma", help=" ", default=1.0)
   parser.add_argument("--background", help=" ", default=1.0)
   parser.add_argument("--ambient_color", help=" ", default=(0.1, 0, 0))
-  parser.add_argument("--res", help=" ", default=(1024,1024))
+  parser.add_argument("--res", help="use comma seperated list of resx,resy ", default=(1024,1024))
   parser.add_argument("--num_threads", help=" ", default=7)
   parser.add_argument("--out_alpha", help=" ", default=False, action="store_true")
   parser.add_argument("--cam_distance_multiplier", help=" ", default=1.0 )
@@ -166,9 +166,11 @@ if __name__ == '__main__':
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
   
+  """ some corrections on command line reads"""
   if not parser.get_default('datalist') == goodArguments.datalist:
     goodArguments.datalist= goodArguments.datalist.split(',')
-  
+  if not parser.get_default('res') == goodArguments.res:
+    goodArguments.res= tuple(goodArguments.res.split(','))
   """ read parameters from file """
   #create filename due to former standards
   filenames=[]
@@ -182,7 +184,9 @@ if __name__ == '__main__':
       if not goodArguments.povParamsSet in dir(povrayRenderSettings):
         raise AssertionError('Unknown parameter set %s!' % goodArguments.povParamsSet)
       else:
-        """ apply found parameters from file"""
+        """ apply found parameters from file
+            this overwrites the command line arguments!!!!
+        """
         params_from_file = getattr(povrayRenderSettings, goodArguments.povParamsSet)
         for key in params_from_file.keys():
           print('found %s with %s in file\n' %(key,params_from_file[key]))

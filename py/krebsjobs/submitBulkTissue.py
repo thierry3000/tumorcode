@@ -184,7 +184,7 @@ if __name__ == '__main__':
   parser.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/fakeTumorParams.py')
   #this is not needed in the case without vessels
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
-  parser.add_argument('-n', '--no_vessel', help = 'compute the continuum model of tumor cells, no vessels needed for that', default=False, action='store_true')
+  parser.add_argument('--no_vessel', help = 'compute the continuum model of tumor cells, no vessels needed for that', default=False, action='store_true')
 
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
@@ -206,4 +206,4 @@ if __name__ == '__main__':
     run_no_vessels(goodArguments.tumParamSet, factory, '1GB', 2.)
   else:
     for fn in filenames:
-      run_with_vessels(fn, goodArguments.tumParamSet, factory, '5GB', 2.)
+      run_with_vessels(fn, goodArguments.tumParamSet, factory, '5GB', 28.)

@@ -45,10 +45,10 @@ import mpl_utils
 ##############################################################################
 
 def CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, options):
-    if options.overlay:
-      RenderImageWithOverlay(epv, imagefn, cm, label, options)      
-    else:
+    if options.noOverlay:
       epv.render(imagefn)
+    else:
+      RenderImageWithOverlay(epv, imagefn, cm, label, options)
 
 class Colormap(object):
   def __init__(self, name, limits, colors):
@@ -112,7 +112,7 @@ def ComputeCameraDistanceFactor(cam_fov, (W,H), wbbox):
         Camera is supposed to look along the z direction.'''
     cam_distance_factor = 1.02/math.tan(cam_fov*0.5*math.pi/180.)*0.5
     (object_w, object_h) = (wbbox[1]-wbbox[0], wbbox[3]-wbbox[2])
-    ratio = float(W)/H
+    ratio = float(W)/float(H)
     object_ratio = object_w/object_h
     if (object_ratio < ratio):
       # The width of the screen (i.e. the displayed area in the z=0 plane
@@ -230,6 +230,9 @@ class EasyPovRayRender(object):
     num_threads = self.params.num_threads
     num_threads = ("+WT%i" % num_threads) if num_threads>1 else ""
     res = self.params.res
+    resx=float(res[0])
+    resy=float(res[1])
+    res=(resx,resy)
     res = '+W%i +H%i' % res
     imgfn = imgfn.replace('=',r'-') # povray does not like = in filenames
     cmd = povray % ('%s +FN8 %s %s -D %s +O"%s" "%s"' % (res,alpha,num_threads,aa,imgfn, scenefilename))
@@ -247,7 +250,7 @@ class EasyPovRayRender(object):
 
   def setCamera(self, pos, lookat, fov, projection='perspective', **kwargs):
     W, H = self.params.res
-    ratio = float(W)/H
+    ratio = float(W)/float(H)
     a = dict(
         angle = fov,
         location = Vec3(pos),
@@ -256,7 +259,8 @@ class EasyPovRayRender(object):
         right = "<-%f,0,0>" % ratio
     )
     up_vec = kwargs.pop("up", None)
-    if up_vec:
+    if up_vec: # is not None: #'up_vec' in self.params: 
+      #up_vec = self.params.up_vec
       a['sky'] = up_vec
     pv.Camera(
       projection,
@@ -266,13 +270,19 @@ class EasyPovRayRender(object):
   def addLight(self, pos, color, **kwargs):
     ls_args = (pos, ['color', Vec3(color)])
     area = kwargs.pop('area', None)
+    #if 'area' in self.params:    
     if area:
+      #area = self.params.area
       e1, e2, s1, s2 = area
       ls_args = ls_args + (['area_light', e1, e2, s1, s2],)
       ls_args = ls_args + (['adaptive', 1],)
-      jitter = kwargs.pop('jitter', None)
-      if jitter:
-        ls_args = ls_args + ('jitter',)
+    jitter=kwargs.pop('jitter',None)      
+#      if 'jitter' in self.params:
+#        jitter = self.params.jitter
+#      else:
+#        jitter = None
+    if jitter:
+      ls_args = ls_args + ('jitter',)
     pv.LightSource(*ls_args).write(self.pvfile)
 
   def setBackground(self, color):
@@ -457,7 +467,7 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename):
   '''
   rc = matplotlib.rc
   fontcolor=options.fontcolor
-  dpi = options.dpi
+  dpi = int(options.dpi)
   wbbox = options.wbbox
   rc('lines', color = fontcolor)
   rc('text', color = fontcolor)
@@ -502,7 +512,7 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename):
     ax2.tick_params(labelsize=mytextsize/2, colors='black')
     #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
     
-    ax2.text(0.5,-0.09,label,
+    ax2.text(0.4,-0.09,label,
              horizontalalignment='left',
              verticalalignment='bottom',
              transform=ax.transAxes,

@@ -33,7 +33,7 @@ namespace np = boost::python::numpy;
 namespace nm = boost::python::numeric;
 namespace h5 = h5cpp;
 
-py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_flags, const py::object &py_bfparams, bool simple)
+py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_flags, const py::object &py_bfparams, bool simple, bool storeCalculationInHDF)
 {
   FpExceptionStateGuard exception_state_guard(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   
@@ -53,6 +53,17 @@ py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_f
 //     CalcFlowSimple(*vl, bfparams, true);
 //   else
   CalcFlow(*vl, bfparams);
+  
+  if( storeCalculationInHDF )
+  {
+    if( not g_vess.exists("recomputed") )
+    {
+      h5::Group grp_temp;
+      grp_temp = g_vess.create_group("recomputed");
+      ptree getEverytingPossible = make_ptree("w_adaption", false);
+      WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
+    }
+  }
   
   np::arrayt<double> pya_flow(np::empty(1, &num_edges, np::getItemtype<double>()));
   np::arrayt<double> pya_force(np::empty(1, &num_edges, np::getItemtype<double>()));

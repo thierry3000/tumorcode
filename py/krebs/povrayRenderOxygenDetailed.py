@@ -228,7 +228,7 @@ def renderScene(po2group, imagefn, options):
   print 'po2vessels:', po2vessels.min(), po2vessels.max()
   print 'po2field:', np.amin(po2field), np.amax(po2field)
 
-  vessel_ld = krebsutils.read_lattice_data_from_hdf(gvessels['lattice'])
+  #vessel_ld = krebsutils.read_lattice_data_from_hdf(gvessels['lattice'])
   vessel_graph = dataman('vessel_graph', gvessels, ['position', 'flags', 'radius', 'hematocrit'])  
     
   vessel_graph.edges['po2vessels'] = po2vessels
@@ -241,7 +241,11 @@ def renderScene(po2group, imagefn, options):
 
   imagefn, ext = splitext(imagefn)
   ext = '.' + options.format
-  renderSliceWithDistribution((vessel_ld, vessel_graph, 'po2vessels'), (po2field_ld, po2field), imagefn+'_po2vessels'+ext, '', options)
-  renderSlice((vessel_ld, vessel_graph, 'saturation'), (None, None), imagefn+'_saturation'+ext, '', options)
-  renderSlice((vessel_ld, vessel_graph, 'hboconc'), (None, None), imagefn+'_hboconc'+ext, 'HbO [mmol/l blood]', options)
+  #renderSliceWithDistribution((vessel_ld, vessel_graph, 'po2vessels'), (po2field_ld, po2field), imagefn+'_po2vessels'+ext, '', options)
+  #renderSlice((vessel_ld, vessel_graph, 'saturation'), (None, None), imagefn+'_saturation'+ext, '', options)
+  #renderSlice((vessel_ld, vessel_graph, 'hboconc'), (None, None), imagefn+'_hboconc'+ext, 'HbO [mmol/l blood]', options)
 
+  #try world
+  renderSliceWithDistribution((po2field_ld, vessel_graph, 'po2vessels'), (po2field_ld, po2field), imagefn+'_po2vessels'+ext, '', options)
+  renderSlice((po2field_ld, vessel_graph, 'saturation'), (None, None), imagefn+'_saturation'+ext, '', options)
+  renderSlice((po2field_ld, vessel_graph, 'hboconc'), (None, None), imagefn+'_hboconc'+ext, 'HbO [mmol/l blood]', options)

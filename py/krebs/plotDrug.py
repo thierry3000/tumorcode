@@ -743,7 +743,7 @@ def plot_averaged_data(files, dataman, pdfpages):
   def plt_drug_vs_vessels_timeline(axes): # drug vs distance from vessels
     getdata = lambda g: dataman('drug_vs_vessel_distance_average', files, g, 'conc') if is_averaging else dataman('drug_vs_vessel_distance', files[0], g, 'conc')
     for style_num, group in enumerate(mygroups):
-      ax = axes[style_num-1]
+      ax = axes[style_num]
       title = r't = %s' % f2s(time(group))
       #tissue thing
       label_radial_conc = LF.math(LF.avgOver('s', ur'\rho'))
@@ -827,12 +827,12 @@ def plot_averaged_data(files, dataman, pdfpages):
     ax.legend(fontsize='x-small')
   pdfpages.savefig(fig, 'drugradial')
   
-  fig, axes = mkfig(6, 1, 0.22)
+  fig, axes = mkfig(7, 1, 0.22)
   axes = axes.ravel()
   plt_drug_vs_vessels_timeline(axes)
   pdfpages.savefig(fig, 'drug_from_vessel_radial')
   
-  fig, axes = mkfig(6, 1, 0.22)
+  fig, axes = mkfig(7, 1, 0.22)
   axes = axes.ravel()
   plt_drug_vs_vessels_timeline_no_tumor_sep(axes)
   pdfpages.savefig(fig, 'drug_from_vessel_radial_no_tumor_sep')

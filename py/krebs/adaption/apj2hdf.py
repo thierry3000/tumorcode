@@ -19,9 +19,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-# -*- coding: utf-8 -*-
 
-# -*- coding: utf-8 -*-
+''' need the file apj_network_546_segments.txt
+    and apj_network_546_segments_nodes.txt
+    provided by the tumorcode repository
+    data measurement credits go to secomb et al.
+    '''
+
 import krebsutils as ku
 import h5files
 import math
@@ -29,6 +33,12 @@ import numpy as np
 import scipy.spatial.distance as sdist
 import sys
 import os
+
+def correct_bc_type_from_secomb_to_MW(anArray):
+  for i,v in enumerate(anArray):
+    if v == 0:
+      anArray[i] = 1
+  return anArray
 
 def get_network_from_file(vesselgrp):
     filename = os.path.dirname(sys.argv[0]) + '/apj_network_546_segments.txt'
@@ -155,7 +165,7 @@ def get_nodes_from_file(vesselgrp):
         if(bctyp == 2):#if it is a flow condition
             #from nl/min to mul/s
             #change signs
-            value_of_bc[i] = -value_of_bc[i]/60.*1000000 /2
+            value_of_bc[i] = -value_of_bc[i]/60.*1000000
         if(bctyp == 0):#if it is a pressure condition
     #        #from mmhg to kpa
             if(value_of_bc[i]>0): 
@@ -171,8 +181,9 @@ def get_nodes_from_file(vesselgrp):
     nodegrp.attrs.create('COUNT', N_nodes)
     ds_world_pos = nodegrp.create_dataset('world_pos', data = np.array(positions_of_nodes))
     ds_value_of_bc = nodegrp.create_dataset('bc_value', data=value_of_bc)        
-    ds_bctyp_of_roots = nodegrp.create_dataset('bc_type', data= bctyp_of_roots)
+    ds_bctyp_of_roots = nodegrp.create_dataset('bc_type', data= correct_bc_type_from_secomb_to_MW(bctyp_of_roots))
     ds_bc_node_index = nodegrp.create_dataset('bc_node_index', data = indeces_of_roots)
+    ds_bc_conductivity_value = nodegrp.create_dataset('bc_conductivity_value', data=np.zeros_like(value_of_bc)) 
     ds_roots = nodegrp.create_dataset('roots', data = indeces_of_roots)
     f.close()
     return node_label2index
@@ -212,7 +223,7 @@ if __name__ == '__main__':
     import krebsjobs.parameters.parameterSetsAdaption
     adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, 'apj_1')
     ##CALCULATE!!!!
-    pressure, flow, force, hema = ku.calc_vessel_hydrodynamics_world(f3['vessels'], False, False, None, adaptionParams['calcflow'])
+    pressure, flow, force, hema = ku.calc_vessel_hydrodynamics(f3['vessels'], False, False, None, adaptionParams['calcflow'],storeCalculationInHDF=True)
     
     f3.close
 

@@ -83,18 +83,32 @@ def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
   '''gdst = group where the data is placed in, does not create a 'vesse' folder in it but writes nodes, edges directly;
      gv   = source vessel group
   '''
-  gvdst.attrs['CLASS'] = 'GRAPH'
-  myutils.buildLink(gvdst, 'SOURCE', gv)
-  # first we need to copy some of the vessel data
-  gvedst = gvdst.create_group('edges')
-  gvndst = gvdst.create_group('nodes')
-  gvedst.attrs['COUNT'] = gv['edges'].attrs['COUNT']
-  gvndst.attrs['COUNT'] = gv['nodes'].attrs['COUNT']
-  gv.copy('lattice',gvdst)
-  for name in ['lattice_pos', 'roots','bc_conductivity_value','bc_node_index','bc_type','bc_value']:
-    gv['nodes'].copy(name, gvndst)
-  for name in ['radius', 'node_a_index', 'node_b_index']:
-    gv['edges'].copy(name, gvedst)
+  if gv.attrs['CLASS'] == 'GRAPH':
+    gvdst.attrs['CLASS'] = 'GRAPH'
+    myutils.buildLink(gvdst, 'SOURCE', gv)
+    # first we need to copy some of the vessel data
+    gvedst = gvdst.create_group('edges')
+    gvndst = gvdst.create_group('nodes')
+    gvedst.attrs['COUNT'] = gv['edges'].attrs['COUNT']
+    gvndst.attrs['COUNT'] = gv['nodes'].attrs['COUNT']
+    gv.copy('lattice',gvdst)
+    for name in ['lattice_pos', 'roots','bc_conductivity_value','bc_node_index','bc_type','bc_value']:
+      gv['nodes'].copy(name, gvndst)
+    for name in ['radius', 'node_a_index', 'node_b_index']:
+      gv['edges'].copy(name, gvedst)
+  if gv.attrs['CLASS'] == 'REALWORLD':
+    gvdst.attrs['CLASS'] = 'REALWORLD'
+    myutils.buildLink(gvdst, 'SOURCE', gv)
+    # first we need to copy some of the vessel data
+    gvedst = gvdst.create_group('edges')
+    gvndst = gvdst.create_group('nodes')
+    gvedst.attrs['COUNT'] = gv['edges'].attrs['COUNT']
+    gvndst.attrs['COUNT'] = gv['nodes'].attrs['COUNT']
+    #gv.copy('lattice',gvdst)
+    for name in ['world_pos', 'roots','bc_conductivity_value','bc_node_index','bc_type','bc_value']:
+      gv['nodes'].copy(name, gvndst)
+    for name in ['radius', 'node_a_index', 'node_b_index']:
+      gv['edges'].copy(name, gvedst)
   # then we recompute blood flow because the alorithm has changed and we may or may not want hematocrit
   pressure, flow, shearforce, hematocrit, flags = krebsutils.calc_vessel_hydrodynamics(gv, return_flags = True, bloodflowparams = bloodflowparams)
   # then we save the new data to complete the network copy
@@ -201,8 +215,9 @@ def CopyInputFileInfo_(fdst, fsrc):
   else: # if is initial vessel file
     d = [('ENSEMBLE_INDEX', names[0]), 
          ('MESSAGE', names[1])]
-    for n1, n2 in d:
-      fdst.attrs[n2] = fsrc['parameters'].attrs[n1]
+    if 'parameters' in fsrc:
+      for n1, n2 in d:
+        fdst.attrs[n2] = fsrc['parameters'].attrs[n1]
 
 
 def computePO2(f, group_path, parameters, cachelocation):

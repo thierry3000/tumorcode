@@ -400,7 +400,10 @@ def vessels_require_(vesselgroup, g, name):
       pos = read_vessel_positions_from_hdf_(vesselgroup).transpose()
       g.nodes['position'] = pos  
     else:
-      print("unknown structure")
+      print("WARNING")
+      print("We assume this is a non lattice based structure!")
+      #pos = read_vessel_positions_from_hdf_(vesselgroup).transpose()
+      g.nodes['position'] = np.asarray(vesselgroup['nodes/world_pos'])
   elif 'edge_position' == name:
     
     if "CLASS" in vesselgroup.attrs:
@@ -506,13 +509,13 @@ def read_vesselgraph(vesselgroup, datanames, return_not_found = False):
     return read_vessels_from_hdf(vesselgroup, datanames, return_graph = True, return_not_found = return_not_found)
 
 #this assures backward compatibility
-def calc_vessel_hydrodynamics(vesselgroup, calc_hematocrit=False, return_flags=False, override_hematocrit = None, bloodflowparams = dict()):
+def calc_vessel_hydrodynamics(vesselgroup, calc_hematocrit=False, return_flags=False, override_hematocrit = None, bloodflowparams = dict(),storeCalculationInHDF=False):
     if 'CLASS' in vesselgroup.attrs:
-      return calc_vessel_hydrodynamics_(vesselgroup, calc_hematocrit, return_flags, override_hematocrit, bloodflowparams )
+      return calc_vessel_hydrodynamics_(vesselgroup, calc_hematocrit, return_flags, override_hematocrit, bloodflowparams, storeCalculationInHDF)
     else:
         os.error('Unknown vessel structure!')
 
-def calc_vessel_hydrodynamics_(vesselgroup, calc_hematocrit, return_flags, override_hematocrit, bloodflowparams):
+def calc_vessel_hydrodynamics_(vesselgroup, calc_hematocrit, return_flags, override_hematocrit, bloodflowparams, storeCalculationInHDF):
   """
     calls the c++ routines to load a vessel network into a VesselList3d object,
     compute flowrates etc with calcflow, and return (pressure, flow, shearforce, hematocrit, flags)
@@ -531,7 +534,7 @@ def calc_vessel_hydrodynamics_(vesselgroup, calc_hematocrit, return_flags, overr
     print('Using c++ default falue')
   #usage:
   #const py::object &vess_grp_obj ,bool return_flags, const BloodFlowParameters &bfparams, bool simple
-  return calc_vessel_hydrodynamics_Ccode(vesselgroup, return_flags, bloodflowparams, simple)
+  return calc_vessel_hydrodynamics_Ccode(vesselgroup, return_flags, bloodflowparams, simple, storeCalculationInHDF)
 
 
 def calc_vessel_conductivities(rad, length, hema, bloodflowparams = dict()):
