@@ -77,6 +77,10 @@ adaption_default = dict(
     includePhaseSeparationEffect =  False,
   ),
 )
+adaption_fix_r_10 = deepcopy(default_phase)
+adaption_fix_r_10['adaption'].update(
+  starting_radii = 10.,
+)
 
 adaption_typeE = dict(
   adaption = dict(

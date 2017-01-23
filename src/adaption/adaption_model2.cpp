@@ -783,7 +783,9 @@ void SetAdaptionValues(VesselList3d* vl, CompressedAdaptionNetwork& fl, double d
 // // 	bKill = false;
 // 	continue;//ignore sprouts for adaptation
 //       }
-      if(v->IsCirculated()) // and !v->flags.GetBits(BOUNDARY)) //is it important to include boundaries?
+      if(v->IsCirculated() and !v->flags.GetBits(BOUNDARY)
+	or v->IsCirculated() and v->flags.GetBits(BOUNDARY) and v->IsVein()
+      ) //is it important to include boundaries?
       {
 #ifdef DEBUG
 	if(kk<0)
@@ -1166,6 +1168,7 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
     // **************MAIN Routine ******************** for single iteration
     std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(*params,*vl,delta_t);
 #if 1
+    // am I serious? this would cause a never ending story.
     UpdateBoundaryConditions(*vl);//new boundary flows, can show up after adaption
     CalcFlow(*vl, *bfparams);//vice versa, network can expire different flows because of change in BC
 #endif

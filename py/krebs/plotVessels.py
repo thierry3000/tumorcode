@@ -916,7 +916,7 @@ def DoIt(filenames, pattern, with_o2):
         plot_topological_stats_avg(data, pdfpages)
       if 0: #reproduce swine
         plot_geometric_stuff_on_RC(dataman, f_measure, filenames, options, pdfpages)
-      if 1:
+      if 0:
         PrintGlobalData(pdfpages, vesselgroups, f_measure, dataman)
 
 
@@ -954,11 +954,12 @@ if __name__ == "__main__":
     ''' hack to center'''
     with h5py.File(fn.name, 'r+') as f:
       # centering is needed because quantities are analyzed in dependence on the distance from the system origin!!
-      if not goodArguments.with_o2:    
-        krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'field_ld')
-        krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'vessels/lattice')
-        f.flush()
-        krebsjobs.submitVesseltreeCalibration.ObtainDataOfVesselFile(f)
+      if not goodArguments.with_o2:
+        if 'field_ld' in f:
+          krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'field_ld')
+          krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'vessels/lattice')
+          f.flush()
+          krebsjobs.submitVesseltreeCalibration.ObtainDataOfVesselFile(f)
       else:
         krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, goodArguments.grp_pattern + '/field_ld')
         #krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, goodArguments.grp_pattern + '/SOURCE_VESSELS/lattice')

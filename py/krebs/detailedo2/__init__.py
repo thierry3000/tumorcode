@@ -212,7 +212,7 @@ def CopyInputFileInfo_(fdst, fsrc):
   if names[0] in fsrc.attrs: # if is tumor file
     for name in names:
       fdst.attrs[name] = fsrc.attrs[name]
-  else: # if is initial vessel file
+  elif 'ENSEMBLE_INDEX' in fsrc and 'MESSAGE' in fsrc: # if is initial vessel file
     d = [('ENSEMBLE_INDEX', names[0]), 
          ('MESSAGE', names[1])]
     if 'parameters' in fsrc:

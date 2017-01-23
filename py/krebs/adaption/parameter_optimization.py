@@ -19,8 +19,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#! /usr/bin/env python2
-# -*- coding: utf-8 -*-
+
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
@@ -397,34 +396,45 @@ if not qsub.is_client and __name__=='__main__':
   import argparse
   parser = argparse.ArgumentParser(description='particle swarm optimization for all files in file in filenames')  
   #parser.add_argument('AdaptionParamSet')  
-  parser.add_argument('fileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
+  #parser.add_argument('fileNames', nargs='?', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
   subparsers = parser.add_subparsers(dest='subcommand')
-  parser_run = subparsers.add_parser('run')  
+  parser_run = subparsers.add_parser('run')
+  #parser_run.add_argument('fileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
+  parser_run.add_argument('fileNames', nargs='*',  help='Vessel file to calculate')
   parser_run.add_argument('AdaptionParamSet')  
   parser_run.add_argument('grp_pattern',help='Where to find the vessel group in the file')  
   #parser.add_argument('-a', '--analyze', help = 'loop through all files analyze data and make plot', default=False, action='store_true')
   parser_rep =  subparsers.add_parser('rep')   
+  parser_rep.add_argument('fileNames', nargs='*',  help='Vessel file to calculate')
   #parser.add_argument('-r', '--reproduze', help = 'reproduced vesselnetwork with optimized parameters', default = False, action='store_true')  
   
   goodArguments, otherArguments = parser.parse_known_args()
+  goodArguments_run, otherArguments_run = parser_run.parse_known_args()
   qsub.parse_args(otherArguments)
   
-  #create filename due to former standards
-  filenames=[]
-  for fn in goodArguments.fileNames:
-    filenames.append(fn.name)
+  
   
   if goodArguments.subcommand == 'rep':
+    filenames = goodArguments_rep.fileNames
+#    #create filename due to former standards
+#    filenames=[]
+#    for fn in goodArguments_run.fileNames:
+#      filenames.append(fn.name)
     run_reproduze(filenames)
   if goodArguments.subcommand == 'run':
+    filenames = goodArguments_run.fileNames
+#    #create filename due to former standards
+#    filenames=[]
+#    for fn in goodArguments_run.fileNames:
+#      filenames.append(fn.name)
     try:
-      if not goodArguments.AdaptionParamSet in dir(parameterSetsAdaption):
-        raise AssertionError('Unknown parameter set %s!' % goodArguments.AdaptionParamSet)
+      if not goodArguments_run.AdaptionParamSet in dir(parameterSetsAdaption):
+        raise AssertionError('Unknown parameter set %s!' % goodArguments_run.AdaptionParamSet)
     except Exception, e:
         print e.message
         sys.exit(-1)
         
-    factory = getattr(parameterSetsAdaption, goodArguments.AdaptionParamSet)
-    factory['name'] = goodArguments.AdaptionParamSet
-    run2(factory, filenames, goodArguments.grp_pattern)
+    factory = getattr(parameterSetsAdaption, goodArguments_run.AdaptionParamSet)
+    factory['name'] = goodArguments_run.AdaptionParamSet
+    run2(factory, filenames, goodArguments_run.grp_pattern)
       

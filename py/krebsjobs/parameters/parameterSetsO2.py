@@ -53,10 +53,10 @@ default_o2 = dict(
     includePhaseSeparationEffect = True,
   ),
   massTransferCoefficientModelNumber = 1,
-  conductivity_coeff1 = 8.0,
-  conductivity_coeff2 = 4.7,
-  conductivity_coeff3 = 0.0,
-  name = 'default',
+  conductivity_coeff1 = c1_,
+  conductivity_coeff2 = c2_,
+  conductivity_coeff3 = c3_,
+  name = 'default_o2',
 )
 lowo2 = dict(
   po2init_r0 = 55., #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
@@ -102,6 +102,11 @@ medo2 = dict(
   calcflow = dict(
     includePhaseSeparationEffect = True,
   ),
+  massTransferCoefficientModelNumber = 1,
+  conductivity_coeff1 = c1_,
+  conductivity_coeff2 = c2_,
+  conductivity_coeff3 = c3_,
+  name = 'medo2',
 )
 
 
@@ -134,8 +139,17 @@ michaelismenten_consumption = dict(
   calcflow = dict(
     includePhaseSeparationEffect = True,
   ),
+  massTransferCoefficientModelNumber = 1,
+  conductivity_coeff1 = c1_,
+  conductivity_coeff2 = c2_,
+  conductivity_coeff3 = c3_,
+  name = 'michaelismenten_consumption',
 )
-
+pso = deepcopy(michaelismenten_consumption)
+pso.update(
+  grid_lattice_const = 10.,
+  #grid_lattice_size = (30,30,30),
+)
 breast = deepcopy(michaelismenten_consumption)
 breast.update(
   mmcons_m0_norm = 13.0e-5,
@@ -144,6 +158,7 @@ breast.update(
     inletHematocrit = 0.45,
     includePhaseSeparationEffect = True,
   ),
+  name = 'breast',
 )
 
 breastlow = deepcopy(michaelismenten_consumption)
