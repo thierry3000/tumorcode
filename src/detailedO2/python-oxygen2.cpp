@@ -236,106 +236,6 @@ inline boost::optional<T> getOptional(const char* name, py::dict &d)
     return boost::optional<T>();
 }
 
-#if 0
-static void PyComputePO2world(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
-{
-  bool world = true;
-  cout<<"Starting PO2 with world coordinates"<<endl;
-  DetailedPO2::Parameters params;
-  InitParameters(params, py_parameters);
-  
-  //my::h5::Group group = PythonToCppGroup(py_group);
-  //my::h5::Group vesselgroup = group.open_group(path_vessels);
-  h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
-  
-  ContinuumGrid grid;
-  DomainDecomposition mtboxes;
-  double grid_lattice_const              = py::extract<double>(py_parameters.get("grid_lattice_const", 30.));
-  double safety_layer_size               = py::extract<double>(py_parameters.get("safety_layer_size", grid_lattice_const*3.));
-  boost::optional<Int3> grid_lattice_size = getOptional<Int3>("grid_lattice_size", py_parameters);
-  {
-    //int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
-    int dim = 3;
-    LatticeDataQuad3d ld;
-    if (grid_lattice_size)
-    {
-      ld.Init(*grid_lattice_size, grid_lattice_const);
-      ld.SetCellCentering(Bool3(1, 1, dim>2));
-      FloatBBox3 wbox = vl->Ld().GetWorldBox();
-      Float3 worldCenter = 0.5*(wbox.max + wbox.min);
-      Float3 gridCenter = 0.5*(ld.GetWorldBox().max + ld.GetWorldBox().min);
-      ld.SetOriginPosition(ld.GetOriginPosition() + (worldCenter - gridCenter));
-    }
-    else
-    {
-      //SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld); //added safety space to reduce boundary errors
-      SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld); //added safety space to reduce boundary errors
-    }
-    grid.init(ld, dim);
-    mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
-    if (params.loglevel > 0)
-    {
-      cout << "continuum grid:" << endl;
-      grid.ld.print(cout);
-      cout << endl;
-    }
-  }
-
-//   if (params.loglevel > 0)
-//   {
-//     cout << "vessel lattice" << endl;
-//     vl->Ld().print(cout);
-//     cout << endl;
-//   }
-
-  if (!py_bfparams.is_none())
-  {
-    BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
-    CalcFlow(*vl, bfparams);
-  }
-
-  Array3df po2field;
-  DetailedPO2::VesselPO2Storage po2vessels;
-  ptree metadata;
-
-  //cout << format("in c++: %.20f %.20f %.20f\n") % params.conductivity_coeff1 % params.conductivity_coeff2 % params.conductivity_coeff_gamma;
-  
-  // Get to know where tumor is and where normal tissue is.
-  // I.e. get volume fractions of each cell type.
-  //after this call 3 3D fieds stored in phases are filled with the corresponding tissue type
-  DetailedPO2::TissuePhases phases;//Declaration
-  SetupTissuePhases(phases, grid, mtboxes, py_tumorgroup);//filling
-  
-  { //ReleaseGIL unlock(); // allow the python interpreter to do things while this is running
-  /**
-   * MOST IMPORTANT CALL
-   * grid is conitnuum grid, mtboxes is decomposition into threads
-   */
-  DetailedPO2::ComputePO2(params, *vl, grid, mtboxes, po2field, po2vessels, phases, metadata, world);
-  }
-  if (PyErr_Occurred() != NULL) return; // don't save stuff
-  
-  //This writes the results back to python
-#if 0
-  Int2 sz(2,po2vessels.size());
-  np::array  py_po2vessels = np::copy<float,2>(sz.data(), (float*)po2vessels.data(), calc_strides::first_dim_varies_fastest(sz).data());
-  np::array  py_po2field   = np::copy<float,3>(po2field.size().data(), po2field.getPtr(), po2field.strides().data());
-  py::object py_ld(grid.ld);
-  
-  return py::make_tuple(py_po2vessels, py_ld, py_po2field);
-#endif
-  {
-    h5cpp::Group outputGroup = PythonToCppGroup(py_h5outputGroup);
-    h5cpp::Group ldgroup = outputGroup.create_group("field_ld");
-    WriteHdfLd(ldgroup, grid.ld);
-    WriteScalarField<float>(outputGroup, "po2field", po2field, grid.ld, ldgroup);
-    h5cpp::create_dataset<float>(outputGroup, "po2vessels", h5cpp::Dataspace::simple_dims(po2vessels.size(), 2), (float*)po2vessels[0].data(), h5cpp::CREATE_DS_COMPRESSED); // FIX ME: transpose the array!
-    WriteHdfPtree(outputGroup, metadata, HDF_WRITE_PTREE_AS_DATASETS);
-  }
-}
-#endif
-
 
 /** 
  * @brief Callback for the main functions
@@ -373,7 +273,7 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
     }
     else
     {
-      int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
+      dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
     }
     LatticeDataQuad3d ld;
     if (grid_lattice_size)
