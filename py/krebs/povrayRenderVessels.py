@@ -114,6 +114,7 @@ def make_any_color_arrays(vesselgraph, data_name):
   edges = vesselgraph.edgelist
   num_nodes = len(vesselgraph.nodes['position'])
   flags = vesselgraph.edges['flags']
+  flags = np.asarray(flags,dtype='uint32')
   nflags = krebsutils.edge_to_node_property(num_nodes, edges, flags, 'or')
 
   mask = myutils.bbitwise_and(flags,krebsutils.CIRCULATED)
@@ -388,6 +389,9 @@ def render_different_data_types( vesselgroup, options):
     'metabolicSignal' : 'Metabolic Signal',
   }
   graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'nodeflags'] + options.datalist, return_graph=True)
+  #nodeflags not good for apj.h5
+  #numpy int64 bug!
+  #graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius' ] + options.datalist, return_graph=True)
   #if vesselgroup.attrs.get('CLASS') == 'GRAPH':  
   #  vessel_ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])  
   #  options.wbbox = vessel_ld.GetWorldBox()

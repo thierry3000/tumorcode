@@ -243,7 +243,7 @@ def hdftumor2vtk(graph, options ):
     writeFields_(graph, options)
   if options.writeVessels:
     writeVessels_(graph, options)
-
+  
 
 if __name__ == '__main__':
 
@@ -258,7 +258,7 @@ if __name__ == '__main__':
   parser.add_argument("--dpi", dest="dpi", default=None, action="store")
   parser.add_argument("--format", dest="format", default=None, action="store")
   parser.add_argument("-n", dest="out_nl", default = False, action="store") 
-  parser.add_argument("--outFilename", dest="outfn", default= None)
+  parser.add_argument("--outFilename", dest="outfn", default= None, type=str)
   '''this option come from the tumor side'''
   parser.add_argument("--writeVessels", help="when doing the tumor, export vesesls", default=True, action="store_true")  
   parser.add_argument("--writeFields", help="when doing the tumor, export Fields", default=True, action="store_true")  
@@ -293,10 +293,11 @@ if __name__ == '__main__':
     dirs = myutils.walkh5(f['/'], pattern)
     if goodArguments.outfn:
       print("you chose: %s as outfilename" % goodArguments.outfn)
+      goodArguments.outfn = goodArguments.outfn + '_%s.vtk'
     else:
       goodArguments.outfn = outfn = "%s-%%s.vtk" % (os.path.splitext(os.path.basename(fn))[0])
     for d in dirs:
-      if 'vessels' in d:
+      if 'vessels' in d and 'po2' not in d:
         vesselgroup = f[join('/',d)]['.']
         new = False
         if new:
@@ -316,5 +317,17 @@ if __name__ == '__main__':
           graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
         if goodArguments.filteruncirculated:
           graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
+        hdftumor2vtk(graph, goodArguments)
+      elif 'po2' in d:
+        #vesselgroup = f[join('/',d+'/vessels')]['.']
+        vesselgroup = f['/recomputed_flow/vessels']
+        new = False
+        if new:
+          graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
+        else:
+          graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
+        if goodArguments.filteruncirculated:
+          graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
+        #amazing, out of the box this works for the o2 simulation as well.
         hdftumor2vtk(graph, goodArguments)
         

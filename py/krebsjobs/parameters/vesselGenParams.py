@@ -38,6 +38,22 @@ default = dict(
     includePhaseSeparationEffect = True,
   )
 )
+large_2d = dict(
+  tip_radius_arterial = 2.5,
+  tip_radius_capi = 2.5,
+  tip_radius_vein = 3.8,
+  murray_alpha_vein = 3.,
+  murray_alpha_artery = 3.,
+  scale = 600.,
+  max_sprout_radius_artery = 8.,
+  max_sprout_radius_vein = 8.,
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6,
+    rheology = 'RheologySecomb2005',
+    inletHematocrit = 0.37,
+    includePhaseSeparationEffect = False,
+  )
+)
 irino_vess = dict(
   scale = 110., #as suggested by the runs of big_calibration_vol2 on snowden
   tip_radius_arterial = 2.5,

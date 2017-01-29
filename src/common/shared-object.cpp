@@ -471,6 +471,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
     if(!vl->GetBCMap().empty())
     {
       //if we have the BCMap, we try to use it
+      //ReadHdfGraph executed before should provide that
       for( auto bc: vl->GetBCMap())
       {
 	const VesselNode* nodeFromBCMap = bc.first;

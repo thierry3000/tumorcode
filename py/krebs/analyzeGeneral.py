@@ -75,15 +75,16 @@ def totalLdVolume(vesselgrp):
 def getGeometricData(vesselgroups):
   '''returns mvd in 1/mm^2 and blood vessel volume fractions'''
   from analyzeBloodVolumeSimple import cylinderCollectionVolumeDensity, cylinderCollectionLineDensity
-  from analyzeBloodVolumeSimple import computeMeanCapillaryDistance
+  #from analyzeBloodVolumeSimple import computeMeanCapillaryDistance
   data = []
   for g in vesselgroups:
-    meanCapillaryDistance = computeMeanCapillaryDistance(datamanager,dest_group,g)
+    #meanCapillaryDistance = dataman.obtain_data('basic_vessel_global', 'avg_cap_dist', g, cachelocation(g))
+    #meanCapillaryDistance = computeMeanCapillaryDistance(datamanager,dest_group,g)
     rv, rv_a, rv_v, rv_c = cylinderCollectionVolumeDensity(g)
     mvd, mvd_a, mvd_v, mvd_c = cylinderCollectionLineDensity(g)
     radii = np.asarray(g['edges/radius'])
     mean_r = np.mean(radii)
-    data.append((rv, rv_a, rv_v, rv_c, mvd, mvd_a, mvd_v, mvd_c, meanCapillaryDistance, mean_r))
+    data.append((rv, rv_a, rv_v, rv_c, mvd, mvd_a, mvd_v, mvd_c, mean_r))
   data = np.asarray(data).transpose() # first dimension gives quantity
   return data
 
@@ -138,7 +139,10 @@ def generate_rBV_of_group(datamanager, destination_group, f):
     return [gmeasure[name][()] for name in datanames ]
     
   def write(gmeasure, groupname):
-    vessel_grp = f['vessels']
+    if 'adaption' in f.keys():
+      vessel_grp = f['adaption/vessels_after_adaption']
+    else:
+      vessel_grp = f['vessels']
     #group_with_adaption = f['adaption/vessels_after_adaption']
     gmeasure = gmeasure.create_group(groupname)
     for name in datanames:

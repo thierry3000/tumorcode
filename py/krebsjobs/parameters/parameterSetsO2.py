@@ -217,6 +217,11 @@ breastv3.update(
   max_iter = 400, # some need more
 )
 
+breast_pso = deepcopy(breastv3)
+breast_pso['calcflow'].update(
+  rheology = 'RheologySecomb2005',
+)
+
 thigh = dict(
   num_threads = cluster_threads,
   po2init_r0 = 55., #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)

@@ -153,7 +153,7 @@ if __name__ == '__main__':
   parser.add_argument("--assumed_gamma", help=" ", default=1.0)
   parser.add_argument("--background", help=" ", default=1.0)
   parser.add_argument("--ambient_color", help=" ", default=(0.1, 0, 0))
-  parser.add_argument("--res", help="use comma seperated list of resx,resy ", default=(1024,1024))
+  parser.add_argument("--res", help="use comma seperated list of resx,resy ", default=(2048,2048))
   parser.add_argument("--num_threads", help=" ", default=7)
   parser.add_argument("--out_alpha", help=" ", default=False, action="store_true")
   parser.add_argument("--cam_distance_multiplier", help=" ", default=1.0 )

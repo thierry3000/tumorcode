@@ -73,7 +73,9 @@ void InitParameters(Adaption::Parameters &params, py::dict py_parameters)
   params.starting_radii = GET_ADAPTION_PARAM_FROM_DICT(double,"starting_radii");
   params.delta_t = GET_ADAPTION_PARAM_FROM_DICT(double,"delta_t");
   params.cond_length = GET_ADAPTION_PARAM_FROM_DICT(double,"cond_length");
-  params.avgRootNodeConductivity = GET_ADAPTION_PARAM_FROM_DICT(double,"avgRootNodeConductivity");
+  GET_ADAPTION_PARAM_IF_NONNONE(params.avgRootNodeConductivity, double, "avgRootNodeConductivity");
+  GET_ADAPTION_PARAM_IF_NONNONE(params.radMin_for_kill, double, "radMin_for_kill");
+  GET_ADAPTION_PARAM_IF_NONNONE(params.boundary_Condition_handling, uint, "boundary_Condition_handling");
   //std::cout<<params.write2File<<std::endl;
   GET_ADAPTION_PARAM_IF_NONNONE(params.write2File,bool,"write2File")
   //std::cout<<params.write2File<<std::endl;
@@ -96,6 +98,8 @@ void InitParameters(Adaption::Parameters &params, py::dict py_parameters)
 static void PyPrepareForAdaptation(std::auto_ptr<VesselList3d> &vl_,h5::Group vesselgroup_, h5::Group out_, BloodFlowParameters bfparams_, Adaption::Parameters adap_params)
 {
   vl_ = ReadVesselList3d(vesselgroup_, make_ptree("filter", true));
+  //to create the bc array, we need proper flow and pressure values!
+  //radii could then be overwriten
   CalcFlow(*vl_, bfparams_);
   h5::Group grp_temp;
   if( adap_params.write2File )

@@ -19,10 +19,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-# -*- coding: utf-8 -*-
 
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 ''' yet this a copy of plotsForPaper.py of the 
     detailedo2Analysis
     maybe one could turn this into comparison of
@@ -1061,17 +1058,18 @@ def PlotConvergenceData(pdfwriter, dataman, (items, path, time)):
 
 def doit(filenames, pattern, normalTissueEnsembleInput = None):
   dataman = myutils.DataManager(50, map(lambda x: x(), detailedo2Analysis.O2DataHandlers) + [ analyzeGeneral.DataTumorTissueSingle(), analyzeGeneral.DataDistanceFromCenter(), analyzeGeneral.DataBasicVessel(), analyzeGeneral.DataVesselSamples(), analyzeGeneral.DataVesselRadial(), analyzeGeneral.DataVesselGlobal(), analyzeBloodFlow.DataTumorBloodFlow()])
-
   ensemble = EnsembleFiles(dataman, filenames, pattern)
-  print 'paths: ', map(lambda (_t0, path, _t1): path, ensemble.tumor_snapshots)
-
-  if len(ensemble.tumor_snapshots) == 1:
-    items0, _, t0 = None, None, None
-    items1, _, t1 = ensemble.tumor_snapshots[0] 
+  
+  if ensemble.has_tumor:
+    if len(ensemble.tumor_snapshots) == 1:
+      print 'paths: ', map(lambda (_t0, path, _t1): path, ensemble.tumor_snapshots)
+      items0, _, t0 = None, None, None
+      items1, _, t1 = ensemble.tumor_snapshots[0] 
+    else:
+      items0, _, t0 = ensemble.tumor_snapshots[0]  # initial
+      items1, _, t1 = ensemble.tumor_snapshots[-1] # final
   else:
-    items0, _, t0 = ensemble.tumor_snapshots[0]  # initial
-    items1, _, t1 = ensemble.tumor_snapshots[-1] # final
-
+    normalTissueEnsembleInput = filenames, pattern
   if normalTissueEnsembleInput:
     filenamesNormal, patternNormal = normalTissueEnsembleInput
     normalTissueEnsemble = EnsembleFiles(dataman, filenamesNormal, patternNormal)

@@ -70,8 +70,9 @@ Parameters::Parameters()
    * important value!
    * if adaption without tumor this goes to this default value
    */
-  radMin_for_kill = 2.5;
+  radMin_for_kill = 1.5;
   write2File = true;
+  boundary_Condition_handling = KEEP;
 }
 
 void Parameters::assign(const ptree& pt)
@@ -96,6 +97,7 @@ void Parameters::assign(const ptree& pt)
   tum_manitulate_s4 = pt.get<bool>("tum_manitulate_s4", false);
   tum_manitulate_s5 = pt.get<bool>("tum_manitulate_s5", false);
   radMin_for_kill = pt.get<double>("radMin_for_kill", 1.0);
+  boundary_Condition_handling = pt.get<uint>("boundary_Condition_handling", KEEP);
   write2File = pt.get<bool>("write2File", true);
 }
 
@@ -121,6 +123,7 @@ ptree Parameters::as_ptree() const
 		   ("tum_manitulate_s4", tum_manitulate_s4)
 		   ("tum_manitulate_s5", tum_manitulate_s5)
 		   ("radMin_for_kill", radMin_for_kill)
+		   ("boundary_Condition_handling", boundary_Condition_handling)
 		   ("write2File", write2File)
 		   ;
 }
@@ -783,9 +786,14 @@ void SetAdaptionValues(VesselList3d* vl, CompressedAdaptionNetwork& fl, double d
 // // 	bKill = false;
 // 	continue;//ignore sprouts for adaptation
 //       }
+#if 0
       if(v->IsCirculated() and !v->flags.GetBits(BOUNDARY)
 	or v->IsCirculated() and v->flags.GetBits(BOUNDARY) and v->IsVein()
       ) //is it important to include boundaries?
+#endif
+#if 1
+      if( v->IsCirculated() )
+#endif
       {
 #ifdef DEBUG
 	if(kk<0)
@@ -843,6 +851,7 @@ void SetAdaptionValues(VesselList3d* vl, CompressedAdaptionNetwork& fl, double d
 //     //ensures that a vessel is killed only once!
 //     toKill.insert(toKill.end(), th_toKill.begin(), th_toKill.end());
 //     mutex.unlock();
+//  printf("max_stot_again: %f\n", max_stot_again);
   }//end omp parallel
   #pragma omp barrier
 #if 0
@@ -1036,6 +1045,7 @@ bool check_while_break( int no_vessels, double min_error, double nqdev, double m
       return false;
 #endif
 #if 1
+    //printf("max_stot: %f\n", max_stot);
     if( max_stot < 0.01)
       return false;
 #endif
@@ -1057,7 +1067,19 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
   printf("done!\n");
 #endif
 #if 1
-  ChangeBoundaryConditions(*vl);
+  //this seems to be necessary to get a stable result for the apj stuff
+  //used together with change of radii of veins
+  //ChangeBoundaryConditions(*vl);
+  //ChangeBoundaryConditionsFix(*vl);
+  if(params->boundary_Condition_handling==LARGE_2D)
+  {
+    ChangeBoundaryConditionsLARGE_2D(*vl);
+  }
+  if(params->boundary_Condition_handling==KEEP)
+  {
+    //note: good for the mesentry example
+    std::printf("keep boundary conditions as read from the hdf file during adaption\n");
+  }
 #endif
   CalcFlow(*vl, *bfparams);
   int no_Vessels_before_adaption = vl->GetECount();
@@ -1169,8 +1191,10 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
     std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(*params,*vl,delta_t);
 #if 1
     // am I serious? this would cause a never ending story.
-    UpdateBoundaryConditions(*vl);//new boundary flows, can show up after adaption
-    CalcFlow(*vl, *bfparams);//vice versa, network can expire different flows because of change in BC
+    //UpdateBoundaryConditions(*vl);//new boundary flows, can show up after adaption
+    CalcFlow(*vl, *bfparams);
+    //vice versa, network can expire different flows because of change in BC
+    //an change in radii
 #endif
     qdev = sqrt(qdev);
     nqdev = qdev/vl->GetECount();

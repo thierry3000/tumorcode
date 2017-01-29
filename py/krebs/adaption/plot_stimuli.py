@@ -19,15 +19,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-# -*- coding: utf-8 -*-
 
-import matplotlib.pyplot as plt
+if __name__ == '__main__':
+  import os.path, sys
+  sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
+
+import matplotlib
+import identifycluster
+if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
+  matplotlib.use('agg')
 import h5py
 import itertools
 import numpy as np
-import myutils
+import mpl_utils
 import os
-from matplotlib.backends.backend_pdf import PdfPages
 import krebsutils as ku
 
 
@@ -45,23 +50,24 @@ def plot_hydorodynamic_charicteristics(vessel_grp,pp):
         
     for NodeA, NodeB in itertools.izip(node_a_index,node_b_index):
         pressure_at_vessel.append((pressure_at_nodes[NodeA]+pressure_at_nodes[NodeB])/2 * 1/0.1333)
-    fig = plt.figure()
-    plt.subplot(2,1,1)
-    plt.loglog(pressure_at_vessel,shearforce,'*')
-    plt.grid()
-    plt.xlabel('pressure/ mmHg')
-    plt.xlim([10,100])
-    plt.ylim([1,1000])
-    plt.ylabel('shearstress dyne/cm^2')
-    plt.subplot(2,1,2)
-    plt.loglog(pressure_at_vessel,diameter,'r*')
-    plt.grid()
-    plt.xlabel('pressure/ mmHg')
-    plt.ylabel('diameter/ mum')
-    plt.xlim([10,100])
-    plt.ylim([3,100])
-    pp.savefig()
-    plt.show()
+    fig = matplotlib.figure.Figure()
+    ax1 = fig.add_subplot(211)
+    #plt.subplot(2,1,1)
+    ax1.semilogy(pressure_at_vessel,shearforce,'*')
+    ax1.grid()
+    ax1.set_xlabel('pressure/ mmHg')
+    ax1.set_xlim([10,100])
+    ax1.set_ylim([1,1000])
+    ax1.set_ylabel('shearstress dyne/cm^2')
+    ax2 = fig.add_subplot(212, sharex=ax1)
+    ax2.semilogy(pressure_at_vessel,diameter,'r*')
+    ax2.grid()
+    #plt.xlabel('pressure/ mmHg')
+    ax2.set_ylabel('diameter/ mum')
+    #plt.xlim([10,100])
+    ax2.set_ylim([3,100])
+    pp.savefig(fig, 'hydorodynamic_charicteristics')
+    #plt.show()
 
 def plot_hydrodynamic_stimuli(vessel_grp,pp):
     shearforce = vessel_grp['edges/shearforce']
@@ -77,17 +83,18 @@ def plot_hydrodynamic_stimuli(vessel_grp,pp):
     for NodeA, NodeB in itertools.izip(node_a_index,node_b_index):
         pressure_at_vessel.append((pressure_at_nodes[NodeA]+pressure_at_nodes[NodeB])/2 * 1/0.1333)
     pressure_stimuli = 100 - 86 *np.exp(-5000*np.log10(np.log10(pressure_at_vessel))**5.4)
-    fig = plt.figure()
-    plt.semilogx(pressure_at_vessel,np.log10(shearforce),'*')
-    plt.semilogx(pressure_at_vessel,-np.log10(pressure_stimuli),'r*')
-    plt.legend(['Hydrodynamic stimuli', 'Pressure'])
-    plt.grid()
-    plt.xlabel('pressure/ mmHg')
-    plt.xlim([10,100])
-    plt.ylim([-2.2,4])
-    plt.ylabel('stimuli')
-    pp.savefig()
-    plt.show() 
+    fig = matplotlib.figure.Figure()
+    ax = fig.add_subplot(111)
+    ax.semilogx(pressure_at_vessel,np.log10(shearforce),'*')
+    ax.semilogx(pressure_at_vessel,-np.log10(pressure_stimuli),'r*')
+    ax.legend(['Hydrodynamic stimuli', 'Pressure'])
+    ax.grid()
+    ax.set_xlabel('pressure/ mmHg')
+    ax.set_xlim([10,100])
+    ax.set_ylim([-2.2,4])
+    ax.set_ylabel('stimuli')
+    pp.savefig(fig, 'Hydrodynamic stimuli')
+    #plt.show() 
     
 def plot_conductive_stimuli(adaption_grp,pp):
     index_of_artery = np.bitwise_and(np.asarray(adaption_grp['edges/flags']), ku.ARTERY)>0
@@ -108,22 +115,23 @@ def plot_conductive_stimuli(adaption_grp,pp):
     for NodeA, NodeB in itertools.izip(node_a_index,node_b_index):
         pressure_at_vessel.append((pressure_at_nodes[NodeA]+pressure_at_nodes[NodeB])/2 * 1/0.1333)
     
-    fig2 = plt.figure()
-    plt.title('conductive stimuli')
-    plt.semilogx(flow[index_of_artery],metabolic[index_of_artery],'*r')
-    plt.semilogx(flow[index_of_capillary],metabolic[index_of_capillary],'*y')
-    plt.semilogx(flow[index_of_vein],metabolic[index_of_vein],'*b')
+    fig2 = matplotlib.figure.Figure()
+    ax = fig2.add_subplot(111)
+    ax.set_title('conductive stimuli')
+    ax.semilogx(flow[index_of_artery],metabolic[index_of_artery],'*r')
+    ax.semilogx(flow[index_of_capillary],metabolic[index_of_capillary],'*y')
+    ax.semilogx(flow[index_of_vein],metabolic[index_of_vein],'*b')
     
-    plt.semilogx(flow[index_of_artery],conductive[index_of_artery],'Dr')
-    plt.semilogx(flow[index_of_capillary],conductive[index_of_capillary],'Dy')
-    plt.semilogx(flow[index_of_vein],conductive[index_of_vein],'Db')
-    plt.legend(['metabolic','conductive'])
-    plt.grid()
-    plt.xlabel("flow/nl/min")
-    plt.xlim([0.01,1000])
-    plt.ylim([0,4])
-    pp.savefig()
-    plt.show()
+    ax.semilogx(flow[index_of_artery],conductive[index_of_artery],'Dr')
+    ax.semilogx(flow[index_of_capillary],conductive[index_of_capillary],'Dy')
+    ax.semilogx(flow[index_of_vein],conductive[index_of_vein],'Db')
+    ax.legend(['metabolic','conductive'])
+    ax.grid()
+    ax.set_xlabel("flow/nl/min")
+    ax.set_xlim([0.01,1000])
+    ax.set_ylim([0,4])
+    pp.savefig(fig2,'conductive stimuli')
+    #plt.show()
 def plot_movie(f,pp):
   #all_grp = f['Asymetric/vessels_after_adaption']
   all_grp = f['adaption']
@@ -370,17 +378,29 @@ if __name__ == '__main__':
     filename= 'mesentry_secomb_546_adption_p_mesentry_subset_vary.h5'
     filename= '/daten/localdisk/adaption_project/vessels-q2d-8mm-P6-typeE-9x3L130-sample00_adption_p_typeE.h5'
     filename= 'mesentry_secomb_546_v3_adption_p_mesentry_play.h5'    
-    f = h5py.File(filename)
+    import argparse
+    parser = argparse.ArgumentParser(description='Compare O2 from adation and no adaption')  
+    parser.add_argument('FileName', type=str)
+    goodArguments, otherArguments = parser.parse_known_args()    
+    #f = h5py.File(filename)
+    f = h5py.File(goodArguments.FileName)
     no_of_iterations = '1'
     #vesselgrp = f['/adaption/vessels_after_adaption_' + no_of_iterations]
     vesselgrp = f['/adaption/vessels_after_adaption']
     #vesselgrp = f['/Asymetric/vessels_after_adaption/vessels_after_adaption']
     common_filename = os.path.splitext(filename)[0]
     
-    pp = PdfPages(no_of_iterations + '_' + common_filename + '_stimulies.pdf')
-    hydrodynamic_fig = plot_hydrodynamic_stimuli(vesselgrp, pp)
-    plot_conductive_stimuli(vesselgrp,pp)
-    plot_hydorodynamic_charicteristics(vesselgrp,pp)
+    with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_stimulies.pdf') as pp:
+      rc = matplotlib.rc
+      rc('font', size = 8.)
+      rc('axes', titlesize = 10., labelsize = 8.)
+    #with PdfPages(no_of_iterations + '_' + common_filename + '_stimulies.pdf') as pp:
+    #pp = PdfPages(no_of_iterations + '_' + common_filename + '_stimulies.pdf')
+      
+      hydrodynamic_fig = plot_hydrodynamic_stimuli(vesselgrp, pp)
+      plot_conductive_stimuli(vesselgrp,pp)
+      plot_hydorodynamic_charicteristics(vesselgrp,pp)
+
     #plot_movie(f,pp=None)
     #plot_movie_typeE(f,pp=None)
     

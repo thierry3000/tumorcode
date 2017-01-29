@@ -72,7 +72,11 @@ def con2(x, *args):
 def con3(x, *args):
   #global calculated_mean_cap_flow
   return np.square(calculated_mean_cap_flow-10e6)
-
+def con4(x, *args):
+  # velocity in capillary about 1mm/s = 1000mu/s
+  # typical diameter 5mu e.g r=2.5mu
+  # 3.1415*2.5*2.5*1000 about 2e4
+  return np.square(calculated_mean_cap_flow-20000)
 def do_pSO_for_file(x,dst_file, vesselgroup, parameters):
   parameters['counter'] = parameters['counter'] + 1
   alabel = 'data_%i' % parameters['counter']
@@ -215,7 +219,13 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
       Scaling factor to search away from the swarm's best known position
       (Default: 0.5)
   '''
-  if 1:#big_swarm3
+  if 1:#medium for small configs
+    swarmsize = 400
+    maxiter = 6
+    minstep = 1e-8  #default 1e-8
+    minfunc = 0.001  #default 1e-8
+    omega = 0.5     #default 0.5
+  if 0:#big_swarm3
     swarmsize = 1000
     maxiter = 20
     minstep = 1e-8  #default 1e-8
@@ -256,21 +266,37 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
   adaptionParams['num_threads'] = 8
   
   args=(f_opt_data, vesselgroup, adaptionParams)
-  xopt, fopt = pso(do_pSO_for_file,
-                   x_0,
-                   lb,
-                   ub,
-                   ieqcons=[con3],
-                   debug=True,
-                   swarmsize= swarmsize,
-                   maxiter= maxiter,
-                   minstep=minstep,
-                   minfunc=minfunc,
-                   omega=omega,
-                   processes=processes,
-                   use_initial_guess=use_initial_guess,
-                   phig=0.25,
-                   args=args)
+  if 1:
+    xopt, fopt = pso(do_pSO_for_file,
+                     x_0,
+                     lb,
+                     ub,
+                     ieqcons=[con4],
+                     debug=True,
+                     swarmsize= swarmsize,
+                     maxiter= maxiter,
+                     minstep=minstep,
+                     minfunc=minfunc,
+                     omega=omega,
+                     processes=processes,
+                     use_initial_guess=use_initial_guess,
+                     phig=0.25,
+                     args=args)
+  if 0:
+    xopt, fopt = pso(do_pSO_for_file,
+                     x_0,
+                     lb,
+                     ub,
+                     debug=True,
+                     swarmsize= swarmsize,
+                     maxiter= maxiter,
+                     minstep=minstep,
+                     minfunc=minfunc,
+                     omega=omega,
+                     processes=processes,
+                     use_initial_guess=use_initial_guess,
+                     phig=0.25,
+                     args=args)                   
   
   f_opt_data.attrs.create('xopt', data = xopt)
   f_opt_data.attrs.create('fopt', data = fopt)
@@ -400,21 +426,22 @@ if not qsub.is_client and __name__=='__main__':
   subparsers = parser.add_subparsers(dest='subcommand')
   parser_run = subparsers.add_parser('run')
   #parser_run.add_argument('fileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
-  parser_run.add_argument('fileNames', nargs='*',  help='Vessel file to calculate')
-  parser_run.add_argument('AdaptionParamSet')  
-  parser_run.add_argument('grp_pattern',help='Where to find the vessel group in the file')  
+  parser_run.add_argument('-f','--fileNames', nargs='*',  help='Vessel file to calculate')
+  parser_run.add_argument('-p','--AdaptionParamSet')  
+  parser_run.add_argument('-g','--grp_pattern',help='Where to find the vessel group in the file')  
   #parser.add_argument('-a', '--analyze', help = 'loop through all files analyze data and make plot', default=False, action='store_true')
   parser_rep =  subparsers.add_parser('rep')   
-  parser_rep.add_argument('fileNames', nargs='*',  help='Vessel file to calculate')
+  parser_rep.add_argument('-f', '--fileNames', nargs='*',  help='Vessel file to calculate')
   #parser.add_argument('-r', '--reproduze', help = 'reproduced vesselnetwork with optimized parameters', default = False, action='store_true')  
   
   goodArguments, otherArguments = parser.parse_known_args()
-  goodArguments_run, otherArguments_run = parser_run.parse_known_args()
-  qsub.parse_args(otherArguments)
+  
   
   
   
   if goodArguments.subcommand == 'rep':
+    goodArguments_rep, otherArguments_rep = parser_rep.parse_known_args()
+    qsub.parse_args(otherArguments_rep)
     filenames = goodArguments_rep.fileNames
 #    #create filename due to former standards
 #    filenames=[]
@@ -422,6 +449,8 @@ if not qsub.is_client and __name__=='__main__':
 #      filenames.append(fn.name)
     run_reproduze(filenames)
   if goodArguments.subcommand == 'run':
+    goodArguments_run, otherArguments_run = parser_run.parse_known_args()
+    qsub.parse_args(otherArguments)
     filenames = goodArguments_run.fileNames
 #    #create filename due to former standards
 #    filenames=[]

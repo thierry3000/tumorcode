@@ -40,6 +40,12 @@ namespace Adaption
     TUMOR  = 1,
     NECRO  = 2
   };
+  enum BoundaryHandling
+  {
+    KEEP = 0,
+    VEIN_AS_FLOW_ARTERY_PRESSURE  = 1,
+    LARGE_2D = 2,
+  };
 
   typedef DynArray<FlReal> FlArray;
   typedef DynArray<my::eqpair<int> > FeArray;
@@ -83,6 +89,7 @@ namespace Adaption
     bool write2File;
     
     double radMin_for_kill;
+    uint boundary_Condition_handling;
     
     void assign(const ptree &pt);
     ptree as_ptree() const;

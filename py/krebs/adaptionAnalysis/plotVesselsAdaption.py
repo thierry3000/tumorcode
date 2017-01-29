@@ -19,8 +19,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
+
 """
 Created on Thu Feb 25 14:53:15 2016
 
@@ -61,6 +60,7 @@ from quantities import Prettyfier
 from plotVessels import *
 from analyzeMurray import *
 from adaption import getVesselTypes
+from analyzeGeneral import getGeometricData,generate_adaption_data_average_rBV
 
 from scipy.optimize import fsolve
 from scipy.optimize import minimize_scalar
@@ -841,7 +841,7 @@ def printBarPlot_rBV(dataman, fmeasure, filenames, options, pdfpages):
     typelist = 'typeA- typeB- typeC- typeD- typeE- typeF- typeG- typeH- typeI-'
     
   if(options.single):
-    typelist = 'typeF- '
+    typelist = 'typeI- '
     
   for t in typelist.split():
     print('rBV for type: %s' % t)
@@ -999,11 +999,11 @@ def DoIt(filenames, options):
 #    vesselgroups_without = groups_without_adaption
 #    vesselgroups_with = groups_with_adaption
     
-    geometric_data_before = getGeometricData(groups_without_adaption)
-    perfusion_data_before = getTotalPerfusion(groups_without_adaption)*60
-    
-    geometric_data_after = getGeometricData(groups_with_adaption)
-    perfusion_data_after = getTotalPerfusion(groups_with_adaption)*60
+#    geometric_data_before = getGeometricData(groups_without_adaption)
+#    perfusion_data_before = getTotalPerfusion(groups_without_adaption)*60
+#    
+#    geometric_data_after = getGeometricData(groups_with_adaption)
+#    perfusion_data_after = getTotalPerfusion(groups_with_adaption)*60
     
     if 1:
       res_without = getMultiScatter(300. * len(filenames), groups_without_adaption)
@@ -1015,11 +1015,11 @@ def DoIt(filenames, options):
 #      PlotRadiusHistogram2(dataman, groups_without_adaption, pdfpages)
 #      PlotRadiusHistogram2(dataman, groups_with_adaption, pdfpages)
 #  
-    if 1:
+    if 0:
       #printBarPlot_rBV(filenames, pdfpages) -->alt
       printBarPlot_rBV(dataman, f_measure, filenames, options, pdfpages) #-->mw enginered
       
-    if 1:  
+    if 0:  
       printBarPlot_rBF(dataman, f_measure, filenames, options, pdfpages)
     
     if 1:
@@ -1030,11 +1030,11 @@ def DoIt(filenames, options):
       printBarPlot_vesseltype_on_root_node_configuration(filenames, pdfpages)
     
     ## is it worth to update this ???
-    if 0:
+    if 1:
       #importing the murray thing
       #DoGetMurray(filenames, pdfpages)
       printMurray(dataman, f_measure, filenames, options, pdfpages)
-    if 0:      
+    if 1:      
       printMurray_alphas_effective(dataman, f_measure, filenames, options, pdfpages)
     if 1:
       text = ["Before adaption"]

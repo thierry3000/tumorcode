@@ -126,5 +126,7 @@ struct FlowBC
 void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &params, bool keepTheVesselHematocrit); // Either override the vessel hematocrit with a constant or leave the vessel hematocrit values alone and just compute pressure, flow and force using the segments hematocrit
 void CalcFlow(VesselList3d &vl, const BloodFlowParameters &params);
 void ChangeBoundaryConditions(VesselList3d &vl);
+void ChangeBoundaryConditionsFix(VesselList3d &vl);
+void ChangeBoundaryConditionsLARGE_2D(VesselList3d &vl);
 bool MarkFailingVesselHidden(VesselList3d &vl);
 #endif // CALCFLOW_H

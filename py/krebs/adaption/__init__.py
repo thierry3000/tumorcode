@@ -106,7 +106,7 @@ def computeAdaption_(gdst, vesselgroup, parameters):
   r = adaption.computeAdaption(vesselgroup, parameters['adaption'], parameters['calcflow'], gdst)
   myutils.hdf_write_dict_hierarchy(gdst, 'parameters', parameters)
   gdst.file.flush()
-  return r
+  
 #  r = adaption.computeAdaption(vesselgroup, tumorgroup, parameters, None,gdst)
 
 def computeAdaption(f, group_path, parameters, cachelocation): 
@@ -134,8 +134,13 @@ def computeAdaption(f, group_path, parameters, cachelocation):
 
   #==== execute reading or computing and writing =====#
   fm = h5files.open(cachelocation[0], 'a', search = False)
-  parameters = AddAverageConductivity(vesselgroup1, parameters)
-  myutils.hdf_write_dict_hierarchy(fm['/'], 'parameters', parameters)  
+  if 'addAverageConductivity' in parameters['adaption']:
+    avgCond = parameters['adaption'].pop('addAverageConductivity')
+  else:
+    avgCond = True
+  if avgCond:
+    parameters = AddAverageConductivity(vesselgroup1, parameters)
+  myutils.hdf_write_dict_hierarchy(fm['/'], 'parameters', parameters) 
 
   #====  this is for Adaption =====#
   def read2(gmeasure, name):

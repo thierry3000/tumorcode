@@ -130,6 +130,65 @@ void ChangeBoundaryConditions(VesselList3d &vl)
 #endif
 }
 
+void ChangeBoundaryConditionsFix(VesselList3d &vl)
+{
+#ifdef DEBUG
+  printf("entered ChangeBoundaryConditionsFix\n");
+#endif
+  int ncnt = vl.GetNCount();
+  
+  for(int i=0; i<ncnt; ++i)
+  {
+    const VesselNode* vc= vl.GetNode(i);
+    // insert boundary nodes into the bcs array
+    if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
+    {
+      vl.SetBC(vc,FlowBC(FlowBC::PIN, 2.0));
+    }
+    if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
+    {
+      vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -5000000.0));
+    }
+      //cout<<format("press : %f\n") % vc->press;
+      //cout << format("flow boundary node: %i") % id << endl;
+#ifdef DEBUG
+      cout<<"Changed bcs map!"<<endl;
+#endif
+  }
+#ifdef DEBUG
+  printf("leave ChangeBoundaryConditionsFix\n");
+#endif
+}
+void ChangeBoundaryConditionsLARGE_2D(VesselList3d &vl)
+{
+#ifdef DEBUG
+  printf("entered ChangeBoundaryConditionsFix\n");
+#endif
+  int ncnt = vl.GetNCount();
+  
+  for(int i=0; i<ncnt; ++i)
+  {
+    const VesselNode* vc= vl.GetNode(i);
+    // insert boundary nodes into the bcs array
+    if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
+    {
+      vl.SetBC(vc,FlowBC(FlowBC::PIN, 3.7));
+    }
+    if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
+    {
+      vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -500000.0));
+    }
+      //cout<<format("press : %f\n") % vc->press;
+      //cout << format("flow boundary node: %i") % id << endl;
+#ifdef DEBUG
+      cout<<"Changed bcs map!"<<endl;
+#endif
+  }
+#ifdef DEBUG
+  printf("leave ChangeBoundaryConditionsFix\n");
+#endif
+}
+
 template<class Flux>
 double CalcFluxResidual(const CompressedFlowNetwork &flownet, Flux flux)
 {
@@ -813,7 +872,7 @@ void CalcFlow(VesselList3d &vl, const BloodFlowParameters &params)
   if (params.includePhaseSeparationEffect)
     CalcFlowWithPhaseSeparation(vl, params);
   else
-    CalcFlowSimple(vl, params, false);
+    CalcFlowSimple(vl, params, true);
 }
 
 

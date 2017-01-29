@@ -509,7 +509,7 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename):
     
     ax2.set(xticks = xticks)
     ax2.set(xticklabels=xticklabels)
-    ax2.tick_params(labelsize=mytextsize/2, colors='black')
+    ax2.tick_params(labelsize=mytextsize/4, colors='black')
     #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
     
     ax2.text(0.4,-0.09,label,

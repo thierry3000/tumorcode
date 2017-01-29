@@ -20,11 +20,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-''' need the file apj_network_546_segments.txt
-    and apj_network_546_segments_nodes.txt
-    provided by the tumorcode repository
-    data measurement credits go to secomb et al.
-    '''
+''' 
+    This program uses measured data on rat mesentry network
+    available at 
+    http://ajpheart.physiology.org/highwire/filestream/95027/field_highwire_adjunct_files/1/network_546_segments.txt
+    
+    For convenience a copy is provide however the credits
+    for measurement go to the authors secomb et al.
+    
+    1. we read the data from txt file an generate the file apj.h5
+       which is in 'tumorcode' format.
+    2. the 'ku.calc_vessel_hydrodynamics' command calculated
+       all properties relevant for further proceding with 
+       that data in tumorcode e.g. vizualization, 
+'''
+if __name__ == '__main__':
+  import os.path, sys
+  sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 
 import krebsutils as ku
 import h5files
@@ -40,8 +52,9 @@ def correct_bc_type_from_secomb_to_MW(anArray):
       anArray[i] = 1
   return anArray
 
-def get_network_from_file(vesselgrp):
-    filename = os.path.dirname(sys.argv[0]) + '/apj_network_546_segments.txt'
+def get_network_from_file(vesselgrp, path):
+    #filename = os.path.dirname(sys.argv[0]) + '/apj_network_546_segments.txt'
+    filename = path + '/apj_network_546_segments.txt'    
     f=open(filename,'r')
     data = f.readlines()
     cropped_edges = data[7:553]
@@ -90,8 +103,9 @@ def get_network_from_file(vesselgrp):
     
     for (i,v) in enumerate(velocity):
         if(v!=0):
-            flow.append((np.pi*radii[i]**2)*length[i]*velocity[i]*1000)
-        
+            #flow.append((np.pi*radii[i]**2)*length[i]*velocity[i]*1000)
+            #flow.append((np.pi*2*radii[i])*length[i]*velocity[i]*1000)
+            flow.append((np.pi*radii[i]**2)*velocity[i]*1000)
     #edge stuff
     N_edges= 546
     #N_edges=2666
@@ -108,8 +122,9 @@ def get_network_from_file(vesselgrp):
         
         
         
-def get_nodes_from_file(vesselgrp):
-    filename = os.path.dirname(sys.argv[0]) + '/apj_network_546_segments_nodes.txt'
+def get_nodes_from_file(vesselgrp, path):
+    #filename = os.path.dirname(sys.argv[0]) + '/apj_network_546_segments_nodes.txt'
+    filename = path + '/apj_network_546_segments_nodes.txt'    
     f=open(filename,'r')
     data = f.readlines()
     cropped_nodes = data[1140:2112]
@@ -166,7 +181,7 @@ def get_nodes_from_file(vesselgrp):
             #from nl/min to mul/s
             #change signs
             value_of_bc[i] = -value_of_bc[i]/60.*1000000
-        if(bctyp == 0):#if it is a pressure condition
+        if(bctyp == 1):#if it is a pressure condition
     #        #from mmhg to kpa
             if(value_of_bc[i]>0): 
                 #michael works with possitve pressures only
@@ -185,6 +200,7 @@ def get_nodes_from_file(vesselgrp):
     ds_bc_node_index = nodegrp.create_dataset('bc_node_index', data = indeces_of_roots)
     ds_bc_conductivity_value = nodegrp.create_dataset('bc_conductivity_value', data=np.zeros_like(value_of_bc)) 
     ds_roots = nodegrp.create_dataset('roots', data = indeces_of_roots)
+    ds_nodeflags = nodegrp.create_dataset('nodeflags', data = np.zeros(N_nodes,dtype='int32'))
     f.close()
     return node_label2index
 
@@ -214,51 +230,19 @@ if __name__ == '__main__':
     vesselgrp = f3.create_group('vessels')
     vesselgrp.attrs.create('CLASS','REALWORLD')
     
-    get_network_from_file(vesselgrp)
-    node_label2index = get_nodes_from_file(vesselgrp)
-    
+    '''***** INPUT *****'''
+    '''path to apj_network_546_segments.txt
+    this might change during your installation'''
+    path_to_txt = '/home/usersHR/thierry/tumorcode/py/krebs/adaption'
+    get_network_from_file(vesselgrp, path_to_txt)
+    node_label2index = get_nodes_from_file(vesselgrp, path_to_txt)
     correct_vessel_indeces(node_label2index, vesselgrp)
     
-    
+    '''***** tumorcode stuff *****'''
     import krebsjobs.parameters.parameterSetsAdaption
-    adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, 'apj_1')
+    adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, 'mesentry')
     ##CALCULATE!!!!
     pressure, flow, force, hema = ku.calc_vessel_hydrodynamics(f3['vessels'], False, False, None, adaptionParams['calcflow'],storeCalculationInHDF=True)
     
     f3.close
 
-
-##node stuff
-#N_nodes=len(positions_of_nodes)
-#nodegrp = f3['vessels'].create_group("nodes")
-#nodegrp.attrs.create('COUNT', N_nodes)
-#ds_roots = f3['vessels/nodes'].create_dataset('roots', data = indeces_of_roots)
-#
-##dummy pressure for compatiblility
-#ds_pressure = f3['vessels/nodes'].create_dataset('roots_pressure', data = roots_pressure)
-#ds_value_of_bc = f3['vessels/nodes'].create_dataset('value_of_boundary_condition', data=value_of_bc)        
-#ds_bctyp_of_roots = f3['vessels/nodes'].create_dataset('bctyp_of_roots', data= bctyp_of_roots)
-#ds_world_pos = f3['vessels/nodes'].create_dataset('world_pos', data = np.array(positions_of_nodes))
-#
-#import krebs.adaption.parameterSets
-#adaptionParams = getattr(krebs.adaption.parameterSets, 'default_rats')
-##CALCULATE!!!!
-#pressure, flow, force, hema = ku.calc_vessel_hydrodynamics_world(f3['vessels'], False, False, None, adaptionParams['calcflow'])
-#
-#diameter = np.multiply(radii,2)
-#
-#import matplotlib.pyplot as plot
-#import itertools
-#pressure_at_vessel=[]
-#
-#for NodeA, NodeB in itertools.izip(node_a_index,node_b_index):
-#    pressure_at_vessel.append((pressure[NodeA]+pressure[NodeB])/2 * 1/0.1333)
-#
-#plot.loglog(pressure_at_vessel,diameter,'*')
-#plot.xlabel("pressure")
-#plot.ylabel("diameter")
-##plot.plot(pressure_at_vessel)
-#plot.grid()
-#plot.show()
-#
-#print "ende"

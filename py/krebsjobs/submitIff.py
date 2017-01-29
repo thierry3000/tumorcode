@@ -155,8 +155,10 @@ def run(outdir, name, tumorfn, config, p=dict(), piff=dict(), pdrug=dict(), grp_
   #c.update(p)
   #c['iff'].update(piff)
   #c['ift'].update(pdrug)
-
-  setvesselfile(c, tumorfn, group, 'vessels', 'tumor')
+  if 'adaption' in group:
+    setvesselfile(c, tumorfn, group, '', None)
+  else:
+    setvesselfile(c, tumorfn, group, 'vessels', 'tumor')
 
   stripped_name = splitext(basename(tumorfn))[0]
   stripped_name = stripped_name[len('tum-'):]
@@ -183,7 +185,8 @@ def setvesselfile(c, fn, commonpath, vesselpath, tumorpath):
   c['fn_tumor'] = fn
   c['h5_path_vessel'] = posixpath.join(commonpath, vesselpath)
   c['h5_path_lattice'] = posixpath.join(commonpath, vesselpath, 'lattice')
-  c['h5_path_tumor'] = posixpath.join(commonpath, tumorpath)
+  if tumorpath is not None:  
+    c['h5_path_tumor'] = posixpath.join(commonpath, tumorpath)
 
 def updated_config(c, p=dict(), piff=dict(), pdrug=dict()):
   c = deepcopy(c)
@@ -362,6 +365,7 @@ if not qsub.is_client and __name__=='__main__':
     for fn in filenames:
       if not os.path.isfile(fn):
         raise AssertionError('The file %s is not present!'%fn)
+        #experiment without tumor
       with h5py.File(fn, 'r') as f:
         if not f.visititems(find_tum):
           raise AssertionError('Are you sure this is a tumor file???')
