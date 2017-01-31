@@ -28,6 +28,8 @@ boundary_Condition_handling_map = dict(
   KEEP = 0,
   VEIN_AS_FLOW_ARTERY_PRESSURE = 1,
   LARGE_2D = 2,
+  LARGE_2D_2 = 3,
+  LARGE_2D_like_paper = 4,
 )
 
 default = dict(
@@ -479,6 +481,67 @@ large_2d = dict(
     addAverageConductivity = False,
     radMin_for_kill = 1.5,
     boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D'],
+    ),
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6, #commented means using default for rats
+    rheology = 'RheologyForRats',
+    inletHematocrit = 0.40,
+    includePhaseSeparationEffect =  True,
+  ),
+)
+large_2d_2 = deepcopy(large_2d)
+large_2d_2['adaption'].update(
+  boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D_2'],
+)
+human_guess = dict(
+  num_threads = 4,
+  adaption = dict(
+    k_c = 2.74,
+    k_m = 0.83,
+    k_s = 1.79,
+    Q_refdot = 40.,
+    S_0 = 20,
+    cond_length = 1500.,
+    #if this is 0 we iterate until qdev is reached
+    max_nun_iterations = 1000,
+    #qdev = 0, means local conditions!
+    qdev = .0,
+    #if starting_radii is 0. we use the values given in
+    #the input file
+    starting_radii = 20.,
+    delta_t = 0.05,
+    addAverageConductivity = False,
+    radMin_for_kill = 5,
+    boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D_2'],
+    ),
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6, #commented means using default for rats
+    rheology = 'RheologySecomb2005',
+    inletHematocrit = 0.40,
+    includePhaseSeparationEffect =  True,
+  ),
+)
+
+LARGE_2D_like_paper = dict(
+  num_threads = 4,
+  adaption = dict(
+    k_c = 2.74,
+    k_m = 0.83,
+    k_s = 1.79,
+    Q_refdot = 40.,
+    S_0 = 20,
+    cond_length = 1500.,
+    #if this is 0 we iterate until qdev is reached
+    max_nun_iterations = 1000,
+    #qdev = 0, means local conditions!
+    qdev = .0,
+    #if starting_radii is 0. we use the values given in
+    #the input file
+    starting_radii = 10.,
+    delta_t = 0.05,
+    addAverageConductivity = False,
+    radMin_for_kill = 1.5,
+    boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D_like_paper'],
     ),
   calcflow = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats

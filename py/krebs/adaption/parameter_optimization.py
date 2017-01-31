@@ -41,12 +41,11 @@ import string
 import numpy as np
 
 #sys.path.append(join(dirname(__file__),'/localdisk/thierry/tc_install/py/krebs/adaptionAnalysis'))
-from krebs.adaption import getVesselTypes
-from pso import *
-from os.path import basename
+#from krebs.adaption import getVesselTypes
+from third_party.pso import *
 
 
-import krebs.adaption
+#import krebs.adaption
 
 from krebsjobs.parameters import parameterSetsAdaption
 import krebsjobs.submitAdaption
@@ -59,9 +58,13 @@ else:
   adaption_cpp = __import__('libadaption_', globals(), locals())
 
 #globals
-from krebsutils import typelist
 calculated_mean_cap_flow = 0.0
 use_initial_guess = False
+
+# velocity in capillary about 1mm/s = 1000mu/s
+# typical diameter 5mu e.g r=2.5mu
+# 3.1415*2.5*2.5*1000 about 2e4
+suggested_cap_flow = 20000.;
 
 def con(x, *args):
   #global calculated_mean_cap_flow
@@ -106,7 +109,6 @@ def do_pSO_for_file(x,dst_file, vesselgroup, parameters):
   return_state, mean_flow_cap,std_flow_cap = adaption_cpp.computeAdaption(vesselgroup, parameters['adaption'], parameters['calcflow'], gdst)
   
   # creating opt criterion
-  
   if return_state == 0:
     #it was convergent
 #    veins, arteries, capillaries = getVesselTypes(gdst['vessels_after_adaption'])
@@ -119,41 +121,11 @@ def do_pSO_for_file(x,dst_file, vesselgroup, parameters):
     print('mean(flow): %f, std(flow): %f ' % (mean_flow_cap,std_flow_cap))
     global calculated_mean_cap_flow
     calculated_mean_cap_flow = mean_flow_cap
-    return std_flow_cap
+    deviation_from_suggested_cap_flow = np.square(mean_flow_cap-suggested_cap_flow)
+    return deviation_from_suggested_cap_flow
   else:
     print('Adaption crashed!') #we dont like that, big penalty
     return sys.float_info.max
-
-def create_auto_dicts(param_group):
-  cadidatesList = []
-  type_to_highest_number = dict()
-  for t in typelist:
-    type_to_highest_number[t] = 0
-  for adict in dir(parameterSets_tum):
-    if param_group in adict:
-     for t in typelist:
-       if t in adict:
-         latest_vary_of_type =0
-         index_start_type = string.find(adict,t+'_vary')
-         #print adict[index_start_type+10:]
-         zahl = int(adict[index_start_type+10:])
-         if 0:#this gives no value for non present configs
-           if( zahl > type_to_highest_number[t]):
-             type_to_highest_number[t] = zahl
-         if 1:
-           type_to_highest_number[t] = zahl
-  type_to_parameterset = dict()
-  for t in typelist:
-    astring = param_group+t+'_vary'+str(type_to_highest_number[t])
-    #check if exists
-    if astring in dir(parameterSets_tum):
-      type_to_parameterset[t] = astring
-    else:
-      print('Warning no paramset found for: %s' % astring)
-  return type_to_parameterset    
-
-         
-
        
 
 def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
@@ -221,7 +193,7 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
   '''
   if 1:#medium for small configs
     swarmsize = 400
-    maxiter = 6
+    maxiter = 5
     minstep = 1e-8  #default 1e-8
     minfunc = 0.001  #default 1e-8
     omega = 0.5     #default 0.5
@@ -263,10 +235,10 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
 #  swarmParams1['omega'] = 0.5     #default 0.
 #  maxiter = 20
   processes = 1 #somehow only 1 supported, pickels problem
-  adaptionParams['num_threads'] = 8
+  adaptionParams['num_threads'] = 4
   
   args=(f_opt_data, vesselgroup, adaptionParams)
-  if 1:
+  if 0:
     xopt, fopt = pso(do_pSO_for_file,
                      x_0,
                      lb,
@@ -282,7 +254,7 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
                      use_initial_guess=use_initial_guess,
                      phig=0.25,
                      args=args)
-  if 0:
+  if 1:
     xopt, fopt = pso(do_pSO_for_file,
                      x_0,
                      lb,
@@ -304,70 +276,7 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
 
   h5files.closeall() # just to be sure
   
-def run(parameter_set_name, filenames, grp_pattern):
-  print 'submitting ...', parameter_set_name
-  usetumorparams = False
-  if (not 'auto' in parameter_set_name):
-    if usetumorparams:
-      print dicttoinfo.dicttoinfo(getattr(parameterSets_tum, parameter_set_name))
-      print 'for files', filenames
-    else:
-      print dicttoinfo.dicttoinfo(getattr(parameterSetsAdaption, parameter_set_name))
-      print 'for files', filenames
- 
-  
 
-  dirs = set()
-  for fn in filenames:
-    with h5py.File(fn, 'r') as f:
-      d = myutils.walkh5(f, grp_pattern)
-      assert len(d), 'you fucked up, pattern "%s" not found in "%s"!' % (grp_pattern, fn)
-      dirs =set.union(dirs, d)
-  print 'and resolved groups therein: %s' % ','.join(dirs)
-
-  num_threads = 1
-  if (not 'auto' in parameter_set_name):
-    if usetumorparams:  
-      adaptionParams = getattr(parameterSets_tum, parameter_set_name)
-      adaptionParams['name'] = parameter_set_name
-      if callable(adaptionParams):
-        adaptionParamsList = adaptionParams['adaption'](len(filenames))
-      else:
-        if 'num_threads' in adaptionParams:
-          if adaptionParams['num_threads']>num_threads:
-            num_threads = adaptionParams['num_threads']
-        adaptionParamsList = itertools.repeat(adaptionParams)
-    else:
-      adaptionParams = getattr(parameterSetsAdaption, parameter_set_name)
-      adaptionParams['name'] = parameter_set_name
-      if callable(adaptionParams):
-        adaptionParamsList = adaptionParams(len(filenames))
-      else:
-        adaptionParamsList = itertools.repeat(adaptionParams)
-  else:
-    adaptionParamsList = []
-    ### change here for different types
-    parameter_set_name_from_pipe = parameter_set_name #begins with auto_
-    parameter_set_name =  parameter_set_name_from_pipe[5:]
-    print('Found param identifiyer: %s' % parameter_set_name)
-    type_to_paramset = create_auto_dicts(parameter_set_name+'_')
-    for fn in filenames:
-      for t in typelist:
-        if t in fn:
-          adaptionParams = getattr(parameterSets_tum, type_to_paramset[t]) 
-          adaptionParams['name'] = type_to_paramset[t]
-          if 'num_threads' in adaptionParams:
-            if adaptionParams['num_threads']>num_threads:
-              num_threads = adaptionParams['num_threads']
-          adaptionParamsList.append(adaptionParams)
-    
-  for (adaptionParams, fn) in zip(adaptionParamsList, filenames):
-    qsub.submit(qsub.func(worker_on_client, fn, grp_pattern, adaptionParams, num_threads),
-                  name = 'job_adaption_'+parameter_set_name+'_'+basename(fn),
-                  num_cpus = num_threads,
-                  days = 4.,
-                  mem = '3500MB',
-                  change_cwd = True)
 def run2(parameter_set, filenames, grp_pattern):
   print 'submitting ...', parameter_set['name']
  

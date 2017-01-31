@@ -70,7 +70,7 @@ Parameters::Parameters()
    * important value!
    * if adaption without tumor this goes to this default value
    */
-  radMin_for_kill = 1.5;
+  radMin_for_kill = 2.5;
   write2File = true;
   boundary_Condition_handling = KEEP;
 }
@@ -96,7 +96,7 @@ void Parameters::assign(const ptree& pt)
   tum_manitulate_s3 = pt.get<bool>("tum_manitulate_s3", false);
   tum_manitulate_s4 = pt.get<bool>("tum_manitulate_s4", false);
   tum_manitulate_s5 = pt.get<bool>("tum_manitulate_s5", false);
-  radMin_for_kill = pt.get<double>("radMin_for_kill", 1.0);
+  radMin_for_kill = pt.get<double>("radMin_for_kill", 2.5);
   boundary_Condition_handling = pt.get<uint>("boundary_Condition_handling", KEEP);
   write2File = pt.get<bool>("write2File", true);
 }
@@ -1069,17 +1069,8 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
 #if 1
   //this seems to be necessary to get a stable result for the apj stuff
   //used together with change of radii of veins
-  //ChangeBoundaryConditions(*vl);
-  //ChangeBoundaryConditionsFix(*vl);
-  if(params->boundary_Condition_handling==LARGE_2D)
-  {
-    ChangeBoundaryConditionsLARGE_2D(*vl);
-  }
-  if(params->boundary_Condition_handling==KEEP)
-  {
-    //note: good for the mesentry example
-    std::printf("keep boundary conditions as read from the hdf file during adaption\n");
-  }
+  ChangeBoundaryConditions(*vl,params->boundary_Condition_handling);
+  
 #endif
   CalcFlow(*vl, *bfparams);
   int no_Vessels_before_adaption = vl->GetECount();

@@ -90,8 +90,8 @@ def plot_hydrodynamic_stimuli(vessel_grp,pp):
     ax.legend(['Hydrodynamic stimuli', 'Pressure'])
     ax.grid()
     ax.set_xlabel('pressure/ mmHg')
-    ax.set_xlim([10,100])
-    ax.set_ylim([-2.2,4])
+    #ax.set_xlim([10,100])
+    #ax.set_ylim([-2.2,4])
     ax.set_ylabel('stimuli')
     pp.savefig(fig, 'Hydrodynamic stimuli')
     #plt.show() 
@@ -375,40 +375,33 @@ def plot_movie_typeE(f,pp):
     #plt.show()
     
 if __name__ == '__main__':
-    filename= 'mesentry_secomb_546_adption_p_mesentry_subset_vary.h5'
-    filename= '/daten/localdisk/adaption_project/vessels-q2d-8mm-P6-typeE-9x3L130-sample00_adption_p_typeE.h5'
-    filename= 'mesentry_secomb_546_v3_adption_p_mesentry_play.h5'    
     import argparse
     parser = argparse.ArgumentParser(description='Compare O2 from adation and no adaption')  
-    parser.add_argument('FileName', type=str)
+    parser.add_argument('FileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')   
     goodArguments, otherArguments = parser.parse_known_args()    
-    #f = h5py.File(filename)
-    f = h5py.File(goodArguments.FileName)
-    no_of_iterations = '1'
-    #vesselgrp = f['/adaption/vessels_after_adaption_' + no_of_iterations]
-    vesselgrp = f['/adaption/vessels_after_adaption']
-    #vesselgrp = f['/Asymetric/vessels_after_adaption/vessels_after_adaption']
-    common_filename = os.path.splitext(filename)[0]
+    #create filename due to former standards
+    filenames=[]
+    for fn in goodArguments.FileNames:
+      filenames.append(fn.name)   
     
-    with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_stimulies.pdf') as pp:
-      rc = matplotlib.rc
-      rc('font', size = 8.)
-      rc('axes', titlesize = 10., labelsize = 8.)
-    #with PdfPages(no_of_iterations + '_' + common_filename + '_stimulies.pdf') as pp:
-    #pp = PdfPages(no_of_iterations + '_' + common_filename + '_stimulies.pdf')
+    for fn in filenames:
+      f = h5py.File(fn)
+      no_of_iterations = '1'
+      vesselgrp = f['/adaption/vessels_after_adaption']
+      common_filename = os.path.splitext(os.path.basename(fn))[0]
+    
+      with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_stimulies.pdf') as pp:
+        rc = matplotlib.rc
+        rc('font', size = 8.)
+        rc('axes', titlesize = 10., labelsize = 8.)
+        hydrodynamic_fig = plot_hydrodynamic_stimuli(vesselgrp, pp)
+        plot_conductive_stimuli(vesselgrp,pp)
+        plot_hydorodynamic_charicteristics(vesselgrp,pp)
+  
+      #plot_movie(f,pp=None)
+      #plot_movie_typeE(f,pp=None)
       
-      hydrodynamic_fig = plot_hydrodynamic_stimuli(vesselgrp, pp)
-      plot_conductive_stimuli(vesselgrp,pp)
-      plot_hydorodynamic_charicteristics(vesselgrp,pp)
+      f.close
 
-    #plot_movie(f,pp=None)
-    #plot_movie_typeE(f,pp=None)
-    
-    f.close
-    #pp.close()
     
     
-#    common_filename = myutils.sanitize_posixpath(splitext(commonprefix(filename))[0])
-#    mpl_utils.SinglePageWriter.
-#    with mpl_utils.SinglePageWriter(common_filename+'.pdf') as pdfwriter:
-#        pdfwriter(hydrodynamic_fig)

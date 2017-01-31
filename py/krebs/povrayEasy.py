@@ -325,8 +325,9 @@ class EasyPovRayRender(object):
     if data.shape[2] == 1: # actually povary seems to be fine without this
       worldbox[-2] = -1.
       worldbox[-1] =  1.
-      x, y, z = data.shape
-      data = np.resize(data, (x, y, 2*z)) # replicate data into two z-layers. The two-dimensional image plane where the volume dataset is cut lies in-between.
+      #I am not sure this was good for?      
+      #x, y, z = data.shape
+      #data = np.resize(data, (x, y, 2*z)) # replicate data into two z-layers. The two-dimensional image plane where the volume dataset is cut lies in-between.
     wb = worldbox.reshape((3,2))
     vd = VolumeData(self, data, wb)
     # writing of the volume data takes place here

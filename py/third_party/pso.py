@@ -20,6 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 """
+Credits for this project go to
 ================================================================================
 pyswarm: Particle swarm optimization (PSO) with constraint support
 ================================================================================
