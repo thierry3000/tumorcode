@@ -828,7 +828,7 @@ double CellDiffusionCoeffFunctor::operator()(const Int3& p, const Int3& q, int a
 void Model::calcSlopeConvection(const State& state_, State& slope, NewSteppers::StepControl& ctrl)
 {
   initStateVars(slope, true);
-  State &state = const_cast<State&>(state_); // for the external scope the state will look unchanged
+  State &state = const_cast<State&>(state_); // for the external scope the state will look unchanged. However we need to modify 'ghost' cells around the boundary so differential operators can be computed.
 
   #pragma omp parallel
   {

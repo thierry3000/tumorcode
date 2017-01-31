@@ -123,7 +123,10 @@ static void _CheckArray3(const py::object &obj, int dim1, int dim2, int dim3, co
 // #define THROW_ERROR1(msg,a1)    throw std::invalid_argument(str(format(msg + " @ %s(%i)") % a1 % __FILE__ % __LINE__))
 // #define THROW_ERROR2(msg,a1,a2) throw std::invalid_argument(str(format(msg + " @ %s(%i)") % a1 % a2 % __FILE__ % __LINE__))
 
-
+/**brief With these functions we can take hdf5 entities (group and datasets) as arguments to python functions and use them on the c++ side.
+   
+   TODO: This approach is however flawed because the default h5py install might use different hdf5 libraries than we link tumorcode against. It might therefore be a good idea to rewrite regarding functions. They could take filename-path pairs or memory buffers as arguments instead.   
+*/
 h5cpp::Group PythonToCppGroup(const py::object &op_);
 h5cpp::Dataset PythonToCppDataset(const py::object &op_);
 

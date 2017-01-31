@@ -243,7 +243,7 @@ def hdftumor2vtk(graph, options ):
     writeFields_(graph, options)
   if options.writeVessels:
     writeVessels_(graph, options)
-  
+
 
 if __name__ == '__main__':
 
