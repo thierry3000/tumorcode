@@ -29,7 +29,9 @@ boundary_Condition_handling_map = dict(
   VEIN_AS_FLOW_ARTERY_PRESSURE = 1,
   LARGE_2D = 2,
   LARGE_2D_2 = 3,
-  LARGE_2D_like_paper = 4,
+  LARGE_2D_3 = 4,
+  LARGE_2D_like_paper = 5,
+  VALUE = 42,
 )
 
 default = dict(
@@ -521,6 +523,36 @@ human_guess = dict(
     includePhaseSeparationEffect =  True,
   ),
 )
+human_guess_2 = deepcopy(human_guess)
+human_guess_2['adaption'].update(
+  boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D_3'],
+)
+value_1 = deepcopy(human_guess)
+human_guess_2['adaption'].update(
+  boundary_Condition_handling = boundary_Condition_handling_map['VALUE'],
+  a_pressure = 2.,
+  a_flow = 2000.,
+)
+
+def _value():
+  #import random
+  pressures = [2.,2.5,3,3.5,4.]
+  flows = [1e5,1e6,1e7,1e8]
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(value_1)
+    p['name'] = 'value_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+
+value_list = _value()
 
 LARGE_2D_like_paper = dict(
   num_threads = 4,
@@ -550,3 +582,6 @@ LARGE_2D_like_paper = dict(
     includePhaseSeparationEffect =  True,
   ),
 )
+if __name__ == '__main__':
+  abc = _value()
+  print abc

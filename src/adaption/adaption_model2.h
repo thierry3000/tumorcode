@@ -40,6 +40,16 @@ namespace Adaption
     TUMOR  = 1,
     NECRO  = 2
   };
+  enum BoundaryHandling
+  {
+    KEEP = 0,
+    VEIN_AS_FLOW_ARTERY_PRESSURE  = 1,
+    LARGE_2D = 2,
+    LARGE_2D_2 = 3,
+    LARGE_2D_3 = 4,
+    LARGE_2D_like_paper = 5,
+    VALUE = 42,
+  };
   
 
   typedef DynArray<FlReal> FlArray;
@@ -85,6 +95,8 @@ namespace Adaption
     
     double radMin_for_kill;
     uint boundary_Condition_handling;
+    double a_pressure;
+    double a_flow;
     
     void assign(const ptree &pt);
     ptree as_ptree() const;
@@ -133,6 +145,7 @@ namespace Adaption
   std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, VesselList3d &vl, float delta_t_calc);
   uint runAdaption_Loop(const Adaption::Parameters *params, const BloodFlowParameters *bfparams, VesselList3d *vl, h5cpp::Group *vessels_after_adaption, bool doDebugOutput);
   void GetExtremFlows(const VesselList3d *vl, Adaption::ExtremeFlows *myExtrems);
-  void UpdateBoundaryConditions(VesselList3d &vl);
+  //void UpdateBoundaryConditions(VesselList3d &vl);
+  void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &params);
 };//end namespace
 #endif

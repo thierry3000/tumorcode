@@ -76,6 +76,8 @@ void InitParameters(Adaption::Parameters &params, py::dict py_parameters)
   GET_ADAPTION_PARAM_IF_NONNONE(params.avgRootNodeConductivity, double, "avgRootNodeConductivity");
   GET_ADAPTION_PARAM_IF_NONNONE(params.radMin_for_kill, double, "radMin_for_kill");
   GET_ADAPTION_PARAM_IF_NONNONE(params.boundary_Condition_handling, uint, "boundary_Condition_handling");
+  GET_ADAPTION_PARAM_IF_NONNONE(params.a_pressure, double, "a_pressure");
+  GET_ADAPTION_PARAM_IF_NONNONE(params.a_flow, double, "a_flow");
   //std::cout<<params.write2File<<std::endl;
   GET_ADAPTION_PARAM_IF_NONNONE(params.write2File,bool,"write2File")
   //std::cout<<params.write2File<<std::endl;

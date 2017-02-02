@@ -218,7 +218,13 @@ if not qsub.is_client and __name__=='__main__':
     filenames.append(fn.name)
   
   factory = getattr(parameterSetsAdaption, goodArguments.AdaptionParamSet)
-  factory['name'] = goodArguments.AdaptionParamSet
-  run2(factory, filenames, goodArguments.grp_pattern)
+  #single parameter set chosen  
+  if factory.__class__ == dict:
+    factory['name'] = goodArguments.AdaptionParamSet
+    run2(factory, filenames, goodArguments.grp_pattern)
+  #a list of paramset e.g. for different boundary parameters.
+  if factory.__class__==list:
+    for paramset in factory:
+      run2(paramset, filenames, goodArguments.grp_pattern)
   
       

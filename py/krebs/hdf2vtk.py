@@ -218,7 +218,9 @@ def ConvertMyHdfVesselsToVTKPolydata(graph, newflag_for_backward_compatibility, 
 def writeFields_(graph, options):
   fn = str(graph.from_fn)
   f = h5py.File(fn, 'r')
-  fn, search_groups = myutils.splitH5PathsFromFilename(fn)
+  fn, _ = myutils.splitH5PathsFromFilename(fn)
+  #search_groups.append('po2/adaption/vessels_after_adaption')
+  search_groups = ['po2/adaption/vessels_after_adaption/po2field']
   e = extractVtkFields.Extractor(f, search_groups, recursive = True) 
   print 'found field datasets:'
   pprint.pprint(e.getDatasetPaths())
@@ -320,14 +322,26 @@ if __name__ == '__main__':
         hdftumor2vtk(graph, goodArguments)
       elif 'po2' in d:
         #vesselgroup = f[join('/',d+'/vessels')]['.']
-        vesselgroup = f['/recomputed_flow/vessels']
-        new = False
-        if new:
-          graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
+        if 'adaption' in d:
+          vesselgroup = f['/recomputed_flow/adaption/vessels_after_adaption']
+          new = False
+          if new:
+            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
+          else:
+            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
+          if goodArguments.filteruncirculated:
+            graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
+          #amazing, out of the box this works for the o2 simulation as well.
+          hdftumor2vtk(graph, goodArguments)
+          print('bla2')
         else:
-          graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
-        if goodArguments.filteruncirculated:
-          graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
-        #amazing, out of the box this works for the o2 simulation as well.
-        hdftumor2vtk(graph, goodArguments)
-        
+          vesselgroup = f['/recomputed_flow']
+          new = False
+          if new:
+            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
+          else:
+            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
+          if goodArguments.filteruncirculated:
+            graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
+          #amazing, out of the box this works for the o2 simulation as well.
+          hdftumor2vtk(graph, goodArguments)

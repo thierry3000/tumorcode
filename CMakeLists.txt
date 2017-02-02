@@ -17,7 +17,7 @@ set (ADDITIONAL_LIBRARY_DIRS CACHE PATH "Additional dirs to search for linked li
 find_package(Boost REQUIRED COMPONENTS "program_options")
 #note there are system without eigen, so let the configure fail here
 find_package(Eigen3 3.2 QUIET)
-find_package(HDF5 REQUIRED)
+find_package(HDF5 1.8.9 REQUIRED)
 find_package(LAPACK REQUIRED)
 find_package(BLAS REQUIRED)
 
