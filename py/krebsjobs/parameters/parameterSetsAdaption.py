@@ -59,6 +59,33 @@ default = dict(
     includePhaseSeparationEffect =  False,
   ),
 )
+
+pyGmo = dict(
+  num_threads = 8,
+  adaption = dict(
+    k_c = 1.5,
+    k_m = 1.5,
+    k_s = 1.,
+    Q_refdot = 40,
+    S_0 = 20,
+    cond_length = 1500.,
+    #if this is 0 we iterate until qdev is reached
+    max_nun_iterations = 100,
+    qdev = 0.01,
+    #if starting_radii is 0. we use the values given in
+    #the input file
+    starting_radii = 10.,
+    # 0.0 means the time step is dynamically chosen!
+    delta_t = 0.1, 
+    ),
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6, #commented means using default for rats
+    rheology = 'RheologyForRats',
+    inletHematocrit = 0.40,
+    includePhaseSeparationEffect =  False,
+  ),
+)
+
 default_phase=deepcopy(default)
 default_phase['calcflow'].update(
   includePhaseSeparationEffect =  True,

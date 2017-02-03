@@ -1061,7 +1061,7 @@ void SetAdaptionValues(VesselList3d* vl, CompressedAdaptionNetwork& fl, double d
 //     vl->DeleteVessel( toKill[i] );
 //     //printf("toKill[i]: %s, toKill[i]->Index(): %i\n", toKill[i],toKill[i]->Index());
 //   }
-  
+#ifndef SILENT
   if(negativeRadiusSuggested>0)
   {
     printf("WARNING: %i negative radii suggested!\n", negativeRadiusSuggested);
@@ -1074,6 +1074,7 @@ void SetAdaptionValues(VesselList3d* vl, CompressedAdaptionNetwork& fl, double d
   {
     printf("WARNING: %i too big radii suggested!\n", tooBigRadiusSuggested);
   }
+#endif
 }
 
 #if 1
@@ -1246,7 +1247,7 @@ bool check_while_break( int no_vessels, double min_error, double nqdev, double m
   // if not in one case from above, continue while loop
   return true;
 }
-uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfparams, VesselList3d* vl, h5cpp::Group *vessels_after_adaption,bool doDebugOutput)
+uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfparams, VesselList3d* vl,bool doDebugOutput)
 {
   /*
    * first, change the boundary Conditions
@@ -1325,10 +1326,10 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
    */
   double limit_error = 0.001;//in mu m
   double stopp = 0;
-    
+#ifndef SILENT
   printf("limit_error: %f, stopp: %f\n", limit_error,stopp);
-  
   printf("MAX IT: %i, break at: %f\n", params->max_nun_iterations,stopp);
+#endif
   bool mybreakcondition= true;
   while(mybreakcondition)
   //while(nqdev > stopp)
@@ -1406,7 +1407,7 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
     printf("Iterated adaption #%i, nqdev: %f, max_stot: %f, max_delta_r: %f\n", how_often, nqdev, max_stot, max_delta_r);
 #endif
 #ifdef SILENT
-    if( how_often%20 == 0)
+    if( how_often%200 == 0)
     {
       printf("                                                        Iterated adaption #%i, nqdev: %f/%f, max_stot: %f, max_delta_r: %f\n", how_often, nqdev,stopp, max_stot,max_delta_r);
       if (use_dynamic_t) printf("dynamic t change: t= %f!\n",delta_t);
@@ -1416,6 +1417,7 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
 
     
     //debug output everystep
+#if 0
 #ifdef DEBUG
   if(doDebugOutput)
   {
@@ -1432,6 +1434,7 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
       }
     }
 #endif //DEBUG
+#endif
   mybreakcondition = check_while_break(vl->GetECount(), limit_error,nqdev,max_delta_r, params->qdev, max_stot);
   }
   //end main adaption loop, hopefully convergent here
@@ -1441,7 +1444,11 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
   
   
   int no_Vessels_after_adaption = vl->GetECount();
-  printf("Killed %i of %i Vessels below %f\n", no_Vessels_before_adaption-no_Vessels_after_adaption, no_Vessels_before_adaption,params->radMin_for_kill);
+  int no_killed = no_Vessels_before_adaption-no_Vessels_after_adaption;
+  if( no_killed >0)
+    printf("Killed %i of %i Vessels below %f\n", no_Vessels_before_adaption-no_Vessels_after_adaption, no_Vessels_before_adaption,params->radMin_for_kill);
+
+#if 0
 #ifndef DEBUG //release output, only last convergent part
   if(vessels_after_adaption != nullptr)
   {
@@ -1458,6 +1465,7 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
       h5cpp::Dataset dsdelta_t = h5cpp::create_dataset(grp_temp, "delta_t", h5cpp::Dataspace::simple_dims(delta_t_s.size()), &delta_t_s[0]);
     }
   }
+#endif
 #endif
   
  

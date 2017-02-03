@@ -109,54 +109,54 @@ def computeAdaption_(gdst, vesselgroup, parameters):
   
 #  r = adaption.computeAdaption(vesselgroup, tumorgroup, parameters, None,gdst)
 
-def computeAdaption(f, group_path, parameters, cachelocation): 
-  if not isinstance(f, h5py.File):
-    f = h5files.open(f, 'r+', search = False)  # we open with r+ because the cachelocation might be this file so we need to be able to write to it
-    return computeAdaption(f, group_path, parameters, cachelocation) # recurse
-
-  #==== is this from a tumor sim, or just a vessel network? get hdf group objects =====#
-  group = f[group_path]
-  tumorgroup = None
-  vesselgroup1 = group
-  if 'vessels' in group:
-    vesselgroup1 = group['vessels']
-    if 'tumor' in group:
-      tumorgroup = group['tumor']
-
-  #====  this is for recomputing flow =====#
-  def read1(gmeasure, name):
-    gmeasure = gmeasure[name]
-    return myutils.H5FileReference(gmeasure.file.filename, gmeasure.name)
-
-  def write1(gmeasure, name):
-    gdst = gmeasure.create_group(name)
-    copyVesselnetworkAndComputeFlow(gdst, vesselgroup1, parameters.get("calcflow"))
-
-  #==== execute reading or computing and writing =====#
-  fm = h5files.open(cachelocation[0], 'a', search = False)
-  if 'addAverageConductivity' in parameters['adaption']:
-    avgCond = parameters['adaption'].pop('addAverageConductivity')
-  else:
-    avgCond = True
-  if avgCond:
-    parameters = AddAverageConductivity(vesselgroup1, parameters)
-  myutils.hdf_write_dict_hierarchy(fm['/'], 'parameters', parameters) 
-
-  #====  this is for Adaption =====#
-  def read2(gmeasure, name):
-    gmeasure = gmeasure[name]
-    return myutils.H5FileReference(gmeasure.file.filename, gmeasure.name)
-
-  def write2(gmeasure, name):
-    gdst = gmeasure.create_group(name)
-    myutils.buildLink(gdst, 'SOURCE', group)
-    gdst.attrs['CLASS'] = group.attrs['CLASS']
-    computeAdaption_(gdst, vesselgroup1, parameters)
-
-  #==== execute reading or computing and writing =====#
-  adaption_data_ref = myutils.hdf_data_caching(read2, write2, fm, 'adaption', (1,1))
-  #=== return filename and path to po2 data ====#
-  return adaption_data_ref
+#def computeAdaption(f, group_path, parameters, cachelocation): 
+#  if not isinstance(f, h5py.File):
+#    f = h5files.open(f, 'r+', search = False)  # we open with r+ because the cachelocation might be this file so we need to be able to write to it
+#    return computeAdaption(f, group_path, parameters, cachelocation) # recurse
+#
+#  #==== is this from a tumor sim, or just a vessel network? get hdf group objects =====#
+#  group = f[group_path]
+#  tumorgroup = None
+#  vesselgroup1 = group
+#  if 'vessels' in group:
+#    vesselgroup1 = group['vessels']
+#    if 'tumor' in group:
+#      tumorgroup = group['tumor']
+#
+#  #====  this is for recomputing flow =====#
+#  def read1(gmeasure, name):
+#    gmeasure = gmeasure[name]
+#    return myutils.H5FileReference(gmeasure.file.filename, gmeasure.name)
+#
+#  def write1(gmeasure, name):
+#    gdst = gmeasure.create_group(name)
+#    copyVesselnetworkAndComputeFlow(gdst, vesselgroup1, parameters.get("calcflow"))
+#
+#  #==== execute reading or computing and writing =====#
+#  fm = h5files.open(cachelocation[0], 'a', search = False)
+#  if 'addAverageConductivity' in parameters['adaption']:
+#    avgCond = parameters['adaption'].pop('addAverageConductivity')
+#  else:
+#    avgCond = True
+#  if avgCond:
+#    parameters = AddAverageConductivity(vesselgroup1, parameters)
+#  myutils.hdf_write_dict_hierarchy(fm['/'], 'parameters', parameters) 
+#
+#  #====  this is for Adaption =====#
+#  def read2(gmeasure, name):
+#    gmeasure = gmeasure[name]
+#    return myutils.H5FileReference(gmeasure.file.filename, gmeasure.name)
+#
+#  def write2(gmeasure, name):
+#    gdst = gmeasure.create_group(name)
+#    myutils.buildLink(gdst, 'SOURCE', group)
+#    gdst.attrs['CLASS'] = group.attrs['CLASS']
+#    computeAdaption_(gdst, vesselgroup1, parameters)
+#
+#  #==== execute reading or computing and writing =====#
+#  adaption_data_ref = myutils.hdf_data_caching(read2, write2, fm, 'adaption', (1,1))
+#  #=== return filename and path to po2 data ====#
+#  return adaption_data_ref
 
 def doit(fn, pattern, parameters):
   #fnpath = dirname(fn)

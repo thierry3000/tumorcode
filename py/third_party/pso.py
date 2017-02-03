@@ -57,10 +57,10 @@ def _cons_ieqcons_wrapper(ieqcons, args, kwargs, x):
 def _cons_f_ieqcons_wrapper(f_ieqcons, args, kwargs, x):
     return np.array(f_ieqcons(x, *args, **kwargs))
     
-def pso(func, x_0, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={}, 
+def pso(func, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={}, 
         swarmsize=100, omega=0.5, phip=0.5, phig=0.5, maxiter=100, 
         minstep=1e-8, minfunc=1e-8, debug=False, processes=1,
-        particle_output=False, use_initial_guess=False):
+        particle_output=False):
     """
     Perform a particle swarm optimization (PSO)
    
@@ -166,18 +166,9 @@ def pso(func, x_0, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={},
     S = swarmsize
     D = len(lb)  # the number of dimensions each particle has
     
-    if use_initial_guess:# this is from thierry, use my handisch obtaine guess
-      x_vary = np.random.randn(S, D)  # particle positions
-      x_vary = 0.2*x_vary
-      x_vary_absolut = x_vary*(ub-lb)
-      #replicate inital guess
-      x = np.asarray([x_0,]*S)    
-      # Initialize the particle's position
-      x = x + x_vary_absolut
-    else:# this was before, dont us x_0
-      x = np.random.rand(S, D) # particle positions
-      # Initialize the particle's position
-      x = lb + x*(ub - lb)
+    x = np.random.rand(S, D) # particle positions
+    # Initialize the particle's position
+    x = lb + x*(ub - lb)
       
     v = np.zeros_like(x)  # particle velocities
     p = np.zeros_like(x)  # best particle positions
@@ -298,6 +289,5 @@ if __name__ == '__main__':
 
   lb = [-3, -1]
   ub = [2, 6]
-  x_0= [0,0]
   
-  xopt, fopt = pso(banana, x_0, lb, ub, f_ieqcons=con, debug=True)
+  xopt, fopt = pso(banana, lb, ub, f_ieqcons=con, debug=True, processes=4)

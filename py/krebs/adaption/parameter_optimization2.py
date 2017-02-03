@@ -42,7 +42,7 @@ import numpy as np
 
 #sys.path.append(join(dirname(__file__),'/localdisk/thierry/tc_install/py/krebs/adaptionAnalysis'))
 #from krebs.adaption import getVesselTypes
-from third_party.pso import *
+
 
 
 #import krebs.adaption
@@ -65,23 +65,52 @@ calculated_mean_cap_flow = 0.0
 # 3.1415*2.5*2.5*1000 about 2e4
 suggested_cap_flow = 20000.;
 
-def con(x, *args):
-  #global calculated_mean_cap_flow
-  return np.square(calculated_mean_cap_flow-10e4)
-def con2(x, *args):
-  #global calculated_mean_cap_flow
-  return np.square(calculated_mean_cap_flow-10e5)
-def con3(x, *args):
-  #global calculated_mean_cap_flow
-  return np.square(calculated_mean_cap_flow-10e6)
-def con4(x, *args):
-  # velocity in capillary about 1mm/s = 1000mu/s
-  # typical diameter 5mu e.g r=2.5mu
-  # 3.1415*2.5*2.5*1000 about 2e4
-  return np.square(calculated_mean_cap_flow-20000)
-def do_pSO_for_file(x,dst_file, vesselgroup, parameters):
-  parameters['counter'] = parameters['counter'] + 1
-  alabel = 'data_%i' % parameters['counter']
+
+from PyGMO import *
+
+class my_problem(problem.base):
+    """
+    De Jong (sphere) function implemented purely in Python.
+
+    USAGE: my_problem(dim=10)
+
+    * dim problem dimension
+    """
+    def __init__(self, options={}):
+        # First we call the constructor of the base class telling PyGMO
+        # what kind of problem to expect ('dim' dimensions, 1 objective, 0 contraints etc.)
+        super(my_problem,self).__init__(3)
+        
+        #print(dim)        
+        
+        # We set the problem bounds (in this case equal for all components)
+        #self.set_bounds(0.3, 4)
+        #self.__dim = dim
+        self.options = options
+        #self.vesselgrp = vesselgroup
+        #self.adaptionParams = factory
+
+    # Reimplement the virtual method that defines the objective function.
+    def _objfun_impl(self, x):
+
+        # Compute the sphere function
+        #f_opt_data = h5files.open('PSO_data_%s_%s.h5' % (basename(fn),adaptionParams['name']), 'a', search = False)
+        vesselgroup = h5files.open(self.options.fileNames[0], 'r', search = False)[self.options.grp_pattern]
+        f = do_pSO_for_file(x, vesselgroup, factory)
+        #f = sum([x[i] ** 2 for i in range(self.dimension)])
+
+        # Note that we return a tuple with one element only. In PyGMO the objective functions
+        # return tuples so that multi-objective optimization is also possible.
+        return (f, )
+
+    # Finally we also reimplement a virtual method that adds some output to the __repr__ method
+#    def human_readable_extra(self):
+#        return "\n\t Problem dimension: " + str(self.__dim)
+        
+
+def do_pSO_for_file(x, vesselgroup, parameters):
+  #parameters['counter'] = parameters['counter'] + 1
+  #alabel = 'data_%i' % parameters['counter']
   
   #hack
   parameters['adaption']['avgRootNodeConductivity'] = 0.0
@@ -95,17 +124,19 @@ def do_pSO_for_file(x,dst_file, vesselgroup, parameters):
   #parameters['adaption']['cond_length'] = x[3]
   #parameters['adaption']['Q_refdot'] = x[4]
   # running adaption
-  print('creating dataset: %s' % alabel)
-  gdst = dst_file.create_group(alabel)
+  #print('creating dataset: %s' % alabel)
+  #gdst = dst_file.create_group('blub_%s' % time.time())
+  parameters['adaption']['write2File'] = False
   
-  if parameters['counter']%50>0:
-    parameters['adaption']['write2File'] = False
-  else:
-    parameters['adaption']['write2File'] = True
-    myutils.hdf_write_dict_hierarchy(gdst, 'parameters', parameters)
+#  if parameters['counter']%50>0:
+#    parameters['adaption']['write2File'] = False
+#  else:
+#    parameters['adaption']['write2File'] = True
+#    myutils.hdf_write_dict_hierarchy(gdst, 'parameters', parameters)
+  
   #print('We run: vesselgroup: %s, parameters[\'adaption\']: %s, parameters[\'calcflow\'] %s, gdst %s\n' % (vesselgroup, parameters['adaption'], parameters['calcflow'], gdst))
   
-  return_state, mean_flow_cap,std_flow_cap = adaption_cpp.computeAdaption(vesselgroup, parameters['adaption'], parameters['calcflow'], gdst)
+  return_state, mean_flow_cap,std_flow_cap = adaption_cpp.computeAdaption(vesselgroup, parameters['adaption'], parameters['calcflow'])
   
   # creating opt criterion
   if return_state == 0:
@@ -116,16 +147,54 @@ def do_pSO_for_file(x,dst_file, vesselgroup, parameters):
 #    #gdst.file.flush()
 #    del gdst['recomputed']
 #    del gdst['vessels_after_adaption']
-    print('Adaption convergent!')
-    print('mean(flow): %f, std(flow): %f ' % (mean_flow_cap,std_flow_cap))
+
+#    print('Adaption convergent!')
+#    print('mean(flow): %f, std(flow): %f ' % (mean_flow_cap,std_flow_cap))
     global calculated_mean_cap_flow
     calculated_mean_cap_flow = mean_flow_cap
     deviation_from_suggested_cap_flow = np.square(mean_flow_cap-suggested_cap_flow)
     return deviation_from_suggested_cap_flow
   else:
-    print('Adaption crashed!') #we dont like that, big penalty
+#    print('Adaption crashed!') #we dont like that, big penalty
     return sys.float_info.max
        
+def doit(goodArguments_run):
+  #some how this needs to be defined globally??? strange
+  #dim = 3
+  #options=goodArguments_run
+  
+  prob = my_problem(options=goodArguments_run)  # Create a 10-dimensional problem
+  algo = algorithm.pso(gen=3)
+  #pop = population(prob.zdt(), n_individuals=100, seed=1234)
+  #pop = population(prob,100)
+  #isl = island(algo,pop)
+  #isl = island(algo, prob, 20)  # Instantiate population with 20 individuals
+  archi = archipelago(algo,prob,3,3)
+  
+  
+  print [isl.population.champion.f for isl in archi]
+  isl.evolve(2)  
+  
+  min_f = min([isl.population.champion.f for isl in archi])
+  x_opt_list=[]
+  f_min_list=[]
+  for isl in archi:
+    if isl.population.champion.f == min_f:
+      x_opt_list.append(isl.population.champion.x)
+      f_min_list.append(isl.population.champion.f)
+  try:
+    len(x_opt_list)==1
+    raise AssertionError('Multiple minima detected!')
+  except Exception, e:
+    print e.message
+    sys.exit(-1)
+  
+  #create output
+  common_filename = os.path.splitext(os.path.basename(goodArguments.fileNames[0]))[0]
+  f_opt_data = h5files.open('output_PSO_%s.h5' % common_filename, 'a')
+  f_opt_data.attrs.create('xopt', data = x_opt_list[0])
+  f_opt_data.attrs.create('fopt', data = f_min_list[0])
+  print min([isl.population.champion.f for isl in archi])    
 
 def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
   print('Adaption on %s / %s / param: %s' % (fn, grp_pattern, adaptionParams['name']))
@@ -148,126 +217,20 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
   #x_0= [1.5, 1.5, 1]
   lb= [0.5, 0.5, 0.5]
   ub= [4, 4, 4]
-#  x_0= [1.5, 1.5, 1, 2500.,40]
-#  lb= [0.5, 0.5, 0.5, 500,10]
-#  ub= [4, 4, 4, 3500,80]
-  #x_0[0] =adaptionParams['adaption']['k_m']
-  #x_0[1] =adaptionParams['adaption']['k_c']
-  #x_0[2] =adaptionParams['adaption']['k_s']
-  #x_0[3] =adaptionParams['adaption']['cond_length']
-  #x_0[4] =adaptionParams['adaption']['Q_refdot']
+
   
-  if 0:#hope_final
-    swarmsize = 50
-    maxiter = 10
-    minstep = 1e-8  #default 1e-8
-    minfunc = 0.001  #default 1e-8
-    omega = 0.5     #default 0.5
-  if 0:#hope_final_phase
-    adaptionParams['calcflow']['includePhaseSeparationEffect'] = True
-    swarmsize = 50
-    maxiter = 10
-    minstep = 1e-8  #default 1e-8
-    minfunc = 0.001  #default 1e-8
-    omega = 0.5     #default 0.5
-  if 0:#big_swarm
-    swarmsize = 100
-    maxiter = 20
-    minstep = 1e-8  #default 1e-8
-    minfunc = 0.001  #default 1e-8
-    omega = 0.5     #default 0.5
-    adaptionParams['starting_radii'] = 10.,
-  if 0:#big_swarm2
-    swarmsize = 500
-    maxiter = 20
-    minstep = 1e-8  #default 1e-8
-    minfunc = 0.001  #default 1e-8
-    omega = 0.5     #default 0.5
-  '''
-  omega : scalar
-      Particle velocity scaling factor (Default: 0.5)
-  phip : scalar
-      Scaling factor to search away from the particle's best known position
-      (Default: 0.5)
-  phig : scalar
-      Scaling factor to search away from the swarm's best known position
-      (Default: 0.5)
-  '''
-  if 1:#medium for small configs
-    swarmsize = 500
-    maxiter = 5
-    minstep = 1e-8  #default 1e-8
-    minfunc = 0.001  #default 1e-8
-    omega = 0.5     #default 0.5
-  if 0:#big_swarm3
-    swarmsize = 1000
-    maxiter = 20
-    minstep = 1e-8  #default 1e-8
-    minfunc = 0.001  #default 1e-8
-    omega = 0.5     #default 0.5
-  if 0:#big_swarm3_phase
-    swarmsize = 1000
-    maxiter = 20
-    minstep = 1e-8  #default 1e-8
-    minfunc = 0.001  #default 1e-8
-    omega = 0.5     #default 0.5
-    adaptionParams['calcflow']['includePhaseSeparationEffect'] = True
-  if 0:#big_swarm_phase
-    adaptionParams['calcflow']['includePhaseSeparationEffect'] = True
-    swarmsize = 100
-    maxiter = 20
-    minstep = 1e-8  #default 1e-8
-    minfunc = 0.001  #default 1e-8
-    omega = 0.5     #default 0.5
-    adaptionParams['starting_radii'] = 10.,
-  if 0:#bigbig
-    adaptionParams['calcflow']['includePhaseSeparationEffect'] = True
-    swarmsize = 250
-    maxiter = 30
-    minstep = 1e-8  #default 1e-8
-    minfunc = 0.001  #default 1e-8
-    omega = 0.5     #default 0.5
   
-#  swarmParams1 = dict()
-#  swarmParams1['name'] = 'compare_phase_big'
-#  swarmParams1['swarmsize'] = 100
-#  swarmParams1['maxiter'] = 100
-#  swarmParams1['minstep'] = 1e-8  #default 1e-8
-#  swarmParams1['minfunc'] = 0.001 #default 1e-8
-#  swarmParams1['omega'] = 0.5     #default 0.
-#  maxiter = 20
-  processes = 1 #somehow only 1 supported, pickels problem
-  adaptionParams['num_threads'] = 4
-  
-  args=(f_opt_data, vesselgroup, adaptionParams)
-  if 0:
-    xopt, fopt = pso(do_pSO_for_file,
-                     x_0,
-                     lb,
-                     ub,
-                     ieqcons=[con4],
-                     debug=True,
-                     swarmsize= swarmsize,
-                     maxiter= maxiter,
-                     minstep=minstep,
-                     minfunc=minfunc,
-                     omega=omega,
-                     processes=processes,
-                     use_initial_guess=use_initial_guess,
-                     phig=0.25,
-                     args=args)
-  if 1:
-    xopt, fopt = pso(do_pSO_for_file,
-                     lb,
-                     ub,
-                     debug=True,
-                     swarmsize= swarmsize,
-                     maxiter= maxiter,
-                     minstep=minstep,
-                     minfunc=minfunc,
-                     omega=omega,
-                     processes=processes,
-                     args=args)                   
+  xopt, fopt = pso(do_pSO_for_file,
+                   lb,
+                   ub,
+                   debug=True,
+                   swarmsize= swarmsize,
+                   maxiter= maxiter,
+                   minstep=minstep,
+                   minfunc=minfunc,
+                   omega=omega,
+                   processes=processes,
+                   args=args)                   
   
   f_opt_data.attrs.create('xopt', data = xopt)
   f_opt_data.attrs.create('fopt', data = fopt)
@@ -275,22 +238,6 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
 
   h5files.closeall() # just to be sure
   
-
-def run2(parameter_set, filenames, grp_pattern):
-  print 'submitting ...', parameter_set['name']
- 
-
-  num_threads = 1
-  if 'num_threads' in parameter_set:
-    num_threads = parameter_set['num_threads']
-    
-  for fn in filenames:
-    qsub.submit(qsub.func(worker_on_client, fn, grp_pattern, parameter_set, num_threads),
-                  name = 'job_adaption_'+parameter_set['name']+'_'+basename(fn),
-                  num_cpus = num_threads,
-                  days = 4.,
-                  mem = '3500MB',
-                  change_cwd = True)
 
 def run_reproduze(filenames):
   for fn in filenames:
@@ -313,7 +260,6 @@ def run_reproduze(filenames):
       k_m = xopt[0],
       k_c = xopt[1],
       k_s = xopt[2],
-      cond_length = xopt[3],
       max_nun_iterations = 200,
     )
     num_threads = 1
@@ -326,6 +272,48 @@ def run_reproduze(filenames):
                   mem = '3500MB',
                   change_cwd = True)
 
+def own2():
+  prob = my_test_problem()  # Create a 10-dimensional problem
+  #algo = algorithm.bee_colony(gen=500)  # 500 generations of bee_colony algorithm
+  algo = algorithm.pso(gen=2000)
+  #isl = island(algo, prob, 20)  # Instantiate population with 20 individuals
+  archi = archipelago(algo,prob,8,20)
+  #isl.evolve(1)  # Evolve the island once
+  #isl.join()
+  #print(isl.population.champion.f)
+  print min([isl.population.champion.f for isl in archi])
+  archi.evolve(10)
+  print min([isl.population.champion.f for isl in archi])
+class my_test_problem(problem.base):
+    """
+    De Jong (sphere) function implemented purely in Python.
+
+    USAGE: my_problem(dim=10)
+
+    * dim problem dimension
+    """
+
+    def __init__(self, dim=4):
+        # First we call the constructor of the base class telling PyGMO
+        # what kind of problem to expect ('dim' dimensions, 1 objective, 0 contraints etc.)
+        super(my_test_problem,self).__init__(dim)
+
+        # We set the problem bounds (in this case equal for all components)
+        self.set_bounds(5.12, 6.12)
+
+    # Reimplement the virtual method that defines the objective function.
+    def _objfun_impl(self, x):
+
+        # Compute the sphere function
+        f = sum([x[i] ** 2 for i in range(self.dimension)])
+
+        # Note that we return a tuple with one element only. In PyGMO the objective functions
+        # return tuples so that multi-objective optimization is also possible.
+        return (f, )
+
+    # Finally we also reimplement a virtual method that adds some output to the __repr__ method
+    def human_readable_extra(self):
+        return "\n\t Problem dimension: " + str(self.__dim)
 if not qsub.is_client and __name__=='__main__':
   import argparse
   parser = argparse.ArgumentParser(description='particle swarm optimization for all files in file in filenames')  
@@ -373,11 +361,16 @@ if not qsub.is_client and __name__=='__main__':
         
     factory = getattr(parameterSetsAdaption, goodArguments_run.AdaptionParamSet)
     #single parameter set chosen  
-    if factory.__class__ == dict:
-      factory['name'] = goodArguments_run.AdaptionParamSet
-      run2(factory, filenames, goodArguments_run.grp_pattern)
-    #a list of paramset e.g. for different boundary parameters.
-    if factory.__class__==list:
-      for paramset in factory:
-        run2(paramset, filenames, goodArguments_run.grp_pattern)    
+#    if factory.__class__ == dict:
+#      factory['name'] = goodArguments_run.AdaptionParamSet
+#      run2(factory, filenames, goodArguments_run.grp_pattern)
+#    #a list of paramset e.g. for different boundary parameters.
+#    if factory.__class__==list:
+#      for paramset in factory:
+#        run2(paramset, filenames, goodArguments_run.grp_pattern)
+    
+    doit(goodArguments_run)
+    
+#    own2()
       
+

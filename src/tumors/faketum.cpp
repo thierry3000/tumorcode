@@ -209,7 +209,7 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
 	//GenerateSprouts();
 	//if (IS_DEBUG) vl->IntegrityCheck();
 	//VesselModel1::myprint(params.adap_params.as_ptree());
-	Adaption::runAdaption_Loop(&params.adap_params, &params.bfparams, vl.get(), nullptr, false);
+	Adaption::runAdaption_Loop(&params.adap_params, &params.bfparams, vl.get(), false);
 	#pragma omp parallel
 	{
     #pragma omp for

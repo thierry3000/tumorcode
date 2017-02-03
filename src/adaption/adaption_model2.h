@@ -143,7 +143,7 @@ namespace Adaption
   //double CalcRadiiChange(const Parameters &params, VesselList3d &vl);
   //void CalcRadiiChange2(const Parameters &params, VesselList3d &vl);
   std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, VesselList3d &vl, float delta_t_calc);
-  uint runAdaption_Loop(const Adaption::Parameters *params, const BloodFlowParameters *bfparams, VesselList3d *vl, h5cpp::Group *vessels_after_adaption, bool doDebugOutput);
+  uint runAdaption_Loop(const Adaption::Parameters *params, const BloodFlowParameters *bfparams, VesselList3d *vl, bool doDebugOutput);
   void GetExtremFlows(const VesselList3d *vl, Adaption::ExtremeFlows *myExtrems);
   //void UpdateBoundaryConditions(VesselList3d &vl);
   void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &params);
