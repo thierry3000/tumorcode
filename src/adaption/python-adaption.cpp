@@ -254,6 +254,7 @@ static py::object PyComputeAdaption(py::object py_vesselgroup, py::dict py_param
     Vessel* v = vl.get()->GetEdge(i);
     acc(v->q);
   }
+#pragma omp barrier
   return py::make_tuple(return_state,mean(acc),sqrt(variance(acc)));
 }
 // static py::object PyComputeAdaption_old(py::object py_vesselgroup, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)

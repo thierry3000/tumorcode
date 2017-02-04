@@ -96,6 +96,7 @@ class my_problem(problem.base):
         # Compute the sphere function
         #f_opt_data = h5files.open('PSO_data_%s_%s.h5' % (basename(fn),adaptionParams['name']), 'a', search = False)
         vesselgroup = h5files.open(self.options.fileNames[0], 'r', search = False)[self.options.grp_pattern]
+        factory = getattr(parameterSetsAdaption, goodArguments_run.AdaptionParamSet)        
         f = do_pSO_for_file(x, vesselgroup, factory)
         #f = sum([x[i] ** 2 for i in range(self.dimension)])
 
@@ -164,7 +165,7 @@ def doit(goodArguments_run):
   #options=goodArguments_run
   
   prob = my_problem(options=goodArguments_run)  # Create a 10-dimensional problem
-  algo = algorithm.pso(gen=3)
+  algo = algorithm.pso(gen=100)
   #pop = population(prob.zdt(), n_individuals=100, seed=1234)
   #pop = population(prob,100)
   #isl = island(algo,pop)
@@ -173,7 +174,8 @@ def doit(goodArguments_run):
   
   
   print [isl.population.champion.f for isl in archi]
-  isl.evolve(2)  
+  #isl.evolve(1)  
+  archi.evolve(5)  
   
   min_f = min([isl.population.champion.f for isl in archi])
   x_opt_list=[]
@@ -183,19 +185,22 @@ def doit(goodArguments_run):
       x_opt_list.append(isl.population.champion.x)
       f_min_list.append(isl.population.champion.f)
   try:
-    len(x_opt_list)==1
-    raise AssertionError('Multiple minima detected!')
+    if len(x_opt_list)>1:
+      raise AssertionError('Multiple minima detected!')
   except Exception, e:
     print e.message
     sys.exit(-1)
   
   #create output
-  common_filename = os.path.splitext(os.path.basename(goodArguments.fileNames[0]))[0]
-  f_opt_data = h5files.open('output_PSO_%s.h5' % common_filename, 'a')
-  f_opt_data.attrs.create('xopt', data = x_opt_list[0])
-  f_opt_data.attrs.create('fopt', data = f_min_list[0])
-  print min([isl.population.champion.f for isl in archi])    
-
+  with h5files.open(goodArguments_run.outputFilename, 'a') as f_opt_data:
+    f_opt_data.attrs.create('xopt', data = x_opt_list[0])
+    f_opt_data.attrs.create('fopt', data = f_min_list[0])
+    print min([isl.population.champion.f for isl in archi])
+  
+  #finally run the adaption with to good parameters
+  #factory = getattr(parameterSetsAdaption, goodArguments_run.AdaptionParamSet)
+  #factory['adaption']['write2File'] = True
+  #return_state, mean_flow_cap,std_flow_cap = adaption_cpp.computeAdaption(vesselgroup, parameters['adaption'], parameters['calcflow'])
 def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
   print('Adaption on %s / %s / param: %s' % (fn, grp_pattern, adaptionParams['name']))
   h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
@@ -324,7 +329,8 @@ if not qsub.is_client and __name__=='__main__':
   #parser_run.add_argument('fileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
   parser_run.add_argument('-f','--fileNames', nargs='*',  help='Vessel file to calculate')
   parser_run.add_argument('-p','--AdaptionParamSet')  
-  parser_run.add_argument('-g','--grp_pattern',help='Where to find the vessel group in the file')  
+  parser_run.add_argument('-g','--grp_pattern',help='Where to find the vessel group in the file')
+  parser_run.add_argument('--outputFileName',help='Where to store results?')  
   #parser.add_argument('-a', '--analyze', help = 'loop through all files analyze data and make plot', default=False, action='store_true')
   parser_rep =  subparsers.add_parser('rep')   
   parser_rep.add_argument('-f', '--fileNames', nargs='*',  help='Vessel file to calculate')
@@ -359,7 +365,7 @@ if not qsub.is_client and __name__=='__main__':
         print e.message
         sys.exit(-1)
         
-    factory = getattr(parameterSetsAdaption, goodArguments_run.AdaptionParamSet)
+    
     #single parameter set chosen  
 #    if factory.__class__ == dict:
 #      factory['name'] = goodArguments_run.AdaptionParamSet
@@ -368,7 +374,8 @@ if not qsub.is_client and __name__=='__main__':
 #    if factory.__class__==list:
 #      for paramset in factory:
 #        run2(paramset, filenames, goodArguments_run.grp_pattern)
-    
+    common_filename = os.path.splitext(os.path.basename(goodArguments.fileNames[0]))[0]
+    goodArguments_run.outputFilename = 'output_adaption_%s.h5' % common_filename  
     doit(goodArguments_run)
     
 #    own2()

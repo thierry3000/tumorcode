@@ -37,6 +37,10 @@ if (MPI_NEEDED)
   message(STATUS "Including MPI")
   message(STATUS "MPI libs         = ${MPI_CXX_LIBRARIES}")
   message(STATUS "MPI include dirs = ${MPI_CXX_INCLUDE_PATH}")
+  message(STATUS "MPI_LIBRARY = ${MPI_LIBRARY}")
+  message(STATUS "MPI_CXX_COMPILER_FLAGS = ${MPI_CXX_COMPILER_FLAGS}")
+  message(STATUS "MPI_CXX_LINK_FLAGS = ${MPI_CXX_LINK_FLAGS}")
+  
   include_directories(${MPI_CXX_INCLUDE_PATH})
   set(myLibs ${MPI_CXX_LIBRARIES})
   if (HDF5_IS_PARALLEL) #good here
@@ -126,6 +130,7 @@ set(myLibs
   ${BLAS_LIBRARIES}
   ${PNG_LIBRARIES}
 )
+#message(STATUS "myLibs = ${myLibs}")
 
 
 ### compiler stuff

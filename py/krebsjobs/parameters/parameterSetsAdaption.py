@@ -61,7 +61,7 @@ default = dict(
 )
 
 pyGmo = dict(
-  num_threads = 8,
+  num_threads = 1,
   adaption = dict(
     k_c = 1.5,
     k_m = 1.5,
