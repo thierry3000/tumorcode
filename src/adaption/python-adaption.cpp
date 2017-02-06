@@ -254,7 +254,6 @@ static py::object PyComputeAdaption(py::object py_vesselgroup, py::dict py_param
     Vessel* v = vl.get()->GetEdge(i);
     acc(v->q);
   }
-#pragma omp barrier
   return py::make_tuple(return_state,mean(acc),sqrt(variance(acc)));
 }
 // static py::object PyComputeAdaption_old(py::object py_vesselgroup, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
@@ -413,5 +412,7 @@ BOOST_PYTHON_MODULE(libadaption_d)
 BOOST_PYTHON_MODULE(libadaption_)
 #endif
 {
+  PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
+  my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   Adaption::export_adaption_computation();
 }

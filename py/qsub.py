@@ -61,6 +61,7 @@ def parse_args(argv):
   parserQueue.add_argument('--q-local', help= ' Do not submit to queue, even if queuing system is pressent', default=False, action='store_true')
   parserQueue.add_argument('--q-dry', help= 'Do not run but print configuration to be submitted', default=False, action='store_true')
   parserQueue.add_argument('--q-verbose', help= 'more output', default=False, action='store_true')
+  parserQueue.add_argument('--mpi', help='submits to mpi partition', default=False, action='store_true')  
   localgoodArgumentsQueue, otherArgumentsQueue = parserQueue.parse_known_args()  
   global goodArgumentsQueue
   goodArgumentsQueue = localgoodArgumentsQueue
@@ -169,7 +170,7 @@ def write_directives_slurm_(f, name=None, days=None, hours=None, outdir=None, ex
     print >>f, '#SBATCH --cpus-per-task=1'
     print >>f, '#SBATCH --ntasks=1'
     print >>f, '#SBATCH --partition=onenode'
-  if num_cpus > 1:
+  if num_cpus > 1 and not goodArgumentsQueue.mpi:
     print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
     print >>f, '#SBATCH --ntasks=1'
     print >>f, '#SBATCH --nodes=1'
@@ -177,6 +178,13 @@ def write_directives_slurm_(f, name=None, days=None, hours=None, outdir=None, ex
     print >>f, '#SBATCH --ntasks-per-node=1'
     #print >>f, 'export OMP_NUM_THREADS=$SLURM_JOB_CPUS_PER_NODE'
     #print >>f, '#SBATCH --resv-ports'
+  #MPI
+  if num_cpus > 1 and goodArgumentsQueue.mpi:
+    print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
+    print >>f, '#SBATCH --ntasks=2'
+    print >>f, '#SBATCH --nodes=1'
+    print >>f, '#SBATCH --partition=mpi'
+    print >>f, '#SBATCH --ntasks-per-node=2'
   if days or hours:
     days, hours = fmtDate_(days, hours)
     print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)

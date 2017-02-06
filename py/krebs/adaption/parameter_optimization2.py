@@ -58,7 +58,7 @@ else:
   adaption_cpp = __import__('libadaption_', globals(), locals())
 
 #globals
-calculated_mean_cap_flow = 0.0
+#calculated_mean_cap_flow = 0.0
 
 # velocity in capillary about 1mm/s = 1000mu/s
 # typical diameter 5mu e.g r=2.5mu
@@ -84,7 +84,7 @@ class my_problem(problem.base):
         #print(dim)        
         
         # We set the problem bounds (in this case equal for all components)
-        #self.set_bounds(0.3, 4)
+        self.set_bounds(0.3, 4)
         #self.__dim = dim
         self.options = options
         #self.vesselgrp = vesselgroup
@@ -96,7 +96,7 @@ class my_problem(problem.base):
         # Compute the sphere function
         #f_opt_data = h5files.open('PSO_data_%s_%s.h5' % (basename(fn),adaptionParams['name']), 'a', search = False)
         vesselgroup = h5files.open(self.options.fileNames[0], 'r', search = False)[self.options.grp_pattern]
-        factory = getattr(parameterSetsAdaption, goodArguments_run.AdaptionParamSet)        
+        factory = getattr(parameterSetsAdaption, self.options.AdaptionParamSet)        
         f = do_pSO_for_file(x, vesselgroup, factory)
         #f = sum([x[i] ** 2 for i in range(self.dimension)])
 
@@ -151,27 +151,18 @@ def do_pSO_for_file(x, vesselgroup, parameters):
 
 #    print('Adaption convergent!')
 #    print('mean(flow): %f, std(flow): %f ' % (mean_flow_cap,std_flow_cap))
-    global calculated_mean_cap_flow
-    calculated_mean_cap_flow = mean_flow_cap
+#    global calculated_mean_cap_flow
+#    calculated_mean_cap_flow = mean_flow_cap
     deviation_from_suggested_cap_flow = np.square(mean_flow_cap-suggested_cap_flow)
     return deviation_from_suggested_cap_flow
   else:
 #    print('Adaption crashed!') #we dont like that, big penalty
     return sys.float_info.max
        
-def doit(goodArguments_run):
-  #some how this needs to be defined globally??? strange
-  #dim = 3
-  #options=goodArguments_run
-  
+def worker_on_client(goodArguments_run):
   prob = my_problem(options=goodArguments_run)  # Create a 10-dimensional problem
-  algo = algorithm.pso(gen=100)
-  #pop = population(prob.zdt(), n_individuals=100, seed=1234)
-  #pop = population(prob,100)
-  #isl = island(algo,pop)
-  #isl = island(algo, prob, 20)  # Instantiate population with 20 individuals
+  algo = algorithm.pso(gen=1000)
   archi = archipelago(algo,prob,3,3)
-  
   
   print [isl.population.champion.f for isl in archi]
   #isl.evolve(1)  
@@ -201,48 +192,17 @@ def doit(goodArguments_run):
   #factory = getattr(parameterSetsAdaption, goodArguments_run.AdaptionParamSet)
   #factory['adaption']['write2File'] = True
   #return_state, mean_flow_cap,std_flow_cap = adaption_cpp.computeAdaption(vesselgroup, parameters['adaption'], parameters['calcflow'])
-def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
-  print('Adaption on %s / %s / param: %s' % (fn, grp_pattern, adaptionParams['name']))
-  h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
-  krebsutils.set_num_threads(num_threads)
-  
-  vesselgroup = h5files.open(fn, 'r', search = False)[grp_pattern]
-  f_opt_data = h5files.open('PSO_data_%s_%s.h5' % (basename(fn),adaptionParams['name']), 'a', search = False)
-  
-  adaptionParams['counter'] = 0
-  #for default_pso use only 20, hope this speed up
-  #for all other simulations 50 was used here
-  adaptionParams['adaption']['max_nun_iterations'] = 100
-  #large_3d_H2 had no convergence after a
-  #night. So I try more iterations per run
-  #adaptionParams['adaption']['max_nun_iterations'] = 500
-  adaptionParams['adaption']['Q_refdot'] = 40
-  adaptionParams['adaption']['S_0'] = 20
-  # initialize parameters
-  #x_0= [1.5, 1.5, 1]
-  lb= [0.5, 0.5, 0.5]
-  ub= [4, 4, 4]
 
-  
-  
-  xopt, fopt = pso(do_pSO_for_file,
-                   lb,
-                   ub,
-                   debug=True,
-                   swarmsize= swarmsize,
-                   maxiter= maxiter,
-                   minstep=minstep,
-                   minfunc=minfunc,
-                   omega=omega,
-                   processes=processes,
-                   args=args)                   
-  
-  f_opt_data.attrs.create('xopt', data = xopt)
-  f_opt_data.attrs.create('fopt', data = fopt)
-  
-
-  h5files.closeall() # just to be sure
-  
+def doit(goodArguments_run):
+  for fn in goodArguments.fileNames:
+    common_filename = os.path.splitext(os.path.basename(fn))[0]
+    goodArguments_run.outputFilename = 'output_adaption_%s.h5' % common_filename 
+    qsub.submit(qsub.func(worker_on_client, goodArguments_run),
+                  name = 'job_adaption_'+goodArguments_run.AdaptionParamSet+'_'+common_filename,
+                  num_cpus = 1,
+                  days = 4.,
+                  mem = '3500MB',
+                  change_cwd = True)
 
 def run_reproduze(filenames):
   for fn in filenames:
@@ -277,48 +237,7 @@ def run_reproduze(filenames):
                   mem = '3500MB',
                   change_cwd = True)
 
-def own2():
-  prob = my_test_problem()  # Create a 10-dimensional problem
-  #algo = algorithm.bee_colony(gen=500)  # 500 generations of bee_colony algorithm
-  algo = algorithm.pso(gen=2000)
-  #isl = island(algo, prob, 20)  # Instantiate population with 20 individuals
-  archi = archipelago(algo,prob,8,20)
-  #isl.evolve(1)  # Evolve the island once
-  #isl.join()
-  #print(isl.population.champion.f)
-  print min([isl.population.champion.f for isl in archi])
-  archi.evolve(10)
-  print min([isl.population.champion.f for isl in archi])
-class my_test_problem(problem.base):
-    """
-    De Jong (sphere) function implemented purely in Python.
 
-    USAGE: my_problem(dim=10)
-
-    * dim problem dimension
-    """
-
-    def __init__(self, dim=4):
-        # First we call the constructor of the base class telling PyGMO
-        # what kind of problem to expect ('dim' dimensions, 1 objective, 0 contraints etc.)
-        super(my_test_problem,self).__init__(dim)
-
-        # We set the problem bounds (in this case equal for all components)
-        self.set_bounds(5.12, 6.12)
-
-    # Reimplement the virtual method that defines the objective function.
-    def _objfun_impl(self, x):
-
-        # Compute the sphere function
-        f = sum([x[i] ** 2 for i in range(self.dimension)])
-
-        # Note that we return a tuple with one element only. In PyGMO the objective functions
-        # return tuples so that multi-objective optimization is also possible.
-        return (f, )
-
-    # Finally we also reimplement a virtual method that adds some output to the __repr__ method
-    def human_readable_extra(self):
-        return "\n\t Problem dimension: " + str(self.__dim)
 if not qsub.is_client and __name__=='__main__':
   import argparse
   parser = argparse.ArgumentParser(description='particle swarm optimization for all files in file in filenames')  
@@ -326,7 +245,7 @@ if not qsub.is_client and __name__=='__main__':
   #parser.add_argument('fileNames', nargs='?', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
   subparsers = parser.add_subparsers(dest='subcommand')
   parser_run = subparsers.add_parser('run')
-  #parser_run.add_argument('fileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
+  #parser_run.add_argument('fileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
   parser_run.add_argument('-f','--fileNames', nargs='*',  help='Vessel file to calculate')
   parser_run.add_argument('-p','--AdaptionParamSet')  
   parser_run.add_argument('-g','--grp_pattern',help='Where to find the vessel group in the file')
@@ -374,8 +293,7 @@ if not qsub.is_client and __name__=='__main__':
 #    if factory.__class__==list:
 #      for paramset in factory:
 #        run2(paramset, filenames, goodArguments_run.grp_pattern)
-    common_filename = os.path.splitext(os.path.basename(goodArguments.fileNames[0]))[0]
-    goodArguments_run.outputFilename = 'output_adaption_%s.h5' % common_filename  
+     
     doit(goodArguments_run)
     
 #    own2()

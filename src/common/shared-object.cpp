@@ -344,7 +344,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
   
   if(vesselgroup.attrs().get<std::string>("CLASS") == "GRAPH")
   {
-    cout << vesselgroup.get_file_name() << endl;
+    cout << "read vl from: \n " << vesselgroup.get_file_name() << endl;
     //we have a lattice struture->get it, could also produce an error
     if(!vesselgroup.exists("lattice"))
     {
