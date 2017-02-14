@@ -25,9 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using boost::property_tree::ptree;
 
-namespace h5 = h5cpp;
-
-void WriteHdfPtree(h5::Group f, const ptree &pt, HdfWritePtreeAs storage_mode)
+void WriteHdfPtree(h5cpp::Group f, const ptree &pt, HdfWritePtreeAs storage_mode)
 {
   typedef ptree::const_iterator I;
   for (I it = pt.begin(); it != pt.end(); ++it)
@@ -40,7 +38,7 @@ void WriteHdfPtree(h5::Group f, const ptree &pt, HdfWritePtreeAs storage_mode)
       if (storage_mode == HDF_WRITE_PTREE_AS_ATTRIBUTE)
         f.attrs().set(k, v.data());
       else
-        h5::create_dataset_scalar<string>(f, k, v.data());
+        h5cpp::create_dataset_scalar<string>(f, k, v.data());
     }
     // recurse
     if (v.begin() != v.end())

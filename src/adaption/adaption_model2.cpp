@@ -31,6 +31,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/tools/tuple.hpp>
 #include <boost/foreach.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
 //#include <boost/container/vector.hpp> //used to be threadsafe
 
 #include <unordered_set>
@@ -40,10 +43,74 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "adaption_model2.h"
 #include <fenv.h>
 //#include <atomic>
+#include "adaption_as_pagmo_problem.h"
 
 namespace Adaption
 {
-  
+int test_2()
+{
+  std::cout<<"running pagmo test 2"<<std::endl;
+  // Initialise the MPI environment.
+  int mc_steps=0;
+  int dim=0;
+#ifdef PAGMO_ENABLE_MPI
+  pagmo::mpi_environment env;
+  mc_steps = 10000000;
+  dim = 400;
+#else
+  mc_steps = 10;
+  dim = 4;
+#endif
+  // Create a problem and an algorithm.
+  pagmo::problem::dejong prob(dim);
+  pagmo::algorithm::monte_carlo algo(mc_steps);
+  // Create an archipelago of 10 MPI islands.
+  pagmo::archipelago a;
+  a.set_topology(pagmo::topology::ring());
+  for (int i = 0; i < 2; ++i) {
+#ifdef PAGMO_ENABLE_MPI
+	  a.push_back(pagmo::mpi_island(algo,prob,1));
+#else
+	  a.push_back(pagmo::island(algo,prob,1));
+#endif
+  }
+  // Evolve the archipelago 10 times.
+  a.evolve(10);
+  a.join();
+  return 0;
+}  
+int test_1()
+{
+  std::cout<<"running pagmo test 1"<<std::endl;
+  // Initialise the MPI environment.
+  int mc_steps=0;
+  int dim=0;
+#ifdef PAGMO_ENABLE_MPI
+  pagmo::mpi_environment env;
+  mc_steps = 10000000;
+  dim = 400;
+#else
+  mc_steps = 10;
+  dim = 4;
+#endif
+  // Create a problem and an algorithm.
+  pagmo::problem::dejong prob(dim);
+  pagmo::algorithm::monte_carlo algo(mc_steps);
+  // Create an archipelago of 10 MPI islands.
+  pagmo::archipelago a;
+  a.set_topology(pagmo::topology::ring());
+  for (int i = 0; i < 10; ++i) {
+#ifdef PAGMO_ENABLE_MPI
+	  a.push_back(pagmo::mpi_island(algo,prob,1));
+#else
+	  a.push_back(pagmo::island(algo,prob,1));
+#endif
+  }
+  // Evolve the archipelago 10 times.
+  a.evolve(10);
+  a.join();
+  return 0;
+}  
 void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &params)
 {
 #ifdef DEBUG
@@ -867,12 +934,12 @@ void ConductiveTransport::Calculate_S_tot()
  * Adaption According to  Pries, Secomb, Gaehtgens 1998
  * "Structural adaption and stability of microvascular networks: theory and simulations"
  */
-std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, VesselList3d &vl, float delta_t_calc)
+std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, std::auto_ptr<VesselList3d> vl, float delta_t_calc)
 {
   // generate a CompressedAdaptionNetwork structure
   CompressedAdaptionNetwork adaption_network;
   // read in the needed network stuff
-  GetAdaptionNetwork(adaption_network, &vl);
+  GetAdaptionNetwork(adaption_network, vl.get());
   
 #ifdef DEBUG 
   //if debug, we can look at this data
@@ -894,7 +961,7 @@ std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &
   conductiveTransport.Calculate_S_tot();
   
   //set the results back to the vessellist!
-  SetAdaptionValues(&vl, adaption_network, delta_t_calc, params.radMin_for_kill);
+  SetAdaptionValues(vl.get(), adaption_network, delta_t_calc, params.radMin_for_kill);
   //return minimization value
   std::tuple<double,double,double> myreturn(adaption_network.delta_r_square, adaption_network.max_stot, adaption_network.max_delta_r);
   return myreturn;
@@ -1247,7 +1314,50 @@ bool check_while_break( int no_vessels, double min_error, double nqdev, double m
   // if not in one case from above, continue while loop
   return true;
 }
-uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfparams, VesselList3d* vl,bool doDebugOutput)
+
+uint run_optimization( Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl)
+{
+  //test_2();
+  
+  std::cout<<"running real stuff"<<std::endl;
+  // Initialise the MPI environment.
+  int mc_steps=0;
+  int dim=0;
+#ifdef PAGMO_ENABLE_MPI
+  pagmo::mpi_environment env;
+  mc_steps = 10000000;
+  dim = 400;
+#else
+  mc_steps = 10;
+  dim = 4;
+#endif
+  // Create a problem and an algorithm.
+  pagmo::problem::adaption_problem prob(params,bfparams,vl,3);
+  //pagmo::algorithm::monte_carlo algo(mc_steps);
+  pagmo::algorithm::pso algo(10000);
+  // Create an archipelago of 10 MPI islands.
+  pagmo::archipelago a;
+  a.set_topology(pagmo::topology::ring());
+  for (int i = 0; i < 8; ++i) {
+#ifdef PAGMO_ENABLE_MPI
+	  a.push_back(pagmo::mpi_island(algo,prob,1));
+#else
+	  a.push_back(pagmo::island(algo,prob,1));
+#endif
+  }
+  // Evolve the archipelago 10 times.
+  a.evolve(10);
+  a.join();
+//  return 0;
+  
+
+#if 0
+  std::printf("mean_value: %f, mean_std: %f\n",mean_value,mean_std);
+#endif
+  return 0;
+}
+
+uint runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl,bool doDebugOutput)
 {
   /*
    * first, change the boundary Conditions
@@ -1257,23 +1367,23 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
   //is good to have well definde pressures and flow, even if this may be redundant
 #ifdef DEBUG
   printf("running first CalcFlow in adaptionLoop\n");
-  CalcFlow(*vl, *bfparams);
+  CalcFlow(*vl, bfparams);
   printf("done!\n");
 #endif
 #if 1
   //this seems to be necessary to get a stable result for the apj stuff
   //used together with change of radii of veins
-  ChangeBoundaryConditions(*vl,*params);
+  ChangeBoundaryConditions(*vl,params);
   
 #endif
-  CalcFlow(*vl, *bfparams);
+  CalcFlow(*vl, bfparams);
   int no_Vessels_before_adaption = vl->GetECount();
   //adaption loop local variables
   FlReal qdev=std::numeric_limits<FlReal>::max();
   FlReal nqdev=std::numeric_limits<FlReal>::max();
   FlReal max_delta_r = std::numeric_limits<FlReal>::max();
   FlReal max_stot = std::numeric_limits<FlReal>::min();
-  FlReal delta_t = params->delta_t;
+  FlReal delta_t = params.delta_t;
   bool use_dynamic_t = false;
   if (delta_t == 0)
   {
@@ -1338,9 +1448,9 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
   {
     how_often++;
     //break if we reach max_nun_iterations or for failsafe more than 200K steps
-    if(params->max_nun_iterations>0)
+    if(params.max_nun_iterations>0)
     {
-      if(how_often>30000 or how_often> params->max_nun_iterations-1)
+      if(how_often>30000 or how_often> params.max_nun_iterations-1)
       {
       break;
       }
@@ -1360,12 +1470,12 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
 
     if( false )//this is a little like simulated annealing
     {
-      if(params->max_nun_iterations>0 and (how_often/params->max_nun_iterations>0.5 and level == 0))
+      if(params.max_nun_iterations>0 and (how_often/params.max_nun_iterations>0.5 and level == 0))
       {
 	delta_t = 0.1*delta_t;
 	level++;
       }
-      if(params->max_nun_iterations>0 and (how_often/params->max_nun_iterations>0.8 and level == 1))
+      if(params.max_nun_iterations>0 and (how_often/params.max_nun_iterations>0.8 and level == 1))
       {
 	delta_t = 0.1*delta_t;
 	level++;
@@ -1373,11 +1483,11 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
     }
     
     // **************MAIN Routine ******************** for single iteration
-    std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(*params,*vl,delta_t);
+    std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(params,vl,delta_t);
 #if 1
     // am I serious? this would cause a never ending story.
     //UpdateBoundaryConditions(*vl);//new boundary flows, can show up after adaption
-    CalcFlow(*vl, *bfparams);
+    CalcFlow(*vl, bfparams);
     //vice versa, network can expire different flows because of change in BC
     //an change in radii
 #endif
@@ -1435,18 +1545,18 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
     }
 #endif //DEBUG
 #endif
-  mybreakcondition = check_while_break(vl->GetECount(), limit_error,nqdev,max_delta_r, params->qdev, max_stot);
+  mybreakcondition = check_while_break(vl->GetECount(), limit_error,nqdev,max_delta_r, params.qdev, max_stot);
   }
   //end main adaption loop, hopefully convergent here
   
   
-  KillSmallVessels(vl,params->radMin_for_kill);
+  KillSmallVessels(vl.get(),params.radMin_for_kill);
   
   
   int no_Vessels_after_adaption = vl->GetECount();
   int no_killed = no_Vessels_before_adaption-no_Vessels_after_adaption;
   if( no_killed >0)
-    printf("Killed %i of %i Vessels below %f\n", no_Vessels_before_adaption-no_Vessels_after_adaption, no_Vessels_before_adaption,params->radMin_for_kill);
+    printf("Killed %i of %i Vessels below %f\n", no_Vessels_before_adaption-no_Vessels_after_adaption, no_Vessels_before_adaption,params.radMin_for_kill);
 
 #if 0
 #ifndef DEBUG //release output, only last convergent part
@@ -1481,7 +1591,7 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
   /*
    * return statement   0: convergent
    * 			1: not convergent */
-  if(how_often >= params->max_nun_iterations)
+  if(how_often >= params.max_nun_iterations)
   {
     cout<<"NOT Convergent!"<<endl;
     return 1;
@@ -1493,7 +1603,7 @@ uint runAdaption_Loop(const Parameters *params, const BloodFlowParameters *bfpar
   }
 }
 
-void GetExtremFlows(const VesselList3d *vl, Adaption::ExtremeFlows *theExtrems)
+void GetExtremFlows(std::auto_ptr<VesselList3d> vl, Adaption::ExtremeFlows *theExtrems)
 {
   double max_flow=0.0;
   double min_flow=std::numeric_limits<double>::max();

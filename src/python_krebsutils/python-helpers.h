@@ -127,6 +127,9 @@ static void _CheckArray3(const py::object &obj, int dim1, int dim2, int dim3, co
    
    TODO: This approach is however flawed because the default h5py install might use different hdf5 libraries than we link tumorcode against. It might therefore be a good idea to rewrite regarding functions. They could take filename-path pairs or memory buffers as arguments instead.   
 */
+/** even worse:
+ * this function does not seem to be hdf5 1.10 ready. got some strange errors with it.
+ */
 h5cpp::Group PythonToCppGroup(const py::object &op_);
 h5cpp::Dataset PythonToCppDataset(const py::object &op_);
 

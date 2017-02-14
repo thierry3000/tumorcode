@@ -38,9 +38,9 @@ import krebsutils # import of this must come in front of import of detailedo2 li
 sys.path.append(os.path.join(os.path.dirname(__file__),'../../../lib'))
 
 if sys.flags.debug:
-  adaption = __import__('libadaption_d', globals(), locals())
+  adaption_cpp = __import__('libadaption_d', globals(), locals())
 else:
-  adaption = __import__('libadaption_', globals(), locals())
+  adaption_cpp = __import__('libadaption_', globals(), locals())
 
 #def buildLink(gdst, linkname, gsrc):
 #  fn = myutils.sanitize_posixpath(basename(gsrc.file.filename)) if gsrc else ''
@@ -103,7 +103,7 @@ def computeAdaption_(gdst, vesselgroup, parameters):
   gdst.file.flush()
   # now we can compute Adaption. The c++ routine can a.t.m. only read from hdf so it has to use our new file
   
-  r = adaption.computeAdaption(vesselgroup, parameters['adaption'], parameters['calcflow'], gdst)
+  r = adaption_cpp.computeAdaption(vesselgroup, parameters['adaption'], parameters['calcflow'], gdst)
   myutils.hdf_write_dict_hierarchy(gdst, 'parameters', parameters)
   gdst.file.flush()
   
@@ -174,13 +174,13 @@ def doit(fn, pattern, parameters):
   for group_path in dirs:
     #cachelocation = (outfn_no_ext+'.h5', group_path+'_'+parameters_name)
     cachelocation = (fnbase+'_adption_p_'+ parameters['name'] +'.h5', group_path)
-    ref = computeAdaption(f, group_path, parameters, cachelocation)
+    ref = adaption_cpp.computeAdaption(f, group_path, parameters, cachelocation)
     print 'computed Adaption stored in:', ref
     output_links.append(ref)
   return output_links
   
 def test():
-    adaption.testAdaption()
+    adaption_cpp.testAdaption()
     
 def get_files_with_successful_adaption(filenames):
   good_files=[]

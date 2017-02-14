@@ -1,4 +1,6 @@
-/**
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+'''
 This file is part of tumorcode project.
 (http://www.uni-saarland.de/fak7/rieger/homepage/research/tumor/tumor.html)
 
@@ -16,32 +18,4 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-#ifndef HDF_WRAPPER_VEC_H
-#define HDF_WRAPPER_VEC_H
-
-#include "helpers-vec.h"
-#include "hdf_wrapper.h"
-
-#if 1  //multiple declaration is always bad!!! before this was h5=h5cpp
-
-
-template<class T, int dim>
-inline void set_array(h5cpp::Attributes attrs, const std::string &name, const Vec<T,dim> &vec)
-{
-  attrs.set(name, h5cpp::Dataspace::simple_dims(dim), vec.data());
-}
-
-template<class T, int dim>
-inline Vec<T,dim> get_array(h5cpp::Attributes attrs, const std::string &name)
-{
-  Vec<T,dim> r;
-  auto a = attrs.open(name);
-  assert (a.get_dataspace().get_npoints() == dim);
-  a.read<T>(r.data());
-  return r;
-}
-
-#endif
-
-#endif
+'''

@@ -836,9 +836,9 @@ int main(int argc, char **argv)
   //TestConvolution();
   //testptree();
   //TestDeltaAndHeaviside();
-  TestVesselFieldCoupling();
+  //TestVesselFieldCoupling();
   //TestVesselFieldCoupling2(argc, argv);
-  TestVesselFieldCoupling3(argc,argv);
+  //TestVesselFieldCoupling3(argc,argv);
   //TestVesselList();
   //TestLatticeData();
   //TestVecDebug();
@@ -863,5 +863,8 @@ int main(int argc, char **argv)
   log << "test" << " new " << " line " << endl;
   log.pop();
   #endif
+#if 1
+  
+#endif
   return 0;
 }

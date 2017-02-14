@@ -9,8 +9,18 @@ add_library(krebs_ SHARED
             python_numericaltools_tests.cpp python_vesselgen.cpp
             python_elliptic_solver_test.cpp python_calcflow.cpp python_interpolate_between_vessels.cpp
             python_murray.cpp)
-      
-target_link_libraries(krebs_ common vesselgenlib numpycpp ${myLibs} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+if (False)
+  find_package(MPI REQUIRED)
+  message(STATUS "Including MPI for libkrebs")
+  message(STATUS "MPI libs         = ${MPI_CXX_LIBRARIES}")
+  message(STATUS "MPI include dirs = ${MPI_CXX_INCLUDE_PATH}")
+  message(STATUS "MPI_LIBRARY = ${MPI_LIBRARY}")
+  message(STATUS "MPI_CXX_COMPILER_FLAGS = ${MPI_CXX_COMPILER_FLAGS}")
+  message(STATUS "MPI_CXX_LINK_FLAGS = ${MPI_CXX_LINK_FLAGS}")
+  target_link_libraries(krebs_ common vesselgenlib numpycpp ${myLibs} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${MPI_CXX_LIBRARIES})
+else()
+  target_link_libraries(krebs_ common vesselgenlib numpycpp ${myLibs} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+endif()
 set_target_properties(krebs_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 install(TARGETS krebs_

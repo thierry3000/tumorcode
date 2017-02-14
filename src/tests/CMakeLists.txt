@@ -19,7 +19,13 @@ target_link_libraries(test_stepper ${myLibs})
 add_executable(test_elliptic_solver test_elliptic_solver.cpp)
 target_link_libraries(test_elliptic_solver ${myLibs})
 
+add_executable(test_pagmo test_pagmo.cpp)
+set_target_properties(test_pagmo PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX} LINK_FLAGS "-rdynamic")
+
+
+target_link_libraries(test_pagmo boost_system pagmo ${myLibs} )
+
 # add_executable(test_convection_diffusion test_convection_diffusion.cpp)
 # target_link_libraries(test_convection_diffusion ${myLibs})
 
-install(TARGETS tests test_stepper test_elliptic_solver RUNTIME DESTINATION bin)
+install(TARGETS tests test_stepper test_elliptic_solver test_pagmo RUNTIME DESTINATION bin)

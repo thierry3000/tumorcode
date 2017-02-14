@@ -20,8 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "lattice-data-polymorphic.h"
 
-namespace h5 = h5cpp;
-
 namespace polymorphic_latticedata
 {
 
@@ -53,7 +51,7 @@ template Int3 WorldToLatticeWrapper(const LatticeDataFCC &ld, const Float3 &p); 
 
 
 template<class LD>
-static std::auto_ptr<LatticeData> ReadHdfLdGeneric(h5::Group g)
+static std::auto_ptr<LatticeData> ReadHdfLdGeneric(h5cpp::Group g)
 {
   LD ld;
   ReadHdfLd(g, ld);
@@ -61,7 +59,7 @@ static std::auto_ptr<LatticeData> ReadHdfLdGeneric(h5::Group g)
 }
 
 
-std::auto_ptr<LatticeData> LatticeData::ReadHdf(h5::Group g)
+std::auto_ptr<LatticeData> LatticeData::ReadHdf(h5cpp::Group g)
 {
   const string type = g.attrs().get<string>("TYPE");
   if (type == "QUAD3D")

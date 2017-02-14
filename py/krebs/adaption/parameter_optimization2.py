@@ -157,16 +157,18 @@ def do_pSO_for_file(x, vesselgroup, parameters):
     return deviation_from_suggested_cap_flow
   else:
 #    print('Adaption crashed!') #we dont like that, big penalty
-    return sys.float_info.max
+    #return sys.float_info.max
+    return 100000000000000000000.0
+    
        
 def worker_on_client(goodArguments_run):
   prob = my_problem(options=goodArguments_run)  # Create a 10-dimensional problem
-  algo = algorithm.pso(gen=1000)
-  archi = archipelago(algo,prob,3,3)
+  algo = algorithm.pso(gen=3)
+  archi = archipelago(algo,prob,1,2)
   
   print [isl.population.champion.f for isl in archi]
   #isl.evolve(1)  
-  archi.evolve(5)  
+  archi.evolve(10)  
   
   min_f = min([isl.population.champion.f for isl in archi])
   x_opt_list=[]

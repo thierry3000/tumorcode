@@ -32,6 +32,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "common/calcflow_common.h" //inhere from the CompressedFlowNetwork
 
+//#define PAGMO_ENABLE_MPI
+//#include </localdisk/thierry/local/include/pagmo/src/pagmo.h>
+#include <pagmo/src/pagmo.h>
+
 namespace Adaption
 {
   enum TissueIDs
@@ -67,7 +71,8 @@ namespace Adaption
   class Parameters
   {
     
-    Parameters& operator=(const Parameters&);
+    //Parameters& operator=(const Parameters&);
+    //Parameters(const Parameters &obj);
     
   public:
     Parameters();
@@ -142,9 +147,11 @@ namespace Adaption
   void TestAdaption();
   //double CalcRadiiChange(const Parameters &params, VesselList3d &vl);
   //void CalcRadiiChange2(const Parameters &params, VesselList3d &vl);
-  std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, VesselList3d &vl, float delta_t_calc);
-  uint runAdaption_Loop(const Adaption::Parameters *params, const BloodFlowParameters *bfparams, VesselList3d *vl, bool doDebugOutput);
-  void GetExtremFlows(const VesselList3d *vl, Adaption::ExtremeFlows *myExtrems);
+  std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, std::auto_ptr<VesselList3d> vl, float delta_t_calc);
+  uint runAdaption_Loop(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl, bool doDebugOutput);
+  //uint runAdaption_Loop(boost::shared_ptr<Adaption::Parameters> params, boost::shared_ptr<BloodFlowParameters> bfparams, boost::shared_ptr<VesselList3d> vl, bool doDebugOutput);
+  uint run_optimization(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl);
+  void GetExtremFlows(std::auto_ptr<VesselList3d> vl, Adaption::ExtremeFlows *myExtrems);
   //void UpdateBoundaryConditions(VesselList3d &vl);
   void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &params);
 };//end namespace

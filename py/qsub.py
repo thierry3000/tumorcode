@@ -181,10 +181,10 @@ def write_directives_slurm_(f, name=None, days=None, hours=None, outdir=None, ex
   #MPI
   if num_cpus > 1 and goodArgumentsQueue.mpi:
     print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
-    print >>f, '#SBATCH --ntasks=2'
-    print >>f, '#SBATCH --nodes=1'
+    print >>f, '#SBATCH --ntasks=1'
+    print >>f, '#SBATCH --nodes=10'
     print >>f, '#SBATCH --partition=mpi'
-    print >>f, '#SBATCH --ntasks-per-node=2'
+    print >>f, '#SBATCH --ntasks-per-node=8'
   if days or hours:
     days, hours = fmtDate_(days, hours)
     print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)

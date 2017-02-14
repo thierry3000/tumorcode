@@ -22,9 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "lattice-data-polymorphic.h"
 
 
-namespace h5 = h5cpp;
-
-
 class PyLd
 {
   typedef polymorphic_latticedata::LatticeData LatticeData;
@@ -122,7 +119,7 @@ public:
 
 PyLd* read_lattice_data_from_hdf(const py::object &ld_grp_obj)
 {
-  h5::Group g_ld = PythonToCppGroup(ld_grp_obj);
+  h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
 
   typedef polymorphic_latticedata::LatticeData LD;
   std::auto_ptr<LD> ldp(LD::ReadHdf(g_ld));
@@ -135,8 +132,8 @@ PyLd* read_lattice_data_from_hdf(const py::object &ld_grp_obj)
 
 void write_lattice_data_to_hdf(py::object py_h5grp, const std::string &name, const PyLd *cpp_py_ld)
 {
-  h5::Group g = PythonToCppGroup(py_h5grp);
-  h5::Group g_ld = g.create_group(name);
+  h5cpp::Group g = PythonToCppGroup(py_h5grp);
+  h5cpp::Group g_ld = g.create_group(name);
   cpp_py_ld->get().WriteHdf(g_ld);
 }
 
