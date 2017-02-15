@@ -10,7 +10,7 @@ target_link_libraries(tumor_
 bulktissue_with
 adaption_ 
 krebs_
-numpycpp ${myLibs} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+${myLibs})
 
 set_target_properties(tumor_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 

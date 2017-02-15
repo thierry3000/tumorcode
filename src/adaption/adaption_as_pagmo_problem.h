@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 
+#include <pagmo/src/pagmo.h>
 #include <pagmo/src/config.h>
 #include <pagmo/src/serialization.h>
 #include <pagmo/src/types.h>
@@ -34,44 +35,51 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <adaption/adaption_model2.h>
 
 namespace pagmo{ namespace problem {
-
-
+//const std::auto_ptr<VesselList3d> vl;
+// const BloodFlowParameters bfparams;
+// const Adaption::Parameters params;
+// void set_vl(std::auto_ptr<VesselList3d> vl)
+// {
+//   pagmo::problem::vl = vl;
+// }
 class __PAGMO_VISIBLE adaption_problem : public base
 {
+	static boost::shared_ptr<VesselList3d> s_vl;
+	static Adaption::Parameters s_params;
+	static BloodFlowParameters s_bfparams;
 	public:
-		//adaption_problem(int n = 3);
-		adaption_problem(
-		  Adaption::Parameters , 
-		  BloodFlowParameters,
-		  std::auto_ptr<VesselList3d>,
-		   int n);
+		adaption_problem(int n = 3);
+		//adaption_problem(VesselList3d vl_,Adaption::Parameters params_, BloodFlowParameters bfparams, int n = 3);
+		//adaption_problem();
 		//adaption_problem(int n=3);
 		base_ptr clone() const;
 		std::string get_name() const;
+		void set_static_members(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl);
 	protected:
 		void objfun_impl(fitness_vector &, const decision_vector &) const;
 	private:
-		//Adaption::Parameters *params;
-		//BloodFlowParameters *bfparams;
-		//VesselList3d *vl;
+		Adaption::Parameters params;
+		BloodFlowParameters bfparams;
+		VesselList3d vl;
+		VesselList3d *p_vl;
 		friend class boost::serialization::access;
 		template <class Archive>
 		void serialize(Archive &ar, unsigned int)
 // 		void serialize(Archive &ar, unsigned int)
 		{
 		  ar & boost::serialization::base_object<base>(*this);
-		  ar & params;
-		  ar & bfparams;
-		  ar & vl;
+// 		  ar & params;
+// 		  ar & bfparams;
+// 		  ar & vl;
 // 		  ar & boost::serialization::base_object<base>(*this) & bfparams & params & vl;
 			
 		}
 		//mutable boost::shared_ptr<BloodFlowParameters> bfparams;
 		//mutable boost::shared_ptr<Adaption::Parameters> params;
 		//mutable boost::shared_ptr<VesselList3d> vl;
-		mutable BloodFlowParameters bfparams;
-		mutable Adaption::Parameters params;
-		mutable std::auto_ptr<VesselList3d> vl;
+// 		mutable BloodFlowParameters bfparams;
+// 		mutable Adaption::Parameters params;
+// 		mutable std::auto_ptr<VesselList3d> vl;
 };
 
 }} //namespaces

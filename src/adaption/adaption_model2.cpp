@@ -934,12 +934,12 @@ void ConductiveTransport::Calculate_S_tot()
  * Adaption According to  Pries, Secomb, Gaehtgens 1998
  * "Structural adaption and stability of microvascular networks: theory and simulations"
  */
-std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, std::auto_ptr<VesselList3d> vl, float delta_t_calc)
+std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, VesselList3d *vl, float delta_t_calc)
 {
   // generate a CompressedAdaptionNetwork structure
   CompressedAdaptionNetwork adaption_network;
   // read in the needed network stuff
-  GetAdaptionNetwork(adaption_network, vl.get());
+  GetAdaptionNetwork(adaption_network, vl);
   
 #ifdef DEBUG 
   //if debug, we can look at this data
@@ -961,7 +961,7 @@ std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &
   conductiveTransport.Calculate_S_tot();
   
   //set the results back to the vessellist!
-  SetAdaptionValues(vl.get(), adaption_network, delta_t_calc, params.radMin_for_kill);
+  SetAdaptionValues(vl, adaption_network, delta_t_calc, params.radMin_for_kill);
   //return minimization value
   std::tuple<double,double,double> myreturn(adaption_network.delta_r_square, adaption_network.max_stot, adaption_network.max_delta_r);
   return myreturn;
@@ -1315,49 +1315,8 @@ bool check_while_break( int no_vessels, double min_error, double nqdev, double m
   return true;
 }
 
-uint run_optimization( Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl)
-{
-  //test_2();
-  
-  std::cout<<"running real stuff"<<std::endl;
-  // Initialise the MPI environment.
-  int mc_steps=0;
-  int dim=0;
-#ifdef PAGMO_ENABLE_MPI
-  pagmo::mpi_environment env;
-  mc_steps = 10000000;
-  dim = 400;
-#else
-  mc_steps = 10;
-  dim = 4;
-#endif
-  // Create a problem and an algorithm.
-  pagmo::problem::adaption_problem prob(params,bfparams,vl,3);
-  //pagmo::algorithm::monte_carlo algo(mc_steps);
-  pagmo::algorithm::pso algo(10000);
-  // Create an archipelago of 10 MPI islands.
-  pagmo::archipelago a;
-  a.set_topology(pagmo::topology::ring());
-  for (int i = 0; i < 8; ++i) {
-#ifdef PAGMO_ENABLE_MPI
-	  a.push_back(pagmo::mpi_island(algo,prob,1));
-#else
-	  a.push_back(pagmo::island(algo,prob,1));
-#endif
-  }
-  // Evolve the archipelago 10 times.
-  a.evolve(10);
-  a.join();
-//  return 0;
-  
 
-#if 0
-  std::printf("mean_value: %f, mean_std: %f\n",mean_value,mean_std);
-#endif
-  return 0;
-}
-
-uint runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl,bool doDebugOutput)
+std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, VesselList3d *vl,bool doDebugOutput)
 {
   /*
    * first, change the boundary Conditions
@@ -1456,8 +1415,8 @@ uint runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, std::aut
       }
     }
     
-    ExtremeFlows myExtremFlows;
-    GetExtremFlows(vl, &myExtremFlows);
+    ExtremeFlows myExtremFlows = GetExtremFlows(vl);
+    //GetExtremFlows(vl, &myExtremFlows);
     //params.Q_refdot = (params.max_flow * params.min_flow)/params.no_of_roots;
 #ifndef SILENT
     //cout << "no_of_roots: " << params.no_of_roots << endl;
@@ -1483,7 +1442,7 @@ uint runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, std::aut
     }
     
     // **************MAIN Routine ******************** for single iteration
-    std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(params,vl,delta_t);
+    std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(params, vl,delta_t);
 #if 1
     // am I serious? this would cause a never ending story.
     //UpdateBoundaryConditions(*vl);//new boundary flows, can show up after adaption
@@ -1550,7 +1509,7 @@ uint runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, std::aut
   //end main adaption loop, hopefully convergent here
   
   
-  KillSmallVessels(vl.get(),params.radMin_for_kill);
+  KillSmallVessels(vl,params.radMin_for_kill);
   
   
   int no_Vessels_after_adaption = vl->GetECount();
@@ -1591,34 +1550,55 @@ uint runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, std::aut
   /*
    * return statement   0: convergent
    * 			1: not convergent */
+  FlReal mean_value; 
+  FlReal mean_std;
   if(how_often >= params.max_nun_iterations)
   {
     cout<<"NOT Convergent!"<<endl;
-    return 1;
+    return std::make_tuple(1, 1000000000.);
   }
   else
   {
     cout<<"Convergent!"<<endl;
-    return 0;
+    using namespace boost::accumulators;
+    accumulator_set<double, features<tag::mean, tag::variance>> acc;
+#pragma omp parallel for
+  for(int i =0;i<vl->GetECount();++i)
+  {
+    Vessel* v = vl->GetEdge(i);
+    acc(v->q);
+  }
+  mean_value = mean(acc);
+  mean_std = sqrt(variance(acc));
+#pragma omp barrier
+    
+    return std::make_tuple(0, mean_value);
   }
 }
 
-void GetExtremFlows(std::auto_ptr<VesselList3d> vl, Adaption::ExtremeFlows *theExtrems)
+Adaption::ExtremeFlows GetExtremFlows(VesselList3d *vl_)
 {
+  Adaption::ExtremeFlows *theExtrems = new ExtremeFlows();
+  int n = vl_->GetECount();
   double max_flow=0.0;
   double min_flow=std::numeric_limits<double>::max();
   double avg_flow=0.0;
-  for(int i=0;i<vl->GetECount();++i)
+  for(int i=0;i<vl_->GetECount();++i)
   {
-    const Vessel* v = vl->GetEdge(i);
+    const Vessel* v = vl_->GetEdge(i);
     if(v->q>max_flow and v->IsCirculated())max_flow=v->q;
     if(v->q<min_flow and v->IsCirculated())min_flow=v->q;
     if(v->IsCirculated()) avg_flow = avg_flow + v->q;
   }
-  theExtrems->avg_flow = avg_flow/ vl->GetECount();
+#ifdef DEBUG
+  myAssert(n>0);
+#endif
+  theExtrems->avg_flow = avg_flow / n;
   theExtrems->max_flow = avg_flow*60/1000000.;
   theExtrems->max_flow = max_flow*60/1000000.;
   theExtrems->min_flow = min_flow*60/1000000.;
+  
+  return *theExtrems;
 }
 #if 0
 void UpdateBoundaryConditions(VesselList3d &vl)//after radii are changed!!!

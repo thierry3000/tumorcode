@@ -201,7 +201,7 @@ class VesselList3d
   typedef polymorphic_latticedata::LatticeData LD;
 public:
   VesselList3d();
-  VesselList3d(VesselList3d &obj);
+//   VesselList3d(VesselList3d &obj);
   
   typedef LD LatticeData; // nicer name for the outside
   typedef LD::SiteType SiteType;

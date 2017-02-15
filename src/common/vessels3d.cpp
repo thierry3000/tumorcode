@@ -57,14 +57,20 @@ VesselList3d::VesselList3d()
 {
 }
 
-VesselList3d::VesselList3d( VesselList3d &obj)
-{
-  cout<<"copy constructor allocating ptr" <<endl;
-  //m_ld = new std::auto_ptr<LD>;
-//   std::auto_ptr<LD> m_ld;
-//   m_ld = obj.m_ld;
-  this->m_ld=obj.m_ld;
-}
+// VesselList3d::VesselList3d( VesselList3d &obj)
+// {
+//   cout<<"copy constructor allocating ptr" <<endl;
+//   //m_ld = new std::auto_ptr<LD>;
+// //   std::auto_ptr<LD> m_ld;
+// //   m_ld = obj.m_ld;
+//   VesselList3d* a_vessellist = new VesselList3d();
+//   (*a_vessellist).lookup_site = obj.lookup_site;
+//   (*a_vessellist).lookup_bond = obj.lookup_bond;
+//   (*a_vessellist).g = obj.g;
+//   (*a_vessellist).bclist = obj.bclist;
+//   *((*a_vessellist).m_ld) = *(obj.m_ld);
+//   //this->m_ld=obj.m_ld;
+// }
 
 
 void VesselList3d::Init( const LD &_ld )

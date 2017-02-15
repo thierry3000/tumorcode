@@ -35,14 +35,29 @@ namespace pagmo { namespace problem {
  *
  * @see problem::base constructors.
  */
-adaption_problem::adaption_problem( Adaption::Parameters param_, BloodFlowParameters bfparams_, std::auto_ptr<VesselList3d> vl_, int n): 
+/* hm, since Adaption::Parameters are a real class,
+ * we we to treat it differently than the BloodFlowParams
+ */
+Adaption::Parameters adaption_problem::s_params;
+BloodFlowParameters adaption_problem::s_bfparams;
+boost::shared_ptr<VesselList3d> adaption_problem::s_vl;
+void adaption_problem::set_static_members(Adaption::Parameters params,BloodFlowParameters bfparams, std::auto_ptr< VesselList3d > vl)
+{
+  this->s_params = params;
+  this->s_bfparams = bfparams;
+  this->s_vl = vl;
+}
+
+adaption_problem::adaption_problem(int n): 
 base(n)
 {
 	set_lb(0.5);
 	set_ub(4.0);
-	this->params = param_;
-	this->bfparams = bfparams_;
-	this->vl = vl_;
+// 	VesselList3d tmp_vl = VesselList3d();
+// 	tmp_vl = *s_vl;
+ 	this->p_vl = s_vl.get();
+	this->params = params;
+	this->bfparams = bfparams;
 }
 // adaption_problem::adaption_problem( int n): 
 // base(n)
@@ -56,11 +71,11 @@ base(n)
 
 /// Clone method.
 base_ptr adaption_problem::clone() const {
-// 	return base_ptr(new adaption_problem(*this));
-// 	return base_ptr(new adaption_problem(3));
+//	return base_ptr(new adaption_problem(*this));
+ 	return base_ptr(new adaption_problem(3));
 // 	VesselList3d vl_;
 // 	vl_.Init(vl.Ld());
-	return base_ptr(new adaption_problem(params,bfparams,vl,3));
+// 	return base_ptr(new adaption_problem());
 }
 
 /// Implementation of the objective function.
@@ -68,28 +83,20 @@ void adaption_problem::objfun_impl(fitness_vector &f, const decision_vector &x) 
 {
 	pagmo_assert(f.size() == 1);
 	decision_vector::size_type n = x.size();
-// 	double retval = 0.0;
-// 
-// 	for (decision_vector::size_type i=0; i<n; i++){
-// 		retval += x[i]*x[i];
-// 	}
-	//this->params->k_m = x[0];
-	//this->params->k_c = x[1];
-	//this->params->k_s = x[2];
-	using namespace boost::accumulators;
-	uint return_state = Adaption::runAdaption_Loop(this->params, this->bfparams, this->vl, false);
-	accumulator_set<double, features<tag::mean, tag::variance>> acc;
-#pragma omp parallel for
-  for(int i =0;i<vl->GetECount();++i)
-  {
-    Vessel* v = vl->GetEdge(i);
-    acc(v->q);
-  }
-  double mean_value = mean(acc);
-  double mean_std = sqrt(variance(acc));
-#pragma omp barrier
+	double retval = 0.0;
+
+	for (decision_vector::size_type i=0; i<n; i++){
+		retval += x[i]*x[i];
+	}
+	f[0]=retval;
+// 	this->params->k_m = x[0];
+// 	this->params->k_c = x[1];
+// 	this->params->k_s = x[2];
+	std::tuple<uint,FlReal> adaption_loop_return;
+	adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams, this->p_vl, false);
+
 	
-	f[0] = mean_std;
+	f[0] = std::get<1>(adaption_loop_return);
 }
 
 std::string adaption_problem::get_name() const

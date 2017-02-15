@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../python_krebsutils/python-helpers.h"
 #include "numpy.hpp"
-#include "adaption_model2.h"
+#include "adaption_as_pagmo_problem.h"
 #include "../common/calcflow.h"
 #include <algorithm>
 
@@ -133,9 +133,11 @@ static py::object PydoAdaptionOptimization(py::object py_vesselgroup, py::dict p
   //h5::Group vessels_after_adaption = PythonToCppGroup(py_h5outputGroup);
   
   BloodFlowParameters bfparams_buffer = py::extract<BloodFlowParameters>(py_bfparams);
+  //pagmo::problem::adaption_problem.bfparams = bfparams_buffer;
+  //pagmo::problem::bfparams =bfparams_buffer;
   BloodFlowParameters *bfparams = &bfparams_buffer;
   
-  Adaption::Parameters *params = new Adaption::Parameters();
+  static Adaption::Parameters *params = new Adaption::Parameters();
   InitParameters(params, py_parameters);
   
   std::auto_ptr<VesselList3d> vl =  ReadVesselList3d(*vesselgroup, make_ptree("filter", true));
@@ -250,8 +252,53 @@ static py::object PydoAdaptionOptimization(py::object py_vesselgroup, py::dict p
   }
 #endif
 #endif
-  uint return_state = run_optimization(*params, *bfparams, vl);
-  return py::make_tuple(return_state,1.0,10.0);
+  
+  //former runoptimization 
+  //uint run_optimization( )
+
+  
+  std::cout<<"running real stuff"<<std::endl;
+  // Initialise the MPI environment.
+  int mc_steps=0;
+  int dim=0;
+#ifdef PAGMO_ENABLE_MPI
+  pagmo::mpi_environment env;
+  mc_steps = 10000000;
+  dim = 400;
+#else
+  mc_steps = 10;
+  dim = 4;
+#endif
+  // Create a problem and an algorithm.
+  //pagmo::problem::bfparams =*bfparams;
+  //pagmo::problem::params = *params;
+  pagmo::problem::adaption_problem prob(3);
+  prob.set_static_members(*params,*bfparams,vl);
+  //pagmo::algorithm::monte_carlo algo(mc_steps);
+  pagmo::algorithm::pso algo(1);
+  // Create an archipelago of 10 MPI islands.
+  pagmo::archipelago a;
+  a.set_topology(pagmo::topology::ring());
+  for (int i = 0; i < 8; ++i) {
+#ifdef PAGMO_ENABLE_MPI
+	  a.push_back(pagmo::mpi_island(algo,prob,1));
+#else
+	  a.push_back(pagmo::island(algo,prob,1));
+#endif
+  }
+  // Evolve the archipelago 10 times.
+  a.evolve(2);
+  a.join();
+//  return 0;
+  
+
+#if 0
+  std::printf("mean_value: %f, mean_std: %f\n",mean_value,mean_std);
+#endif
+
+  
+  
+  return py::make_tuple(0,1.0,10.0);
 }
 // static py::object PyComputeAdaption(py::object py_vesselgroup, py::dict py_parameters, py::object py_bfparams)
 // {
@@ -412,6 +459,7 @@ void export_adaption_computation()
 }
   
 }//namespace
+
 #ifdef DEBUG
 BOOST_PYTHON_MODULE(libadaption_d)
 #else

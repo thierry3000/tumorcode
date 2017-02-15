@@ -740,7 +740,7 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
   }
 }
 
-
+/* NB: this is completely NOT threadsafe!!!!*/
 void CalcFlow(VesselList3d &vl, const BloodFlowParameters &params)
 {
   ComputeCirculatedComponents(&vl);
