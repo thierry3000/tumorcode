@@ -23,12 +23,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace polymorphic_latticedata
 {
 
-boost::shared_ptr< LatticeData > LatticeData::Make(const char* ldtype, const BBox3& bb, float scale)
+std::auto_ptr< LatticeData > LatticeData::Make(const char* ldtype, const BBox3& bb, float scale)
 {
   if (strcmp(ldtype, "quad")==0)
-    return boost::shared_ptr<LatticeData>(new Derived<LatticeDataQuad3d>(bb, scale));
+    return std::auto_ptr<LatticeData>(new Derived<LatticeDataQuad3d>(bb, scale));
   if (strcmp(ldtype, "fcc")==0)
-    return boost::shared_ptr<LatticeData>(new Derived<LatticeDataFCC>(bb, scale));
+    return std::auto_ptr<LatticeData>(new Derived<LatticeDataFCC>(bb, scale));
   throw std::invalid_argument(boost::str(boost::format("LatticeData::Make got ldtype %s") % ldtype));
 }
 
@@ -51,15 +51,15 @@ template Int3 WorldToLatticeWrapper(const LatticeDataFCC &ld, const Float3 &p); 
 
 
 template<class LD>
-static boost::shared_ptr<LatticeData> ReadHdfLdGeneric(h5cpp::Group g)
+static std::auto_ptr<LatticeData> ReadHdfLdGeneric(h5cpp::Group g)
 {
   LD ld;
   ReadHdfLd(g, ld);
-  return boost::shared_ptr<LatticeData>(new Derived<LD>(ld));
+  return std::auto_ptr<LatticeData>(new Derived<LD>(ld));
 }
 
 
-boost::shared_ptr<LatticeData> LatticeData::ReadHdf(h5cpp::Group g)
+std::auto_ptr<LatticeData> LatticeData::ReadHdf(h5cpp::Group g)
 {
   const string type = g.attrs().get<string>("TYPE");
   if (type == "QUAD3D")

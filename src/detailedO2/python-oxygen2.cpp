@@ -255,7 +255,7 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
   
   
   // THIIIIRYYYYY, filter muss = false sein sonst stimmt in der Ausgabe in der Hdf5 Datei die Anzahl der Vessels nicht mehr mit den daten im recomputed_flow Verzeichnis ueberein!
-  boost::shared_ptr<VesselList3d> vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
+  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
   
   
   ContinuumGrid grid;
@@ -524,7 +524,7 @@ py::object PySampleVessels(py::object py_vesselgroup, py::object py_tumorgroup, 
 {
   bool world = false;
   h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
-  boost::shared_ptr<VesselList3d> vl_ = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
+  std::auto_ptr<VesselList3d> vl_ = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
   const VesselList3d &vl = *vl_;
   
   DetailedPO2::VesselPO2Storage vesselpo2(vl.GetECount());
@@ -605,7 +605,7 @@ py::object PySampleVesselsWorld(py::object py_vesselgroup, py::object py_tumorgr
 {
   bool world = true;
   h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
-  boost::shared_ptr<VesselList3d> vl_ = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
+  std::auto_ptr<VesselList3d> vl_ = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
   const VesselList3d &vl = *vl_;
   
   DetailedPO2::VesselPO2Storage vesselpo2(vl.GetECount());

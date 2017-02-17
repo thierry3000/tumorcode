@@ -226,7 +226,7 @@ class VesselList3d
   typedef polymorphic_latticedata::LatticeData LD;
 public:
   VesselList3d();
-//   VesselList3d(VesselList3d &obj);
+  VesselList3d(const VesselList3d &obj);
   
   typedef LD LatticeData; // nicer name for the outside
   typedef LD::SiteType SiteType;
@@ -248,12 +248,15 @@ public:
   int GetECount() const { return g.num_edges(); }
   int GetNCount() const { return g.num_nodes(); }
 
-  VesselNode* InsertNode( const Int3 &a );
-  Vessel*     InsertVessel( const Int3 &a, const Int3 &b );
-  Vessel*     InsertVessel( VesselNode* a, VesselNode* b );
-  
-  VesselNode* InsertNode( const Float3 &a );
-  Vessel*     InsertVessel( const Float3 &a, const Float3 &b );
+  VesselNode* 	InsertNode( const Int3 &a );
+  VesselNode* 	InsertNode( const Float3 &a );
+  void 		InsertNode( const VesselNode *p_n);
+  Vessel*     	InsertVessel( const Int3 &a, const Int3 &b );
+  //this was created with world stuff, maybe I need to redo that
+  //most MW stuff is not bad
+  Vessel*     	InsertVessel( VesselNode* a, VesselNode* b );
+  Vessel*     	InsertVessel( const Float3 &a, const Float3 &b );
+  void 		InsertVessel( const Vessel *p_v);
   
   void        DeleteVessel( Vessel* v, bool bDeleteNodes = true );
   void        DeleteVesselWorld( Vessel* v, bool bDeleteNodes = true );
@@ -274,6 +277,8 @@ public:
   std::size_t estimateMemoryUsage() const;
   void        IntegrityCheck(int check_lookup = -1);
   
+  std::auto_ptr<VesselList3d> Clone();
+  
   private:
     friend class boost::serialization::access;
     template<class Archive>
@@ -287,7 +292,7 @@ public:
     }
     SiteLookup 			lookup_site;
     BondLookup 			lookup_bond;
-    boost::shared_ptr<LD>	m_ld;
+    std::auto_ptr<LD>	m_ld;
     ListGraph<VesselNode,Vessel>g;
     void FillLookup();
     BCList bclist; // boundary conditions
@@ -301,8 +306,8 @@ inline std::size_t estimateMemoryUsage(const VesselList3d &vl) { return vl.estim
 ------------------------------------------------------*/
 
 uint Optimize( VesselList3d *vl );
-boost::shared_ptr<VesselList3d> GetSubdivided(boost::shared_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary = 1);
-boost::shared_ptr<VesselList3d> GetSubdivided(boost::shared_ptr<VesselList3d> vl, float scale);
+std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary = 1);
+std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, float scale);
 /* Make it so that one vessels covers one and only one lattice bonds. 
  * Removes any vessel which is longer than one bond and replaces it with
  * several shorter vessels. VData is copied from the original to the smaller ones.

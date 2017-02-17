@@ -60,20 +60,23 @@ base(n)
 // 	this->params = params;
 // 	this->bfparams = bfparams;
 }
-adaption_problem::adaption_problem(boost::shared_ptr< VesselList3d > p_vl, Adaption::Parameters params_, BloodFlowParameters bfparams, int n): base(n)
+adaption_problem::adaption_problem(VesselList3d vl_, Adaption::Parameters params_, BloodFlowParameters bfparams_, int n_):
+vl(vl_),params(params_),bfparams(bfparams_), base(n_)
 {
   set_lb(0.5);
   set_ub(4.0);
-  this->p_vl = p_vl;
-  this->params = params_;
-  this->bfparams = bfparams;
+  //this->vl(vl);
+  //this->params = params_;
+  //this->bfparams = bfparams;
 }
 
 /// Clone method.
 base_ptr adaption_problem::clone() const {
-	return base_ptr(new adaption_problem(*this));
-// 	return base_ptr(new adaption_problem(3));
-// 	VesselList3d vl_;
+//	return base_ptr(new adaption_problem(*this));
+	VesselList3d aNewVl(this->vl);
+	return base_ptr(new adaption_problem(aNewVl,params,bfparams,3));
+//	return base_ptr(new adaption_problem(3));
+  // 	VesselList3d vl_;
 // 	vl_.Init(vl.Ld());
 // 	return base_ptr(new adaption_problem());
 }
@@ -95,7 +98,7 @@ void adaption_problem::objfun_impl(fitness_vector &f, const decision_vector &x) 
 	std::tuple<uint,FlReal> adaption_loop_return;
 	#pragma omp single
   {
-	adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams, this->p_vl.get(), false);
+	adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams,&this->vl, false);
   }
 	
 	f[0] = std::get<1>(adaption_loop_return);

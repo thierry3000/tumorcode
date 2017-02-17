@@ -1324,18 +1324,19 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
    * it turns out that they are not so nice for adaption
    */
   //is good to have well definde pressures and flow, even if this may be redundant
+  VesselList3d *p_vl = vl;
 #ifdef DEBUG
   printf("running first CalcFlow in adaptionLoop\n");
-  CalcFlow(*vl, bfparams);
+  CalcFlow(*p_vl, bfparams);
   printf("done!\n");
 #endif
 #if 1
   //this seems to be necessary to get a stable result for the apj stuff
   //used together with change of radii of veins
-  ChangeBoundaryConditions(*vl,params);
+  ChangeBoundaryConditions(*p_vl,params);
   
 #endif
-  CalcFlow(*vl, bfparams);
+  CalcFlow(*p_vl, bfparams);
   int no_Vessels_before_adaption = vl->GetECount();
   //adaption loop local variables
   FlReal qdev=std::numeric_limits<FlReal>::max();
@@ -1415,7 +1416,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
       }
     }
     
-    ExtremeFlows myExtremFlows = GetExtremFlows(vl);
+    ExtremeFlows myExtremFlows = GetExtremFlows(p_vl);
     //GetExtremFlows(vl, &myExtremFlows);
     //params.Q_refdot = (params.max_flow * params.min_flow)/params.no_of_roots;
 #ifndef SILENT
@@ -1442,11 +1443,11 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
     }
     
     // **************MAIN Routine ******************** for single iteration
-    std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(params, vl,delta_t);
+    std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(params, p_vl,delta_t);
 #if 1
     // am I serious? this would cause a never ending story.
     //UpdateBoundaryConditions(*vl);//new boundary flows, can show up after adaption
-    CalcFlow(*vl, bfparams);
+    CalcFlow(*p_vl, bfparams);
     //vice versa, network can expire different flows because of change in BC
     //an change in radii
 #endif
@@ -1509,7 +1510,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   //end main adaption loop, hopefully convergent here
   
   
-  KillSmallVessels(vl,params.radMin_for_kill);
+  KillSmallVessels(p_vl,params.radMin_for_kill);
   
   
   int no_Vessels_after_adaption = vl->GetECount();
@@ -1565,7 +1566,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
 #pragma omp parallel for
   for(int i =0;i<vl->GetECount();++i)
   {
-    Vessel* v = vl->GetEdge(i);
+    Vessel* v = p_vl->GetEdge(i);
     acc(v->q);
   }
   mean_value = mean(acc);

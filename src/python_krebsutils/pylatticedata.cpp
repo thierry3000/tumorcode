@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 class PyLd
 {
   typedef polymorphic_latticedata::LatticeData LatticeData;
-  boost::shared_ptr<LatticeData> ld;
+  std::auto_ptr<LatticeData> ld;
   PyLd() {}
 public:
   const LatticeData& get() const { return *ld; }
@@ -122,12 +122,11 @@ PyLd* read_lattice_data_from_hdf(const py::object &ld_grp_obj)
   h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
 
   typedef polymorphic_latticedata::LatticeData LD;
-  boost::shared_ptr<LD> ldp(LD::ReadHdf(g_ld));
+  std::auto_ptr<LD> ldp(LD::ReadHdf(g_ld));
 
   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD1;
   typedef polymorphic_latticedata::Derived<LatticeDataFCC> LD2;
-  //return new PyLd(ldp.release());
-  return new PyLd(ldp.get());
+  return new PyLd(ldp.release());
 }
 
 

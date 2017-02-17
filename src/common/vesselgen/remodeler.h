@@ -130,7 +130,7 @@ enum LatticeTypeId {
 class Grower
 {
   typedef VesselList3d::LatticeData LatticeData;
-  boost::shared_ptr<VesselList3d> vl;
+  std::auto_ptr<VesselList3d> vl;
   Random rand;
   LatticeTypeId lattice_type_id;
   Float3 wdiraxes[32];

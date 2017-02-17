@@ -144,8 +144,8 @@ static py::object PydoAdaptionOptimization(py::object py_vesselgroup, py::dict p
   Adaption::Parameters *params = new Adaption::Parameters();
   InitParameters(params, py_parameters);
   
-  //std::auto_ptr<VesselList3d> vl =  ReadVesselList3d(*vesselgroup, make_ptree("filter", true));
-  boost::shared_ptr<VesselList3d> vl =  ReadVesselList3d(*vesselgroup, make_ptree("filter", true));
+  std::auto_ptr<VesselList3d> vl =  ReadVesselList3d(*vesselgroup, make_ptree("filter", true));
+  //boost::shared_ptr<VesselList3d> vl =  ReadVesselList3d(*vesselgroup, make_ptree("filter", true));
 //   //to create the bc array, we need proper flow and pressure values!
 //   //radii could then be overwriten
   CalcFlow(*vl, *bfparams);
@@ -276,8 +276,8 @@ static py::object PydoAdaptionOptimization(py::object py_vesselgroup, py::dict p
 #endif
   // Create a problem and an algorithm.
   
-  pagmo::problem::adaption_problem prob(vl,*params,*bfparams,3);
-  pagmo::population pop(prob,5);
+  pagmo::problem::adaption_problem prob(*vl,*params,*bfparams,3);
+  pagmo::population pop(prob,30);
   pagmo::algorithm::pso algo(1);
   algo.evolve(pop);
   

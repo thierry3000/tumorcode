@@ -152,8 +152,8 @@ class SiteLookup
     ar & default_value;
   }
   Map map;
-  //const LD* m_ld;
-  boost::shared_ptr<LD> m_ld;
+  const LD* m_ld;
+  //boost::shared_ptr<LD> m_ld;
   V default_value;
 
 public:
@@ -164,10 +164,9 @@ public:
   void Init( const LD &_ld, V default_value_ = V())
   {
     map.clear();
-    //m_ld = &_ld;
+    m_ld = &_ld;
     //boost::shared_ptr<LD> p(new (_ld.Clone()));
-    m_ld = _ld.Clone();
-    //m_ld = const_cast<&_ld>(_ld.Clone());
+    //m_ld = _ld.Clone();
     default_value = default_value_;
   }
 

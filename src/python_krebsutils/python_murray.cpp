@@ -115,7 +115,7 @@ MurrayCoeffs::MurrayCoeffs(CompressedFlowNetwork &fl_,const VesselList3d *vl, co
 static py::object get_Murray_scale(const py::object &vess_grp_obj)
 {
   h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
-  boost::shared_ptr<VesselList3d> vl;
+  std::auto_ptr<VesselList3d> vl;
   vl = ReadVesselList3d(vesselgroup, make_ptree("filter", true));
   int ncnt = vl.get()->GetNCount();
 
@@ -264,7 +264,7 @@ static py::object get_Murray_scale(const py::object &vess_grp_obj)
 static py::object get_Murray2(const py::object &vess_grp_obj)
 {
   h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
-  boost::shared_ptr<VesselList3d> vl;
+  std::auto_ptr<VesselList3d> vl;
   vl = ReadVesselList3d(vesselgroup, make_ptree("filter", true));
   int ncnt = vl.get()->GetNCount();
 
@@ -412,7 +412,7 @@ static py::object get_Murray2_p(const py::object &vess_grp_obj, py::object murra
 {
   double alpha = py::extract<double>(murrayalpha);
   h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
-  boost::shared_ptr<VesselList3d> vl;
+  std::auto_ptr<VesselList3d> vl;
   vl = ReadVesselList3d(vesselgroup, make_ptree("filter", true));
   int ncnt = vl.get()->GetNCount();
 

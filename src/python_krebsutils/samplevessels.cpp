@@ -385,7 +385,7 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
   h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
   float theTumorRange = py::extract<float>(tumor_range);
 
-  boost::shared_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", true));
+  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", true));
   
   //discriminate unwanted vessels
   //std::vector<bool> in_tumor(vl->GetECount(),ConsTags::RESERVE);

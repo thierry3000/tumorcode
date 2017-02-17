@@ -21,7 +21,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef PAGMO_PROBLEM_ADAPTION_H
 #define PAGMO_PROBLEM_ADAPTION_H
 
+#include <list>
+#include <memory>
+#include <fstream>
 #include <string>
+
+#include <cstdio> // remove, std::autoptr inteface wrong in dinkumware
+#include <boost/config.hpp>
+#if defined(BOOST_NO_STDC_NAMESPACE)
+namespace std{ 
+    using ::remove;
+}
+#endif
+
+#include <boost/archive/tmpdir.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
+#include <boost/serialization/split_free.hpp>
+
+
 
 //#define PAGMO_ENABLE_MPI
 #include <pagmo/src/pagmo.h>
@@ -50,7 +69,7 @@ class __PAGMO_VISIBLE adaption_problem : public base
 	//static BloodFlowParameters s_bfparams;
 	public:
 		adaption_problem(int n = 3);
-		adaption_problem(boost::shared_ptr<VesselList3d> p_vl,Adaption::Parameters params_, BloodFlowParameters bfparams, int n = 3);
+		adaption_problem(VesselList3d vl,Adaption::Parameters params_, BloodFlowParameters bfparams, int n = 3);
 		//adaption_problem();
 		//adaption_problem(int n=3);
 		base_ptr clone() const;
@@ -66,11 +85,12 @@ class __PAGMO_VISIBLE adaption_problem : public base
 		  ar & boost::serialization::base_object<base>(*this);
 		  ar & params;
 		  ar & bfparams;
-		  ar & p_vl;	
+		  ar & vl;	
 		}
 		Adaption::Parameters params;
 		BloodFlowParameters bfparams;
-		boost::shared_ptr<VesselList3d> p_vl;
+		mutable VesselList3d vl;
+		//VesselList3d vl;
 		//mutable boost::shared_ptr<BloodFlowParameters> bfparams;
 		//mutable boost::shared_ptr<Adaption::Parameters> params;
 		//mutable boost::shared_ptr<VesselList3d> vl;
@@ -82,5 +102,57 @@ class __PAGMO_VISIBLE adaption_problem : public base
 }} //namespaces
 
 BOOST_CLASS_EXPORT_KEY(pagmo::problem::adaption_problem)
+
+
+//from http://www.boost.org/doc/libs/1_54_0/libs/serialization/example/demo_auto_ptr.cpp
+namespace boost { 
+namespace serialization {
+
+/////////////////////////////////////////////////////////////
+// implement serialization for auto_ptr< T >
+// note: this must be added to the boost namespace in order to
+// be called by the library
+template<class Archive, class T>
+inline void save(
+    Archive & ar,
+    const std::auto_ptr< T > &t,
+    const unsigned int file_version
+){
+    // only the raw pointer has to be saved
+    // the ref count is rebuilt automatically on load
+    const T * const tx = t.get();
+    ar << tx;
+}
+
+template<class Archive, class T>
+inline void load(
+    Archive & ar,
+    std::auto_ptr< T > &t,
+    const unsigned int file_version
+){
+    T *pTarget;
+    ar >> pTarget;
+    // note that the reset automagically maintains the reference count
+    #if BOOST_WORKAROUND(BOOST_DINKUMWARE_STDLIB, == 1)
+        t.release();
+        t = std::auto_ptr< T >(pTarget);
+    #else
+        t.reset(pTarget);
+    #endif
+}
+
+// split non-intrusive serialization function member into separate
+// non intrusive save/load member functions
+template<class Archive, class T>
+inline void serialize(
+    Archive & ar,
+    std::auto_ptr< T > &t,
+    const unsigned int file_version
+){
+    boost::serialization::split_free(ar, t, file_version);
+}
+
+} // namespace serialization
+} // namespace boost
 
 #endif

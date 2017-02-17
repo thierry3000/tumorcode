@@ -51,27 +51,84 @@ float Vessel::WorldLength( const polymorphic_latticedata::LatticeData &ld ) cons
   return (len-1)*ld.Scale();
 }
 
-
 VesselList3d::VesselList3d()
   : m_ld(nullptr)
 {
 }
+//maybe that is stupid to write a copy constructor for boost::noncopyable object?
+VesselList3d::VesselList3d(const VesselList3d& obj)
+{
+#ifdef DEBUG
+  std::printf("this will be stupid hard task\n");
+#endif
+  this->Init(obj.Ld());
+#ifdef DEBUG
+  cout << "set lattice data to: " << endl;
+  obj.Ld().print(cout);
+  cout << "recognized: " << endl;
+  this->m_ld->print(cout);
+#endif  
+ 
+  for( int i=0;i<obj.GetNCount();i++)
+  {
+    const VesselNode *p_currentNode = obj.GetNode(i);
+    this->InsertNode(p_currentNode);
+  }
+  for( int i=0;i<obj.GetECount();i++)
+  {
+    const Vessel *p_currentVessel = obj.GetEdge(i);
+    this->InsertVessel(p_currentVessel);
+  }
+  //just to be sure, delete everything
+  this->bclist.clear();
+  for(auto bc:obj.bclist)
+  {
+    this->SetBC(bc.first,bc.second);
+  }
+//   for(auto bc: fl.bcs)
+//   {
+//     printf("first: %i, second: %f\n", bc.first, bc.second.val);
+//   }
+//   for (auto iter = flownet.bcs.begin(); iter != flownet.bcs.end(); ++iter)
+//   {
+//     cout << format("boundary node id: %i, value = %f") % iter->first % iter->second.val << endl;
+//   }
+}
 
-// VesselList3d::VesselList3d( VesselList3d &obj)
+
+// std::auto_ptr<VesselList3d> VesselList3d::Clone()
 // {
-//   cout<<"copy constructor allocating ptr" <<endl;
-//   //m_ld = new std::auto_ptr<LD>;
-// //   std::auto_ptr<LD> m_ld;
-// //   m_ld = obj.m_ld;
-//   VesselList3d* a_vessellist = new VesselList3d();
-//   (*a_vessellist).lookup_site = obj.lookup_site;
-//   (*a_vessellist).lookup_bond = obj.lookup_bond;
-//   (*a_vessellist).g = obj.g;
-//   (*a_vessellist).bclist = obj.bclist;
-//   *((*a_vessellist).m_ld) = *(obj.m_ld);
-//   //this->m_ld=obj.m_ld;
+//   std::auto_ptr<VesselList3d> ret_vl;
+//   //this->Ld() // this is of type polymorphic_latticedata::LatticeData LD
+//   //from readVesselsList
+// //   std::auto_ptr<LatticeData> ldp = LatticeData::ReadHdf(ldgroup);
+// //     vl->Init(*ldp);
+// //   ret_vl->Init(*this->m_ld);
+//   const LatticeDataFCC& ld = dynamic_cast<const polymorphic_latticedata::Derived<LatticeDataFCC>*>(this->m_ld.get())->get();
+//   //ret_vl->m_ld = this->Ld().Clone();
+//   ret_vl->Init(*this->m_ld.get());
+//   //LatticeData< my_ld2;
+//   //my_ld2 = this->m_ld->Clone();
+//   //ret_vl->m_ld = this->m_ld->Clone();
+// #ifdef DEBUG
+//   std::printf("this will be a pretty hard task");
+// #endif
+//   //*ret_vl->m_ld = this->Ld();
+//   //ret_vl->m_ld = this->m_ld;
+//   //*ret_vl->m_ld = this->Ld();
+//   //m_ld = _ld.Clone();
+//   //ret_vl->lookup_site.Init(*(ret_vl->m_ld));
+//   //ret_vl->lookup_bond.Init(*(ret_vl->m_ld));
+//   //ret_vl->g.Reserve(1024);
+//   
+//   for( int i=0;i<this->GetNCount();++i)
+//   {
+//     VesselNode *p_currentNode = this->GetNode(i);
+//     ret_vl->InsertNode(p_currentNode);
+//   }
+//   
+//   return ret_vl;
 // }
-
 
 void VesselList3d::Init( const LD &_ld )
 {
@@ -139,6 +196,41 @@ VesselNode* VesselList3d::InsertNode( const Float3 &a )
     n->worldpos = a;
     return n;
 }
+void VesselList3d::InsertNode(const VesselNode *p_n)
+{
+  //VesselNode newNode = VesselNode(*ref_n);
+  VesselNode *newNode = this->InsertNode(p_n->lpos);
+//   VesselNode *newNode = this->InsertNode( ref_n->lpos);
+//   newNode->press = ref_n->press;
+//   newNode->residual = ref_n->residual;
+//   newNode->worldpos = ref_n->worldpos;
+//   newNode->bctyp = ref_n->bctyp;
+//   newNode->value_of_bc = ref_n->value_of_bc;
+   newNode->flags = p_n->flags;
+//   newNode->has_been_visited = ref_n->has_been_visited;
+//   
+//   newNode->lpos = ref_n->lpos;
+}
+void VesselList3d::InsertVessel(const Vessel* p_v)
+{
+  Vessel *newVessel = this->InsertVessel(p_v->NodeA()->lpos,p_v->NodeB()->lpos);
+  newVessel->r = p_v->r;
+  newVessel->flags = p_v->flags;
+  newVessel->q = p_v->q;
+  newVessel->f =p_v->f;
+  newVessel->hematocrit = p_v->hematocrit;
+  newVessel->conductivitySignal = p_v->conductivitySignal;
+  newVessel->metabolicSignal = p_v->metabolicSignal;
+  newVessel->S_total = p_v->S_total;
+  newVessel->maturation = p_v->maturation;
+  newVessel->reference_r = p_v->reference_r;
+  newVessel->timeSprout = p_v->timeSprout;
+  newVessel->timeInTumor = p_v->timeInTumor;
+  
+  newVessel->len = p_v->len;
+  newVessel->dir = p_v->dir;
+}
+
 
 Vessel* VesselList3d::InsertVessel( VesselNode* na, VesselNode* nb )
 {
@@ -198,8 +290,10 @@ Vessel* VesselList3d::InsertVessel( const Int3 &a, const Int3 &b )
     myAssert(Ld().IsInsideLattice(a) && Ld().IsInsideLattice(b));
     VesselNode* na = lookup_site.FindAtSite(Ld().LatticeToSite(a));
     VesselNode* nb = lookup_site.FindAtSite(Ld().LatticeToSite(b));
-    if( !na ) na = InsertNode(a);
-    if( !nb ) nb = InsertNode(b);
+    if( !na ) 
+      na = InsertNode(a);
+    if( !nb ) 
+      nb = InsertNode(b);
     return InsertVessel( na, nb );
 }
 
@@ -497,7 +591,7 @@ void HemodynamicBounds::Add(const VesselList3d *vl, bool bClear)
 // }
 
 
-boost::shared_ptr<VesselList3d> GetSubdivided( boost::shared_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary)
+std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary)
 {
   typedef VesselList3d::LatticeData LatticeData;
   const LatticeData &ld = vl.get()->Ld();
@@ -516,10 +610,10 @@ boost::shared_ptr<VesselList3d> GetSubdivided( boost::shared_ptr<VesselList3d> v
   }
   newbox.Extend(safety_boundary);
 
-  boost::shared_ptr<LatticeData> newldp(ld.Clone());
+  std::auto_ptr<LatticeData> newldp(ld.Clone());
   newldp.get()->Init(newbox,  newscale);
 
-  boost::shared_ptr<VesselList3d> vlnew( new VesselList3d() );
+  std::auto_ptr<VesselList3d> vlnew( new VesselList3d() );
   vlnew->Init(*newldp);
 
   // insert new nodes into empty new vessellist
@@ -549,7 +643,7 @@ boost::shared_ptr<VesselList3d> GetSubdivided( boost::shared_ptr<VesselList3d> v
 }
 
 
-boost::shared_ptr<VesselList3d> GetSubdivided(boost::shared_ptr<VesselList3d> vl, float scale)
+std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, float scale)
 {
   const int multi = std::max(int( my::round( vl->Ld().Scale()/scale ) ),1);
   return GetSubdivided(vl, multi, scale);

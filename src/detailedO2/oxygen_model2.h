@@ -145,7 +145,7 @@ class VascularPO2PropagationModel;
 struct Measurement : boost::noncopyable
 {
   const Parameters params;
-  boost::shared_ptr<VesselList3d> vl;
+  std::auto_ptr<VesselList3d> vl;
   Array3df po2field;
   ContinuumGrid grid;
   VesselPO2Storage vesselpo2;
@@ -154,7 +154,7 @@ struct Measurement : boost::noncopyable
   
   double o2mass_in_root, o2mass_out_root, o2mass_out_vessels, o2mass_consumed_transvascular;
   
-  Measurement(boost::shared_ptr<VesselList3d> vl_ptr_, const Parameters &params, const ContinuumGrid& grid_, const TissuePhases &phases_, Array3df &po2field_, VesselPO2Storage &vesselpo2_);
+  Measurement(std::auto_ptr<VesselList3d> vl_ptr_, const Parameters &params, const ContinuumGrid& grid_, const TissuePhases &phases_, Array3df &po2field_, VesselPO2Storage &vesselpo2_);
   void computeVesselSolution(int idx, DynArray<VesselPO2SolutionRecord> &sol, bool world);
 };
 

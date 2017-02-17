@@ -159,7 +159,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     ptree pt;
     pt.put("scale subdivide", 10.);
     pt.put("scale override", params.override_scale);
-    boost::shared_ptr<VesselList3d> vl = ReadVesselList3d(file.root().open_group("vessels"),pt);
+    std::auto_ptr<VesselList3d> vl = ReadVesselList3d(file.root().open_group("vessels"),pt);
     // adjust vessel list ld
     const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
     vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
