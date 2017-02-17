@@ -132,15 +132,20 @@ static py::object PydoAdaptionOptimization(py::object py_vesselgroup, py::dict p
   h5cpp::Group *vesselgroup = &vesselgroup_instance;
   //h5::Group vessels_after_adaption = PythonToCppGroup(py_h5outputGroup);
   
+  /* what magic did MW here that this works? note different type in arguments!!!*/
   BloodFlowParameters bfparams_buffer = py::extract<BloodFlowParameters>(py_bfparams);
   //pagmo::problem::adaption_problem.bfparams = bfparams_buffer;
   //pagmo::problem::bfparams =bfparams_buffer;
   BloodFlowParameters *bfparams = &bfparams_buffer;
   
-  static Adaption::Parameters *params = new Adaption::Parameters();
+  //Adaption::Parameters params_buffer =py::extract<Adaption::Parameters>(py_parameters);
+  //Adaption::Parameters *params = &params_buffer;
+  
+  Adaption::Parameters *params = new Adaption::Parameters();
   InitParameters(params, py_parameters);
   
-  std::auto_ptr<VesselList3d> vl =  ReadVesselList3d(*vesselgroup, make_ptree("filter", true));
+  //std::auto_ptr<VesselList3d> vl =  ReadVesselList3d(*vesselgroup, make_ptree("filter", true));
+  boost::shared_ptr<VesselList3d> vl =  ReadVesselList3d(*vesselgroup, make_ptree("filter", true));
 //   //to create the bc array, we need proper flow and pressure values!
 //   //radii could then be overwriten
   CalcFlow(*vl, *bfparams);
@@ -270,26 +275,25 @@ static py::object PydoAdaptionOptimization(py::object py_vesselgroup, py::dict p
   dim = 4;
 #endif
   // Create a problem and an algorithm.
-  //pagmo::problem::bfparams =*bfparams;
-  //pagmo::problem::params = *params;
-  pagmo::problem::adaption_problem prob(3);
-  prob.set_static_members(*params,*bfparams,vl);
-  //pagmo::algorithm::monte_carlo algo(mc_steps);
+  
+  pagmo::problem::adaption_problem prob(vl,*params,*bfparams,3);
+  pagmo::population pop(prob,5);
   pagmo::algorithm::pso algo(1);
-  // Create an archipelago of 10 MPI islands.
-  pagmo::archipelago a;
-  a.set_topology(pagmo::topology::ring());
-  for (int i = 0; i < 8; ++i) {
-#ifdef PAGMO_ENABLE_MPI
-	  a.push_back(pagmo::mpi_island(algo,prob,1));
-#else
-	  a.push_back(pagmo::island(algo,prob,1));
-#endif
-  }
-  // Evolve the archipelago 10 times.
-  a.evolve(2);
-  a.join();
-//  return 0;
+  algo.evolve(pop);
+  
+//   // Create an archipelago of 10 MPI islands.
+//   pagmo::archipelago a;
+//   a.set_topology(pagmo::topology::ring());
+//   for (int i = 0; i < 2; ++i) {
+// #ifdef PAGMO_ENABLE_MPI
+// 	  a.push_back(pagmo::mpi_island(algo,prob,1));
+// #else
+// 	  a.push_back(pagmo::island(algo,prob,1));
+// #endif
+//   }
+//   // Evolve the archipelago 10 times.
+//   a.evolve(2);
+//   a.join();
   
 
 #if 0

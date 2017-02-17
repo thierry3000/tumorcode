@@ -743,12 +743,13 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
 /* NB: this is completely NOT threadsafe!!!!*/
 void CalcFlow(VesselList3d &vl, const BloodFlowParameters &params)
 {
+#pragma omp single
+  {
   ComputeCirculatedComponents(&vl);
   if (params.includePhaseSeparationEffect)
     CalcFlowWithPhaseSeparation(vl, params);
   else
     CalcFlowSimple(vl, params, true);
+  }//#pragma omp single
 }
-
-
 #endif

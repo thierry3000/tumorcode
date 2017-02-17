@@ -38,15 +38,16 @@ namespace pagmo { namespace problem {
 /* hm, since Adaption::Parameters are a real class,
  * we we to treat it differently than the BloodFlowParams
  */
-Adaption::Parameters adaption_problem::s_params;
-BloodFlowParameters adaption_problem::s_bfparams;
-boost::shared_ptr<VesselList3d> adaption_problem::s_vl;
-void adaption_problem::set_static_members(Adaption::Parameters params,BloodFlowParameters bfparams, std::auto_ptr< VesselList3d > vl)
-{
-  this->s_params = params;
-  this->s_bfparams = bfparams;
-  this->s_vl = vl;
-}
+//Adaption::Parameters adaption_problem::s_params;
+//BloodFlowParameters adaption_problem::s_bfparams;
+//boost::shared_ptr<VesselList3d> adaption_problem::s_vl;
+// void adaption_problem::set_static_members(Adaption::Parameters params,BloodFlowParameters bfparams, std::auto_ptr< VesselList3d > vl)
+// {
+//   this->s_params = params;
+//   this->s_bfparams = bfparams;
+//   this->s_vl = vl;
+//   //this->sr_vl = *vl.get();
+// }
 
 adaption_problem::adaption_problem(int n): 
 base(n)
@@ -55,24 +56,23 @@ base(n)
 	set_ub(4.0);
 // 	VesselList3d tmp_vl = VesselList3d();
 // 	tmp_vl = *s_vl;
- 	this->p_vl = s_vl.get();
-	this->params = params;
-	this->bfparams = bfparams;
+//  	this->p_vl = s_vl;
+// 	this->params = params;
+// 	this->bfparams = bfparams;
 }
-// adaption_problem::adaption_problem( int n): 
-// base(n)
-// {
-// 	set_lb(0.5);
-// 	set_ub(4.0);
-// 	//this->params = params;
-// 	//this->bfparams = bfparams;
-// 	//vl = VesselList3d();
-// }
+adaption_problem::adaption_problem(boost::shared_ptr< VesselList3d > p_vl, Adaption::Parameters params_, BloodFlowParameters bfparams, int n): base(n)
+{
+  set_lb(0.5);
+  set_ub(4.0);
+  this->p_vl = p_vl;
+  this->params = params_;
+  this->bfparams = bfparams;
+}
 
 /// Clone method.
 base_ptr adaption_problem::clone() const {
-//	return base_ptr(new adaption_problem(*this));
- 	return base_ptr(new adaption_problem(3));
+	return base_ptr(new adaption_problem(*this));
+// 	return base_ptr(new adaption_problem(3));
 // 	VesselList3d vl_;
 // 	vl_.Init(vl.Ld());
 // 	return base_ptr(new adaption_problem());
@@ -93,8 +93,10 @@ void adaption_problem::objfun_impl(fitness_vector &f, const decision_vector &x) 
 // 	this->params->k_c = x[1];
 // 	this->params->k_s = x[2];
 	std::tuple<uint,FlReal> adaption_loop_return;
-	adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams, this->p_vl, false);
-
+	#pragma omp single
+  {
+	adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams, this->p_vl.get(), false);
+  }
 	
 	f[0] = std::get<1>(adaption_loop_return);
 }

@@ -22,10 +22,12 @@ target_link_libraries(test_stepper ${myLibs})
 add_executable(test_pagmo test_pagmo.cpp)
 set_target_properties(test_pagmo PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX} LINK_FLAGS "-rdynamic")
 
+add_executable(test_boost_serialize test_boost_serialize.cpp)
+target_link_libraries(test_boost_serialize boost_serialization)
 
 target_link_libraries(test_pagmo pagmo boost_system ${myLibs} )
 
 # add_executable(test_convection_diffusion test_convection_diffusion.cpp)
 # target_link_libraries(test_convection_diffusion ${myLibs})
 
-install(TARGETS tests test_stepper test_pagmo RUNTIME DESTINATION bin)
+install(TARGETS tests test_stepper test_pagmo test_boost_serialize RUNTIME DESTINATION bin)

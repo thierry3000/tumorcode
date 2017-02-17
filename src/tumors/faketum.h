@@ -57,7 +57,7 @@ struct Parameters
 };
 struct FakeTumorSim : public boost::noncopyable
 {
-  std::auto_ptr<VesselList3d> vl;
+  boost::shared_ptr<VesselList3d> vl;
   VesselModel1::Model model;
 
   Parameters params;

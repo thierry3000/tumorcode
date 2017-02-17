@@ -355,6 +355,11 @@ struct Bitfield
   Bitfield( T x ) : bits(x) {}
   Bitfield() : bits(T()) {}
   Bitfield( const Bitfield<T> &x ) : bits(x.bits) {}
+  template <class Archive>
+    void serialize(Archive &ar, const unsigned int)
+    {
+	ar & bits;
+    }
 };
 
 

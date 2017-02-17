@@ -497,7 +497,7 @@ void HemodynamicBounds::Add(const VesselList3d *vl, bool bClear)
 // }
 
 
-std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary)
+boost::shared_ptr<VesselList3d> GetSubdivided( boost::shared_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary)
 {
   typedef VesselList3d::LatticeData LatticeData;
   const LatticeData &ld = vl.get()->Ld();
@@ -516,10 +516,10 @@ std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int m
   }
   newbox.Extend(safety_boundary);
 
-  std::auto_ptr<LatticeData> newldp(ld.Clone());
+  boost::shared_ptr<LatticeData> newldp(ld.Clone());
   newldp.get()->Init(newbox,  newscale);
 
-  std::auto_ptr<VesselList3d> vlnew( new VesselList3d() );
+  boost::shared_ptr<VesselList3d> vlnew( new VesselList3d() );
   vlnew->Init(*newldp);
 
   // insert new nodes into empty new vessellist
@@ -545,31 +545,11 @@ std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int m
     vlnew->SetBC(vlnew->GetNode(it->first->Index()), it->second);
   }
   
-//   for (int i=0; i<ecnt; ++i)
-//   {
-//     const Vessel* v = vl->GetEdge(i);
-//     //if( !v->IsCirculated() ) continue; // filter uncirculated
-//     VesselNode* node[2];
-//     const VesselNode* oldnodes[2] = { v->NodeA(), v->NodeB() };
-//     for (int j=0; j<2; ++j)
-//     {
-//       Int3 pos  = newpos[oldnodes[j]->Index()];
-//       node[j] = vlnew->FindNode(pos);
-//       if (!node[j])
-//       {
-//         node[j] = vlnew->InsertNode(pos);
-//         *(VNodeData*)node[j] = *(VNodeData*)oldnodes[j];
-//       }
-//     }
-//     Vessel* newv = vlnew->InsertVessel(node[0], node[1]);
-//     *(VData*)newv = *(VData*)v;
-//     //vlnew->IntegrityCheck();
-//   }
   return vlnew;
 }
 
 
-std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, float scale)
+boost::shared_ptr<VesselList3d> GetSubdivided(boost::shared_ptr<VesselList3d> vl, float scale)
 {
   const int multi = std::max(int( my::round( vl->Ld().Scale()/scale ) ),1);
   return GetSubdivided(vl, multi, scale);

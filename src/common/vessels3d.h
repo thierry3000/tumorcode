@@ -96,6 +96,17 @@ struct VNodeData
   bool IsBoundary() const { return flags.GetBits(BOUNDARY); }
   bool IsCirculated() const { return flags.GetBits(CIRCULATED);}
   void SetWorldPos( Float3 a) { this->worldpos = a;}
+  template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+	ar & press;
+	ar & residual;
+	ar & worldpos;
+	ar & bctyp;
+	ar & value_of_bc;
+	ar & flags;
+	ar & has_been_visited;
+    } 
 };
 
 struct VData
@@ -132,7 +143,15 @@ class VesselNode: public VNodeData, public ListTreeNode<VesselNode,Vessel,MAX_NU
 {
 public:
   Int3 lpos;  
-  VesselNode() : VNodeData() {}  
+  VesselNode() : VNodeData() {}
+private:
+  friend class boost::serialization::access;
+  template <class Archive>
+    void serialize(Archive &ar, const unsigned int)
+    {
+	ar & boost::serialization::base_object<VNodeData>(*this);
+	ar & lpos;
+    }
 };
 
 class Vessel: public VData, public ListTreeEdge<VesselNode,Vessel>, public FixedSizeAllocated<Vessel>
@@ -146,6 +165,12 @@ public:
   const Int3 LPosA() const { return NodeA()->lpos; }
   const Int3 LPosB() const { return NodeB()->lpos; }
   float getWorldLength(){return sqrt(norm(NodeA()->worldpos - NodeB()->worldpos));}
+  template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+      ar & len;
+      ar & dir;
+    }
 };
 
 
@@ -250,13 +275,23 @@ public:
   void        IntegrityCheck(int check_lookup = -1);
   
   private:
-  SiteLookup lookup_site;
-  BondLookup lookup_bond;
-  std::auto_ptr<LD>           m_ld;
-  ListGraph<VesselNode,Vessel> g;
-  void FillLookup();
-  BCList bclist; // boundary conditions
-  void DeleteUnusedNode(VesselNode* vc, int site);
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+      ar & lookup_site;
+      ar & lookup_bond;
+      ar & m_ld;
+      ar & g;
+      ar & bclist;
+    }
+    SiteLookup 			lookup_site;
+    BondLookup 			lookup_bond;
+    boost::shared_ptr<LD>	m_ld;
+    ListGraph<VesselNode,Vessel>g;
+    void FillLookup();
+    BCList bclist; // boundary conditions
+    void DeleteUnusedNode(VesselNode* vc, int site);
 };
 
 inline std::size_t estimateMemoryUsage(const VesselList3d &vl) { return vl.estimateMemoryUsage(); }
@@ -266,8 +301,8 @@ inline std::size_t estimateMemoryUsage(const VesselList3d &vl) { return vl.estim
 ------------------------------------------------------*/
 
 uint Optimize( VesselList3d *vl );
-std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary = 1);
-std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, float scale);
+boost::shared_ptr<VesselList3d> GetSubdivided(boost::shared_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary = 1);
+boost::shared_ptr<VesselList3d> GetSubdivided(boost::shared_ptr<VesselList3d> vl, float scale);
 /* Make it so that one vessels covers one and only one lattice bonds. 
  * Removes any vessel which is longer than one bond and replaces it with
  * several shorter vessels. VData is copied from the original to the smaller ones.

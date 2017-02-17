@@ -41,7 +41,7 @@ py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_f
 
   h5::Group g_vess = PythonToCppGroup(vess_grp_obj);
   
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
+  boost::shared_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   py::ssize_t num_nodes = vl->GetNCount();
   py::ssize_t num_edges = vl->GetECount();

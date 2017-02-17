@@ -56,7 +56,7 @@ py::object read_vessel_positions_from_hdf(const py::object &vess_grp_obj)
 {
   
   h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
+  boost::shared_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   np::ssize_t ndims[] = { 3, vl->GetNCount() };
 
@@ -88,7 +88,7 @@ py::object read_vessel_positions_from_hdf_edges(const py::object &vess_grp_obj)
 {
   
   h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
+  boost::shared_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   np::ssize_t ndims[] = { 3, vl->GetECount() };
 

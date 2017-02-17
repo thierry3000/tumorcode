@@ -301,6 +301,14 @@ protected:
 
   IndexObjVector<NodeT> nodelist;
   IndexObjVector<EdgeT> edgelist;
+private:
+  friend class boost::serialization::access;
+  template <typename Archive>
+  void serialize(Archive &ar, const unsigned int version)
+  { 
+    ar & nodelist;
+    ar & edgelist;
+  }
 };
 
 

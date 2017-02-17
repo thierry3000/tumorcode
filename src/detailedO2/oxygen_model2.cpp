@@ -1379,7 +1379,7 @@ void ComputePO2(const Parameters &params,
 
 #if 1
 
-Measurement::Measurement(std::auto_ptr< VesselList3d > vl_ptr_, const DetailedPO2::Parameters& params_, const ContinuumGrid& grid_, const TissuePhases &phases_, Array3df& po2field_, DetailedPO2::VesselPO2Storage& vesselpo2_) :
+Measurement::Measurement(boost::shared_ptr< VesselList3d > vl_ptr_, const DetailedPO2::Parameters& params_, const ContinuumGrid& grid_, const TissuePhases &phases_, Array3df& po2field_, DetailedPO2::VesselPO2Storage& vesselpo2_) :
   vl(vl_ptr_), po2field(po2field_), vesselpo2(vesselpo2_), params(params_), phases(phases_), grid(grid_)
 {
   o2mass_in_root = o2mass_out_root = o2mass_out_vessels = o2mass_consumed_transvascular = 0.;

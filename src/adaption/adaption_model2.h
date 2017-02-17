@@ -32,10 +32,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "common/calcflow_common.h" //inhere from the CompressedFlowNetwork
 
-//#define PAGMO_ENABLE_MPI
-//#include </localdisk/thierry/local/include/pagmo/src/pagmo.h>
-//#include <pagmo/src/pagmo.h>
-
 namespace Adaption
 {
   enum TissueIDs
@@ -68,13 +64,10 @@ namespace Adaption
   inline bool isFinite(T x) { return std::isfinite(x); }
 
 
-  class Parameters
+  struct Parameters
   {
-    
     //Parameters& operator=(const Parameters&);
     //Parameters(const Parameters &obj);
-    
-  public:
     Parameters();
     double k_c;
     double k_m;
@@ -105,7 +98,39 @@ namespace Adaption
     
     void assign(const ptree &pt);
     ptree as_ptree() const;
+    
+    template<class Archive>
+      void serialize(Archive &ar, const unsigned int version)
+      {
+	ar & k_c;
+	ar & k_m;
+	ar & k_s;
+	ar & S_0;
+	ar & Q_refdot;
+	ar & max_nun_iterations;
+	ar & qdev;
+	ar & starting_radii;
+        ar & delta_t;
+	ar & no_of_roots;
+	ar & max_flow;
+	ar & min_flow;
+	ar & avg_flow;
+	ar & avgRootNodeConductivity;
+	ar & cond_length;
+	ar & tum_manitulate_s1;
+	ar & tum_manitulate_s2;
+	ar & tum_manitulate_s3;
+	ar & tum_manitulate_s4;
+	ar & tum_manitulate_s5;
+	ar & write2File;
+    
+	ar & radMin_for_kill;
+	ar & boundary_Condition_handling;
+	ar & a_pressure;
+	ar & a_flow;
+      }
   };
+  ostream& operator<<(ostream &os, const Parameters &params);
 
   struct CompressedAdaptionNetwork : CompressedFlowNetwork
   {

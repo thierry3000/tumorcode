@@ -334,12 +334,12 @@ int FindDistanceToJunction( const Vessel* vstart, int posOnVess, const VesselNod
 //std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, float scale);
 
 //, h5cpp::Group ldgroup
-std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptree &params)
+boost::shared_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptree &params)
 {
   float grid_scale = params.get<float>("scale subdivide", -1.);
   bool filter_uncirculated = params.get<bool>("filter", false);
   
-  std::auto_ptr<VesselList3d> vl(new VesselList3d());
+  boost::shared_ptr<VesselList3d> vl(new VesselList3d());
   typedef polymorphic_latticedata::LatticeData LatticeData;
   
   if(vesselgroup.attrs().get<std::string>("CLASS") == "GRAPH")
@@ -352,7 +352,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
       throw std::runtime_error(latticeIOError);
     }
     h5cpp::Group ldgroup = vesselgroup.open_group("lattice");//may not be there
-    std::auto_ptr<LatticeData> ldp = LatticeData::ReadHdf(ldgroup);
+    boost::shared_ptr<LatticeData> ldp = LatticeData::ReadHdf(ldgroup);
     vl->Init(*ldp);
     
 #ifdef DEBUG

@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 
+//#define PAGMO_ENABLE_MPI
 #include <pagmo/src/pagmo.h>
 #include <pagmo/src/config.h>
 #include <pagmo/src/serialization.h>
@@ -44,36 +45,32 @@ namespace pagmo{ namespace problem {
 // }
 class __PAGMO_VISIBLE adaption_problem : public base
 {
-	static boost::shared_ptr<VesselList3d> s_vl;
-	static Adaption::Parameters s_params;
-	static BloodFlowParameters s_bfparams;
+	//static boost::shared_ptr<VesselList3d> s_vl;
+	//static Adaption::Parameters s_params;
+	//static BloodFlowParameters s_bfparams;
 	public:
 		adaption_problem(int n = 3);
-		//adaption_problem(VesselList3d vl_,Adaption::Parameters params_, BloodFlowParameters bfparams, int n = 3);
+		adaption_problem(boost::shared_ptr<VesselList3d> p_vl,Adaption::Parameters params_, BloodFlowParameters bfparams, int n = 3);
 		//adaption_problem();
 		//adaption_problem(int n=3);
 		base_ptr clone() const;
 		std::string get_name() const;
-		void set_static_members(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl);
+		//void set_static_members(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl);
 	protected:
 		void objfun_impl(fitness_vector &, const decision_vector &) const;
 	private:
-		Adaption::Parameters params;
-		BloodFlowParameters bfparams;
-		VesselList3d vl;
-		VesselList3d *p_vl;
 		friend class boost::serialization::access;
 		template <class Archive>
 		void serialize(Archive &ar, unsigned int)
-// 		void serialize(Archive &ar, unsigned int)
 		{
 		  ar & boost::serialization::base_object<base>(*this);
-// 		  ar & params;
-// 		  ar & bfparams;
-// 		  ar & vl;
-// 		  ar & boost::serialization::base_object<base>(*this) & bfparams & params & vl;
-			
+		  ar & params;
+		  ar & bfparams;
+		  ar & p_vl;	
 		}
+		Adaption::Parameters params;
+		BloodFlowParameters bfparams;
+		boost::shared_ptr<VesselList3d> p_vl;
 		//mutable boost::shared_ptr<BloodFlowParameters> bfparams;
 		//mutable boost::shared_ptr<Adaption::Parameters> params;
 		//mutable boost::shared_ptr<VesselList3d> vl;

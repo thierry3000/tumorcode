@@ -61,6 +61,15 @@ struct BloodFlowParameters
   Rheology rheology;
   double inletHematocrit;
   bool includePhaseSeparationEffect; // non-homogeneous intravascular hematocrit distribution, Warning: computationally very expensive
+
+  template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+      ar & viscosityPlasma;
+      ar & rheology;
+      ar & inletHematocrit;
+      ar & includePhaseSeparationEffect;
+    }
 };
 
 ostream& operator<<(ostream &os, const BloodFlowParameters &bfparams);
@@ -120,6 +129,12 @@ struct FlowBC
   FlowBC(Resist, double w, double val) : w(w),val(val),type(RESIST) {}
   uint type; // PIN, CURRENT or RESIST
   double w,val; // w = flow conuctivity (?) of series "resistor", val = either blood pressure or flow rate
+  template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+        // save/load base class information
+        ar & type & w & val;
+    }
 };
 
 
