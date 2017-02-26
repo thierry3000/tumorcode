@@ -20,12 +20,17 @@ target_link_libraries(test_stepper ${myLibs})
 #target_link_libraries(test_elliptic_solver ${myLibs})
 
 add_executable(test_pagmo test_pagmo.cpp)
-set_target_properties(test_pagmo PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX} LINK_FLAGS "-rdynamic")
+#set_target_properties(test_pagmo PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX} LINK_FLAGS "-rdynamic")
+target_link_libraries(test_pagmo pagmo boost_system ${myLibs} )
+
+add_executable(test_pagmo_s test_pagmo_serialize.cpp)
+#set_target_properties(test_pagmo PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX} LINK_FLAGS "-rdynamic")
+target_link_libraries(test_pagmo_s pagmo boost_system adaption_ ${myLibs} )
 
 add_executable(test_boost_serialize test_boost_serialize.cpp)
 target_link_libraries(test_boost_serialize boost_serialization)
 
-target_link_libraries(test_pagmo pagmo boost_system ${myLibs} )
+
 
 # add_executable(test_h5cpp test_hdf5_cpp.cpp)
 # link_directories(${HDF5_LIBRARY_DIRS})
@@ -36,4 +41,4 @@ target_link_libraries(test_pagmo pagmo boost_system ${myLibs} )
 # target_link_libraries(test_convection_diffusion ${myLibs})
 
 
-install(TARGETS tests test_stepper test_pagmo test_boost_serialize RUNTIME DESTINATION bin)
+install(TARGETS tests test_stepper test_pagmo_s test_boost_serialize RUNTIME DESTINATION bin)

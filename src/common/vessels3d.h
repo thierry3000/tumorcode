@@ -228,16 +228,10 @@ class VesselList3d
   typedef polymorphic_latticedata::LatticeData LD;
 public:
   VesselList3d();
-  //VesselList3d(const VesselList3d &obj);
-  void init_from_other_vl(const VesselList3d &vl_);
-  //void init_from_other_vl(VesselList3d &other_list);
-  std::auto_ptr<VesselList3d> init_from_this_vl();
   typedef LD LatticeData; // nicer name for the outside
   typedef LD::SiteType SiteType;
   typedef ListGraph<VesselNode,Vessel> Graphtype;
   typedef boost::unordered_map <const VesselNode*, FlowBC> BCList; // boundary condition list
-  //typedef boost::unordered_map<const VesselNode*, FlowBC> BCList; // boundary condition list
-  //typedef std::unordered_map<const VesselNode*, FlowBC> BCList; // boundary condition list
 
   void Flush();
   void Reset();
