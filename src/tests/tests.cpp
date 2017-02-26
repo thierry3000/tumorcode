@@ -549,59 +549,61 @@ void WriteSampling(const VesselList3d &vl, const LatticeDataQuad3d &ld, int dim,
 }
 
 
-void TestVesselFieldCoupling2(int argc, char** argv)
-{
-  string fn = argv[1];
-  uint seed = 12345;
-  if (argc > 2)
-  {
-    std::istringstream ss;
-    //(argv[2]);
-    //ss >> seed;
-    //if (argc > 3)
-    {
-      ss.str(argv[2]);
-      int np;
-      ss >> np;
-      my::SetNumThreads(np);
-    }
-  }
-  
-  h5cpp::File f(fn, "r");
-  h5cpp::Group vess_grp = f.root().open_group("vessels"),
-                ld_grp = f.root().open_group("vessels/lattice");
-  std::auto_ptr<LatticeData> ldp(LatticeData::ReadHdf(ld_grp));
-  LatticeData &ld = *ldp;
-  ld.SetOriginPosition(-ld.GetWorldBox().max*0.5);
-  VesselList3d vl;
-  vl.Init(ld);
-  ReadHdfGraph(vess_grp, vl);
-
-  cout << "read" << endl;
-  ld.print(cout);
-  cout << endl;
-
-  Int3 vlldsize = Size(vl.Ld().Box());
-  int dim = vlldsize[2]<=1 ? (vlldsize[1]<=1 ? 1 : 2) : 3;
-  LatticeDataQuad3d field_ld;
-  SetupFieldLattice(vl.Ld().GetWorldBox(), dim, 30, 0, field_ld);
-  cout << "field ld: "; field_ld.print(cout); cout << endl;
-  
-  f = h5cpp::File(RemovePath(RemoveExtension(fn))+"-rasterized.h5", "w");
-  h5cpp::Group ld_group = f.root().create_group("field_ld30");
-  WriteHdfLd(ld_group, field_ld);
-  
-  ptree params = make_ptree("seed", seed)("cut_at", 1.)("samples_per_cell", 1);
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("basecase"), params);
-
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("noclip"), make_ptree(params)("cut_at", -1));
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("samples2"), make_ptree(params)("samples_per_cell", 4));
-
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed1234"), make_ptree(params)("seed", 1234));
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed2345"), make_ptree(params)("seed", 2345));
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed3456"), make_ptree(params)("seed", 3456));
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed4567"), make_ptree(params)("seed", 4567));
-}
+// void TestVesselFieldCoupling2(int argc, char** argv)
+// {
+//   string fn = argv[1];
+//   uint seed = 12345;
+//   if (argc > 2)
+//   {
+//     std::istringstream ss;
+//     //(argv[2]);
+//     //ss >> seed;
+//     //if (argc > 3)
+//     {
+//       ss.str(argv[2]);
+//       int np;
+//       ss >> np;
+//       my::SetNumThreads(np);
+//     }
+//   }
+//   
+//   h5cpp::File f(fn, "r");
+//   h5cpp::Group vess_grp = f.root().open_group("vessels"),
+//                 ld_grp = f.root().open_group("vessels/lattice");
+//   std::auto_ptr<LatticeData> ldp(LatticeData::ReadHdf(ld_grp));
+//   LatticeData &ld = *ldp;
+//   ld.SetOriginPosition(-ld.GetWorldBox().max*0.5);
+//   std::auto_ptr<VesselList3d> vl;
+//   vl->Init(ld);
+//   //VesselList3d vl;
+//   //vl.Init(ld);
+//   ReadHdfGraph(vess_grp, vl.get());
+// 
+//   cout << "read" << endl;
+//   ld.print(cout);
+//   cout << endl;
+// 
+//   Int3 vlldsize = Size(vl.Ld().Box());
+//   int dim = vlldsize[2]<=1 ? (vlldsize[1]<=1 ? 1 : 2) : 3;
+//   LatticeDataQuad3d field_ld;
+//   SetupFieldLattice(vl.Ld().GetWorldBox(), dim, 30, 0, field_ld);
+//   cout << "field ld: "; field_ld.print(cout); cout << endl;
+//   
+//   f = h5cpp::File(RemovePath(RemoveExtension(fn))+"-rasterized.h5", "w");
+//   h5cpp::Group ld_group = f.root().create_group("field_ld30");
+//   WriteHdfLd(ld_group, field_ld);
+//   
+//   ptree params = make_ptree("seed", seed)("cut_at", 1.)("samples_per_cell", 1);
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("basecase"), params);
+// 
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("noclip"), make_ptree(params)("cut_at", -1));
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("samples2"), make_ptree(params)("samples_per_cell", 4));
+// 
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed1234"), make_ptree(params)("seed", 1234));
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed2345"), make_ptree(params)("seed", 2345));
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed3456"), make_ptree(params)("seed", 3456));
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed4567"), make_ptree(params)("seed", 4567));
+// }
 /* you need to provide an iff simulation dataset here */
 void TestVesselFieldCoupling3(int argc, char** argv)
 {

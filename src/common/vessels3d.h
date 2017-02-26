@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef VESSELS3D_H_
 #define VESSELS3D_H_
 
+#include <unordered_map>
+#include <boost/unordered_map.hpp>
 #include "lattice-data-polymorphic.h"
 #include "mwlib/listgraph.h"
 //#include "shared-objects.h"
@@ -226,14 +228,19 @@ class VesselList3d
   typedef polymorphic_latticedata::LatticeData LD;
 public:
   VesselList3d();
-  VesselList3d(const VesselList3d &obj);
-  
+  //VesselList3d(const VesselList3d &obj);
+  void init_from_other_vl(const VesselList3d &vl_);
+  //void init_from_other_vl(VesselList3d &other_list);
+  std::auto_ptr<VesselList3d> init_from_this_vl();
   typedef LD LatticeData; // nicer name for the outside
   typedef LD::SiteType SiteType;
   typedef ListGraph<VesselNode,Vessel> Graphtype;
-  typedef boost::unordered_map<const VesselNode*, FlowBC> BCList; // boundary condition list
+  typedef boost::unordered_map <const VesselNode*, FlowBC> BCList; // boundary condition list
+  //typedef boost::unordered_map<const VesselNode*, FlowBC> BCList; // boundary condition list
+  //typedef std::unordered_map<const VesselNode*, FlowBC> BCList; // boundary condition list
 
   void Flush();
+  void Reset();
   void Init( const LD &ld );
   inline const LD& Ld() const { return *m_ld; }
   inline bool HasLattice() const { return m_ld.get() != nullptr; }
@@ -250,7 +257,7 @@ public:
 
   VesselNode* 	InsertNode( const Int3 &a );
   VesselNode* 	InsertNode( const Float3 &a );
-  void 		InsertNode( const VesselNode *p_n);
+  VesselNode*	InsertNode( const VesselNode *p_n);
   Vessel*     	InsertVessel( const Int3 &a, const Int3 &b );
   //this was created with world stuff, maybe I need to redo that
   //most MW stuff is not bad
@@ -270,7 +277,9 @@ public:
   Vessel*     InsertTempEdge( VesselNode* a, VesselNode* b ) { return g.InsertEdge(a,b); }
   void        DeleteTempEdge( Vessel* v ) { g.DeleteEdge(v,false); }
   void        OptimizeMemLayout() { g.Optimize(); }
-  const BCList& GetBCMap() const { return bclist; }
+  //inline const LD& Ld() const { return *m_ld; }
+  inline const BCList& GetBCMap() const {return *bclist;}
+  //const BCList& GetBCMap() const { return bclist; }
   void          SetBC(const VesselNode* node, FlowBC bc);
   void          ClearBC(VesselNode* node);
 
@@ -295,7 +304,7 @@ public:
     std::auto_ptr<LD>	m_ld;
     ListGraph<VesselNode,Vessel>g;
     void FillLookup();
-    BCList bclist; // boundary conditions
+    std::auto_ptr<BCList> bclist; // boundary conditions
     void DeleteUnusedNode(VesselNode* vc, int site);
 };
 

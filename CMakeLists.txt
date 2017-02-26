@@ -9,15 +9,25 @@ message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 message("CMAKE_EXE_LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
 
 # all variables propagate down the tree so set up as much as possible here
-set (ENABLE_OMP TRUE CACHE BOOL "enable openmp")
+#set (ENABLE_OMP TRUE CACHE BOOL "enable openmp")
+option(ENABLE_OMP CACHE OFF)
 set (MAX_OPTIMIZATION TRUE CACHE BOOL "compile with -march=native (important for VM) and some other optimization options")
 # set (MPI_NEEDED FALSE CACHE BOOL "Must we link to the MPI libraries?")
 set (ADDITIONAL_INCLUDE_DIRS CACHE PATH "Additional dirs to search for included files")
 set (ADDITIONAL_LIBRARY_DIRS CACHE PATH "Additional dirs to search for linked libraries")
 
 find_package(Boost REQUIRED COMPONENTS "program_options")
+set(myLibs "${myLibs};${Boost_PROGRAM_OPTIONS_LIBRARY}")
 find_package(Boost REQUIRED COMPONENTS "system")
-set(myLibs ${Boost_SYSTEM_LIBRARY})
+set(myLibs "${myLibs};${Boost_SYSTEM_LIBRARY}")
+
+if(TRUE)#test_pagmo
+  find_package(Boost REQUIRED COMPONENTS "serialization")
+  set(myLibs "${myLibs};${Boost_SERIALIZATION_LIBRARY}")
+  find_package(Boost REQUIRED COMPONENTS "thread")
+  set(myLibs "${myLibs};${Boost_THREAD_LIBRARY}")
+endif()
+
 #note there are system without eigen, so let the configure fail here
 find_package(Eigen3 3.2 QUIET)
 #find_package(HDF5 1.8.10 REQUIRED)
@@ -25,7 +35,6 @@ find_package(HDF5 REQUIRED)
 find_package(LAPACK REQUIRED)
 find_package(BLAS REQUIRED)
 
-find_package(OpenMP REQUIRED)
 find_package(PNG REQUIRED)
 find_package(TBB REQUIRED)
 find_package(Trilinos REQUIRED)
@@ -85,13 +94,13 @@ IF(Boost_PYTHON-PY27_FOUND)
   message(STATUS "Boost_PYTHON-PY27_LIBRARY 	=${Boost_PYTHON-PY27_LIBRARY}")
   message(STATUS "Boost_PYTHON-PY27_LIBRARY_DEBUG = ${Boost_PYTHON-PY27_LIBRARY_DEBUG}")
   message(STATUS "Boost_PYTHON-PY27_LIBRARY_RELEASE = ${Boost_PYTHON-PY27_LIBRARY_RELEASE}")
-  set(myLibs ${Boost_PYTHON-PY27_LIBRARY})
+  set(myLibs "${myLibs};${Boost_PYTHON-PY27_LIBRARY}")
 ENDIF()
 IF(Boost_PYTHON-2.7_FOUND)
   message(STATUS "Boost_PYTHON-2.7_LIBRARY 	=${Boost_PYTHON-2.7_LIBRARY}")
   message(STATUS "Boost_PYTHON-2.7_LIBRARY_DEBUG = ${Boost_PYTHON-2.7_LIBRARY_DEBUG}")
   message(STATUS "Boost_PYTHON-2.7_LIBRARY_RELEASE = ${Boost_PYTHON-2.7_LIBRARY_RELEASE}")
-  set(myLibs ${Boost_PYTHON-2.7_LIBRARY})
+  set(myLibs "${myLibs};${Boost_PYTHON-2.7_LIBRARY}")
 ENDIF()
 message(STATUS "Numpy include dirs  	=${PYTHON_NUMPY_INCLUDE_DIR}")
 message(STATUS "PYTHON_LIBRARIES 	=${PYTHON_LIBRARIES}")
@@ -103,15 +112,19 @@ message(STATUS "HDF5_CXX_LIBRARIES      = ${HDF5_CXX_LIBRARIES}")
 message(STATUS "HDF5_C_LIBRARIES    	= ${HDF5_C_LIBRARIES}")
 message(STATUS "HDF5_LIBRARY_DIRS	= ${HDF5_LIBRARY_DIRS}")
 message(STATUS "HDF5_INCLUDE_DIRS	= ${HDF5_INCLUDE_DIRS}")
-message(STATUS "Boost_lib dirs     = ${Boost_LIBRARY_DIRS}")
-message(STATUS "Boost include dirs = ${Boost_INCLUDE_DIRS}")
-message(STATUS "TBB lib          = ${TBB_tbb_LIBRARY_RELEASE}")
-message(STATUS "TBB include dirs = ${TBB_INCLUDE_DIRS}")
-message(STATUS "Trilinos_dir          = ${Trilinos_DIR}")
-message(STATUS "Trilinos libs         = ${Trilinos_LIBRARIES}")
-message(STATUS "Trilinos lib dirs     = ${Trilinos_LIBRARY_DIRS}")
-message(STATUS "Trilinos include dirs = ${Trilinos_INCLUDE_DIRS}")
-message(STATUS "OpenMP_CXX_FLAGS      = ${OpenMP_CXX_FLAGS}")
+
+
+message(STATUS "Boost_lib dirs     	= ${Boost_LIBRARY_DIRS}")
+message(STATUS "Boost include dirs 	= ${Boost_INCLUDE_DIRS}")
+message(STATUS "Boost_LIBRARIES 	= ${Boost_LIBRARIES}")
+
+message(STATUS "TBB lib          	= ${TBB_tbb_LIBRARY_RELEASE}")
+message(STATUS "TBB include dirs 	= ${TBB_INCLUDE_DIRS}")
+message(STATUS "Trilinos_dir          	= ${Trilinos_DIR}")
+message(STATUS "Trilinos libs         	= ${Trilinos_LIBRARIES}")
+message(STATUS "Trilinos lib dirs     	= ${Trilinos_LIBRARY_DIRS}")
+message(STATUS "Trilinos include dirs 	= ${Trilinos_INCLUDE_DIRS}")
+
 
 include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${Trilinos_INCLUDE_DIRS})
@@ -134,6 +147,7 @@ set(myLibs
   ${TBB_tbb_LIBRARY_RELEASE}
   ${Trilinos_LIBRARIES} # -> trilinos
   ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
+  ${Boost_PYTHON_LIBRARY}
   ${HDF5_LIBRARIES}
   ${LAPACK_LIBRARIES}
   ${BLAS_LIBRARIES}
@@ -145,6 +159,16 @@ set(myLibs
 
 ### compiler stuff
 # this must come first as it overwrites preceeding compiler flags
+# need openmp
+if (ENABLE_OMP)
+  find_package(OpenMP REQUIRED)
+  if (NOT OPENMP_FOUND)
+    message(FATAL_ERROR "OpenMP not found")
+  endif()
+  message(STATUS "OpenMP_CXX_FLAGS      = ${OpenMP_CXX_FLAGS}")
+  #to get rid of the no #pragma warnings
+  add_definitions(-DENABLE_OMP)
+endif()
 
 GET_FILENAME_COMPONENT(compiler_name ${CMAKE_C_COMPILER} NAME)
 string(COMPARE EQUAL ${compiler_name} "icc" IS_INTEL_COMPILER)
@@ -182,16 +206,6 @@ if (MAX_OPTIMIZATION)
 endif()
 
 
-# need openmp
-if (ENABLE_OMP)
-  if (NOT OPENMP_FOUND)
-    message(FATAL_ERROR "OpenMP not found")
-  else()
-    set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -DOPENMP_ENABLED=1 ${CMAKE_CXX_FLAGS}")
-  endif()
-endif()
-
-
 set(PYTHON_LIB_COMMON_INSTALL_DIR "lib")
 
 #set(CMAKE_SKIP_RPATH TRUE)
@@ -210,7 +224,7 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
 #endif()
 
-
+message(STATUS "myLibs = ${myLibs}")
 
 # defer to build scripts in the src dir
 add_subdirectory(src)

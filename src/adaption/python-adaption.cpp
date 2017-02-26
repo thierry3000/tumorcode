@@ -119,17 +119,18 @@ void InitParameters(Adaption::Parameters *params, py::dict py_parameters)
 //   }
 // #endif
 // }
-static py::object PydoAdaptionOptimization(py::object py_vesselgroup, py::dict py_parameters, py::object py_bfparams)
+//static py::object PydoAdaptionOptimization(py::object py_vesselgroup, py::dict py_parameters, py::object py_bfparams)
+static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict py_parameters, py::object py_bfparams)
 {
   #if 1
   cout<<" PydoAdaptionOptimization is called "<<endl;
 #endif
   //python specific
-  //h5cpp::File *readInFile = new h5cpp::File("/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5","r");
-  //h5cpp::Group *vesselgroup = new h5cpp::Group(readInFile->root().open_group("adaption/vessels_after_adaption"));
+  h5cpp::File *readInFile = new h5cpp::File("/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5","r");
+  h5cpp::Group *vesselgroup = new h5cpp::Group(readInFile->root().open_group("adaption/vessels_after_adaption"));
   
-  h5cpp::Group vesselgroup_instance = PythonToCppGroup(py_vesselgroup);
-  h5cpp::Group *vesselgroup = &vesselgroup_instance;
+  //h5cpp::Group vesselgroup_instance = PythonToCppGroup(py_vesselgroup);
+  //h5cpp::Group *vesselgroup = &vesselgroup_instance;
   //h5::Group vessels_after_adaption = PythonToCppGroup(py_h5outputGroup);
   
   /* what magic did MW here that this works? note different type in arguments!!!*/
@@ -276,24 +277,25 @@ static py::object PydoAdaptionOptimization(py::object py_vesselgroup, py::dict p
 #endif
   // Create a problem and an algorithm.
   
-  pagmo::problem::adaption_problem prob(*vl,*params,*bfparams,3);
-  pagmo::population pop(prob,30);
-  pagmo::algorithm::pso algo(1);
-  algo.evolve(pop);
+  pagmo::problem::adaption_problem prob(vl,*params,*bfparams);
+  pagmo::population pop(prob,3);
+  pagmo::algorithm::pso algo(10);
+  //algo.evolve(pop);
   
-//   // Create an archipelago of 10 MPI islands.
-//   pagmo::archipelago a;
-//   a.set_topology(pagmo::topology::ring());
-//   for (int i = 0; i < 2; ++i) {
-// #ifdef PAGMO_ENABLE_MPI
-// 	  a.push_back(pagmo::mpi_island(algo,prob,1));
-// #else
-// 	  a.push_back(pagmo::island(algo,prob,1));
-// #endif
-//   }
-//   // Evolve the archipelago 10 times.
-//   a.evolve(2);
-//   a.join();
+  
+  // Create an archipelago of 10 MPI islands.
+  pagmo::archipelago a;
+  a.set_topology(pagmo::topology::ring());
+  for (int i = 0; i < 2; ++i) {
+#ifdef PAGMO_ENABLE_MPI
+	  a.push_back(pagmo::mpi_island(algo,prob,1));
+#else
+	  a.push_back(pagmo::island(algo,prob,1));
+#endif
+  }
+  // Evolve the archipelago 10 times.
+  a.evolve(2);
+  a.join();
   
 
 #if 0

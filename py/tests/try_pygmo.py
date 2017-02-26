@@ -141,9 +141,10 @@ def own2():
   print min([isl.population.champion.f for isl in archi])
   
 def pase_to_cpp():
-  vesselgroup = h5files.open('/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5', 'r', search = False)['adaption/vessels_after_adaption']
+  #vesselgroup = h5files.open('/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5', 'r', search = False)['adaption/vessels_after_adaption']
   factory = getattr(parameterSetsAdaption, 'pyGmo')
-  krebs.adaption.adaption_cpp.doAdaptionOptimization(vesselgroup, factory['adaption'], factory['calcflow'])
+  #krebs.adaption.adaption_cpp.doAdaptionOptimization(vesselgroup, factory['adaption'], factory['calcflow'])
+  krebs.adaption.adaption_cpp.doAdaptionOptimization('/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5', factory['adaption'], factory['calcflow'])
 
 def serial():
   prob = problem.schwefel(dim = 200)

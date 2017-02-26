@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/format.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/serialization/serialization.hpp>
+#include <boost/serialization/array.hpp>
 #include <boost/serialization/access.hpp>
 
 /* teach boost how to serialize eigen 

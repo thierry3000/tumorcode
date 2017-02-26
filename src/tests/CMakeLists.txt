@@ -27,7 +27,13 @@ target_link_libraries(test_boost_serialize boost_serialization)
 
 target_link_libraries(test_pagmo pagmo boost_system ${myLibs} )
 
+# add_executable(test_h5cpp test_hdf5_cpp.cpp)
+# link_directories(${HDF5_LIBRARY_DIRS})
+# target_link_libraries(test_h5cpp hdf5 hdf5_cpp)
+# install(TARGETS test_h5cpp RUNTIME DESTINATION bin)
+
 # add_executable(test_convection_diffusion test_convection_diffusion.cpp)
 # target_link_libraries(test_convection_diffusion ${myLibs})
+
 
 install(TARGETS tests test_stepper test_pagmo test_boost_serialize RUNTIME DESTINATION bin)

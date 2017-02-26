@@ -21,83 +21,67 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef PAGMO_PROBLEM_ADAPTION_H
 #define PAGMO_PROBLEM_ADAPTION_H
 
-#include <list>
-#include <memory>
-#include <fstream>
-#include <string>
+// #include <list>
+// #include <memory>
+// #include <fstream>
+// #include <string>
+// 
+// #include <cstdio> // remove, std::autoptr inteface wrong in dinkumware
+// #include <boost/config.hpp>
+// #if defined(BOOST_NO_STDC_NAMESPACE)
+// namespace std{ 
+//     using ::remove;
+// }
+// #endif
 
-#include <cstdio> // remove, std::autoptr inteface wrong in dinkumware
-#include <boost/config.hpp>
-#if defined(BOOST_NO_STDC_NAMESPACE)
-namespace std{ 
-    using ::remove;
-}
-#endif
+//#include <boost/archive/tmpdir.hpp>
+//#include <boost/archive/text_oarchive.hpp>
+//#include <boost/archive/text_iarchive.hpp>
 
-#include <boost/archive/tmpdir.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
+//#include <boost/serialization/serialization.hpp>
+//#include <boost/serialization/split_free.hpp> // comes all trough pagmo
 
-#include <boost/serialization/split_free.hpp>
+#include <boost/foreach.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
 
 
-
-//#define PAGMO_ENABLE_MPI
+//#define PAGMO_ENABLE_MPI --> done in cmake now
 #include <pagmo/src/pagmo.h>
 #include <pagmo/src/config.h>
 #include <pagmo/src/serialization.h>
 #include <pagmo/src/types.h>
 #include <pagmo/src/problem/base.h>
 
-//#include "../serialization.h"
-//#include "../types.h"
-//#include "base.h"
 #include <adaption/adaption_model2.h>
 
 namespace pagmo{ namespace problem {
-//const std::auto_ptr<VesselList3d> vl;
-// const BloodFlowParameters bfparams;
-// const Adaption::Parameters params;
-// void set_vl(std::auto_ptr<VesselList3d> vl)
-// {
-//   pagmo::problem::vl = vl;
-// }
+  /* this class is meant to implement the 
+   * radii adaption problem to pagmo
+   * in order to estimate decent parameters*/
 class __PAGMO_VISIBLE adaption_problem : public base
 {
-	//static boost::shared_ptr<VesselList3d> s_vl;
-	//static Adaption::Parameters s_params;
-	//static BloodFlowParameters s_bfparams;
 	public:
-		adaption_problem(int n = 3);
-		adaption_problem(VesselList3d vl,Adaption::Parameters params_, BloodFlowParameters bfparams, int n = 3);
-		//adaption_problem();
-		//adaption_problem(int n=3);
+		//constructor
+		adaption_problem(std::auto_ptr<VesselList3d> vl,Adaption::Parameters params_, BloodFlowParameters bfparams) ;
+		//copy constructor
 		base_ptr clone() const;
 		std::string get_name() const;
-		//void set_static_members(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl);
+		Adaption::Parameters get_params() const;
+		BloodFlowParameters get_bfparams() const;
+		std::auto_ptr<VesselList3d> get_vl() const;
 	protected:
 		void objfun_impl(fitness_vector &, const decision_vector &) const;
 	private:
 		friend class boost::serialization::access;
 		template <class Archive>
-		void serialize(Archive &ar, unsigned int)
-		{
-		  ar & boost::serialization::base_object<base>(*this);
-		  ar & params;
-		  ar & bfparams;
-		  ar & vl;	
-		}
-		Adaption::Parameters params;
+		void serialize(Archive &ar, unsigned int);
+		mutable Adaption::Parameters params;
 		BloodFlowParameters bfparams;
-		mutable VesselList3d vl;
-		//VesselList3d vl;
-		//mutable boost::shared_ptr<BloodFlowParameters> bfparams;
-		//mutable boost::shared_ptr<Adaption::Parameters> params;
-		//mutable boost::shared_ptr<VesselList3d> vl;
-// 		mutable BloodFlowParameters bfparams;
-// 		mutable Adaption::Parameters params;
-// 		mutable std::auto_ptr<VesselList3d> vl;
+		mutable std::auto_ptr<VesselList3d> vl;
 };
+
 
 }} //namespaces
 
@@ -105,9 +89,36 @@ BOOST_CLASS_EXPORT_KEY(pagmo::problem::adaption_problem)
 
 
 //from http://www.boost.org/doc/libs/1_54_0/libs/serialization/example/demo_auto_ptr.cpp
-namespace boost { 
-namespace serialization {
-
+namespace boost{ namespace serialization{
+template<class Archive>
+inline void save_construct_data(
+  Archive &ar, const pagmo::problem::adaption_problem *t, const unsigned int file_version)
+{
+  //save data required to construct instances
+  Adaption::Parameters tmp_params = t->get_params();
+  ar<<tmp_params;
+  BloodFlowParameters tmp_bfparams = t->get_bfparams();
+  ar<<tmp_bfparams;
+  std::auto_ptr<VesselList3d> tmp_vl = t->get_vl();
+  ar<<tmp_vl;
+}
+template<class Archive>
+inline void load_construct_data(
+  Archive &ar, pagmo::problem::adaption_problem *t, const unsigned int file_version)
+{
+  //retrieve data from archive required to construct new instance
+  Adaption::Parameters params;
+  ar >> params;
+  BloodFlowParameters bfparams;
+  ar >> bfparams;
+  std::auto_ptr<VesselList3d> vl;
+  cout<<"I am here "<<endl;
+  //vl->init_from_other_vl();
+  ar >> vl;
+  // invoke inplace constructor to initialize instance of adaption_problem
+  ::new(t)pagmo::problem::adaption_problem(vl,params,bfparams);
+  //t(vl,params,bfparams);
+}
 /////////////////////////////////////////////////////////////
 // implement serialization for auto_ptr< T >
 // note: this must be added to the boost namespace in order to
@@ -152,7 +163,7 @@ inline void serialize(
     boost::serialization::split_free(ar, t, file_version);
 }
 
-} // namespace serialization
-} // namespace boost
+
+}}//namespace boost{ namespace serialization{
 
 #endif

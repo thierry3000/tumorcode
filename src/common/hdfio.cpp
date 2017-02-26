@@ -170,7 +170,7 @@ void WriteHdfGraph( h5cpp::Group g, const VesselList3d &vl )
 }
 
 
-void ReadHdfGraph( h5cpp::Group g, VesselList3d &vl )
+void ReadHdfGraph( h5cpp::Group g, VesselList3d *vl )
 {
   h5cpp::Group gnodes = g.open_group("nodes");
   h5cpp::Group gedges = g.open_group("edges");
@@ -179,9 +179,9 @@ void ReadHdfGraph( h5cpp::Group g, VesselList3d &vl )
   gnodes.attrs().get("COUNT",ncnt);
   gedges.attrs().get("COUNT",ecnt);
   
-  if(vl.HasLattice())//LATTICE IS THERE
+  if(vl->HasLattice())//LATTICE IS THERE
   {//read lattice stuffe
-    const VesselList3d::LatticeData &ld = vl.Ld();
+    const VesselList3d::LatticeData &ld = vl->Ld();
     {//begin interrupt
       
       //node stuff
@@ -189,7 +189,7 @@ void ReadHdfGraph( h5cpp::Group g, VesselList3d &vl )
       h5cpp::read_dataset<VesselList3d::SiteType>(gnodes.open_dataset("lattice_pos"),a);
       for(int i=0; i<ncnt; ++i)
       {
-	vl.InsertNode(ld.SiteToLattice(a[i]));
+	vl->InsertNode(ld.SiteToLattice(a[i]));
       }
     }//end interrupt
   }
@@ -204,7 +204,7 @@ void ReadHdfGraph( h5cpp::Group g, VesselList3d &vl )
       h5cpp::read_dataset<float>(ds,a);
       for(int i=0; i<ncnt; ++i)
       {
-	vl.InsertNode(
+	vl->InsertNode(
 	  Float3(
 	    a[3*i+0],a[3*i+1],a[3*i+2]
 	  )
@@ -220,14 +220,14 @@ void ReadHdfGraph( h5cpp::Group g, VesselList3d &vl )
     h5cpp::read_dataset<int>(gedges.open_dataset("node_b_index"),vb);
     for(int i=0; i<ecnt; ++i)
     {
-      Vessel* v = vl.InsertVessel(vl.GetNode(va[i]),vl.GetNode(vb[i]));
+      Vessel* v = vl->InsertVessel(vl->GetNode(va[i]),vl->GetNode(vb[i]));
     }
   }
   {
     DynArray<int> root_indices;
     h5cpp::read_dataset<int>(gnodes.open_dataset("roots"),root_indices);
     for(int i=0; i<root_indices.size(); ++i)
-      vl.GetNode(root_indices[i])->flags.AddBits(BOUNDARY);
+      vl->GetNode(root_indices[i])->flags.AddBits(BOUNDARY);
   }
     
   if(gnodes.exists("bc_node_index") && 
@@ -248,7 +248,7 @@ void ReadHdfGraph( h5cpp::Group g, VesselList3d &vl )
       #ifdef DEBUG
       cerr<<format("root index %i of #%i, bctype %i, value: %f, conductivity: %f\n") % bc_node_index[i] % bc_node_index.size() % bctyp_index[i] % values_of_bcs[i] % bc_conductivity_value[i];
       #endif
-      VesselNode* nd = vl.GetNode(bc_node_index[i]);
+      VesselNode* nd = vl->GetNode(bc_node_index[i]);
       nd->flags.AddBits(BOUNDARY);
       FlowBC bc; 
       switch (bctyp_index[i])
@@ -263,7 +263,8 @@ void ReadHdfGraph( h5cpp::Group g, VesselList3d &vl )
           bc = FlowBC(FlowBC::RESIST, bc_conductivity_value[i], values_of_bcs[i]);
           break;
       }
-      vl.SetBC(nd, bc);
+      vl->SetBC(nd, bc);
+      //vl.GetBCMap().emplace(nd,bc);
     }
   }
   
@@ -273,7 +274,7 @@ void ReadHdfGraph( h5cpp::Group g, VesselList3d &vl )
   h5cpp::read_dataset<float>(gedges.open_dataset("radius"),aflt);
   for(int i=0; i<ecnt; ++i)
   {
-    Vessel* v = vl.GetEdge(i);
+    Vessel* v = vl->GetEdge(i);
     v->flags = flags[i];
     v->r = aflt[i];
   }

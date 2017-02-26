@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define _ADAPTION_MODEL_H_
 #include <boost/concept_check.hpp>
 #include <boost/graph/graph_concepts.hpp>
+#include <boost/archive/archive_exception.hpp>
 
 //#include "hdfcppwrapper/hdf_wrapper.h"
 #include "mwlib/compressed_row_undirected_graph.h"
@@ -173,7 +174,7 @@ namespace Adaption
   //double CalcRadiiChange(const Parameters &params, VesselList3d &vl);
   //void CalcRadiiChange2(const Parameters &params, VesselList3d &vl);
   std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, VesselList3d *vl, float delta_t_calc);
-  std::tuple<uint,FlReal> runAdaption_Loop(Adaption::Parameters params, BloodFlowParameters bfparams, VesselList3d *vl, bool doDebugOutput);
+  std::tuple<uint,FlReal> runAdaption_Loop(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl, bool doDebugOutput);
   //std::tuple<uint, FlReal> runAdaption_Loop(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl);
   //uint runAdaption_Loop(boost::shared_ptr<Adaption::Parameters> params, boost::shared_ptr<BloodFlowParameters> bfparams, boost::shared_ptr<VesselList3d> vl, bool doDebugOutput);
 //  uint run_optimization(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl);

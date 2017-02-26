@@ -340,6 +340,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
   bool filter_uncirculated = params.get<bool>("filter", false);
   
   std::auto_ptr<VesselList3d> vl(new VesselList3d());
+  //std::auto_ptr<VesselList3d> vl;
   typedef polymorphic_latticedata::LatticeData LatticeData;
   
   if(vesselgroup.attrs().get<std::string>("CLASS") == "GRAPH")
@@ -363,7 +364,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
     ldp->print(cout);
 #endif
     
-    ReadHdfGraph(vesselgroup, *vl);
+    ReadHdfGraph(vesselgroup, vl.get());
     //this magic can only be done on a lattice
     float original_grid_scale_override = params.get<float>("scale override", -1.);
     if (original_grid_scale_override>0.)
@@ -384,7 +385,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
   }
   else
   {
-    ReadHdfGraph(vesselgroup, *vl);
+    ReadHdfGraph(vesselgroup, vl.get());
   }
 
 #if 1

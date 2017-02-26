@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define FILE "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
 //#define PAGMO_ENABLE_MPI
 #include <pagmo/src/pagmo.h>
+
 using namespace pagmo;
 
 int test_2()
@@ -56,8 +57,8 @@ int test_1()
   mc_steps = 10000000;
   dim = 400;
 #else
-  mc_steps = 10;
-  dim = 4;
+  mc_steps = 10000000;
+  dim = 400;
 #endif
   // Create a problem and an algorithm.
   problem::dejong prob(dim);
@@ -73,8 +74,9 @@ int test_1()
 #endif
   }
   // Evolve the archipelago 10 times.
-  a.evolve(10);
+  a.evolve(5);
   a.join();
+  
   return 0;
 }
 
@@ -83,9 +85,9 @@ int test_1()
 int main(int argc, char **argv)
 {
   //throw std::runtime_error("implement parameter handling with boost program options");
-  int i = 5;
-  std::cout<<i<<std::endl;
-  test_2();
+  std::cout<<"begin test_pagmo"<<std::endl;
+  
+  test_1();
 #if 0
   my::MultiprocessingInitializer mpinit(argc, argv);
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
@@ -108,4 +110,5 @@ int main(int argc, char **argv)
     cout << "*** memory cons: " << (double(GetMemoryUsage().rss_peak)/(1024*1024)) << " mb" << endl;
   }
 #endif
+  return 0;
 }

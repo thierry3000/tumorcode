@@ -198,63 +198,6 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
   clear_and_free_memory(flownet.len);
   clear_and_free_memory(flownet.rad);
   
-#if 0
-  {
-    NetworkLinearChainRemover chainremover;
-    {
-      CompressedGraph g;
-      g.beginConstruct();
-      g.add_edges(flownet.edges);
-      g.endConstruct();
-      //g.print(cout);
-      //cout << std::endl;
-
-      DynArray<bool> boundary_points(flownet.num_vertices());
-      for (boost::unordered_map<int, FlowBC>::const_iterator it = flownet.bcs.begin(); it != flownet.bcs.end(); ++it)
-        boundary_points[it->first] = true;
-      
-      chainremover.initialize(g, cond, boundary_points);
-      //print_container(cout, chainremover.edges());
-      //cout << std::endl;
-    }
-
-    // translate indices
-    IntegerMap to_unchained_index;
-    to_unchained_index.resize(flownet.num_vertices());
-    std::vector<my::eqpair<int> > new_edges(chainremover.edges().size());
-    for (int i=0; i<new_edges.size(); ++i)
-    {
-      int a = to_unchained_index.add(chainremover.edges()[i].first);
-      int b = to_unchained_index.add(chainremover.edges()[i].second);
-      new_edges[i] = my::make_eqpair(a,b);
-    }
-    boost::unordered_map<int, FlowBC> bcmap;
-    remap_keys(flownet.bcs, bcmap, to_unchained_index);
-
-    { // construct the linear system and solve it
-      Linsys flowsys;
-      flowsys.scaling_const = Median(cond);
-      flowsys.initialize_pattern(to_unchained_index.num_added(), new_edges);
-      flowsys.fill_values(new_edges, chainremover.cond(), bcmap);
-      clear_and_free_memory(new_edges);
-
-      flowsys.solve();
-
-      flownet.press.resize(flownet.num_vertices());
-
-      for (int i=0; i<flownet.num_vertices(); ++i)
-        if (to_unchained_index[i] != IntegerMap::unused())
-          flownet.press[i] = flowsys.lhs_get(to_unchained_index[i]);
-    }
-
-    chainremover.distribute_pressures(flownet.press);
-
-    SetFlowValues(vl, flownet, cond, flownet.press, NULL);
-    
-    cout << "max relative mass loss: " << CalcFlowResidual(flownet, cond) << endl;
-    CalcFluxResidual(*vl, flownet);
-  }
-#else
   {
     Linsys flowsys;
     flowsys.scaling_const = CalcFlowCoeff(bloodFlowParameters.viscosityPlasma, 4., 100.); //Median(cond);
@@ -283,6 +226,7 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
     
     for (int i=0; i<flownet.num_vertices(); ++i) flownet.press[i] = flowsys.lhs_get(i);
     SetFlowValues(&vl, flownet, cond, flownet.press, flownet.hema);
+    
     
 #if 0
     {
@@ -322,7 +266,7 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
 
   //h5cpp::File f("debugvessels.h5","w");
   //WriteVesselList3d(*vl, f.root().create_group("vessels"), make_ptree("w_all",true));
-#endif
+
   }
   bool ok = MarkFailingVesselHidden(vl);
   if (!ok)

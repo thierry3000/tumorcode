@@ -110,7 +110,8 @@ bool IffDrugApp3d::InitNewState()
   vesselList.reset(new VesselList3d());
   vesselList->Init(*ldp);
   h5::Group vesselgroup = root.open_group(h5_path_vessel);
-  ReadHdfGraph(vesselgroup, *vesselList);
+  //ReadHdfGraph(vesselgroup, *vesselList);
+  ReadHdfGraph(vesselgroup, vesselList.get());
   { // read node pressure values
   DynArray<float> press;
   h5::read_dataset(vesselgroup.open_dataset("nodes/pressure"), press);

@@ -33,7 +33,7 @@ struct SimParameters3d;
 struct ContinuumTumorState;
 
 void WriteHdfGraph( h5cpp::Group f, const VesselList3d &vl );
-void ReadHdfGraph( h5cpp::Group f, VesselList3d &vl );
+void ReadHdfGraph( h5cpp::Group f, VesselList3d *vl );
 
 
 template<class T>

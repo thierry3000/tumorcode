@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "shared-objects.h"
 #include "vessels3d.h"
 #include "mwlib/math_ext.h"
+#include "boost/foreach.hpp"
 
 #include <memory>
 #include <csignal>
@@ -52,47 +53,120 @@ float Vessel::WorldLength( const polymorphic_latticedata::LatticeData &ld ) cons
 }
 
 VesselList3d::VesselList3d()
-  : m_ld(nullptr)
+  : m_ld(nullptr) //,bclist(nullptr)
 {
+  this->bclist.reset(new BCList);
 }
+
+std::auto_ptr< VesselList3d > VesselList3d::Clone()
+{
+  std::auto_ptr<VesselList3d> my_return_list;
+  my_return_list.reset(new VesselList3d);
+  //my_return_list->bclist.reset(new BCList);
+  #ifdef DEBUG
+  cout << "set lattice data to: " << endl;
+  Ld().print(cout);
+  cout << "recognized: " << endl;
+  this->m_ld->print(cout);
+#endif
+  my_return_list->Init(Ld());
+  #ifdef DEBUG
+  cout << "recognized: " << endl;
+  my_return_list->Ld().print(cout);
+#endif
+  //my_return_list->bclist.reset(new BCList);
+  for( int i=0;i<GetNCount();i++)
+  {
+    const VesselNode *p_currentNode = GetNode(i);
+    VesselNode *newNode = my_return_list->InsertNode(p_currentNode);//to new vessellist
+    newNode->flags = p_currentNode->flags;
+    for(auto entry: GetBCMap())
+    {
+      if(p_currentNode == entry.first)
+      {
+	my_return_list->SetBC(newNode, entry.second);
+      }
+    }
+
+  }
+  for( int i=0;i<GetECount();i++)
+  {
+    const Vessel *p_currentVessel = GetEdge(i);
+    my_return_list->InsertVessel(p_currentVessel);
+  }
+  
+  return my_return_list;
+}
+void VesselList3d::Reset()
+{
+  this->bclist.reset(new BCList());
+}
+std::auto_ptr< VesselList3d > VesselList3d::init_from_this_vl()
+{
+  std::auto_ptr<VesselList3d> return_vl;
+  return_vl->Init(this->Ld());
+  return return_vl;
+}
+
 //maybe that is stupid to write a copy constructor for boost::noncopyable object?
-VesselList3d::VesselList3d(const VesselList3d& obj)
+//void VesselList3d::init_from_other_vl(const VesselList3d &obj)
+void VesselList3d::init_from_other_vl(const VesselList3d &the_other_list)
 {
 #ifdef DEBUG
   std::printf("this will be stupid hard task\n");
 #endif
-  this->Init(obj.Ld());
+  // from init
+  /*Flush();
+    m_ld = _ld.Clone();
+    lookup_site.Init(*m_ld);
+    lookup_bond.Init(*m_ld);
+    g.Reserve( 1024 ); */
+  //
+  //the_other_list->m_ld.
+  //this->m_ld.reset(new decltype(*the_other_list.m_ld));
+//   this->FillLookup();
+//    this->lookup_site.Clear();
+//   this->lookup_bond.Init(the_other_list->Ld());
+//   this->g.Reserve(1024);
+  this->Reset();
+  
+//  this->m_ld = the_other_list.Ld().Clone();
+  this->Init(the_other_list.Ld());
 #ifdef DEBUG
   cout << "set lattice data to: " << endl;
-  obj.Ld().print(cout);
+  the_other_list.Ld().print(cout);
   cout << "recognized: " << endl;
   this->m_ld->print(cout);
 #endif  
- 
-  for( int i=0;i<obj.GetNCount();i++)
+  this->bclist->clear();
+  for( int i=0;i<the_other_list.GetNCount();i++)
   {
-    const VesselNode *p_currentNode = obj.GetNode(i);
-    this->InsertNode(p_currentNode);
+    const VesselNode *p_currentNode = the_other_list.GetNode(i);
+    VesselNode *newNode = this->InsertNode(p_currentNode);//to new vessellist
+    newNode->flags = p_currentNode->flags;
+    for(auto entry: the_other_list.GetBCMap())
+    {
+      if(p_currentNode == entry.first)
+      {
+	this->SetBC(newNode, entry.second);
+      }
+    }
+    // if p_currentNode in obj.bclist;
+    // then new node to this->bclist;
+    //BOOST_FOREACH(map::value_type i, x) {
+    //std::cout<<i.first<<","<<i.second<<"\n";
+    //boost::unordered_map<VesselNode*, int> map;
+    
+//     BOOST_FOREACH(obj.bclist::value_type aEntry, obj.bclist)
+//     {
+//       
+//     }
   }
-  for( int i=0;i<obj.GetECount();i++)
+  for( int i=0;i<the_other_list.GetECount();i++)
   {
-    const Vessel *p_currentVessel = obj.GetEdge(i);
+    const Vessel *p_currentVessel = the_other_list.GetEdge(i);
     this->InsertVessel(p_currentVessel);
   }
-  //just to be sure, delete everything
-  this->bclist.clear();
-  for(auto bc:obj.bclist)
-  {
-    this->SetBC(bc.first,bc.second);
-  }
-//   for(auto bc: fl.bcs)
-//   {
-//     printf("first: %i, second: %f\n", bc.first, bc.second.val);
-//   }
-//   for (auto iter = flownet.bcs.begin(); iter != flownet.bcs.end(); ++iter)
-//   {
-//     cout << format("boundary node id: %i, value = %f") % iter->first % iter->second.val << endl;
-//   }
 }
 
 
@@ -132,18 +206,18 @@ VesselList3d::VesselList3d(const VesselList3d& obj)
 
 void VesselList3d::Init( const LD &_ld )
 {
-    Flush();
-    m_ld = _ld.Clone();
-    lookup_site.Init(*m_ld);
-    lookup_bond.Init(*m_ld);
-    g.Reserve( 1024 );
+    this->Flush();
+    this->m_ld = _ld.Clone();
+    this->lookup_site.Init(*m_ld);
+    this->lookup_bond.Init(*m_ld);
+    this->g.Reserve( 1024 );
 }
 
 void VesselList3d::Flush()
 {
-  lookup_site.Clear();
-  lookup_bond.Clear();
-  g.Flush();
+  this->lookup_site.Clear();
+  this->lookup_bond.Clear();
+  this->g.Flush();
 }
 
 void VesselList3d::SetBC(const VesselNode* node, FlowBC fbc)
@@ -152,7 +226,11 @@ void VesselList3d::SetBC(const VesselNode* node, FlowBC fbc)
   //Don't want dangling nodes here.
   myAssert(GetNode(node->Index()) == node); 
   myAssert(node->IsBoundary());
-  bclist[node] = fbc;
+//  (*this->bclist)[node]=fbc;
+  this->bclist->emplace(node,fbc);
+  //this->bclist->insert(std::pair<const VesselNode*,FlowBC>(node, fbc));
+  //this->bclist->insert(node,fbc);
+  //bclist[node] = fbc;
 }
 
 
@@ -160,7 +238,7 @@ void VesselList3d::ClearBC(VesselNode* node)
 {
   myAssert(GetNode(node->Index()) == node); // see if the node is in the list of managed nodes. Don't want dangling nodes here.
   myAssert(node->IsBoundary());
-  bclist.erase(node);
+  bclist->erase(node);
 }
 
 
@@ -196,7 +274,7 @@ VesselNode* VesselList3d::InsertNode( const Float3 &a )
     n->worldpos = a;
     return n;
 }
-void VesselList3d::InsertNode(const VesselNode *p_n)
+VesselNode* VesselList3d::InsertNode(const VesselNode *p_n)
 {
   //VesselNode newNode = VesselNode(*ref_n);
   VesselNode *newNode = this->InsertNode(p_n->lpos);
@@ -206,10 +284,11 @@ void VesselList3d::InsertNode(const VesselNode *p_n)
 //   newNode->worldpos = ref_n->worldpos;
 //   newNode->bctyp = ref_n->bctyp;
 //   newNode->value_of_bc = ref_n->value_of_bc;
-   newNode->flags = p_n->flags;
+//   newNode->flags = p_n->flags;
 //   newNode->has_been_visited = ref_n->has_been_visited;
-//   
-//   newNode->lpos = ref_n->lpos;
+  //if pn in boundarymap
+  // add also to this->bclist;
+  return newNode; 
 }
 void VesselList3d::InsertVessel(const Vessel* p_v)
 {
@@ -359,13 +438,13 @@ void VesselList3d::DeleteUnusedNode(VesselNode* vc, int site)
   // remove node from list of boundary conditions
   if (vc->IsBoundary())
   {
-    auto it = bclist.find(vc);
+    auto it = bclist->find(vc);
     //myAssert (it != bclist.end());  // this is bullshit. Of course, the vessel does not have to be in the BC list because if it is not, pressure BCs are simply assumed.
-    if (it != bclist.end())
-      bclist.erase(it);
+    if (it != bclist->end())
+      bclist->erase(it);
   }
 #ifdef DEBUG
-  myAssert(bclist.find(vc) == bclist.end()); // not a boundary node -> not in the list of boundary nodes
+  myAssert(bclist->find(vc) == bclist->end()); // not a boundary node -> not in the list of boundary nodes
 #endif
   g.DeleteUnusedNode(vc);
 }

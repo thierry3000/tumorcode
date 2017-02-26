@@ -20,10 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "adaption_as_pagmo_problem.h"
 #include "adaption_model2.h"
 
-#include <boost/foreach.hpp>
-#include <boost/iterator/transform_iterator.hpp>
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics.hpp>
+
 
 namespace pagmo { namespace problem {
 
@@ -35,99 +32,72 @@ namespace pagmo { namespace problem {
  *
  * @see problem::base constructors.
  */
-/* hm, since Adaption::Parameters are a real class,
- * we we to treat it differently than the BloodFlowParams
- */
-//Adaption::Parameters adaption_problem::s_params;
-//BloodFlowParameters adaption_problem::s_bfparams;
-//boost::shared_ptr<VesselList3d> adaption_problem::s_vl;
-// void adaption_problem::set_static_members(Adaption::Parameters params,BloodFlowParameters bfparams, std::auto_ptr< VesselList3d > vl)
-// {
-//   this->s_params = params;
-//   this->s_bfparams = bfparams;
-//   this->s_vl = vl;
-//   //this->sr_vl = *vl.get();
-// }
-
-adaption_problem::adaption_problem(int n): 
-base(n)
-{
-	set_lb(0.5);
-	set_ub(4.0);
-// 	VesselList3d tmp_vl = VesselList3d();
-// 	tmp_vl = *s_vl;
-//  	this->p_vl = s_vl;
-// 	this->params = params;
-// 	this->bfparams = bfparams;
-}
-adaption_problem::adaption_problem(VesselList3d vl_, Adaption::Parameters params_, BloodFlowParameters bfparams_, int n_):
-vl(vl_),params(params_),bfparams(bfparams_), base(n_)
+adaption_problem::adaption_problem(std::auto_ptr<VesselList3d> vl_, Adaption::Parameters params_, BloodFlowParameters bfparams_):params(params_),bfparams(bfparams_), base(3)
 {
   set_lb(0.5);
   set_ub(4.0);
-  //this->vl(vl);
-  //this->params = params_;
-  //this->bfparams = bfparams;
+  this->vl=vl_->Clone();
 }
-
 /// Clone method.
 base_ptr adaption_problem::clone() const {
-//	return base_ptr(new adaption_problem(*this));
-	VesselList3d aNewVl(this->vl);
-	return base_ptr(new adaption_problem(aNewVl,params,bfparams,3));
-//	return base_ptr(new adaption_problem(3));
-  // 	VesselList3d vl_;
-// 	vl_.Init(vl.Ld());
-// 	return base_ptr(new adaption_problem());
+	//use the copy constructor of a boost::noncopyable
+	//VesselList3d aNewVl(*this->vl);
+	//std::auto_ptr<VesselList3d> my_vl(&aNewVl);
+	//return base_ptr(new adaption_problem(*this));
+	//VesselList3d my_vl(new VesselList3d);
+	std::auto_ptr<VesselList3d> my_vl;// = this->vl->Clone();
+	//my_vl->Init(this->vl->Ld());
+// 	my_vl->init_from_other_vl(*this->vl);
+	my_vl = this->vl->Clone();
+	return base_ptr(new adaption_problem(my_vl,params,bfparams));
 }
-
 /// Implementation of the objective function.
 void adaption_problem::objfun_impl(fitness_vector &f, const decision_vector &x) const
 {
-	pagmo_assert(f.size() == 1);
-	decision_vector::size_type n = x.size();
-	double retval = 0.0;
-
-	for (decision_vector::size_type i=0; i<n; i++){
-		retval += x[i]*x[i];
-	}
-	f[0]=retval;
-// 	this->params->k_m = x[0];
-// 	this->params->k_c = x[1];
-// 	this->params->k_s = x[2];
-	std::tuple<uint,FlReal> adaption_loop_return;
-	#pragma omp single
+  pagmo_assert(f.size() == 1);
+  this->params.k_m = x[0];
+  this->params.k_c = x[1];
+  this->params.k_s = x[2];
+  std::tuple<uint,FlReal> adaption_loop_return;
   {
-	adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams,&this->vl, false);
+    adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams,this->vl, false);
   }
-	
-	f[0] = std::get<1>(adaption_loop_return);
+  double average_cap_flow = std::get<1>(adaption_loop_return);
+  double suggested_cap_flow = 200000.;
+  f[0] = (average_cap_flow-suggested_cap_flow)*(average_cap_flow-suggested_cap_flow);
+#ifdef DEBUG
+	cout<<format("f[0]: %f\n") % f[0];
+#endif
 }
 
 std::string adaption_problem::get_name() const
 {
 	return "secomb adaption";
 }
-//adaption_problem::
-// template<class Archive>
-// void adaption_problem::serialize(Archive &ar, adaption_problem &apt_prob, unsigned int)
-// {
-//   ar & apt_prob.params;
-//   ar & apt_prob.bfparams;
-//   ar & apt_prob.vl;
-// }
+//getter and setter
+Adaption::Parameters adaption_problem::get_params() const
+{
+  return this->params;
+}
+BloodFlowParameters adaption_problem::get_bfparams() const
+{
+  return this->bfparams;
+}
+std::auto_ptr<VesselList3d> adaption_problem::get_vl() const
+{
+  return this->vl;
+}
 
+//serialization
+template <class Archive>
+void adaption_problem::serialize(Archive &ar, unsigned int)
+{
+  ar & boost::serialization::base_object<pagmo::problem::base>(*this);
+  ar & params;
+  ar & bfparams;
+  ar & vl;
+}
+}} //namespaces namespace pagmo { namespace problem {
 
-}} //namespaces
-// namespace boost {namespace serialization {
-// template<class Archive>
-// inline void save_construct_data(
-// Archive &ar, const pagmo::problem::adaption_problem *t, const unsigned int file_version)
-// {
-//   ar << t->params;
-//   ar << t->bfparams;
-//   ar << t->vl;
-// }
-// }}//namespaces
 
 BOOST_CLASS_EXPORT_IMPLEMENT(pagmo::problem::adaption_problem)
