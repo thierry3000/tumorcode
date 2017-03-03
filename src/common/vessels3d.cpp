@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <memory>
 #include <csignal>
 
+
 //#define DEBUG_CHECKS_ON
 
 // hahaha where dafuq is this from???!!!!
@@ -52,28 +53,51 @@ float Vessel::WorldLength( const polymorphic_latticedata::LatticeData &ld ) cons
   return (len-1)*ld.Scale();
 }
 
-VesselList3d::VesselList3d()
-  : m_ld(nullptr) //,bclist(nullptr)
+// VesselList3d::VesselList3d()
+//   : m_ld(nullptr) //,bclist(nullptr)
+// {
+//   this->bclist.reset(new BCList);
+// }
+VesselList3d::VesselList3d(boost::shared_ptr< VesselList3d::LD > this_ld)
 {
-  this->bclist.reset(new BCList);
+  //this->bclist.reset(new BCList);
+  this->bclist.clear();
+  this->m_ld = this_ld;
+  //this->m_ld.reset(this_ld.get());
+  //this->m_ld.reset(this_ld->Clone().get());
+  //m_ld.reset(this_ld->Clone());
+  this->Flush();
+  //this->m_ld = _ld.Clone();
+  this->lookup_site.Init(*m_ld);
+  this->lookup_bond.Init(*m_ld);
+  this->g.Reserve( 1024 );
 }
+boost::shared_ptr< polymorphic_latticedata::LatticeData > VesselList3d::getLD() const
+{
+  return m_ld;
+}
+
+
 
 std::auto_ptr< VesselList3d > VesselList3d::Clone()
 {
-  std::auto_ptr<VesselList3d> my_return_list;
-  my_return_list.reset(new VesselList3d);
+  #ifdef DEBUG
+  cout << "this lattice data will be passed to: " << endl;
+  this->m_ld->print(cout);
+  #endif
+  std::auto_ptr<VesselList3d> my_return_list(new VesselList3d(this->m_ld));
+  //my_return_list.reset(new VesselList3d);
+  //my_return_list->Init(this->Ld());
   //my_return_list->bclist.reset(new BCList);
   #ifdef DEBUG
-  cout << "set lattice data to: " << endl;
-  Ld().print(cout);
   cout << "recognized: " << endl;
-  this->m_ld->print(cout);
+  my_return_list->m_ld->print(cout);
 #endif
-  my_return_list->Init(Ld());
-  #ifdef DEBUG
-  cout << "recognized: " << endl;
-  my_return_list->Ld().print(cout);
-#endif
+  //my_return_list->Init(Ld());
+//   #ifdef DEBUG
+//   cout << "recognized: " << endl;
+//   my_return_list->Ld().print(cout);
+// #endif
   //my_return_list->bclist.reset(new BCList);
   for( int i=0;i<GetNCount();i++)
   {
@@ -100,8 +124,10 @@ std::auto_ptr< VesselList3d > VesselList3d::Clone()
 
 void VesselList3d::Init( const LD &_ld )
 {
+    this->bclist.clear();
     this->Flush();
-    this->m_ld = _ld.Clone();
+    //this->m_ld = _ld.Clone();
+    //this->m_ld.reset(&_ld);
     this->lookup_site.Init(*m_ld);
     this->lookup_bond.Init(*m_ld);
     this->g.Reserve( 1024 );
@@ -120,8 +146,9 @@ void VesselList3d::SetBC(const VesselNode* node, FlowBC fbc)
   //Don't want dangling nodes here.
   myAssert(GetNode(node->Index()) == node); 
   myAssert(node->IsBoundary());
-//  (*this->bclist)[node]=fbc;
-  this->bclist->emplace(node,fbc);
+  //(*this->bclist)[node]=fbc;
+  //this->bclist->emplace(node,fbc);
+  this->bclist.emplace(node,fbc);
   //this->bclist->insert(std::pair<const VesselNode*,FlowBC>(node, fbc));
   //this->bclist->insert(node,fbc);
   //bclist[node] = fbc;
@@ -132,7 +159,7 @@ void VesselList3d::ClearBC(VesselNode* node)
 {
   myAssert(GetNode(node->Index()) == node); // see if the node is in the list of managed nodes. Don't want dangling nodes here.
   myAssert(node->IsBoundary());
-  bclist->erase(node);
+  this->bclist.erase(node);
 }
 
 
@@ -332,13 +359,13 @@ void VesselList3d::DeleteUnusedNode(VesselNode* vc, int site)
   // remove node from list of boundary conditions
   if (vc->IsBoundary())
   {
-    auto it = bclist->find(vc);
+    auto it = bclist.find(vc);
     //myAssert (it != bclist.end());  // this is bullshit. Of course, the vessel does not have to be in the BC list because if it is not, pressure BCs are simply assumed.
-    if (it != bclist->end())
-      bclist->erase(it);
+    if (it != bclist.end())
+      bclist.erase(it);
   }
 #ifdef DEBUG
-  myAssert(bclist->find(vc) == bclist->end()); // not a boundary node -> not in the list of boundary nodes
+  myAssert(bclist.find(vc) == bclist.end()); // not a boundary node -> not in the list of boundary nodes
 #endif
   g.DeleteUnusedNode(vc);
 }
@@ -583,10 +610,10 @@ std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int m
   }
   newbox.Extend(safety_boundary);
 
-  std::auto_ptr<LatticeData> newldp(ld.Clone());
+  boost::shared_ptr<LatticeData> newldp(ld.Clone());
   newldp.get()->Init(newbox,  newscale);
 
-  std::auto_ptr<VesselList3d> vlnew( new VesselList3d() );
+  std::auto_ptr<VesselList3d> vlnew( new VesselList3d(newldp) );
   vlnew->Init(*newldp);
 
   // insert new nodes into empty new vessellist
@@ -892,5 +919,7 @@ void CheckToposort(const VesselList3d &vl, const DynArray<int> &order)
     }
   }
 }
+
+
 
 

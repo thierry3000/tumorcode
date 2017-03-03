@@ -106,8 +106,8 @@ bool IffDrugApp3d::InitNewState()
   }
   
 
-  std::auto_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(root.open_group(h5_path_lattice));
-  vesselList.reset(new VesselList3d());
+  boost::shared_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(root.open_group(h5_path_lattice));
+  vesselList.reset(new VesselList3d(ldp));
   vesselList->Init(*ldp);
   h5::Group vesselgroup = root.open_group(h5_path_vessel);
   //ReadHdfGraph(vesselgroup, *vesselList);

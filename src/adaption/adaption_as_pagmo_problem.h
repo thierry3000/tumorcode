@@ -55,52 +55,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <pagmo/src/problem/base.h>
 
 #include <adaption/adaption_model2.h>
-
-namespace pagmo{ namespace problem {
-  /* this class is meant to implement the 
-   * radii adaption problem to pagmo
-   * in order to estimate decent parameters*/
-class __PAGMO_VISIBLE adaption_problem : public base
-{
-	public:
-		//constructor
-		adaption_problem(std::auto_ptr<VesselList3d> vl,Adaption::Parameters params_, BloodFlowParameters bfparams) ;
-		//copy constructor
-		base_ptr clone() const;
-		std::string get_name() const;
-		Adaption::Parameters get_params() const;
-		BloodFlowParameters get_bfparams() const;
-		std::auto_ptr<VesselList3d> get_vl() const;
-	protected:
-		void objfun_impl(fitness_vector &, const decision_vector &) const;
-	private:
-		friend class boost::serialization::access;
-		template <class Archive>
-		void serialize(Archive &ar, unsigned int);
-		mutable Adaption::Parameters params;
-		BloodFlowParameters bfparams;
-		mutable std::auto_ptr<VesselList3d> vl;
-};
+namespace pagmo{ namespace problem{
+  class adaption_problem;
+}}
 
 
-}} //namespaces
-
-BOOST_CLASS_EXPORT_KEY(pagmo::problem::adaption_problem)
-
-
-//from http://www.boost.org/doc/libs/1_54_0/libs/serialization/example/demo_auto_ptr.cpp
 namespace boost{ namespace serialization{
 template<class Archive>
 inline void save_construct_data(
   Archive &ar, const pagmo::problem::adaption_problem *t, const unsigned int file_version)
 {
   //save data required to construct instances
-  Adaption::Parameters tmp_params = t->get_params();
-  ar<<tmp_params;
-  BloodFlowParameters tmp_bfparams = t->get_bfparams();
-  ar<<tmp_bfparams;
-  std::auto_ptr<VesselList3d> tmp_vl = t->get_vl();
-  ar<<tmp_vl;
+  ar<<t->params;
+  ar<<t->bfparams;
+  ar<<t->vl;
 }
 template<class Archive>
 inline void load_construct_data(
@@ -119,6 +87,8 @@ inline void load_construct_data(
   ::new(t)pagmo::problem::adaption_problem(vl,params,bfparams);
   //t(vl,params,bfparams);
 }
+
+//from http://www.boost.org/doc/libs/1_54_0/libs/serialization/example/demo_auto_ptr.cpp
 /////////////////////////////////////////////////////////////
 // implement serialization for auto_ptr< T >
 // note: this must be added to the boost namespace in order to
@@ -163,7 +133,42 @@ inline void serialize(
     boost::serialization::split_free(ar, t, file_version);
 }
 
-
+//http://stackoverflow.com/questions/20894415/boost-non-intrusively-serialize-a-class-in-separate-load-save-functions
 }}//namespace boost{ namespace serialization{
+
+namespace pagmo{ namespace problem {
+  /* this class is meant to implement the 
+   * radii adaption problem to pagmo
+   * in order to estimate decent parameters*/
+class __PAGMO_VISIBLE adaption_problem : public base
+{
+	public:
+		//constructor
+		adaption_problem(std::auto_ptr<VesselList3d> vl,Adaption::Parameters params_, BloodFlowParameters bfparams) ;
+		//copy constructor
+		base_ptr clone() const;
+		std::string get_name() const;
+		Adaption::Parameters get_params() const;
+		BloodFlowParameters get_bfparams() const;
+		std::auto_ptr<VesselList3d> get_vl() const;
+	protected:
+		void objfun_impl(fitness_vector &, const decision_vector &) const;
+	private:
+		friend class boost::serialization::access;
+		template <class Archive>
+		void serialize(Archive &ar, unsigned int);
+		template<class Archive> 
+		friend void boost::serialization::save_construct_data(
+		  Archive & ar, const adaption_problem *t, const unsigned int file_version);
+		mutable Adaption::Parameters params;
+		BloodFlowParameters bfparams;
+		mutable std::auto_ptr<VesselList3d> vl;
+};
+}}//namespace pagmo{ namespace problem {
+
+
+BOOST_CLASS_EXPORT_KEY(pagmo::problem::adaption_problem)
+
+
 
 #endif

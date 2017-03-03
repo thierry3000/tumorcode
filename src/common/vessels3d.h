@@ -223,11 +223,13 @@ struct UserDataArrays
 #endif
 
 
+
+
 class VesselList3d
 {
   typedef polymorphic_latticedata::LatticeData LD;
 public:
-  VesselList3d();
+  VesselList3d(boost::shared_ptr<LD> this_ld);
   typedef LD LatticeData; // nicer name for the outside
   typedef LD::SiteType SiteType;
   typedef ListGraph<VesselNode,Vessel> Graphtype;
@@ -272,7 +274,7 @@ public:
   void        DeleteTempEdge( Vessel* v ) { g.DeleteEdge(v,false); }
   void        OptimizeMemLayout() { g.Optimize(); }
   //inline const LD& Ld() const { return *m_ld; }
-  inline const BCList& GetBCMap() const {return *bclist;}
+  inline const BCList& GetBCMap() const {return bclist;}
   //const BCList& GetBCMap() const { return bclist; }
   void          SetBC(const VesselNode* node, FlowBC bc);
   void          ClearBC(VesselNode* node);
@@ -281,26 +283,20 @@ public:
   void        IntegrityCheck(int check_lookup = -1);
   
   std::auto_ptr<VesselList3d> Clone();
-  
+  boost::shared_ptr<LD> getLD() const;
   private:
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive &ar, const unsigned int version)
-    {
-      ar & lookup_site;
-      ar & lookup_bond;
-      ar & m_ld;
-      ar & g;
-      ar & bclist;
-    }
+    void serialize(Archive &ar, const unsigned int version);
     SiteLookup 			lookup_site;
     BondLookup 			lookup_bond;
-    std::auto_ptr<LD>	m_ld;
+    boost::shared_ptr<LD>	m_ld;
     ListGraph<VesselNode,Vessel>g;
     void FillLookup();
-    std::auto_ptr<BCList> bclist; // boundary conditions
+    BCList bclist; // boundary conditions
     void DeleteUnusedNode(VesselNode* vc, int site);
 };
+
 
 inline std::size_t estimateMemoryUsage(const VesselList3d &vl) { return vl.estimateMemoryUsage(); }
 
@@ -344,4 +340,47 @@ inline VesselNode* GetDownstreamNode( Vessel* v)
 
 void CheckToposort(const VesselList3d &vl, const DynArray<int> &order);
 
-#endif
+template <class Archive>
+void VesselList3d::serialize(Archive& ar, const unsigned int version)
+{
+    ar & lookup_site;
+    ar & lookup_bond;
+    ar & m_ld;
+    ar & g;
+    ar & bclist;
+}
+
+/* note:
+ * it is important to place the overwrites of 
+ * save_construct_data and load_construct_data
+ * here in the cpp. If placing direcly in the 
+ * header the "friendship" between boost::serialization
+ * and the VesselList3d is not well established 
+ *
+ * hm this is anyway not the case, I needed setter an getter
+ */
+namespace boost{namespace serialization{
+template <class Archive>
+inline void save_construct_data(
+  Archive &ar, const VesselList3d *t, const unsigned int file_version
+	    )
+{
+  // save data required to construct instance
+  boost::shared_ptr<VesselList3d::LatticeData> an_other_ld = t->getLD();
+  ar << an_other_ld;
+}
+template <class Archive>
+inline void load_construct_data(
+  Archive &ar, VesselList3d *t, const unsigned int file_version
+	    )
+{
+  // retrieve data from archive required to construct new instance
+  boost::shared_ptr<VesselList3d::LatticeData> m_ld;
+  ar >> m_ld;
+  // invoke inplace constructor to initialize instance of my_class
+  ::new(t)VesselList3d(m_ld);
+  //t->Init(*m_ld);
+}
+}}//namespace boost{namespace serialization{
+
+#endif //#define VESSELS3D_H_

@@ -23,6 +23,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/lattice-data.h"
 #include "hdf_wrapper.h"
 #include <boost/noncopyable.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/graph/graph_concepts.hpp>
+#include <boost/serialization/export.hpp>
 
 // forward declaration, their location may change
 void WriteHdfLd( h5cpp::Group f, const LatticeDataQuad3d &ld );
@@ -46,7 +51,7 @@ class LatticeData : boost::noncopyable
     typedef int64 SiteType;
     
     virtual ~LatticeData() {}
-    virtual std::auto_ptr<LatticeData> Clone() const = 0;
+    virtual boost::shared_ptr<LatticeData> Clone() const = 0;
     virtual void Init(const BBox3 &bb, float scale) = 0;
 
     virtual float Scale() const = 0;
@@ -77,11 +82,18 @@ class LatticeData : boost::noncopyable
     /*
      * ldtype = quad or fcc
      */
-    static std::auto_ptr<LatticeData> Make(const char* ldtype, const BBox3 &bb, float scale);
+    static boost::shared_ptr<LatticeData> Make(const char* ldtype, const BBox3 &bb, float scale);
 
     // hdf 5 support
-    static std::auto_ptr<LatticeData> ReadHdf(h5cpp::Group g);
+    static boost::shared_ptr<LatticeData> ReadHdf(h5cpp::Group g);
     virtual void WriteHdf(h5cpp::Group g) const = 0;
+  private:
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+      ar.template register_type<LatticeData>();
+    };
 };
 
 template<class Ld>
@@ -111,7 +123,7 @@ public:
   //Ld& get() { return ld; }
   Ld get() const { return ld; }
 
-  std::auto_ptr<LatticeData> Clone() const { return std::auto_ptr<LatticeData>(new Derived(*this)); }
+  boost::shared_ptr<LatticeData> Clone() const { return boost::shared_ptr<LatticeData>(new Derived(*this)); }
   virtual void Init(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
 
   virtual float Scale() const { return ld.Scale(); }
@@ -139,8 +151,17 @@ public:
   virtual void print(std::ostream &os) const { ld.print(os); }
   // hdf5 support
   virtual void WriteHdf(h5cpp::Group g) const { WriteHdfLd(g, ld); }
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive &ar, const unsigned int version)
+  {
+    ar.template register_type<Ld>();
+    //boost::serialization::void_cast_register<Derived, LatticeData>();
+    ar & boost::serialization::base_object<LatticeData>(*this);
+    ar << ld;
+  };
 };
-
 
 inline std::ostream& operator<<(std::ostream &os, const LatticeData &ld)
 {
@@ -148,7 +169,19 @@ inline std::ostream& operator<<(std::ostream &os, const LatticeData &ld)
   return os;
 }
 
+// template<class Ld>
+// template<class Archive>
+// void Derived<Ld>::serialize(Archive & ar, const unsigned int version)
+// {
+//    //ar & boost::serialization::base_object<LatticeData>(*this);  //serialize base class
+//    //ar & BOOST_SERIALIZATION_NVP(T);
+//    ar & ld;
+// }
 
-}
+}//namespace polymorphic_latticedata
 
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(polymorphic_latticedata::LatticeData)
+BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::LatticeData)
+BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
+BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataFCC>)
 #endif

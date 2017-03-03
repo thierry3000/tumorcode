@@ -29,9 +29,9 @@ namespace VesselGenerator
 void vesselgen_generate_grid(const h5cpp::Group outgroup, const Int3 &size, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, const BloodFlowParameters &bfparams)
 {
   typedef VesselList3d::LatticeData LatticeData;
-  std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
+  boost::shared_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
-  std::auto_ptr<VesselList3d> vl( new VesselList3d() );
+  std::auto_ptr<VesselList3d> vl( new VesselList3d(ldp) );
   vl->Init(*ldp);
 
   TreeRootList tree_roots;
@@ -78,9 +78,9 @@ void vesselgen_generate_grid(const h5cpp::Group outgroup, const Int3 &size, floa
 void vesselgen_generate_grid_no_flow(const h5cpp::Group outgroup, const Int3 &size, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, const BloodFlowParameters &bfparams)
 {
   typedef VesselList3d::LatticeData LatticeData;
-  std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
+  boost::shared_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
-  std::auto_ptr<VesselList3d> vl( new VesselList3d() );
+  std::auto_ptr<VesselList3d> vl( new VesselList3d(ldp) );
   vl->Init(*ldp);
 
   TreeRootList tree_roots;
@@ -135,9 +135,9 @@ enum {
 void vesselgen_generate_single(h5cpp::Group outgroup, const Int3 &size, const int direction_mode, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, int segment_size, const BloodFlowParameters &bfparams)
 {
   typedef VesselList3d::LatticeData LatticeData;
-  std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
+  boost::shared_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
-  boost::scoped_ptr<VesselList3d> vl( new VesselList3d() );
+  boost::scoped_ptr<VesselList3d> vl( new VesselList3d(ldp) );
   vl->Init(*ldp);
 
   auto InsertVessel = [&](VesselNode* nd1, VesselNode* nd2) -> Vessel*
@@ -289,9 +289,9 @@ void vesselgen_generate_symmetric(const h5cpp::Group outgroup, const int &expone
   {
     size[2] = 1;
   }
-  std::auto_ptr<LatticeData> ldp = LatticeData::Make("quad", BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
+  boost::shared_ptr<LatticeData> ldp = LatticeData::Make("quad", BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
-  boost::scoped_ptr<VesselList3d> vl( new VesselList3d() );
+  boost::scoped_ptr<VesselList3d> vl( new VesselList3d(ldp) );
   vl->Init(*ldp);
 
   TreeRootList tree_roots;

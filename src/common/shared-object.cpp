@@ -339,8 +339,8 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
   float grid_scale = params.get<float>("scale subdivide", -1.);
   bool filter_uncirculated = params.get<bool>("filter", false);
   
-  std::auto_ptr<VesselList3d> vl(new VesselList3d());
-  //std::auto_ptr<VesselList3d> vl;
+  
+  std::auto_ptr<VesselList3d> vl;
   typedef polymorphic_latticedata::LatticeData LatticeData;
   
   if(vesselgroup.attrs().get<std::string>("CLASS") == "GRAPH")
@@ -353,17 +353,19 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
       throw std::runtime_error(latticeIOError);
     }
     h5cpp::Group ldgroup = vesselgroup.open_group("lattice");//may not be there
-    std::auto_ptr<LatticeData> ldp = LatticeData::ReadHdf(ldgroup);
-    vl->Init(*ldp);
+    boost::shared_ptr<LatticeData> ldp = LatticeData::ReadHdf(ldgroup);
+    std::auto_ptr<VesselList3d> vl_local(new VesselList3d(ldp));
+    vl=vl_local;
+    //vl->Init(*ldp);
     
 #ifdef DEBUG
     VESSEL_INTEGRITY_CHECK_SWITCH(vl->IntegrityCheck();)
 #endif
 #ifdef DEBUG
     cout << "ReadVesselList3d read " << endl;
-    ldp->print(cout);
+    //ldp->print(cout);
+    vl->getLD()->print(cout);
 #endif
-    
     ReadHdfGraph(vesselgroup, vl.get());
     //this magic can only be done on a lattice
     float original_grid_scale_override = params.get<float>("scale override", -1.);
@@ -385,6 +387,10 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
   }
   else
   {
+    //null!!!!
+    boost::shared_ptr<LatticeData> ldp;
+    std::auto_ptr<VesselList3d> vl_local(new VesselList3d(ldp));
+    vl=vl_local;
     ReadHdfGraph(vesselgroup, vl.get());
   }
 

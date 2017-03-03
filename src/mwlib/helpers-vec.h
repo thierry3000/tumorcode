@@ -75,7 +75,8 @@ private:
   template <typename Archive>
   void serialize(Archive &ar, const unsigned int version)
   {
-    ar & *this;
+    //ar & ;
+    ar & boost::serialization::base_object<Eigen::Matrix<T, d, 1>>(*this);
   }
 };
 
@@ -531,7 +532,14 @@ struct BBoxd
   friend const BBoxd Move(const BBoxd &b, const Vec &p) { return BBoxd(b).Move(p); }
   friend const BBoxd Move(const BBoxd &b, int side, int axis, const T &p)  { return BBoxd(b).Move(side, axis, p); }
   friend const BBoxd Move(const BBoxd &b, int axis, const T &p)  { return BBoxd(b).Move(axis, p); }
-
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version)
+  {
+    ar & min;
+    ar & max;
+  };
 };
 
 

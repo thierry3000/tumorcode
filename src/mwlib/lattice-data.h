@@ -43,6 +43,15 @@ private:
   {
     return strides.dot(x.template cast<StrideType>());
   }
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive &ar, const unsigned int version)
+  {
+  ar & l;
+  ar & strides;
+  ar & box;
+  ar & offset;
+  };
 
 public:
   const IVec& Size() const { return l; }
@@ -139,7 +148,15 @@ public:
   }
 };
 
-
+// template<int d, class SiteType = int, class StrideType = SiteType>
+// template<class Archive>
+// void LatticeIndexing<d,SiteType,StrideType>::serialize(Archive& ar, const unsigned int version)
+// {
+//   ar & l;
+//   ar & strides;
+//   ar & box;
+//   ar & offset;
+// }
 
 struct AxisDirLen
 {
@@ -310,8 +327,24 @@ protected:
   int nb[2][3][DIR_CNT];
   static Int3 vnb[2][3][DIR_CNT];
   float scale, scale_inv; // lattice spacing and 1/spacing
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive &ar, const unsigned int version);
 };
 
+template<class Archive>
+void LatticeDataFCC::serialize(Archive & ar, const unsigned int version)
+{
+   ar & boost::serialization::base_object<LatticeIndexing>(*this);  //serialize base class
+   //ar & BOOST_SERIALIZATION_NVP(T);
+   ar & nbs_init;
+   ar & nb;
+   ar & vnb;
+   ar & scale;
+   ar & scale_inv;
+   ar & wo;
+}
 
 
 enum {

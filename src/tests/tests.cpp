@@ -398,10 +398,10 @@ void TestInterpolation()
 
 void TestVesselList()
 {
-  std::auto_ptr<LatticeData> ldp(LatticeData::Make("fcc", BBox3(0,0,0,10,10,10), 30.));
+  boost::shared_ptr<LatticeData> ldp(LatticeData::Make("fcc", BBox3(0,0,0,10,10,10), 30.));
   Vessel *v, *v2;
   VesselNode *vc2;
-  VesselList3d vl;
+  VesselList3d vl(ldp);
   vl.Init(*ldp);
   v = vl.InsertVessel(Int3(0,5,5), Int3(9,5,5));
   vl.IntegrityCheck();
@@ -452,9 +452,9 @@ void TestVesselFieldCoupling()
 {
   //LatticeDataQuad3d vessel_ld;
   //create a lattice structure
-  std::auto_ptr<LatticeData> vessel_ld(LatticeData::Make("quad",BBox3(0,0,0,64,64,64), 10.));
+  boost::shared_ptr<LatticeData> vessel_ld(LatticeData::Make("quad",BBox3(0,0,0,64,64,64), 10.));
   //create a vessel list
-  VesselList3d vl;
+  VesselList3d vl(vessel_ld);
   //link the lattice and the vessel
   vl.Init(*vessel_ld);
   //add a vessel
@@ -626,7 +626,7 @@ void TestVesselFieldCoupling3(int argc, char** argv)
   h5cpp::File f(fn, "r");
   h5cpp::Group vess_grp = f.root().open_group("iff/vessels"),
                 ld_grp = f.root().open_group("iff/vessels/lattice");
-  std::auto_ptr<LatticeData> ldp(LatticeData::ReadHdf(ld_grp));
+  boost::shared_ptr<LatticeData> ldp(LatticeData::ReadHdf(ld_grp));
   LatticeData &ld = *ldp;
   ld.SetOriginPosition(-ld.GetWorldBox().max*0.5);
   //VesselList3d vl;
