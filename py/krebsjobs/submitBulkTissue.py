@@ -51,6 +51,8 @@ def mkdir(outfn):
 
 def vess_size_to_tum_size(fn, tum_lattice_const):
   vesselgroup = h5files.open(fn, 'r')['/vessels']
+  if __debug__:
+    print("vesselgroup.id.id: %i" % vesselgroup.id.id)
   ld = krebsutils.read_lattice_data_from_hdf(krebsutils.find_lattice_group_(vesselgroup))
   ld_vessels = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])
   bbox = ld_vessels.worldBox

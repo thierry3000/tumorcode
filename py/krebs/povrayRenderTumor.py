@@ -79,7 +79,8 @@ def addBulkTissueTumor(epv, tumorgroup, trafo, options):
 
 def renderScene(vesselgroup, tumorgroup, imagefn, options):
     if vesselgroup is not None:
-      wbbox = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice']).worldBox
+      vgrp = vesselgroup['lattice']
+      wbbox = krebsutils.read_lattice_data_from_hdf(vgrp).worldBox
     else:
       wbbox = krebsutils.read_lattice_data_from_hdf(tumorgroup.file['field_ld']).worldBox
     trafo = calc_centering_normalization_trafo(wbbox)

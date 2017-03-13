@@ -21,6 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from copy import deepcopy
+import myutils
+cluster_threads = myutils.cluster_threads
 
 default = dict(
   num_threads = 6,
@@ -65,3 +67,11 @@ default = dict(
   )
 )
 newradiusdeflation = deepcopy(default)
+
+forCatSim = deepcopy(default)
+forCatSim.update(
+  num_threads = cluster_threads,
+  tumor_speed = 1.042,
+  tumor_radius = 50.,
+)
+forCatSim['rheology'] = 'RheologySecomb2005'

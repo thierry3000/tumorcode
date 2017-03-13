@@ -23,6 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import h5py
 import atexit
 import os
+
+if __debug__:
+    print("h5py.__file__: %s" % h5py.__file__)
+
 '''
   Need this because - citing the h5py docs
   http://www.h5py.org/docs/whatsnew/2.0.html#file-objects-must-be-manually-closed

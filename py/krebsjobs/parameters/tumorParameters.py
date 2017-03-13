@@ -397,10 +397,86 @@ defaultconfig_bulktissue = dict(
     surface_tension = -1.,
   ),
 )
-bulktissue_snowden = deepcopy(defaultconfig_bulktissue)
-bulktissue_snowden.update(
-  num_threads = 12,
+bulktissue_small_2d_snowden = dict(
+  # this is the configuration which is used in submit-bulktissue-w-vessels
+  lattice_size  = "set me to match the vessel domain",
+  fn_out = "set_me",
+  tend = 2000.,
+  out_intervall = 30,
+  num_threads = cluster_threads,
+  lattice_scale  = 30,
+
+  #o2_rel_tumor_source_density = 0,
+  #use_o2_source_decay = True,
+  #o2_source_decay_time = 8,
+  #adaption = appReal14['adaption'],
+  prez_o2 = dict(
+    o2_level_normal = 0.8,
+    o2_range_tumor = 50,
+    o2_range_necro = 100,
+    o2_range_normal = 100,
+    ),
+  vessels = dict(
+    gfVessProl = 0.0005,
+    timeProlEcSprout = 2,
+    #timeProlEcEnlarge = 180,
+    #timeTillDeathEc = 50,
+    sproutDelay = 24,
+    probCollapse = 1,
+    bRelativeShearforceCollapse = False,
+    forceCollapse = 0.0005,
+    #forceCollapseRel = 0.2,
+    radMax = 25,
+    radInit = 4,
+    distSproutMin = 8,
+    dematuration_rate = 0.05,
+    maturation_crit = 0.,
+    bSproutModelSimple = False,
+    vesselCompressionFactor = 1.,
+    sproutMaxVesselWallThickness = 50,
+    sproutMaxVesselWallThicknessArterial = 50., # replacement for arterial sprouting = true
+    onlyReduceMaturationIfUnderperfused = True,
+    isShearForceEffectLinear = False
+  ),
+  
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6,
+    rheology = 'RheologySecomb2005',
+    inletHematocrit = 0.37,
+    includePhaseSeparationEffect = True,
+  ),
+
+  tumor = dict(
+    tumor_diameter = 10,
+    init_shape = 'sphere',
+    time_prol = 24,
+    time_death = 240,
+    time_necrosis = 48,
+    time_death_tumor = 48000, # apoptosis
+
+    ncells_norm = 0.4,
+    ncells_tumor = 0.6,
+    ncells_sigma = 0.1,
+    ncells_ecm = 0.2,
+    cell_mobility = 7.2e-1,
+    cell_mobility_tumor = 7.2e-1, # micron^2 / (h kPa)
+    cell_compression_modulus = 0.5e4, # kPa
+    cell_mobility_ecmstar = -1,
+    write_face_velocities = False,
+    write_levelset_function = True,
+    wrong_model = False,
+    ecm_noise_density = -1,
+    ecm_noise_std = -1,
+
+    o2_necro_threshold = 0.03,
+    o2_prol_threshold = 0.3,
+    source_model_version = 3,
+    use_necrotic_regions = True,
+
+    surface_tension = -1.,
+  ),
 )
+
 bulktissue_tutorial = deepcopy(defaultconfig_bulktissue)
 bulktissue_tutorial.update(
   tend = 101.,
