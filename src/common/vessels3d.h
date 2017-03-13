@@ -357,7 +357,7 @@ void VesselList3d::serialize(Archive& ar, const unsigned int version)
  * header the "friendship" between boost::serialization
  * and the VesselList3d is not well established 
  *
- * hm this is anyway not the case, I needed setter an getter
+ * hm this is anyway not the case,
  */
 namespace boost{namespace serialization{
 template <class Archive>
@@ -367,7 +367,7 @@ inline void save_construct_data(
 {
   // save data required to construct instance
   boost::shared_ptr<VesselList3d::LatticeData> an_other_ld = t->getLD();
-  ar << an_other_ld;
+  ar & an_other_ld;
 }
 template <class Archive>
 inline void load_construct_data(
@@ -376,7 +376,7 @@ inline void load_construct_data(
 {
   // retrieve data from archive required to construct new instance
   boost::shared_ptr<VesselList3d::LatticeData> m_ld;
-  ar >> m_ld;
+  ar & m_ld;
   // invoke inplace constructor to initialize instance of my_class
   ::new(t)VesselList3d(m_ld);
   //t->Init(*m_ld);

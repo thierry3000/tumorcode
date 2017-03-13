@@ -93,6 +93,7 @@ class LatticeData : boost::noncopyable
     void serialize(Archive &ar, const unsigned int version)
     {
       ar.template register_type<LatticeData>();
+      //ar & boost::serialization::base_object<boost::noncopyable>(*this);
     };
 };
 
@@ -156,12 +157,15 @@ private:
   template<class Archive>
   void serialize(Archive &ar, const unsigned int version)
   {
+    ar.template register_type<Derived<Ld>>();
     ar.template register_type<Ld>();
-    //boost::serialization::void_cast_register<Derived, LatticeData>();
+    boost::serialization::void_cast_register<Derived, LatticeData>();
     ar & boost::serialization::base_object<LatticeData>(*this);
-    ar << ld;
+    ar & ld;
   };
 };
+
+
 
 inline std::ostream& operator<<(std::ostream &os, const LatticeData &ld)
 {
@@ -182,6 +186,11 @@ inline std::ostream& operator<<(std::ostream &os, const LatticeData &ld)
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(polymorphic_latticedata::LatticeData)
 BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::LatticeData)
-BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
+//BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
+//BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataFCC>)
+//BOOST_CLASS_EXPORT(polymorphic_latticedata::LatticeData)
+//BOOST_CLASS_EXPORT(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
 BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataFCC>)
+//BOOST_CLASS_EXPORT_GUID(polymorphic_latticedata::Derived<LatticeDataQuad3d>, "Quad3d")
+//BOOST_CLASS_EXPORT_GUID(polymorphic_latticedata::Derived<LatticeDataFCC>, "FCC")
 #endif

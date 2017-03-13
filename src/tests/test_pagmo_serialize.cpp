@@ -302,12 +302,10 @@ int main()
 		{
 		// create and open a character archive for output
 		std::ofstream ofs("test.ar");
-		//ofs.template register_type<polymorphic_latticedata::Derived>;
 		// save data to archive
 		boost::archive::text_oarchive oa(ofs);
-		//oa.template register_type<pagmo::problem::adaption_problem>();
-		oa.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
-		oa.template register_type<polymorphic_latticedata::LatticeData>();
+		//oa.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
+		//oa.template register_type<polymorphic_latticedata::LatticeData>();
 		// write class instance to archive
 		oa << probs[i];
 		// archive and stream closed when destructors are called
@@ -315,9 +313,11 @@ int main()
 
 		{
 		// create and open an archive for input
-#if 0
+#if 1
 		std::ifstream ifs("test.ar");
 		boost::archive::text_iarchive ia(ifs);
+		//ia.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
+		//ia.template register_type<polymorphic_latticedata::LatticeData>();
 		// read class state from archive
 		ia & probs_new[i];
 		// archive and stream closed when destructors are called

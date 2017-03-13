@@ -86,7 +86,23 @@ boost::shared_ptr<LatticeData> LatticeData::ReadHdf(h5cpp::Group g)
 //    //ar & BOOST_SERIALIZATION_NVP(T);
 //    ar & ld;
 // }
+namespace boost { namespace serialization {
+  template<class Archive>
+  inline void save_construct_data(
+    Archive &ar, const polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version)
+  {
+    ar & t->ld;
+  }
+  template <class Archive>
+  inline void load_construct_data(
+    Archive &ar, polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version)
+  {
+    LatticeDataFCC attribute = LatticeDataFCC();
+    ar & attribute;
+    ::new(t)polymorphic_latticedata::Derived<LatticeDataFCC>(attribute);
+  }
+}}//namespace boost { namespace serialization {
 }//polymorphic_latticedata
-BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::LatticeData)
+//BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::LatticeData)
 BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived<LatticeDataFCC>)
-BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
+//BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
