@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "lattice-data.h"
 #include <float.h>
+
 #include "math_ext.h"
 
 
@@ -204,7 +205,29 @@ Int3 LatticeDataQuad3d::GetLatticeIndexOnRefinedGrid(const Int3& pos, int refine
   return pos * (1 + refinement_subdivision);
 }
 
-
+// template <class Archive>
+// void LatticeDataQuad3d::serialize(Archive& ar, const unsigned int version)
+// {
+//   //ar & boost::serialization::base_object<LatticeIndexing<3, int64, int64>>(*this);
+//   ar & boost::serialization::base_object<LatticeIndexing>(*this);
+//   ar & nbs_init;
+//   ar & nb;
+//   ar & vnb;
+// }
+// template <class Archive>
+// void LatticeDataFCC::serialize(Archive& ar, const unsigned int version)
+// {
+//   boost::serialization::base_object<LatticeIndexing>(*this);
+//   //boost::serialization::base_object<LatticeIndexing<3, int64, int64>>(*this);
+//   //ar & boost::serialization::base_object<LatticeIndexing>(*this);  //serialize base class
+//    //ar & BOOST_SERIALIZATION_NVP(T);
+//   ar & nbs_init;
+//   ar & nb;
+//   ar & vnb;
+//   ar & scale;
+//   ar & scale_inv;
+//   ar & wo;
+// }
 
 volatile bool LatticeDataFCC::nbs_init = false;
 Int3 LatticeDataFCC::vnb[2][3][LatticeDataFCC::DIR_CNT];
@@ -335,7 +358,6 @@ Int3 LatticeDataFCC::NbLattice( const Int3 &p, int dir ) const
   return p + vnb[p[1]&1][my::mod(p[2],3)][dir];
   
 }
-
 
 static Int3 fcc2cartesian(const Int3 &p)
 {
@@ -475,3 +497,5 @@ bool operator==( const LatticeDataFCC& a, const LatticeDataFCC& b )
   return a.Box()==b.Box() && a.Scale()==b.Scale() && a.LatticeToSite(a.Box().min) == b.LatticeToSite(b.Box().min);
 }
 
+//BOOST_CLASS_EXPORT_IMPLEMENT(LatticeDataFCC)
+//BOOST_CLASS_EXPORT_IMPLEMENT(LatticeDataQuad3d)

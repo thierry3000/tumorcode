@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/unordered_map.hpp>
 
+
 typedef double FlReal;
 class VesselList3d;
 
@@ -61,7 +62,7 @@ struct BloodFlowParameters
   Rheology rheology;
   double inletHematocrit;
   bool includePhaseSeparationEffect; // non-homogeneous intravascular hematocrit distribution, Warning: computationally very expensive
-
+  friend class boost::serialization::access;
   template<class Archive>
     void serialize(Archive &ar, const unsigned int version)
     {
@@ -129,12 +130,13 @@ struct FlowBC
   FlowBC(Resist, double w, double val) : w(w),val(val),type(RESIST) {}
   uint type; // PIN, CURRENT or RESIST
   double w,val; // w = flow conuctivity (?) of series "resistor", val = either blood pressure or flow rate
+  friend class boost::serialization::access;
   template<class Archive>
-    void serialize(Archive &ar, const unsigned int version)
-    {
-        // save/load base class information
-        ar & type & w & val;
-    }
+  void serialize(Archive &ar, const unsigned int version)
+  {
+      // save/load base class information
+      ar & type & w & val;
+  }
 };
 
 

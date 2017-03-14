@@ -25,18 +25,20 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/serialization/export.hpp>
+
 #ifdef PAGMO_ENABLE_KEP_TOOLBOX
 	#include <keplerian_toolbox/planet/jpl_low_precision.h>
 	#include <keplerian_toolbox/epoch.h>
 #endif
 
-#include <pagmo/src/pagmo.h>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/export.hpp>
 
+#include <pagmo/src/pagmo.h>
 #include <eigen3/Eigen/Dense>
 #include <boost/shared_ptr.hpp>
+#include <boost/serialization/shared_ptr.hpp>
 
 
 
@@ -44,6 +46,7 @@
 #include "numpy.hpp"
 #include "../adaption/adaption_as_pagmo_problem.h"
 #include "../common/calcflow.h"
+#include "../common/lattice-data-polymorphic.h"
 #include <algorithm>
 
 #define BOOST_RESULT_OF_USE_DECLTYPE 1
@@ -304,10 +307,10 @@ int main()
 		std::ofstream ofs("test.ar");
 		// save data to archive
 		boost::archive::text_oarchive oa(ofs);
-		//oa.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
 		//oa.template register_type<polymorphic_latticedata::LatticeData>();
+		//oa.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
 		// write class instance to archive
-		oa << probs[i];
+		oa & probs[i];
 		// archive and stream closed when destructors are called
 		}
 
@@ -319,41 +322,42 @@ int main()
 		//ia.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
 		//ia.template register_type<polymorphic_latticedata::LatticeData>();
 		// read class state from archive
-		ia & probs_new[i];
+		problem::base_ptr currentProblem = probs_new[i];
+		ia & currentProblem;
 		// archive and stream closed when destructors are called
 #endif
 		}
-#if 0
+#if 1
 		{
 		std::cout << std::endl << std::setw(40) << probs[i]->get_name()<<std::flush;
 		decision_vector x(probs[i]->get_dimension(),0);
 		fitness_vector f1(probs[i]->get_f_dimension(),0), f2(probs[i]->get_f_dimension(),1);
 		constraint_vector c1(probs[i]->get_c_dimension(),0), c2(probs[i]->get_c_dimension(),1);
-		population pop(*probs[i],1);
+ 		population pop(*probs[i],1);
 		x = pop.champion().x;
 		probs[i]->objfun(f1,x);
-		probs_new[i]->objfun(f2,x);
-		probs[i]->compute_constraints(c1,x);
-		probs_new[i]->compute_constraints(c2,x);
-
-		if (std::equal(f1.begin(),f1.end(),f2.begin())) {
-			std::cout << ": Fitness pass,";
-		} else {
-			std::cout << ": Fitness FAILED, " << std::endl;
-			std::cout << x<< std::endl;
-			std::cout << f1 << " " << f2 << std::endl;
-			std::cout << *probs[i]<<std::endl;
-			std::cout << *probs_new[i]<<std::endl;
-			return 1;
-		}
-		if (std::equal(c1.begin(),c1.end(),c2.begin())) {
-			std::cout << " Constraints pass";
-		} else {
-			std::cout << " Constraints FAILED" << std::endl;
-			std::cout << " c1 = " << c1 << std::endl;
-			std::cout << " c2 = " << c2 << std::endl;
-			return 1;
-		}
+// 		probs_new[i]->objfun(f2,x);
+// 		probs[i]->compute_constraints(c1,x);
+// 		probs_new[i]->compute_constraints(c2,x);
+// 
+// 		if (std::equal(f1.begin(),f1.end(),f2.begin())) {
+// 			std::cout << ": Fitness pass,";
+// 		} else {
+// 			std::cout << ": Fitness FAILED, " << std::endl;
+// 			std::cout << x<< std::endl;
+// 			std::cout << f1 << " " << f2 << std::endl;
+// 			std::cout << *probs[i]<<std::endl;
+// 			std::cout << *probs_new[i]<<std::endl;
+// 			return 1;
+// 		}
+// 		if (std::equal(c1.begin(),c1.end(),c2.begin())) {
+// 			std::cout << " Constraints pass";
+// 		} else {
+// 			std::cout << " Constraints FAILED" << std::endl;
+// 			std::cout << " c1 = " << c1 << std::endl;
+// 			std::cout << " c2 = " << c2 << std::endl;
+// 			return 1;
+// 		}
 		}
 #endif
 	}

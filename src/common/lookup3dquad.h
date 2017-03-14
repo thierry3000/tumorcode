@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "lattice-data-polymorphic.h"
 
 #include<boost/unordered_map.hpp>
-
+#include <boost/serialization/unordered_map.hpp>
 #define DEBUG_BondLookup(x)
 
 //template<class LD, class V_>

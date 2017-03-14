@@ -45,7 +45,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics.hpp>
+//#include <boost/serialization/access.hpp>
+//#include <boost/serialization/serialization.hpp>
 
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/export.hpp>
 
 //#define PAGMO_ENABLE_MPI --> done in cmake now
 #include <pagmo/src/pagmo.h>
@@ -53,88 +58,67 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <pagmo/src/serialization.h>
 #include <pagmo/src/types.h>
 #include <pagmo/src/problem/base.h>
-
 #include <adaption/adaption_model2.h>
 namespace pagmo{ namespace problem{
   class adaption_problem;
 }}
-
-
 namespace boost{ namespace serialization{
 template<class Archive>
 inline void save_construct_data(
-  Archive &ar, const pagmo::problem::adaption_problem *t, const unsigned int file_version)
-{
-  //save data required to construct instances
-  ar<<t->params;
-  ar<<t->bfparams;
-  ar<<t->vl;
-}
+  Archive &ar, const pagmo::problem::adaption_problem *t, const unsigned int file_version);
 template<class Archive>
 inline void load_construct_data(
-  Archive &ar, pagmo::problem::adaption_problem *t, const unsigned int file_version)
-{
-  //retrieve data from archive required to construct new instance
-  Adaption::Parameters params;
-  ar >> params;
-  BloodFlowParameters bfparams;
-  ar >> bfparams;
-  std::auto_ptr<VesselList3d> vl;
-  cout<<"I am here "<<endl;
-  //vl->init_from_other_vl();
-  ar >> vl;
-  // invoke inplace constructor to initialize instance of adaption_problem
-  ::new(t)pagmo::problem::adaption_problem(vl,params,bfparams);
-  //t(vl,params,bfparams);
-}
-
-//from http://www.boost.org/doc/libs/1_54_0/libs/serialization/example/demo_auto_ptr.cpp
-/////////////////////////////////////////////////////////////
-// implement serialization for auto_ptr< T >
-// note: this must be added to the boost namespace in order to
-// be called by the library
-template<class Archive, class T>
-inline void save(
-    Archive & ar,
-    const std::auto_ptr< T > &t,
-    const unsigned int file_version
-){
-    // only the raw pointer has to be saved
-    // the ref count is rebuilt automatically on load
-    const T * const tx = t.get();
-    ar << tx;
-}
-
-template<class Archive, class T>
-inline void load(
-    Archive & ar,
-    std::auto_ptr< T > &t,
-    const unsigned int file_version
-){
-    T *pTarget;
-    ar >> pTarget;
-    // note that the reset automagically maintains the reference count
-    #if BOOST_WORKAROUND(BOOST_DINKUMWARE_STDLIB, == 1)
-        t.release();
-        t = std::auto_ptr< T >(pTarget);
-    #else
-        t.reset(pTarget);
-    #endif
-}
-
-// split non-intrusive serialization function member into separate
-// non intrusive save/load member functions
-template<class Archive, class T>
-inline void serialize(
-    Archive & ar,
-    std::auto_ptr< T > &t,
-    const unsigned int file_version
-){
-    boost::serialization::split_free(ar, t, file_version);
-}
-
-//http://stackoverflow.com/questions/20894415/boost-non-intrusively-serialize-a-class-in-separate-load-save-functions
+  Archive &ar, pagmo::problem::adaption_problem *t, const unsigned int file_version);
 }}//namespace boost{ namespace serialization{
+
+
+// //from http://www.boost.org/doc/libs/1_54_0/libs/serialization/example/demo_auto_ptr.cpp
+// /////////////////////////////////////////////////////////////
+// // implement serialization for auto_ptr< T >
+// // note: this must be added to the boost namespace in order to
+// // be called by the library
+// template<class Archive, class T>
+// inline void save(
+//     Archive & ar,
+//     const std::auto_ptr< T > &t,
+//     const unsigned int file_version
+// ){
+//     // only the raw pointer has to be saved
+//     // the ref count is rebuilt automatically on load
+//     const T * const tx = t.get();
+//     ar << tx;
+// }
+// 
+// template<class Archive, class T>
+// inline void load(
+//     Archive & ar,
+//     std::auto_ptr< T > &t,
+//     const unsigned int file_version
+// ){
+//     T *pTarget;
+//     ar >> pTarget;
+//     // note that the reset automagically maintains the reference count
+//     #if BOOST_WORKAROUND(BOOST_DINKUMWARE_STDLIB, == 1)
+//         t.release();
+//         t = std::auto_ptr< T >(pTarget);
+//     #else
+//         t.reset(pTarget);
+//     #endif
+// }
+// 
+// // split non-intrusive serialization function member into separate
+// // non intrusive save/load member functions
+// template<class Archive, class T>
+// inline void serialize(
+//     Archive & ar,
+//     std::auto_ptr< T > &t,
+//     const unsigned int file_version
+// ){
+//     boost::serialization::split_free(ar, t, file_version);
+// }
+// 
+// //http://stackoverflow.com/questions/20894415/boost-non-intrusively-serialize-a-class-in-separate-load-save-functions
+// }}//namespace boost{ namespace serialization{
 
 namespace pagmo{ namespace problem {
   /* this class is meant to implement the 
@@ -144,13 +128,10 @@ class __PAGMO_VISIBLE adaption_problem : public base
 {
 	public:
 		//constructor
-		adaption_problem(std::auto_ptr<VesselList3d> vl,Adaption::Parameters params_, BloodFlowParameters bfparams) ;
+		adaption_problem(boost::shared_ptr<VesselList3d> vl,Adaption::Parameters params_, BloodFlowParameters bfparams) ;
 		//copy constructor
 		base_ptr clone() const;
 		std::string get_name() const;
-		Adaption::Parameters get_params() const;
-		BloodFlowParameters get_bfparams() const;
-		std::auto_ptr<VesselList3d> get_vl() const;
 	protected:
 		void objfun_impl(fitness_vector &, const decision_vector &) const;
 	private:
@@ -160,9 +141,12 @@ class __PAGMO_VISIBLE adaption_problem : public base
 		template<class Archive> 
 		friend void boost::serialization::save_construct_data(
 		  Archive & ar, const adaption_problem *t, const unsigned int file_version);
+		template<class Archive> 
+		friend void boost::serialization::load_construct_data(
+		  Archive & ar, adaption_problem *t, const unsigned int file_version);
 		mutable Adaption::Parameters params;
 		BloodFlowParameters bfparams;
-		mutable std::auto_ptr<VesselList3d> vl;
+		mutable boost::shared_ptr<VesselList3d> vl;
 };
 }}//namespace pagmo{ namespace problem {
 

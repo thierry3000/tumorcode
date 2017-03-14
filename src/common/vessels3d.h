@@ -21,13 +21,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define VESSELS3D_H_
 
 #include <unordered_map>
-#include <boost/unordered_map.hpp>
+//#include <boost/unordered/unordered_map.hpp>
+#include <boost/serialization/unordered_map.hpp>
+
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/utility.hpp>
+#include <boost/serialization/vector.hpp>
+
+#include <boost/serialization/singleton.hpp>
+#include <boost/serialization/extended_type_info.hpp>
+#include <boost/serialization/type_info_implementation.hpp>
+#include <boost/serialization/throw_exception.hpp>
+#include <boost/archive/archive_exception.hpp>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/serialization/shared_ptr_helper.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+
+#include "unordered_map_serialization.h"
 #include "lattice-data-polymorphic.h"
 #include "mwlib/listgraph.h"
 //#include "shared-objects.h"
 #include "mwlib/mempool.h"
 #include "mwlib/math_ext.h"
 #include "calcflow.h"
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/export.hpp>
 
 struct HemodynamicBounds;
 class VesselList3d;
@@ -98,6 +118,7 @@ struct VNodeData
   bool IsBoundary() const { return flags.GetBits(BOUNDARY); }
   bool IsCirculated() const { return flags.GetBits(CIRCULATED);}
   void SetWorldPos( Float3 a) { this->worldpos = a;}
+  friend class boost::serialization::access;
   template<class Archive>
     void serialize(Archive &ar, const unsigned int version)
     {
@@ -107,7 +128,6 @@ struct VNodeData
 	ar & bctyp;
 	ar & value_of_bc;
 	ar & flags;
-	ar & has_been_visited;
     } 
 };
 
@@ -167,12 +187,13 @@ public:
   const Int3 LPosA() const { return NodeA()->lpos; }
   const Int3 LPosB() const { return NodeB()->lpos; }
   float getWorldLength(){return sqrt(norm(NodeA()->worldpos - NodeB()->worldpos));}
+  friend class boost::serialization::access;
   template<class Archive>
-    void serialize(Archive &ar, const unsigned int version)
-    {
-      ar & len;
-      ar & dir;
-    }
+  void serialize(Archive &ar, const unsigned int version)
+  {
+    ar & len;
+    ar & dir;
+  }
 };
 
 
@@ -282,7 +303,7 @@ public:
   std::size_t estimateMemoryUsage() const;
   void        IntegrityCheck(int check_lookup = -1);
   
-  std::auto_ptr<VesselList3d> Clone();
+  boost::shared_ptr<VesselList3d> Clone();
   boost::shared_ptr<LD> getLD() const;
   private:
     friend class boost::serialization::access;
@@ -345,7 +366,7 @@ void VesselList3d::serialize(Archive& ar, const unsigned int version)
 {
     ar & lookup_site;
     ar & lookup_bond;
-    ar & m_ld;
+    //ar & m_ld;
     ar & g;
     ar & bclist;
 }
@@ -382,5 +403,5 @@ inline void load_construct_data(
   //t->Init(*m_ld);
 }
 }}//namespace boost{namespace serialization{
-
+BOOST_CLASS_EXPORT_KEY(VesselList3d)
 #endif //#define VESSELS3D_H_

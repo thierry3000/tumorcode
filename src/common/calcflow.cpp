@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "vessels3d.h"
 #include "shared-objects.h"
 
-#include <boost/unordered_map.hpp>
+#include "calcflow.h"
 #include <boost/foreach.hpp>
 #include <limits>
 #include <fstream>

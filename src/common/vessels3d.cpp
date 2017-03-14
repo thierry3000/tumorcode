@@ -58,16 +58,12 @@ float Vessel::WorldLength( const polymorphic_latticedata::LatticeData &ld ) cons
 // {
 //   this->bclist.reset(new BCList);
 // }
+/* a forced constructor */
 VesselList3d::VesselList3d(boost::shared_ptr< VesselList3d::LD > this_ld)
 {
-  //this->bclist.reset(new BCList);
   this->bclist.clear();
   this->m_ld = this_ld;
-  //this->m_ld.reset(this_ld.get());
-  //this->m_ld.reset(this_ld->Clone().get());
-  //m_ld.reset(this_ld->Clone());
   this->Flush();
-  //this->m_ld = _ld.Clone();
   this->lookup_site.Init(*m_ld);
   this->lookup_bond.Init(*m_ld);
   this->g.Reserve( 1024 );
@@ -79,13 +75,13 @@ boost::shared_ptr< polymorphic_latticedata::LatticeData > VesselList3d::getLD() 
 
 
 
-std::auto_ptr< VesselList3d > VesselList3d::Clone()
+boost::shared_ptr< VesselList3d > VesselList3d::Clone()
 {
   #ifdef DEBUG
   cout << "this lattice data will be passed to: " << endl;
   this->m_ld->print(cout);
   #endif
-  std::auto_ptr<VesselList3d> my_return_list(new VesselList3d(this->m_ld));
+  boost::shared_ptr<VesselList3d> my_return_list(new VesselList3d(this->m_ld));
   //my_return_list.reset(new VesselList3d);
   //my_return_list->Init(this->Ld());
   //my_return_list->bclist.reset(new BCList);
@@ -197,38 +193,36 @@ VesselNode* VesselList3d::InsertNode( const Float3 &a )
 }
 VesselNode* VesselList3d::InsertNode(const VesselNode *p_n)
 {
-  //VesselNode newNode = VesselNode(*ref_n);
-  VesselNode *newNode = this->InsertNode(p_n->lpos);
-//   VesselNode *newNode = this->InsertNode( ref_n->lpos);
-//   newNode->press = ref_n->press;
-//   newNode->residual = ref_n->residual;
-//   newNode->worldpos = ref_n->worldpos;
-//   newNode->bctyp = ref_n->bctyp;
-//   newNode->value_of_bc = ref_n->value_of_bc;
-//   newNode->flags = p_n->flags;
-//   newNode->has_been_visited = ref_n->has_been_visited;
+  VesselNode *newNode 		= this->InsertNode(p_n->lpos);
+  newNode->press 		= p_n->press;
+  newNode->residual 		= p_n->residual;
+  newNode->worldpos 		= p_n->worldpos;
+  newNode->bctyp 		= p_n->bctyp;
+  newNode->value_of_bc 		= p_n->value_of_bc;
+  newNode->flags 		= p_n->flags;
+  newNode->has_been_visited 	= p_n->has_been_visited;
   //if pn in boundarymap
   // add also to this->bclist;
   return newNode; 
 }
 void VesselList3d::InsertVessel(const Vessel* p_v)
 {
-  Vessel *newVessel = this->InsertVessel(p_v->NodeA()->lpos,p_v->NodeB()->lpos);
-  newVessel->r = p_v->r;
-  newVessel->flags = p_v->flags;
-  newVessel->q = p_v->q;
-  newVessel->f =p_v->f;
-  newVessel->hematocrit = p_v->hematocrit;
+  Vessel *newVessel 		= this->InsertVessel(p_v->NodeA()->lpos,p_v->NodeB()->lpos);
+  newVessel->r 			= p_v->r;
+  newVessel->flags 		= p_v->flags;
+  newVessel->q 			= p_v->q;
+  newVessel->f 			= p_v->f;
+  newVessel->hematocrit 	= p_v->hematocrit;
   newVessel->conductivitySignal = p_v->conductivitySignal;
-  newVessel->metabolicSignal = p_v->metabolicSignal;
-  newVessel->S_total = p_v->S_total;
-  newVessel->maturation = p_v->maturation;
-  newVessel->reference_r = p_v->reference_r;
-  newVessel->timeSprout = p_v->timeSprout;
-  newVessel->timeInTumor = p_v->timeInTumor;
+  newVessel->metabolicSignal 	= p_v->metabolicSignal;
+  newVessel->S_total 		= p_v->S_total;
+  newVessel->maturation 	= p_v->maturation;
+  newVessel->reference_r 	= p_v->reference_r;
+  newVessel->timeSprout 	= p_v->timeSprout;
+  newVessel->timeInTumor 	= p_v->timeInTumor;
   
-  newVessel->len = p_v->len;
-  newVessel->dir = p_v->dir;
+  newVessel->len 		= p_v->len;
+  newVessel->dir 		= p_v->dir;
 }
 
 
@@ -920,6 +914,6 @@ void CheckToposort(const VesselList3d &vl, const DynArray<int> &order)
   }
 }
 
-
+BOOST_CLASS_EXPORT_IMPLEMENT(VesselList3d)
 
 

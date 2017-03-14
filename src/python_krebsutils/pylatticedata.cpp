@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "pylatticedata.h"
 #include "lattice-data-polymorphic.h"
-
+#include <boost/serialization/export.hpp>
 
 class PyLd
 {
@@ -147,7 +147,9 @@ PyLd* PySetupFieldLattice(const py::object &py_wbbox, int dim, float spacing, fl
   LatticeDataQuad3d ld;
   SetupFieldLattice(wbbox, dim, spacing, safety_spacing, ld);
   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD;
-  return new PyLd(new LD(ld));
+  //serialization issues here!!!
+  //LD alattice = new LD(ld);
+  //return new PyLd(alattice);
 }
 
 
@@ -236,10 +238,11 @@ void exportLatticeData()
   py::def("write_lattice_data_to_hdf", write_lattice_data_to_hdf);
   py::def("SetupFieldLattice", PySetupFieldLattice, py::return_value_policy<py::manage_new_object>());
   
-  mw_py_impl::LdFromPy<LatticeDataQuad3d>::Register();
-  mw_py_impl::LdFromPy<LatticeDataFCC>::Register();
-  mw_py_impl::LdToPy<LatticeDataQuad3d>::Register();
-  mw_py_impl::LdToPy<LatticeDataFCC>::Register();
+  //serialize fuck
+  //mw_py_impl::LdFromPy<LatticeDataQuad3d>::Register();
+  //mw_py_impl::LdFromPy<LatticeDataFCC>::Register();
+  //mw_py_impl::LdToPy<LatticeDataQuad3d>::Register();
+  //mw_py_impl::LdToPy<LatticeDataFCC>::Register();
 }
 
 }

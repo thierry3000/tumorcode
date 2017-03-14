@@ -18,7 +18,43 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/export.hpp>
+
 #include "lattice-data-polymorphic.h"
+#include <string>
+
+namespace boost { namespace serialization {
+  template<class Archive>
+  inline void save_construct_data(
+    Archive &ar, const polymorphic_latticedata::Derived<LatticeDataQuad3d> *t, const unsigned int file_version)
+  {
+    ar & t->ld;
+  }
+  template <class Archive>
+  inline void load_construct_data(
+    Archive &ar, polymorphic_latticedata::Derived<LatticeDataQuad3d> *t, const unsigned int file_version)
+  {
+    LatticeDataQuad3d attribute;
+    ar & attribute;
+    ::new(t)polymorphic_latticedata::Derived<LatticeDataQuad3d>(attribute);
+  }
+  template<class Archive>
+  inline void save_construct_data(
+    Archive &ar, const polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version)
+  {
+    ar & t->ld;
+  }
+  template <class Archive>
+  inline void load_construct_data(
+    Archive &ar, polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version)
+  {
+    LatticeDataFCC attribute;
+    ar & attribute;
+    ::new(t)polymorphic_latticedata::Derived<LatticeDataFCC>(attribute);
+  }
+}}//namespace boost { namespace serialization {
 
 namespace polymorphic_latticedata
 {
@@ -70,39 +106,13 @@ boost::shared_ptr<LatticeData> LatticeData::ReadHdf(h5cpp::Group g)
     throw std::runtime_error(boost::str(boost::format("unknown lattice data type %s in hdf file") % type));
 }
 
-
-
-// template<class Archive>
-// void Derived<>::serialize(Archive & ar, const unsigned int version)
-// {
-//    ar & boost::serialization::base_object<LatticeData>(*this);  //serialize base class
-//    //ar & BOOST_SERIALIZATION_NVP(T);
-//    ar & ld;
-// }
-// template<class Archive>
-// void Derived<>::serialize(Archive & ar, const unsigned int version)
-// {
-//    ar & boost::serialization::base_object<LatticeData>(*this);  //serialize base class
-//    //ar & BOOST_SERIALIZATION_NVP(T);
-//    ar & ld;
-// }
-namespace boost { namespace serialization {
-  template<class Archive>
-  inline void save_construct_data(
-    Archive &ar, const polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version)
-  {
-    ar & t->ld;
-  }
-  template <class Archive>
-  inline void load_construct_data(
-    Archive &ar, polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version)
-  {
-    LatticeDataFCC attribute = LatticeDataFCC();
-    ar & attribute;
-    ::new(t)polymorphic_latticedata::Derived<LatticeDataFCC>(attribute);
-  }
-}}//namespace boost { namespace serialization {
 }//polymorphic_latticedata
+
+
+
 //BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::LatticeData)
-BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived<LatticeDataFCC>)
+//BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived<LatticeDataFCC>)
 //BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
+//template <class Ld>
+//BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived);
+//BOOST_CLASS_EXPORT_GUID(polymorphic_latticedata::Derived<LatticeDataFCC>, "FCC")

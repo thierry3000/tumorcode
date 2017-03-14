@@ -18,8 +18,36 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "adaption_as_pagmo_problem.h"
-#include "adaption_model2.h"
 
+
+namespace boost{ namespace serialization{
+template<class Archive>
+inline void save_construct_data(
+  Archive &ar, const pagmo::problem::adaption_problem *t, const unsigned int file_version)
+{
+  //save data required to construct instances
+  ar & t->params;
+  ar & t->bfparams;
+  ar & t->vl;
+}
+template<class Archive>
+inline void load_construct_data(
+  Archive &ar, pagmo::problem::adaption_problem *t, const unsigned int file_version)
+{
+  //retrieve data from archive required to construct new instance
+  Adaption::Parameters params;
+  ar & params;
+  BloodFlowParameters bfparams;
+  ar & bfparams;
+  boost::shared_ptr<VesselList3d> vl;
+  cout<<"I am here "<<endl;
+  //vl->init_from_other_vl();
+  ar & vl;
+  // invoke inplace constructor to initialize instance of adaption_problem
+  ::new(t)pagmo::problem::adaption_problem(vl,params,bfparams);
+  //t(vl,params,bfparams);
+}
+}}//namespace boost{ namespace serialization{
 
 namespace pagmo { namespace problem {
 /// Constructor from dimension.
@@ -30,22 +58,9 @@ namespace pagmo { namespace problem {
  *
  * @see problem::base constructors.
  */
-//getter and setter
-Adaption::Parameters adaption_problem::get_params() const
-{
-  return this->params;
-}
-BloodFlowParameters adaption_problem::get_bfparams() const
-{
-  return this->bfparams;
-}
-std::auto_ptr<VesselList3d> adaption_problem::get_vl() const
-{
-  return this->vl;
-}
  
 
-adaption_problem::adaption_problem(std::auto_ptr<VesselList3d> vl_, Adaption::Parameters params_, BloodFlowParameters bfparams_):
+adaption_problem::adaption_problem(boost::shared_ptr<VesselList3d> vl_, Adaption::Parameters params_, BloodFlowParameters bfparams_):
 params(params_),bfparams(bfparams_), base(3)
 {
   set_lb(0.5);
@@ -59,8 +74,9 @@ base_ptr adaption_problem::clone() const {
 	//std::auto_ptr<VesselList3d> my_vl(&aNewVl);
 	//return base_ptr(new adaption_problem(*this));
 	//VesselList3d my_vl(new VesselList3d);
-	std::auto_ptr<VesselList3d> my_vl(new VesselList3d(vl->getLD()));// = this->vl->Clone();
-	//my_vl->Init(this->vl->Ld());
+	//boost::shared_ptr<VesselList3d> my_vl(new VesselList3d(vl->getLD()));// = this->vl->Clone();
+	boost::shared_ptr<VesselList3d> my_vl = this->vl->Clone();
+  //my_vl->Init(this->vl->Ld());
 // 	my_vl->init_from_other_vl(*this->vl);
 	//my_vl = this->vl->Clone();
 	return base_ptr(new adaption_problem(my_vl,params,bfparams));
@@ -98,7 +114,8 @@ void adaption_problem::serialize(Archive& ar, unsigned int)
   ar & bfparams;
   ar & vl;
 }
-
 }} //namespaces namespace pagmo { namespace problem {
-
 BOOST_CLASS_EXPORT_IMPLEMENT(pagmo::problem::adaption_problem)
+
+
+

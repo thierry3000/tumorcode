@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <limits>
 #include <ostream>
 #include <assert.h>
+#include <boost/serialization/access.hpp>
 
 namespace my
 {
@@ -359,6 +360,7 @@ struct Bitfield
   Bitfield( T x ) : bits(x) {}
   Bitfield() : bits(T()) {}
   Bitfield( const Bitfield<T> &x ) : bits(x.bits) {}
+  friend class boost::serialization::access;
   template <class Archive>
     void serialize(Archive &ar, const unsigned int)
     {

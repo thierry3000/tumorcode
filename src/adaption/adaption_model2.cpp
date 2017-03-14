@@ -43,74 +43,74 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "adaption_model2.h"
 #include <fenv.h>
 //#include <atomic>
-#include "adaption_as_pagmo_problem.h"
+//#include "adaption_as_pagmo_problem.h"
 
 namespace Adaption
 {
-int test_2()
-{
-  std::cout<<"running pagmo test 2"<<std::endl;
-  // Initialise the MPI environment.
-  int mc_steps=0;
-  int dim=0;
-#ifdef PAGMO_ENABLE_MPI
-  pagmo::mpi_environment env;
-  mc_steps = 10000000;
-  dim = 400;
-#else
-  mc_steps = 10;
-  dim = 4;
-#endif
-  // Create a problem and an algorithm.
-  pagmo::problem::dejong prob(dim);
-  pagmo::algorithm::monte_carlo algo(mc_steps);
-  // Create an archipelago of 10 MPI islands.
-  pagmo::archipelago a;
-  a.set_topology(pagmo::topology::ring());
-  for (int i = 0; i < 2; ++i) {
-#ifdef PAGMO_ENABLE_MPI
-	  a.push_back(pagmo::mpi_island(algo,prob,1));
-#else
-	  a.push_back(pagmo::island(algo,prob,1));
-#endif
-  }
-  // Evolve the archipelago 10 times.
-  a.evolve(10);
-  a.join();
-  return 0;
-}  
-int test_1()
-{
-  std::cout<<"running pagmo test 1"<<std::endl;
-  // Initialise the MPI environment.
-  int mc_steps=0;
-  int dim=0;
-#ifdef PAGMO_ENABLE_MPI
-  pagmo::mpi_environment env;
-  mc_steps = 10000000;
-  dim = 400;
-#else
-  mc_steps = 10;
-  dim = 4;
-#endif
-  // Create a problem and an algorithm.
-  pagmo::problem::dejong prob(dim);
-  pagmo::algorithm::monte_carlo algo(mc_steps);
-  // Create an archipelago of 10 MPI islands.
-  pagmo::archipelago a;
-  a.set_topology(pagmo::topology::ring());
-  for (int i = 0; i < 10; ++i) {
-#ifdef PAGMO_ENABLE_MPI
-	  a.push_back(pagmo::mpi_island(algo,prob,1));
-#else
-	  a.push_back(pagmo::island(algo,prob,1));
-#endif
-  }
-  // Evolve the archipelago 10 times.
-  a.evolve(10);
-  a.join();
-  return 0;
-}  
+// int test_2()
+// {
+//   std::cout<<"running pagmo test 2"<<std::endl;
+//   // Initialise the MPI environment.
+//   int mc_steps=0;
+//   int dim=0;
+// #ifdef PAGMO_ENABLE_MPI
+//   pagmo::mpi_environment env;
+//   mc_steps = 10000000;
+//   dim = 400;
+// #else
+//   mc_steps = 10;
+//   dim = 4;
+// #endif
+//   // Create a problem and an algorithm.
+//   pagmo::problem::dejong prob(dim);
+//   pagmo::algorithm::monte_carlo algo(mc_steps);
+//   // Create an archipelago of 10 MPI islands.
+//   pagmo::archipelago a;
+//   a.set_topology(pagmo::topology::ring());
+//   for (int i = 0; i < 2; ++i) {
+// #ifdef PAGMO_ENABLE_MPI
+// 	  a.push_back(pagmo::mpi_island(algo,prob,1));
+// #else
+// 	  a.push_back(pagmo::island(algo,prob,1));
+// #endif
+//   }
+//   // Evolve the archipelago 10 times.
+//   a.evolve(10);
+//   a.join();
+//   return 0;
+// }  
+// int test_1()
+// {
+//   std::cout<<"running pagmo test 1"<<std::endl;
+//   // Initialise the MPI environment.
+//   int mc_steps=0;
+//   int dim=0;
+// #ifdef PAGMO_ENABLE_MPI
+//   pagmo::mpi_environment env;
+//   mc_steps = 10000000;
+//   dim = 400;
+// #else
+//   mc_steps = 10;
+//   dim = 4;
+// #endif
+//   // Create a problem and an algorithm.
+//   pagmo::problem::dejong prob(dim);
+//   pagmo::algorithm::monte_carlo algo(mc_steps);
+//   // Create an archipelago of 10 MPI islands.
+//   pagmo::archipelago a;
+//   a.set_topology(pagmo::topology::ring());
+//   for (int i = 0; i < 10; ++i) {
+// #ifdef PAGMO_ENABLE_MPI
+// 	  a.push_back(pagmo::mpi_island(algo,prob,1));
+// #else
+// 	  a.push_back(pagmo::island(algo,prob,1));
+// #endif
+//   }
+//   // Evolve the archipelago 10 times.
+//   a.evolve(10);
+//   a.join();
+//   return 0;
+// }  
 void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &params)
 {
 #ifdef DEBUG
@@ -1170,6 +1170,8 @@ void GetAdaptionNetwork(
     int a = fl.org2new_vertex.add(v->NodeA()->Index());
     int b = fl.org2new_vertex.add(v->NodeB()->Index());
     myAssert(a!=b);
+    myAssert(v->NodeA()->press!=0.0);
+    myAssert(v->NodeB()->press!=0.0);
     myAssert(v->NodeA()->press!=v->NodeB()->press);
     fl.edges.push_back(my::make_eqpair(a, b));
   }
@@ -1316,7 +1318,7 @@ bool check_while_break( int no_vessels, double min_error, double nqdev, double m
 }
 
 
-std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> p_vl,bool doDebugOutput)
+std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, boost::shared_ptr<VesselList3d> p_vl,bool doDebugOutput)
 {
   /*
    * first, change the boundary Conditions

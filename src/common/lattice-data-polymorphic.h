@@ -26,7 +26,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/access.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/unordered_map.hpp>
+#include <boost/serialization/unordered_map.hpp>
+#include <boost/serialization/base_object.hpp>
 #include <boost/graph/graph_concepts.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/export.hpp>
 
 // forward declaration, their location may change
@@ -34,7 +41,19 @@ void WriteHdfLd( h5cpp::Group f, const LatticeDataQuad3d &ld );
 void ReadHdfLd( h5cpp::Group f, LatticeDataQuad3d &ld );
 void WriteHdfLd( h5cpp::Group f, const LatticeDataFCC &ld );
 void ReadHdfLd( h5cpp::Group f, LatticeDataFCC &ld );
-
+namespace polymorphic_latticedata{
+template<class Ld>
+class Derived;
+}
+//declaration in order to friend it
+namespace boost{ namespace serialization{
+template<class Ld,class Archive >
+inline void save_construct_data(
+  Archive & ar, const polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version);
+template<class Archive, class Ld>
+inline void load_construct_data(
+  Archive & ar, polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version);
+}}//namespace boost{ namespace serialization{
 
 namespace polymorphic_latticedata
 {
@@ -45,39 +64,39 @@ namespace polymorphic_latticedata
 class LatticeData : boost::noncopyable
 {
   protected:
-    LatticeData() {}
+    LatticeData() = default;
   public:
     typedef Int3 LatticeIndexType;
     typedef int64 SiteType;
     
-    virtual ~LatticeData() {}
-    virtual boost::shared_ptr<LatticeData> Clone() const = 0;
-    virtual void Init(const BBox3 &bb, float scale) = 0;
+    virtual ~LatticeData() = default;
+    virtual boost::shared_ptr<LatticeData> Clone() const {};
+    virtual void Init(const BBox3 &bb, float scale) {};
 
-    virtual float Scale() const = 0;
-    virtual void SetScale(float s) = 0;
+    virtual float Scale() const {};
+    virtual void SetScale(float s) {};
     
-    virtual BBox3 Box() const = 0;
+    virtual BBox3 Box() const {};
 
-    virtual void SetOriginPosition(const Float3 &pos) = 0;
-    virtual Float3 GetOriginPosition() const = 0;
-    virtual FloatBBox3 GetWorldBox() const = 0;
-    virtual void SetCellCentering(const Vec<bool, 3> &cc) = 0;
+    virtual void SetOriginPosition(const Float3 &pos) {};
+    virtual Float3 GetOriginPosition() const {};
+    virtual FloatBBox3 GetWorldBox() const {};
+    virtual void SetCellCentering(const Vec<bool, 3> &cc){};
 
-    virtual int NbCount() const = 0;
-    virtual SiteType NbSite(SiteType site, int dir) const  = 0;
-    virtual Int3 NbLattice(const Int3 &p, int dir) const = 0;
-    virtual Float3 LatticeToWorld( const Int3 &p) const = 0;
-    virtual Int3 WorldToLattice(const Float3 &p) const =  0;
+    virtual int NbCount() const{};
+    virtual SiteType NbSite(SiteType site, int dir) const{};
+    virtual Int3 NbLattice(const Int3 &p, int dir) const{};
+    virtual Float3 LatticeToWorld( const Int3 &p) const{};
+    virtual Int3 WorldToLattice(const Float3 &p) const{};
     
-    virtual SiteType LatticeToSite(const Int3 &p) const = 0;
-    virtual const Int3 SiteToLattice(SiteType site_) const = 0;
-    virtual bool IsInsideLattice(const Int3 &p) const = 0;
+    virtual SiteType LatticeToSite(const Int3 &p) const{};
+    virtual const Int3 SiteToLattice(SiteType site_) const{};
+    virtual bool IsInsideLattice(const Int3 &p) const{};
 
-    virtual AxisDirLen GetAxisDirLen(const Int3 &p1, const Int3 &p2 ) const = 0;
-    virtual Int3 GetLatticeIndexOnRefinedGrid(const Int3 &pos, int refinement_subdivision) const = 0;
+    virtual AxisDirLen GetAxisDirLen(const Int3 &p1, const Int3 &p2 ) const{};
+    virtual Int3 GetLatticeIndexOnRefinedGrid(const Int3 &pos, int refinement_subdivision) const{};
 
-    virtual void print(std::ostream &os) const = 0;
+    virtual void print(std::ostream &os) const{};
 
     /*
      * ldtype = quad or fcc
@@ -86,13 +105,13 @@ class LatticeData : boost::noncopyable
 
     // hdf 5 support
     static boost::shared_ptr<LatticeData> ReadHdf(h5cpp::Group g);
-    virtual void WriteHdf(h5cpp::Group g) const = 0;
+    virtual void WriteHdf(h5cpp::Group g) const {};
   private:
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version)
     {
-      ar.template register_type<LatticeData>();
+      //ar.template register_type<LatticeData>();
       //ar & boost::serialization::base_object<boost::noncopyable>(*this);
     };
 };
@@ -118,9 +137,11 @@ class Derived : public LatticeData
   Ld ld;
 public:
   // trivially forward all calls
+  Derived() = default;
   Derived(const Ld &ld) : ld(ld) {}
   Derived(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
   Derived(const Derived &other) : ld(other.ld) {}
+  ~Derived() { }
   //Ld& get() { return ld; }
   Ld get() const { return ld; }
 
@@ -154,18 +175,23 @@ public:
   virtual void WriteHdf(h5cpp::Group g) const { WriteHdfLd(g, ld); }
 private:
   friend class boost::serialization::access;
+  template<class Archive> 
+  inline friend void boost::serialization::save_construct_data(
+	Archive & ar, const polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version);
+  template<class Archive> 
+  inline friend void boost::serialization::load_construct_data(
+	Archive & ar, polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version);
   template<class Archive>
   void serialize(Archive &ar, const unsigned int version)
   {
-    ar.template register_type<Derived<Ld>>();
-    ar.template register_type<Ld>();
-    boost::serialization::void_cast_register<Derived, LatticeData>();
+    //boost::serialization::void_cast_register<Derived<Ld>, LatticeData>();
+    //ar.template register_type<Derived<Ld>>();
+    //ar.template register_type<Ld>();
     ar & boost::serialization::base_object<LatticeData>(*this);
+    //ar & boost::serialization::base_object<LatticeData>(Derived<Ld>);
     ar & ld;
   };
 };
-
-
 
 inline std::ostream& operator<<(std::ostream &os, const LatticeData &ld)
 {
@@ -184,13 +210,16 @@ inline std::ostream& operator<<(std::ostream &os, const LatticeData &ld)
 
 }//namespace polymorphic_latticedata
 
-BOOST_SERIALIZATION_ASSUME_ABSTRACT(polymorphic_latticedata::LatticeData)
+//BOOST_SERIALIZATION_ASSUME_ABSTRACT(polymorphic_latticedata::LatticeData)
 BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::LatticeData)
-//BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
-//BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataFCC>)
+//typedef foo<Ld>polymorphic_latticedata::Derived<Ld>
+//BOOST_CLASS_EXPORT_KEY(foo)
+//BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived)
+BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
+BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataFCC>)
 //BOOST_CLASS_EXPORT(polymorphic_latticedata::LatticeData)
 //BOOST_CLASS_EXPORT(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
-BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataFCC>)
+//BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataFCC>)
 //BOOST_CLASS_EXPORT_GUID(polymorphic_latticedata::Derived<LatticeDataQuad3d>, "Quad3d")
 //BOOST_CLASS_EXPORT_GUID(polymorphic_latticedata::Derived<LatticeDataFCC>, "FCC")
 #endif
