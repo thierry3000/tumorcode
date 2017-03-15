@@ -407,7 +407,7 @@ bool operator==( const LatticeDataFCC& a, const LatticeDataFCC& b );
 inline std::ostream& operator<<(std::ostream &os, const LatticeDataQuad3d &ld) { ld.print(os); return os; }
 inline std::ostream& operator<<(std::ostream &os, const LatticeDataFCC &ld) { ld.print(os); return os; }
 
-//BOOST_CLASS_EXPORT_KEY(LatticeDataFCC)
+BOOST_CLASS_EXPORT_KEY(LatticeDataFCC)
 //BOOST_CLASS_EXPORT_KEY(LatticeDataQuad3d)
 
 #endif

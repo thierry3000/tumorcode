@@ -497,5 +497,5 @@ bool operator==( const LatticeDataFCC& a, const LatticeDataFCC& b )
   return a.Box()==b.Box() && a.Scale()==b.Scale() && a.LatticeToSite(a.Box().min) == b.LatticeToSite(b.Box().min);
 }
 
-//BOOST_CLASS_EXPORT_IMPLEMENT(LatticeDataFCC)
+BOOST_CLASS_EXPORT_IMPLEMENT(LatticeDataFCC)
 //BOOST_CLASS_EXPORT_IMPLEMENT(LatticeDataQuad3d)
