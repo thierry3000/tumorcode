@@ -46,14 +46,20 @@ template<class Ld>
 class Derived;
 }
 //declaration in order to friend it
-namespace boost{ namespace serialization{
-template<class Ld,class Archive >
-inline void save_construct_data(
-  Archive & ar, const polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version);
-template<class Archive, class Ld>
-inline void load_construct_data(
-  Archive & ar, polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version);
-}}//namespace boost{ namespace serialization{
+// namespace boost{ namespace serialization{
+// template<class Archive >
+// inline void save_construct_data(
+//   Archive & ar, const polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version);
+// template<class Archive>
+// inline void load_construct_data(
+//   Archive & ar, polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version);
+// template<class Archive >
+// inline void save_construct_data(
+//   Archive & ar, const polymorphic_latticedata::Derived<LatticeDataQuad3d> *t, const unsigned int file_version);
+// template<class Archive>
+// inline void load_construct_data(
+//   Archive & ar, polymorphic_latticedata::Derived<LatticeDataQuad3d> *t, const unsigned int file_version);
+// }}//namespace boost{ namespace serialization{
 
 namespace polymorphic_latticedata
 {
@@ -111,7 +117,7 @@ class LatticeData : boost::noncopyable
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version)
     {
-      //ar.template register_type<LatticeData>();
+      ar.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
       //ar & boost::serialization::base_object<boost::noncopyable>(*this);
     };
 };
@@ -138,7 +144,9 @@ class Derived : public LatticeData
 public:
   // trivially forward all calls
   Derived() = default;
-  Derived(const Ld &ld) : ld(ld) {}
+  Derived(const Ld &ld) : ld(ld) {
+    std::printf("create one of this\n");
+  }
   Derived(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
   Derived(const Derived &other) : ld(other.ld) {}
   ~Derived() { }
@@ -175,16 +183,16 @@ public:
   virtual void WriteHdf(h5cpp::Group g) const { WriteHdfLd(g, ld); }
 private:
   friend class boost::serialization::access;
-  template<class Archive> 
-  inline friend void boost::serialization::save_construct_data(
-	Archive & ar, const polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version);
-  template<class Archive> 
-  inline friend void boost::serialization::load_construct_data(
-	Archive & ar, polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version);
+//   template<class Archive> 
+//   inline friend void boost::serialization::save_construct_data(
+// 	Archive & ar, const polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version);
+//   template<class Archive> 
+//   inline friend void boost::serialization::load_construct_data(
+// 	Archive & ar, polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version);
   template<class Archive>
   void serialize(Archive &ar, const unsigned int version)
   {
-    //boost::serialization::void_cast_register<Derived<Ld>, LatticeData>();
+    //boost::serialization::void_cast_register<LatticeData,Derived<Ld>>();
     //ar.template register_type<Derived<Ld>>();
     //ar.template register_type<Ld>();
     ar & boost::serialization::base_object<LatticeData>(*this);
@@ -210,13 +218,54 @@ inline std::ostream& operator<<(std::ostream &os, const LatticeData &ld)
 
 }//namespace polymorphic_latticedata
 
-//BOOST_SERIALIZATION_ASSUME_ABSTRACT(polymorphic_latticedata::LatticeData)
+// namespace boost { namespace serialization {
+//   template<class Archive>
+//   inline void save_construct_data(
+//     Archive &ar, const polymorphic_latticedata::Derived<LatticeDataQuad3d> *t, const unsigned int file_version)
+//   {
+//     ar & t->ld;
+//   }
+//   template <class Archive>
+//   inline void load_construct_data(
+//     Archive &ar, polymorphic_latticedata::Derived<LatticeDataQuad3d> *t, const unsigned int file_version)
+//   {
+// #ifdef DEBUG
+//     std::printf("in load_construct_data at polymorphic_latticedata::Derived<LatticeDataQuad3d");
+// #endif
+//     LatticeDataQuad3d attribute;
+//     ar & attribute;
+//     ::new(t)polymorphic_latticedata::Derived<LatticeDataQuad3d>(attribute);
+//   }
+//   template<class Archive>
+//   inline void save_construct_data(
+//     Archive &ar, const polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version)
+//   {
+//     ar & t->ld;
+//   }
+//   template <class Archive>
+//   inline void load_construct_data(
+//     Archive &ar, polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version)
+//   {
+// #ifdef DEBUG
+//     std::printf("in load_construct_data at polymorphic_latticedata::Derived<LatticeDataFCC");
+// #endif
+//     LatticeDataFCC attribute;
+//     ar & attribute;
+//     ::new(t)polymorphic_latticedata::Derived<LatticeDataFCC>(attribute);
+//   }
+// }}//namespace boost { namespace serialization {
+
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(polymorphic_latticedata::LatticeData)
 BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::LatticeData)
+BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
+BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataFCC>)
+
+
 //typedef foo<Ld>polymorphic_latticedata::Derived<Ld>
 //BOOST_CLASS_EXPORT_KEY(foo)
 //BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived)
-BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
-BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataFCC>)
+//BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
+//BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataFCC>)
 //BOOST_CLASS_EXPORT(polymorphic_latticedata::LatticeData)
 //BOOST_CLASS_EXPORT(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
 //BOOST_CLASS_EXPORT_KEY(polymorphic_latticedata::Derived<LatticeDataFCC>)

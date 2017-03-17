@@ -294,7 +294,12 @@ protected:
 private:
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive &ar, const unsigned int version);
+  void serialize(Archive &ar, const unsigned int version)
+  {
+    ar & boost::serialization::base_object<LatticeIndexing<3, int64, int64>>(*this);
+    ar & nb;
+    ar & vnb;
+  };
 };
 
 
@@ -305,8 +310,6 @@ struct LatticeDataFCC : public LatticeIndexing<3, int64, int64>
   typedef Int3 LatticeIndexType;
   typedef int64 SiteType;
   enum { DIR_CNT = 12 };
-  
-  Float3 wo; // world coordinate offset, added in lattice -> world
 
   LatticeDataFCC() { ClearMem( this, 1 ); }
   LatticeDataFCC(const LatticeDataFCC &ld) { CopyMem(&ld, this, 1); }
@@ -331,6 +334,7 @@ struct LatticeDataFCC : public LatticeIndexing<3, int64, int64>
 
   
   void print(std::ostream &os) const;
+  Float3 wo; // world coordinate offset, added in lattice -> world
 
 protected:
   static volatile bool nbs_init;
@@ -343,8 +347,10 @@ private:
   template<class Archive>
   void serialize(Archive &ar, const unsigned int version)
   {
-    ar & boost::serialization::base_object<LatticeIndexing>(*this);
-    ar & nbs_init;
+    //do it here other libcommon needs to be linked with mwlib
+    ar & boost::serialization::base_object<LatticeIndexing<3, int64, int64>>(*this);
+    //ar & nbs_init; // is this properly serialized???
+    //very bad because it is volatile
     ar & nb;
     ar & vnb;
     ar & scale;
@@ -408,7 +414,7 @@ inline std::ostream& operator<<(std::ostream &os, const LatticeDataQuad3d &ld) {
 inline std::ostream& operator<<(std::ostream &os, const LatticeDataFCC &ld) { ld.print(os); return os; }
 
 BOOST_CLASS_EXPORT_KEY(LatticeDataFCC)
-//BOOST_CLASS_EXPORT_KEY(LatticeDataQuad3d)
+BOOST_CLASS_EXPORT_KEY(LatticeDataQuad3d)
 
 #endif
 

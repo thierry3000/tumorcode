@@ -38,7 +38,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/serialization/shared_ptr_helper.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
-#include "unordered_map_serialization.h"
+//#include "unordered_map_serialization.h"
+#include "pagmo/src/serialization.h"
 #include "lattice-data-polymorphic.h"
 #include "mwlib/listgraph.h"
 //#include "shared-objects.h"
@@ -308,7 +309,14 @@ public:
   private:
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive &ar, const unsigned int version);
+    void serialize(Archive &ar, const unsigned int version)
+    {
+      ar & lookup_site;
+      ar & lookup_bond;
+      ar & m_ld;
+      ar & g;
+      ar & bclist;
+    };
     SiteLookup 			lookup_site;
     BondLookup 			lookup_bond;
     boost::shared_ptr<LD>	m_ld;
@@ -361,15 +369,15 @@ inline VesselNode* GetDownstreamNode( Vessel* v)
 
 void CheckToposort(const VesselList3d &vl, const DynArray<int> &order);
 
-template <class Archive>
-void VesselList3d::serialize(Archive& ar, const unsigned int version)
-{
-    ar & lookup_site;
-    ar & lookup_bond;
-    //ar & m_ld;
-    ar & g;
-    ar & bclist;
-}
+// template <class Archive>
+// void VesselList3d::serialize(Archive& ar, const unsigned int version)
+// {
+//     ar & lookup_site;
+//     ar & lookup_bond;
+//     ar & m_ld;
+//     ar & g;
+//     ar & bclist;
+// }
 
 /* note:
  * it is important to place the overwrites of 
@@ -395,11 +403,16 @@ inline void load_construct_data(
   Archive &ar, VesselList3d *t, const unsigned int file_version
 	    )
 {
+#ifdef DEBUG
+  std::printf("in load_construct_data at VesselList3d\n");
+#endif
   // retrieve data from archive required to construct new instance
-  boost::shared_ptr<VesselList3d::LatticeData> m_ld;
+  //boost::shared_ptr<VesselList3d::LatticeData> m_ld;
+  boost::shared_ptr<polymorphic_latticedata::LatticeData> m_ld;
   ar & m_ld;
   // invoke inplace constructor to initialize instance of my_class
   ::new(t)VesselList3d(m_ld);
+  //::new(t)VesselList3d(VesselList3d(m_ld));
   //t->Init(*m_ld);
 }
 }}//namespace boost{namespace serialization{

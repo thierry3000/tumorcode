@@ -308,7 +308,7 @@ int main()
 		// save data to archive
 		boost::archive::text_oarchive oa(ofs);
 		//oa.template register_type<polymorphic_latticedata::LatticeData>();
-		//oa.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
+		oa.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
 		// write class instance to archive
 		oa & probs[i];
 		// archive and stream closed when destructors are called
@@ -319,7 +319,7 @@ int main()
 #if 1
 		std::ifstream ifs("test.ar");
 		boost::archive::text_iarchive ia(ifs);
-		//ia.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
+		ia.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
 		//ia.template register_type<polymorphic_latticedata::LatticeData>();
 		// read class state from archive
 		problem::base_ptr currentProblem = probs_new[i];

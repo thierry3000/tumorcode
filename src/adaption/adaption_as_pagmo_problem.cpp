@@ -39,6 +39,7 @@ inline void load_construct_data(
   ar & params;
   BloodFlowParameters bfparams;
   ar & bfparams;
+  cout<<"I am before here "<< std::flush<<endl;
   boost::shared_ptr<VesselList3d> vl;
   cout<<"I am here "<<endl;
   //vl->init_from_other_vl();

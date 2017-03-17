@@ -22,7 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <float.h>
 
 #include "math_ext.h"
-
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/export.hpp>
 
 #define LatticeWorldTransform_TEMPL_ARG1 template<int dim_>
 #define LatticeWorldTransform_CLASS LatticeWorldTransform<dim_>
@@ -496,6 +498,18 @@ bool operator==( const LatticeDataFCC& a, const LatticeDataFCC& b )
 {
   return a.Box()==b.Box() && a.Scale()==b.Scale() && a.LatticeToSite(a.Box().min) == b.LatticeToSite(b.Box().min);
 }
+// template <class Archive>
+// void LatticeDataFCC::serialize(Archive& ar, const unsigned int version)
+// {
+//   ar & boost::serialization::base_object<LatticeIndexing<3, int64, int64>>(*this);
+//   //ar & nbs_init; // is this properly serialized???
+//   ar & nb;
+//   ar & vnb;
+//   ar & scale;
+//   ar & scale_inv;
+//   ar & wo;
+// }
+
 
 BOOST_CLASS_EXPORT_IMPLEMENT(LatticeDataFCC)
-//BOOST_CLASS_EXPORT_IMPLEMENT(LatticeDataQuad3d)
+BOOST_CLASS_EXPORT_IMPLEMENT(LatticeDataQuad3d)

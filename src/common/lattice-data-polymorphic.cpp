@@ -25,36 +25,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "lattice-data-polymorphic.h"
 #include <string>
 
-namespace boost { namespace serialization {
-  template<class Archive>
-  inline void save_construct_data(
-    Archive &ar, const polymorphic_latticedata::Derived<LatticeDataQuad3d> *t, const unsigned int file_version)
-  {
-    ar & t->ld;
-  }
-  template <class Archive>
-  inline void load_construct_data(
-    Archive &ar, polymorphic_latticedata::Derived<LatticeDataQuad3d> *t, const unsigned int file_version)
-  {
-    LatticeDataQuad3d attribute;
-    ar & attribute;
-    ::new(t)polymorphic_latticedata::Derived<LatticeDataQuad3d>(attribute);
-  }
-  template<class Archive>
-  inline void save_construct_data(
-    Archive &ar, const polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version)
-  {
-    ar & t->ld;
-  }
-  template <class Archive>
-  inline void load_construct_data(
-    Archive &ar, polymorphic_latticedata::Derived<LatticeDataFCC> *t, const unsigned int file_version)
-  {
-    LatticeDataFCC attribute;
-    ar & attribute;
-    ::new(t)polymorphic_latticedata::Derived<LatticeDataFCC>(attribute);
-  }
-}}//namespace boost { namespace serialization {
+
+// namespace boost { namespace serialization {
+//   template<class Archive, class Ld>
+//   inline void save_construct_data(
+//     Archive &ar, const polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version)
+//   {
+//     ar & t->ld;
+//   }
+//   template <class Archive, class Ld>
+//   inline void load_construct_data(
+//     Archive &ar, polymorphic_latticedata::Derived<Ld> *t, const unsigned int file_version)
+//   {
+//     Ld attribute;
+//     ar & attribute;
+//     ::new(t)polymorphic_latticedata::Derived<Ld>(attribute);
+//   }
+// }}//namespace boost { namespace serialization {
 
 namespace polymorphic_latticedata
 {
@@ -111,8 +98,10 @@ boost::shared_ptr<LatticeData> LatticeData::ReadHdf(h5cpp::Group g)
 
 
 //BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::LatticeData)
-//BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived<LatticeDataFCC>)
-//BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
+BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived<LatticeDataFCC>)
+BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived<LatticeDataQuad3d>)
 //template <class Ld>
 //BOOST_CLASS_EXPORT_IMPLEMENT(polymorphic_latticedata::Derived);
+//BOOST_CLASS_EXPORT_GUID(polymorphic_latticedata::LatticeData, "Lattice")
 //BOOST_CLASS_EXPORT_GUID(polymorphic_latticedata::Derived<LatticeDataFCC>, "FCC")
+
