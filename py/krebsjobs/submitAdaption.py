@@ -82,10 +82,18 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
   #params['name'] = parameter_set_name
   adaption_refs = krebs.adaption.doit(fn, grp_pattern, adaptionParams)
   
-#  for ref in o2_refs:
-#    po2group = h5files.open(ref.fn)[ref.path]
-#    detailedo2Analysis.WriteSamplesToDisk(po2group)
-#  povrayRenderOxygenDetailed.doit(o2_refs[-1].fn, o2_refs[-1].path)
+  #h5files.closeall() # just to be sure
+
+def worker_on_client_optimize(fn, grp_pattern, adaptionParams, num_threads):
+  print('Adaption on %s / %s / param: %s' % (fn, grp_pattern, adaptionParams['name']))
+  h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
+  krebsutils.set_num_threads(num_threads)
+  
+  #params['name'] = parameter_set_name
+  
+  #vesselFileName,adaptParams,BfParams
+  adaption_refs = krebs.adaption.doit_optimize(fn, adaptionParams['adaption'],adaptionParams['calcflow'])
+  
   h5files.closeall() # just to be sure
 
 ''' I tried to assing parameters due to the RC type here '''
@@ -180,6 +188,22 @@ def run2(parameter_set, filenames, grp_pattern):
                   mem = '3500MB',
                   change_cwd = True)
 
+def run_optimize(parameter_set, filenames, grp_pattern):
+  print 'submitting ...', parameter_set['name']
+ 
+
+  num_threads = 1
+  if 'num_threads' in parameter_set:
+    num_threads = parameter_set['num_threads']
+    
+  for fn in filenames:
+    qsub.submit(qsub.func(worker_on_client_optimize, fn, grp_pattern, parameter_set, num_threads),
+                  name = 'job_adaption_'+parameter_set['name']+'_'+basename(fn),
+                  num_cpus = num_threads,
+                  days = 4.,
+                  mem = '3500MB',
+                  change_cwd = True)
+
 
 if not qsub.is_client and __name__=='__main__':
   import argparse
@@ -221,7 +245,7 @@ if not qsub.is_client and __name__=='__main__':
   #single parameter set chosen  
   if factory.__class__ == dict:
     factory['name'] = goodArguments.AdaptionParamSet
-    run2(factory, filenames, goodArguments.grp_pattern)
+    run_optimize(factory, filenames, goodArguments.grp_pattern)
   #a list of paramset e.g. for different boundary parameters.
   if factory.__class__==list:
     for paramset in factory:

@@ -51,6 +51,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/export.hpp>
+#include <boost/serialization/string.hpp>
 
 //#define PAGMO_ENABLE_MPI --> done in cmake now
 #include <pagmo/src/pagmo.h>
@@ -59,6 +60,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <pagmo/src/types.h>
 #include <pagmo/src/problem/base.h>
 #include <adaption/adaption_model2.h>
+
 namespace pagmo{ namespace problem{
   class adaption_problem;
 }}
@@ -128,7 +130,7 @@ class __PAGMO_VISIBLE adaption_problem : public base
 {
 	public:
 		//constructor
-		adaption_problem(boost::shared_ptr<VesselList3d> vl,Adaption::Parameters params_, BloodFlowParameters bfparams) ;
+		adaption_problem(const std::string vessel_fn_,Adaption::Parameters params_, BloodFlowParameters bfparams) ;
 		//copy constructor
 		base_ptr clone() const;
 		std::string get_name() const;
@@ -146,7 +148,7 @@ class __PAGMO_VISIBLE adaption_problem : public base
 		  Archive & ar, adaption_problem *t, const unsigned int file_version);
 		mutable Adaption::Parameters params;
 		BloodFlowParameters bfparams;
-		mutable boost::shared_ptr<VesselList3d> vl;
+		std::string vessel_fn;
 };
 }}//namespace pagmo{ namespace problem {
 

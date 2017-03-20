@@ -130,13 +130,13 @@ struct FlowBC
   FlowBC(Resist, double w, double val) : w(w),val(val),type(RESIST) {}
   uint type; // PIN, CURRENT or RESIST
   double w,val; // w = flow conuctivity (?) of series "resistor", val = either blood pressure or flow rate
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive &ar, const unsigned int version)
-  {
-      // save/load base class information
-      ar & type & w & val;
-  }
+//   friend class boost::serialization::access;
+//   template<class Archive>
+//   void serialize(Archive &ar, const unsigned int version)
+//   {
+//       // save/load base class information
+//       ar & type & w & val;
+//   }
 };
 
 

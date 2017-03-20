@@ -23,12 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include "helpers-vec.h"
 #include "helpers-mem.h"
-#include "boost/serialization/access.hpp"
-#include "boost/serialization/base_object.hpp"
-
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/serialization/export.hpp>
 
 template<int d, class SiteType = int, class StrideType = SiteType>
 class LatticeIndexing // Uniform lattice -> integer type index or pointer
@@ -49,15 +43,6 @@ private:
   {
     return strides.dot(x.template cast<StrideType>());
   }
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive &ar, const unsigned int version)
-  {
-    ar & l;
-    ar & strides;
-    ar & box;
-    ar & offset;
-  };
 
 public:
   const IVec& Size() const { return l; }
@@ -153,16 +138,6 @@ public:
     offset -= dotStrides(p);
   }
 };
-
-// template<int d, class SiteType = int, class StrideType = SiteType>
-// template<class Archive>
-// void LatticeIndexing<d,SiteType,StrideType>::serialize(Archive& ar, const unsigned int version)
-// {
-//   ar & l;
-//   ar & strides;
-//   ar & box;
-//   ar & offset;
-// }
 
 struct AxisDirLen
 {
@@ -291,15 +266,6 @@ protected:
   int nb[DIR_CNT];
   static Int3 vnb[DIR_CNT];
   //float scale, scale_inv; // lattice spacing and 1/spacing
-private:
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive &ar, const unsigned int version)
-  {
-    ar & boost::serialization::base_object<LatticeIndexing<3, int64, int64>>(*this);
-    ar & nb;
-    ar & vnb;
-  };
 };
 
 
@@ -342,35 +308,7 @@ protected:
   int nb[2][3][DIR_CNT];
   static Int3 vnb[2][3][DIR_CNT];
   float scale, scale_inv; // lattice spacing and 1/spacing
-private:
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive &ar, const unsigned int version)
-  {
-    //do it here other libcommon needs to be linked with mwlib
-    ar & boost::serialization::base_object<LatticeIndexing<3, int64, int64>>(*this);
-    //ar & nbs_init; // is this properly serialized???
-    //very bad because it is volatile
-    ar & nb;
-    ar & vnb;
-    ar & scale;
-    ar & scale_inv;
-    ar & wo;
-  };
 };
-
-// template<class Archive>
-// void LatticeDataFCC::serialize(Archive & ar, const unsigned int version)
-// {
-//    ar & boost::serialization::base_object<LatticeIndexing>(*this);  //serialize base class
-//    //ar & BOOST_SERIALIZATION_NVP(T);
-//    ar & nbs_init;
-//    ar & nb;
-//    ar & vnb;
-//    ar & scale;
-//    ar & scale_inv;
-//    ar & wo;
-// }
 
 
 enum {
@@ -412,9 +350,6 @@ bool operator==( const LatticeDataQuad3d& a, const LatticeDataQuad3d& b );
 bool operator==( const LatticeDataFCC& a, const LatticeDataFCC& b );
 inline std::ostream& operator<<(std::ostream &os, const LatticeDataQuad3d &ld) { ld.print(os); return os; }
 inline std::ostream& operator<<(std::ostream &os, const LatticeDataFCC &ld) { ld.print(os); return os; }
-
-BOOST_CLASS_EXPORT_KEY(LatticeDataFCC)
-BOOST_CLASS_EXPORT_KEY(LatticeDataQuad3d)
 
 #endif
 

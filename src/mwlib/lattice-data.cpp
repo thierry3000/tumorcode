@@ -207,30 +207,6 @@ Int3 LatticeDataQuad3d::GetLatticeIndexOnRefinedGrid(const Int3& pos, int refine
   return pos * (1 + refinement_subdivision);
 }
 
-// template <class Archive>
-// void LatticeDataQuad3d::serialize(Archive& ar, const unsigned int version)
-// {
-//   //ar & boost::serialization::base_object<LatticeIndexing<3, int64, int64>>(*this);
-//   ar & boost::serialization::base_object<LatticeIndexing>(*this);
-//   ar & nbs_init;
-//   ar & nb;
-//   ar & vnb;
-// }
-// template <class Archive>
-// void LatticeDataFCC::serialize(Archive& ar, const unsigned int version)
-// {
-//   boost::serialization::base_object<LatticeIndexing>(*this);
-//   //boost::serialization::base_object<LatticeIndexing<3, int64, int64>>(*this);
-//   //ar & boost::serialization::base_object<LatticeIndexing>(*this);  //serialize base class
-//    //ar & BOOST_SERIALIZATION_NVP(T);
-//   ar & nbs_init;
-//   ar & nb;
-//   ar & vnb;
-//   ar & scale;
-//   ar & scale_inv;
-//   ar & wo;
-// }
-
 volatile bool LatticeDataFCC::nbs_init = false;
 Int3 LatticeDataFCC::vnb[2][3][LatticeDataFCC::DIR_CNT];
 
@@ -498,18 +474,3 @@ bool operator==( const LatticeDataFCC& a, const LatticeDataFCC& b )
 {
   return a.Box()==b.Box() && a.Scale()==b.Scale() && a.LatticeToSite(a.Box().min) == b.LatticeToSite(b.Box().min);
 }
-// template <class Archive>
-// void LatticeDataFCC::serialize(Archive& ar, const unsigned int version)
-// {
-//   ar & boost::serialization::base_object<LatticeIndexing<3, int64, int64>>(*this);
-//   //ar & nbs_init; // is this properly serialized???
-//   ar & nb;
-//   ar & vnb;
-//   ar & scale;
-//   ar & scale_inv;
-//   ar & wo;
-// }
-
-
-BOOST_CLASS_EXPORT_IMPLEMENT(LatticeDataFCC)
-BOOST_CLASS_EXPORT_IMPLEMENT(LatticeDataQuad3d)

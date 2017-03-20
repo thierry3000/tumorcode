@@ -913,7 +913,3 @@ void CheckToposort(const VesselList3d &vl, const DynArray<int> &order)
     }
   }
 }
-
-BOOST_CLASS_EXPORT_IMPLEMENT(VesselList3d)
-
-

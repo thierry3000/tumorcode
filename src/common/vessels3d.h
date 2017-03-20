@@ -20,35 +20,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef VESSELS3D_H_
 #define VESSELS3D_H_
 
-#include <unordered_map>
-//#include <boost/unordered/unordered_map.hpp>
-#include <boost/serialization/unordered_map.hpp>
-
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/utility.hpp>
-#include <boost/serialization/vector.hpp>
-
-#include <boost/serialization/singleton.hpp>
-#include <boost/serialization/extended_type_info.hpp>
-#include <boost/serialization/type_info_implementation.hpp>
-#include <boost/serialization/throw_exception.hpp>
-#include <boost/archive/archive_exception.hpp>
-
 #include <boost/shared_ptr.hpp>
-#include <boost/serialization/shared_ptr_helper.hpp>
-#include <boost/serialization/shared_ptr.hpp>
 
-//#include "unordered_map_serialization.h"
-#include "pagmo/src/serialization.h"
 #include "lattice-data-polymorphic.h"
 #include "mwlib/listgraph.h"
 //#include "shared-objects.h"
 #include "mwlib/mempool.h"
 #include "mwlib/math_ext.h"
 #include "calcflow.h"
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/serialization/export.hpp>
 
 struct HemodynamicBounds;
 class VesselList3d;
@@ -119,17 +98,6 @@ struct VNodeData
   bool IsBoundary() const { return flags.GetBits(BOUNDARY); }
   bool IsCirculated() const { return flags.GetBits(CIRCULATED);}
   void SetWorldPos( Float3 a) { this->worldpos = a;}
-  friend class boost::serialization::access;
-  template<class Archive>
-    void serialize(Archive &ar, const unsigned int version)
-    {
-	ar & press;
-	ar & residual;
-	ar & worldpos;
-	ar & bctyp;
-	ar & value_of_bc;
-	ar & flags;
-    } 
 };
 
 struct VData
@@ -167,14 +135,6 @@ class VesselNode: public VNodeData, public ListTreeNode<VesselNode,Vessel,MAX_NU
 public:
   Int3 lpos;  
   VesselNode() : VNodeData() {}
-private:
-  friend class boost::serialization::access;
-  template <class Archive>
-    void serialize(Archive &ar, const unsigned int)
-    {
-	ar & boost::serialization::base_object<VNodeData>(*this);
-	ar & lpos;
-    }
 };
 
 class Vessel: public VData, public ListTreeEdge<VesselNode,Vessel>, public FixedSizeAllocated<Vessel>
@@ -188,13 +148,6 @@ public:
   const Int3 LPosA() const { return NodeA()->lpos; }
   const Int3 LPosB() const { return NodeB()->lpos; }
   float getWorldLength(){return sqrt(norm(NodeA()->worldpos - NodeB()->worldpos));}
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive &ar, const unsigned int version)
-  {
-    ar & len;
-    ar & dir;
-  }
 };
 
 
@@ -307,16 +260,6 @@ public:
   boost::shared_ptr<VesselList3d> Clone();
   boost::shared_ptr<LD> getLD() const;
   private:
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive &ar, const unsigned int version)
-    {
-      ar & lookup_site;
-      ar & lookup_bond;
-      ar & m_ld;
-      ar & g;
-      ar & bclist;
-    };
     SiteLookup 			lookup_site;
     BondLookup 			lookup_bond;
     boost::shared_ptr<LD>	m_ld;
@@ -369,52 +312,4 @@ inline VesselNode* GetDownstreamNode( Vessel* v)
 
 void CheckToposort(const VesselList3d &vl, const DynArray<int> &order);
 
-// template <class Archive>
-// void VesselList3d::serialize(Archive& ar, const unsigned int version)
-// {
-//     ar & lookup_site;
-//     ar & lookup_bond;
-//     ar & m_ld;
-//     ar & g;
-//     ar & bclist;
-// }
-
-/* note:
- * it is important to place the overwrites of 
- * save_construct_data and load_construct_data
- * here in the cpp. If placing direcly in the 
- * header the "friendship" between boost::serialization
- * and the VesselList3d is not well established 
- *
- * hm this is anyway not the case,
- */
-namespace boost{namespace serialization{
-template <class Archive>
-inline void save_construct_data(
-  Archive &ar, const VesselList3d *t, const unsigned int file_version
-	    )
-{
-  // save data required to construct instance
-  boost::shared_ptr<VesselList3d::LatticeData> an_other_ld = t->getLD();
-  ar & an_other_ld;
-}
-template <class Archive>
-inline void load_construct_data(
-  Archive &ar, VesselList3d *t, const unsigned int file_version
-	    )
-{
-#ifdef DEBUG
-  std::printf("in load_construct_data at VesselList3d\n");
-#endif
-  // retrieve data from archive required to construct new instance
-  //boost::shared_ptr<VesselList3d::LatticeData> m_ld;
-  boost::shared_ptr<polymorphic_latticedata::LatticeData> m_ld;
-  ar & m_ld;
-  // invoke inplace constructor to initialize instance of my_class
-  ::new(t)VesselList3d(m_ld);
-  //::new(t)VesselList3d(VesselList3d(m_ld));
-  //t->Init(*m_ld);
-}
-}}//namespace boost{namespace serialization{
-BOOST_CLASS_EXPORT_KEY(VesselList3d)
 #endif //#define VESSELS3D_H_

@@ -147,6 +147,7 @@ PyLd* PySetupFieldLattice(const py::object &py_wbbox, int dim, float spacing, fl
   LatticeDataQuad3d ld;
   SetupFieldLattice(wbbox, dim, spacing, safety_spacing, ld);
   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD;
+  return new PyLd(new LD(ld));
   //serialization issues here!!!
   //LD alattice = new LD(ld);
   //return new PyLd(alattice);
@@ -239,10 +240,10 @@ void exportLatticeData()
   py::def("SetupFieldLattice", PySetupFieldLattice, py::return_value_policy<py::manage_new_object>());
   
   //serialize fuck
-  //mw_py_impl::LdFromPy<LatticeDataQuad3d>::Register();
-  //mw_py_impl::LdFromPy<LatticeDataFCC>::Register();
-  //mw_py_impl::LdToPy<LatticeDataQuad3d>::Register();
-  //mw_py_impl::LdToPy<LatticeDataFCC>::Register();
+  mw_py_impl::LdFromPy<LatticeDataQuad3d>::Register();
+  mw_py_impl::LdFromPy<LatticeDataFCC>::Register();
+  mw_py_impl::LdToPy<LatticeDataQuad3d>::Register();
+  mw_py_impl::LdToPy<LatticeDataFCC>::Register();
 }
 
 }

@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "lattice-data-polymorphic.h"
 
 #include<boost/unordered_map.hpp>
-#include <boost/serialization/unordered_map.hpp>
+
 #define DEBUG_BondLookup(x)
 
 //template<class LD, class V_>
@@ -48,15 +48,6 @@ class BondLookup
     if (a < b) std::swap(a,b);
     return K(a,b);
   }
-  friend class boost::serialization::access;
-  template <class Archive>
-    void serialize(Archive &ar, const unsigned int)
-    {
-	//ar & boost::serialization::base_object<base>(*this);
-	ar & m_ld;
-	ar & map;
-	ar & default_value;
-    }
   
 public:
   BondLookup() {}
@@ -143,14 +134,6 @@ class SiteLookup
   
   typedef S K; // key type
   typedef boost::unordered_map<K, V> Map;
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive &ar, const unsigned int version)
-  {
-    ar & map;
-    ar & m_ld;
-    ar & default_value;
-  }
   Map map;
   const LD* m_ld;
   //boost::shared_ptr<LD> m_ld;

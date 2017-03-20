@@ -48,7 +48,8 @@ else:
 #  gdst.attrs[linkname+'_FILE'] = fn
 #  if gsrc:
 #    gdst[linkname] = h5py.SoftLink(gsrc.name) if (gsrc.file == gdst.file) else h5py.ExternalLink(fn, gsrc.name)
-
+def doit_optimize(vesselFileName,adaptParams,BfParams):
+  adaption_cpp.doAdaptionOptimization(vesselFileName,adaptParams,BfParams)
 def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
   '''gdst = group where the data is placed in, does not create a 'vesse' folder in it but writes nodes, edges directly;
      gv   = source vessel group

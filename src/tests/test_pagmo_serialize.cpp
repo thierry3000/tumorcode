@@ -209,16 +209,17 @@ int main()
 // 	probs_new.push_back(problem::rastrigin().clone());
 // 	probs.push_back(problem::sch().clone());
 // 	probs_new.push_back(problem::sch().clone());
-// 	probs.push_back(problem::schwefel(dimension).clone());
-// 	probs_new.push_back(problem::schwefel().clone());
-// 	probs.push_back(problem::snopt_toyprob().clone());
-// 	probs_new.push_back(problem::snopt_toyprob().clone());
+	probs.push_back(problem::schwefel(dimension).clone());
+	probs_new.push_back(problem::schwefel().clone());
+	probs.push_back(problem::snopt_toyprob().clone());
+	probs_new.push_back(problem::snopt_toyprob().clone());
+	std::string this_fn = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5";
 	params->k_c = 3.3;
-	problem::base_ptr aBigProblem(pagmo::problem::adaption_problem(vl->Clone(),*params,*bfparams).clone());
+	problem::base_ptr aBigProblem(pagmo::problem::adaption_problem(this_fn,*params,*bfparams).clone());
 	probs.push_back(aBigProblem);
 	//probs.push_back(pagmo::problem::adaption_problem(vl->Clone(),*params,*bfparams).clone());
 	params->k_s = 2.2;
-	probs_new.push_back(pagmo::problem::adaption_problem(vl->Clone(),*params,*bfparams).clone());
+	probs_new.push_back(pagmo::problem::adaption_problem(this_fn,*params,*bfparams).clone());
 	
     //----- Test TSP -----//
 //     probs_new.push_back(problem::tsp().clone());
@@ -308,7 +309,7 @@ int main()
 		// save data to archive
 		boost::archive::text_oarchive oa(ofs);
 		//oa.template register_type<polymorphic_latticedata::LatticeData>();
-		oa.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
+		//oa.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
 		// write class instance to archive
 		oa & probs[i];
 		// archive and stream closed when destructors are called
@@ -319,7 +320,7 @@ int main()
 #if 1
 		std::ifstream ifs("test.ar");
 		boost::archive::text_iarchive ia(ifs);
-		ia.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
+		//ia.template register_type<polymorphic_latticedata::Derived<LatticeDataFCC>>();
 		//ia.template register_type<polymorphic_latticedata::LatticeData>();
 		// read class state from archive
 		problem::base_ptr currentProblem = probs_new[i];

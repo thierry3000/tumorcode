@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/calcflow_common.h" //at least for remap_keys
 
 #include "mwlib/math_ext.h"
-#include "hdf_wrapper.h"
+//#include "hdf_wrapper.h"
 //#include "hdf_wrapper_stl.h"
 
 #include <boost/math/tools/roots.hpp>
@@ -1172,7 +1172,7 @@ void GetAdaptionNetwork(
     myAssert(a!=b);
     myAssert(v->NodeA()->press!=0.0);
     myAssert(v->NodeB()->press!=0.0);
-    myAssert(v->NodeA()->press!=v->NodeB()->press);
+    //myAssert(v->NodeA()->press!=v->NodeB()->press);
     fl.edges.push_back(my::make_eqpair(a, b));
   }
 

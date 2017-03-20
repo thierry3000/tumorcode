@@ -27,25 +27,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <eigen3/Eigen/Geometry>
 #include <boost/format.hpp>
 #include <boost/functional/hash.hpp>
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/array.hpp>
-#include <boost/serialization/access.hpp>
 
 /* teach boost how to serialize eigen 
  * http://stackoverflow.com/questions/12851126/serializing-eigens-matrix-using-boost-serialization
  */
-namespace boost
-{
-    template<class Archive, typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
-    inline void serialize(
-        Archive & ar, 
-        Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> & t, 
-        const unsigned int file_version
-    ) 
-    {
-        ar & boost::serialization::make_array(t.data(), t.size());
-    }
-}
+// namespace boost
+// {
+//     template<class Archive, typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+//     inline void serialize(
+//         Archive & ar, 
+//         Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> & t, 
+//         const unsigned int file_version
+//     ) 
+//     {
+//         ar & boost::serialization::make_array(t.data(), t.size());
+//     }
+// }
 template<class T >
 class DynArray;
 template<class T, int d>
@@ -70,14 +67,14 @@ class Vec : public Eigen::Matrix<T, d, 1>
         ret[i] = f(i);
       return ret;
     }
-private:
-  friend class boost::serialization::access;
-  template <typename Archive>
-  void serialize(Archive &ar, const unsigned int version)
-  {
-    //ar & ;
-    ar & boost::serialization::base_object<Eigen::Matrix<T, d, 1>>(*this);
-  }
+// private:
+//   friend class boost::serialization::access;
+//   template <typename Archive>
+//   void serialize(Archive &ar, const unsigned int version)
+//   {
+//     //ar & ;
+//     ar & boost::serialization::base_object<Eigen::Matrix<T, d, 1>>(*this);
+//   }
 };
 
 
@@ -532,14 +529,6 @@ struct BBoxd
   friend const BBoxd Move(const BBoxd &b, const Vec &p) { return BBoxd(b).Move(p); }
   friend const BBoxd Move(const BBoxd &b, int side, int axis, const T &p)  { return BBoxd(b).Move(side, axis, p); }
   friend const BBoxd Move(const BBoxd &b, int axis, const T &p)  { return BBoxd(b).Move(axis, p); }
-private:
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int version)
-  {
-    ar & min;
-    ar & max;
-  };
 };
 
 

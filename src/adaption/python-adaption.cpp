@@ -126,8 +126,8 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
   cout<<" PydoAdaptionOptimization is called "<<endl;
 #endif
   //python specific
-  h5cpp::File *readInFile = new h5cpp::File("/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5","r");
-  h5cpp::Group *vesselgroup = new h5cpp::Group(readInFile->root().open_group("adaption/vessels_after_adaption"));
+  //h5cpp::File *readInFile = new h5cpp::File("/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5","r");
+  //h5cpp::Group *vesselgroup = new h5cpp::Group(readInFile->root().open_group("adaption/vessels_after_adaption"));
   
   //h5cpp::Group vesselgroup_instance = PythonToCppGroup(py_vesselgroup);
   //h5cpp::Group *vesselgroup = &vesselgroup_instance;
@@ -145,15 +145,15 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
   Adaption::Parameters *params = new Adaption::Parameters();
   InitParameters(params, py_parameters);
   
-  boost::shared_ptr<VesselList3d> vl =  ReadVesselList3d(*vesselgroup, make_ptree("filter", true));
+  //boost::shared_ptr<VesselList3d> vl =  ReadVesselList3d(*vesselgroup, make_ptree("filter", true));
   //boost::shared_ptr<VesselList3d> vl =  ReadVesselList3d(*vesselgroup, make_ptree("filter", true));
 //   //to create the bc array, we need proper flow and pressure values!
 //   //radii could then be overwriten
-  CalcFlow(*vl, *bfparams);
+//  CalcFlow(*vl, *bfparams);
   //PyPrepareForAdaptation(vl, *vesselgroup, bfparams, params);
   //const VesselList3d *vl_const =vl.get();
   // so kann man es besser machen:
-  std::string vesselListClass = "GRAPH";
+//  std::string vesselListClass = "GRAPH";
 //   try{
 //     vesselListClass = vesselgroup.attrs().get<string>("CLASS");
 //   }
@@ -163,101 +163,101 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
 //     cerr << e.what();
 //   }
   
-  if(vesselListClass == "REALWORLD")
-  {
-   // world = true;
-  }
-  else if (vesselListClass == "GRAPH")
-  {
-    // nothing to do
-  }
-  else
-  { // output the name of the class, too
-    cerr<<"PyComputeAdaption: Unknows CLASS: "<< vesselListClass << "; fall back to lattice based vessellist" << endl;
-  }
+//   if(vesselListClass == "REALWORLD")
+//   {
+//    // world = true;
+//   }
+//   else if (vesselListClass == "GRAPH")
+//   {
+//     // nothing to do
+//   }
+//   else
+//   { // output the name of the class, too
+//     cerr<<"PyComputeAdaption: Unknows CLASS: "<< vesselListClass << "; fall back to lattice based vessellist" << endl;
+//   }
   
   //gain some topological info for adaptive parameters
-  int no_of_roots = 0;
-  for(int i=0;i<vl->GetNCount();++i)
-  {
-    VesselNode *nd = vl->GetNode(i);
-    if(nd->IsBoundary())no_of_roots++;
-  }
-  params->no_of_roots = no_of_roots;
+//   int no_of_roots = 0;
+//   for(int i=0;i<vl->GetNCount();++i)
+//   {
+//     VesselNode *nd = vl->GetNode(i);
+//     if(nd->IsBoundary())no_of_roots++;
+//   }
+//   params->no_of_roots = no_of_roots;
   
   
   //starting with equal radii with parameters starting value is greate than 0.
   //otherwise we use the radii from the input file vary them a little bit
-  if(params->starting_radii>0.)
-  {
-    for(int i=0;i<vl->GetECount();++i)
-    {
-      vl->GetEdge(i)->r = params->starting_radii;
-    }
-  }
-  else
-  {
-#if 0
-    std::default_random_engine generator;
-    double initial_variation = 0.0;
-    std::uniform_real_distribution<double> distribution(-initial_variation,initial_variation);
-    for(int i=0;i<vl->GetECount();++i)
-    {
-      Vessel* v=vl->GetEdge(i);
-#if 1//leafes boundary radius as they are
-      auto it = vl->GetBCMap().find(v->NodeA());
-      auto it2 = vl->GetBCMap().find(v->NodeB());
-      if(it !=vl->GetBCMap().end() or it2 !=vl->GetBCMap().end())
-      {
-#ifdef DEBUG
-	cout<<"skipping vessel #"<<v->Index()<< " since it has boundary nodes!!!"<<endl;
-#endif
-	continue;
-      }
-#endif
-      v->r = v->r+v->r*distribution(generator);
-    }
-#endif
-  }
-
-
-#ifdef DEBUG
-  for( auto it = vl->GetBCMap().begin(); it!= vl->GetBCMap().end(); ++it)
-  {
-    cout << "index: " << it->first->Index() << "bcvalue: " << it->second.val <<endl;
-  }
-  for(int i=0;i<vl->GetNCount();++i)
-  {
-    VesselNode* nd = vl->GetNode(i);
-    cout << "pressure: " << nd->press <<endl;
-  }
-  for(int i=0;i<vl->GetECount();++i)
-  {
-    Vessel *v = vl->GetEdge(i);
-    cout << "flow: " << v->q<<endl;
-  }
-#endif
-
-  CalcFlow(*vl, *bfparams);
-  
-#ifdef DEBUG
-#ifndef SILENT
-  for( auto it = vl->GetBCMap().begin(); it!= vl->GetBCMap().end(); ++it)
-  {
-    cout << "index: " << it->first->Index() << "bcvalue: " << it->second.val <<endl;
-  }
-  for(int i=0;i<vl->GetNCount();++i)
-  {
-    VesselNode* nd = vl->GetNode(i);
-    cout << "pressure: " << nd->press <<endl;
-  }
-  for(int i=0;i<vl->GetECount();++i)
-  {
-    Vessel *v = vl->GetEdge(i);
-    cout << "flow: " << v->q<<endl;
-  }
-#endif
-#endif
+//   if(params->starting_radii>0.)
+//   {
+//     for(int i=0;i<vl->GetECount();++i)
+//     {
+//       vl->GetEdge(i)->r = params->starting_radii;
+//     }
+//   }
+//   else
+//   {
+// #if 0
+//     std::default_random_engine generator;
+//     double initial_variation = 0.0;
+//     std::uniform_real_distribution<double> distribution(-initial_variation,initial_variation);
+//     for(int i=0;i<vl->GetECount();++i)
+//     {
+//       Vessel* v=vl->GetEdge(i);
+// #if 1//leafes boundary radius as they are
+//       auto it = vl->GetBCMap().find(v->NodeA());
+//       auto it2 = vl->GetBCMap().find(v->NodeB());
+//       if(it !=vl->GetBCMap().end() or it2 !=vl->GetBCMap().end())
+//       {
+// #ifdef DEBUG
+// 	cout<<"skipping vessel #"<<v->Index()<< " since it has boundary nodes!!!"<<endl;
+// #endif
+// 	continue;
+//       }
+// #endif
+//       v->r = v->r+v->r*distribution(generator);
+//     }
+// #endif
+//   }
+// 
+// 
+// #ifdef DEBUG
+//   for( auto it = vl->GetBCMap().begin(); it!= vl->GetBCMap().end(); ++it)
+//   {
+//     cout << "index: " << it->first->Index() << "bcvalue: " << it->second.val <<endl;
+//   }
+//   for(int i=0;i<vl->GetNCount();++i)
+//   {
+//     VesselNode* nd = vl->GetNode(i);
+//     cout << "pressure: " << nd->press <<endl;
+//   }
+//   for(int i=0;i<vl->GetECount();++i)
+//   {
+//     Vessel *v = vl->GetEdge(i);
+//     cout << "flow: " << v->q<<endl;
+//   }
+// #endif
+// 
+//   CalcFlow(*vl, *bfparams);
+//   
+// #ifdef DEBUG
+// #ifndef SILENT
+//   for( auto it = vl->GetBCMap().begin(); it!= vl->GetBCMap().end(); ++it)
+//   {
+//     cout << "index: " << it->first->Index() << "bcvalue: " << it->second.val <<endl;
+//   }
+//   for(int i=0;i<vl->GetNCount();++i)
+//   {
+//     VesselNode* nd = vl->GetNode(i);
+//     cout << "pressure: " << nd->press <<endl;
+//   }
+//   for(int i=0;i<vl->GetECount();++i)
+//   {
+//     Vessel *v = vl->GetEdge(i);
+//     cout << "flow: " << v->q<<endl;
+//   }
+// #endif
+// #endif
   
   //former runoptimization 
   //uint run_optimization( )
@@ -276,8 +276,8 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
   dim = 4;
 #endif
   // Create a problem and an algorithm.
-  
-  pagmo::problem::adaption_problem prob(vl,*params,*bfparams);
+  std::string myVesselFileString = boost::python::extract<std::string>(py_vesselgroup_str);
+  pagmo::problem::adaption_problem prob(myVesselFileString,*params,*bfparams);
   pagmo::population pop(prob,3);
   pagmo::algorithm::pso algo(10);
   //algo.evolve(pop);
@@ -290,7 +290,7 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
 #ifdef PAGMO_ENABLE_MPI
 	  a.push_back(pagmo::mpi_island(algo,prob,1));
 #else
-	  a.push_back(pagmo::island(algo,prob,1));
+	  a.push_back(pagmo::island(algo,prob,3));
 #endif
   }
   // Evolve the archipelago 10 times.

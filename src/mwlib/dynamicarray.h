@@ -55,13 +55,6 @@ class DynArray : public std::vector<T>
 
     void remove_all() { Base::clear(); } // relies upon std::vector not freeing memory on clear
     void fill(const T &x) { std::fill(Base::begin(), Base::end(), x); }
-private:
-  friend class boost::serialization::access;
-  template <class Archive>
-  void serialize(Archive &ar, const unsigned int)
-  {
-      ar & boost::serialization::base_object<std::vector<T>>(*this);
-  }
 };
 
 
