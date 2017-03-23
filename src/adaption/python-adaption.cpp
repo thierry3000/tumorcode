@@ -259,7 +259,7 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
   // Create an archipelago of 10 MPI islands.
   std::printf("creating archipel\n");
 #ifdef PAGMO_ENABLE_MPI
-  pagmo::archipelago a = pagmo::archipelago(algo,prob);
+  pagmo::archipelago a; // = pagmo::archipelago(algo,prob);
   for (int i = 0; i < 3; ++i) {
     a.push_back(pagmo::mpi_island(algo,prob,1));
   }
