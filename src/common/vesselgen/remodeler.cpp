@@ -28,7 +28,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/foreach.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/serialization/unordered_map.hpp>
 #include <boost/foreach.hpp>
 
 
@@ -140,7 +139,7 @@ void Grower::Init(const ptree &settings)
     seed = 7731 * my::Time().to_ms();
   rand.Init(seed);
 
-  boost::shared_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
+  std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
   vl.reset( new VesselList3d(ldp) );
   vl->Init(*ldp);
@@ -1234,7 +1233,7 @@ void Grower::SanityCheck()
 void Grower::UpscaleTrees()
 {
   // first get vessels on subdivided lattice
-  boost::shared_ptr<LatticeData> oldld(vl->Ld().Clone());
+  std::auto_ptr<LatticeData> oldld(vl->Ld().Clone());
   //hope this wont end too bad
   //std::auto_ptr<LatticeData> oldld(vl->Ld()->get());
   std::auto_ptr<VesselList3d> vl_new = GetSubdivided(vl, 2, oldld->Scale(), 0);

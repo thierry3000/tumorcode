@@ -75,16 +75,18 @@ include_directories(${PYTHON_NUMPY_INCLUDE_DIR})#this is needed here so that the
 #this package has a different name on ubuntu14
 #so either one of this is needed!
 
-find_package(Boost COMPONENTS "python-2.7")
-if( NOT Boost_PYTHON-2.7_FOUND)
-  #we are on ubuntu14
-  find_package(Boost REQUIRED COMPONENTS "python-py27")
-endif()
-find_package(Boost COMPONENTS "python-py27")
-if( NOT Boost_PYTHON-PY27_FOUND)
-  #we are not on ubuntu
-  find_package(Boost REQUIRED COMPONENTS "python-2.7")
-endif()
+find_package(Boost REQUIRED COMPONENTS "python")
+set(myLibs "${myLibs};${Boost_PYTHON_LIBRARY}")
+#I have to deal with this on the new arch system
+# if( NOT Boost_PYTHON-2.7_FOUND)
+#   #we are on ubuntu14
+#   find_package(Boost REQUIRED COMPONENTS "python-py27")
+# endif()
+# find_package(Boost COMPONENTS "python-py27")
+# if( NOT Boost_PYTHON-PY27_FOUND)
+#   #we are not on ubuntu
+#   find_package(Boost REQUIRED COMPONENTS "python-2.7")
+# endif()
 
 
 

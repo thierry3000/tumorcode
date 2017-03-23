@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from __future__ import print_function
-import os
+import platform
 import socket
 
 # symbols which should be visible to importers of this module
@@ -32,6 +32,8 @@ name = 'unknown'
 def getname():
   # now that does return the full name
   fullname = socket.getfqdn()
+  releasename = platform.release()
+  
   #fullname, _, _ = socket.gethostbyaddr(hostname) # gethostname already returns the full name
   #n = os.uname()[1] ?? what was wrong with that???
   if 'sleipnir' in fullname:
@@ -53,9 +55,13 @@ def getname():
   if 'snowden.lusi' in fullname:
       return 'snowden'
   if 'dema' in fullname:
-    return 'lusi'
-  else:
-    return fullname
+    if 'gentoo' in releasename:
+      #assume we are on olafs old system
+      return 'lusi-gentoo'
+    elif not 'gentoo' in releasename and 'ARCH' in releasename:
+      return 'lusi-arch'
+    else:
+      return 'is there is new system?'
 
 # executed on import (i.e. always)
 name = getname()

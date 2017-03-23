@@ -25,6 +25,7 @@ from os.path import basename, dirname, join, splitext
 import os, os.path, sys
 import h5py
 import h5files
+import uuid
 import numpy as np
 import extensions # for hdf5 support in np.asarray
 import myutils
@@ -49,7 +50,19 @@ else:
 #  if gsrc:
 #    gdst[linkname] = h5py.SoftLink(gsrc.name) if (gsrc.file == gdst.file) else h5py.ExternalLink(fn, gsrc.name)
 def doit_optimize(vesselFileName,adaptParams,BfParams):
-  adaption_cpp.doAdaptionOptimization(vesselFileName,adaptParams,BfParams)
+  returns = adaption_cpp.doAdaptionOptimization(vesselFileName,adaptParams,BfParams)
+  print("should be optimized vaules:")  
+  print(returns)
+  print('from file: %s' %vesselFileName)
+  f_results = h5files.open("optimize_results.h5", 'a')
+  a_uuid = str(uuid.uuid4())
+  g = f_results.create_group(vesselFileName + '_' + a_uuid)
+  g.create_dataset('x_opt', data=returns)
+  myutils.hdf_write_dict_hierarchy(g, 'adaptParams', adaptParams)
+  myutils.hdf_write_dict_hierarchy(g, 'BfParams', BfParams)  
+  g.file.flush()  
+  #f_results.close()
+  return returns
 def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
   '''gdst = group where the data is placed in, does not create a 'vesse' folder in it but writes nodes, edges directly;
      gv   = source vessel group

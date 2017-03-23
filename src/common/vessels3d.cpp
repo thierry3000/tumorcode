@@ -59,7 +59,7 @@ float Vessel::WorldLength( const polymorphic_latticedata::LatticeData &ld ) cons
 //   this->bclist.reset(new BCList);
 // }
 /* a forced constructor */
-VesselList3d::VesselList3d(boost::shared_ptr< VesselList3d::LD > this_ld)
+VesselList3d::VesselList3d(std::auto_ptr< VesselList3d::LD > this_ld)
 {
   this->bclist.clear();
   this->m_ld = this_ld;
@@ -68,20 +68,20 @@ VesselList3d::VesselList3d(boost::shared_ptr< VesselList3d::LD > this_ld)
   this->lookup_bond.Init(*m_ld);
   this->g.Reserve( 1024 );
 }
-boost::shared_ptr< polymorphic_latticedata::LatticeData > VesselList3d::getLD() const
-{
-  return m_ld;
-}
+// std::auto_ptr< polymorphic_latticedata::LatticeData > VesselList3d::getLD() const
+// {
+//   return m_ld;
+// }
 
 
 
-boost::shared_ptr< VesselList3d > VesselList3d::Clone()
+std::auto_ptr< VesselList3d > VesselList3d::Clone()
 {
   #ifdef DEBUG
   cout << "this lattice data will be passed to: " << endl;
   this->m_ld->print(cout);
   #endif
-  boost::shared_ptr<VesselList3d> my_return_list(new VesselList3d(this->m_ld));
+  std::auto_ptr<VesselList3d> my_return_list(new VesselList3d(this->m_ld));
   //my_return_list.reset(new VesselList3d);
   //my_return_list->Init(this->Ld());
   //my_return_list->bclist.reset(new BCList);
@@ -120,7 +120,7 @@ boost::shared_ptr< VesselList3d > VesselList3d::Clone()
 
 void VesselList3d::Init( const LD &_ld )
 {
-    this->bclist.clear();
+    //this->bclist.clear();
     this->Flush();
     //this->m_ld = _ld.Clone();
     //this->m_ld.reset(&_ld);
@@ -604,7 +604,7 @@ std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int m
   }
   newbox.Extend(safety_boundary);
 
-  boost::shared_ptr<LatticeData> newldp(ld.Clone());
+  std::auto_ptr<LatticeData> newldp(ld.Clone());
   newldp.get()->Init(newbox,  newscale);
 
   std::auto_ptr<VesselList3d> vlnew( new VesselList3d(newldp) );

@@ -36,7 +36,9 @@ import h5files
 import itertools
 import time
 import string
+import cProfile
 
+import krebs
 import krebs.adaption
 
 from krebsjobs.parameters import parameterSetsAdaption
@@ -76,6 +78,7 @@ def create_auto_dicts(param_group):
 
 def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
   print('Adaption on %s / %s / param: %s' % (fn, grp_pattern, adaptionParams['name']))
+  qsub.printClientInfo()  
   h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
   krebsutils.set_num_threads(num_threads)
   
@@ -84,16 +87,26 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
   
   #h5files.closeall() # just to be sure
 
-def worker_on_client_optimize(fn, grp_pattern, adaptionParams, num_threads):
+''' not we cannot use the whole goodArguments namespace here,
+    because these object need to be pickeled on the 
+    cluster!
+'''
+def worker_on_client_optimize(fn, grp_pattern, adaptionParams, num_threads, timing):
   print('Adaption on %s / %s / param: %s' % (fn, grp_pattern, adaptionParams['name']))
   h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
   krebsutils.set_num_threads(num_threads)
   
-  #params['name'] = parameter_set_name
-  
-  #vesselFileName,adaptParams,BfParams
-  adaption_refs = krebs.adaption.doit_optimize(fn, adaptionParams['adaption'],adaptionParams['calcflow'])
-  
+  if timing:
+    prof = cProfile.Profile()
+    
+    adaption_refs_optimize = prof.runcall(krebs.adaption.doit_optimize, fn, adaptionParams['adaption'],adaptionParams['calcflow'])
+    #prof.dump_stats(file)
+    prof.print_stats()
+
+  else:
+    adaption_refs_optimize = krebs.adaption.doit_optimize(fn, adaptionParams['adaption'],adaptionParams['calcflow'])
+  print("got back: ")
+  print(adaption_refs_optimize)
   h5files.closeall() # just to be sure
 
 ''' I tried to assing parameters due to the RC type here '''
@@ -188,7 +201,7 @@ def run2(parameter_set, filenames, grp_pattern):
                   mem = '3500MB',
                   change_cwd = True)
 
-def run_optimize(parameter_set, filenames, grp_pattern):
+def run_optimize(parameter_set, filenames, grp_pattern, timing):
   print 'submitting ...', parameter_set['name']
  
 
@@ -197,7 +210,7 @@ def run_optimize(parameter_set, filenames, grp_pattern):
     num_threads = parameter_set['num_threads']
     
   for fn in filenames:
-    qsub.submit(qsub.func(worker_on_client_optimize, fn, grp_pattern, parameter_set, num_threads),
+    qsub.submit(qsub.func(worker_on_client_optimize, fn, grp_pattern, parameter_set, num_threads, timing),
                   name = 'job_adaption_'+parameter_set['name']+'_'+basename(fn),
                   num_cpus = num_threads,
                   days = 4.,
@@ -213,7 +226,8 @@ if not qsub.is_client and __name__=='__main__':
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin)
   parser.add_argument('grp_pattern')
   parser.add_argument('-t','--tumorParams', help='by explicitly enable this you can use tumor parameters for the adaption as well', action='store_true')
-
+  parser.add_argument('--time', default=False, help='Show time profile', action='store_true')
+  
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
   
@@ -245,7 +259,7 @@ if not qsub.is_client and __name__=='__main__':
   #single parameter set chosen  
   if factory.__class__ == dict:
     factory['name'] = goodArguments.AdaptionParamSet
-    run_optimize(factory, filenames, goodArguments.grp_pattern)
+    run_optimize(factory, filenames, goodArguments.grp_pattern, goodArguments.time)
   #a list of paramset e.g. for different boundary parameters.
   if factory.__class__==list:
     for paramset in factory:

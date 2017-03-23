@@ -70,7 +70,7 @@ pyGmo = dict(
     S_0 = 20,
     cond_length = 1500.,
     #if this is 0 we iterate until qdev is reached
-    max_nun_iterations = 100,
+    max_nun_iterations = 1000,
     qdev = 0.01,
     #if starting_radii is 0. we use the values given in
     #the input file
@@ -540,7 +540,7 @@ human_guess = dict(
     starting_radii = 20.,
     delta_t = 0.05,
     addAverageConductivity = False,
-    radMin_for_kill = 5,
+    radMin_for_kill = 3.5,
     boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D_2'],
     ),
   calcflow = dict(
@@ -555,10 +555,36 @@ human_guess_2['adaption'].update(
   boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D_3'],
 )
 value_1 = deepcopy(human_guess)
-human_guess_2['adaption'].update(
+value_1['adaption'].update(
   boundary_Condition_handling = boundary_Condition_handling_map['VALUE'],
   a_pressure = 2.,
-  a_flow = 2000.,
+  a_flow = 20000.,
+  pop = 50,
+  individuals = 300,
+)
+value_2 = deepcopy(human_guess)
+value_2['adaption'].update(
+  boundary_Condition_handling = boundary_Condition_handling_map['VALUE'],
+  a_pressure = 2.,
+  a_flow = 50000.,
+  pop = 5,
+  individuals = 50,
+  opt_iter = 10,
+  max_nun_iterations = 150,
+  delta_t = 0.1,
+)
+pagmo_test = deepcopy(value_1)
+pagmo_test['adaption'].update(
+  boundary_Condition_handling = boundary_Condition_handling_map['VALUE'],
+  a_pressure = 2.,
+  a_flow = 20000.,
+  pop = 3,
+  individuals = 9,
+  opt_iter = 10,
+  max_nun_iterations = 10,
+)
+pagmo_test['calcflow'].update(
+  includePhaseSeparationEffect =  False,
 )
 
 def _value():

@@ -398,7 +398,7 @@ void TestInterpolation()
 
 void TestVesselList()
 {
-  boost::shared_ptr<LatticeData> ldp(LatticeData::Make("fcc", BBox3(0,0,0,10,10,10), 30.));
+  std::auto_ptr<LatticeData> ldp(LatticeData::Make("fcc", BBox3(0,0,0,10,10,10), 30.));
   Vessel *v, *v2;
   VesselNode *vc2;
   VesselList3d vl(ldp);
@@ -452,7 +452,7 @@ void TestVesselFieldCoupling()
 {
   //LatticeDataQuad3d vessel_ld;
   //create a lattice structure
-  boost::shared_ptr<LatticeData> vessel_ld(LatticeData::Make("quad",BBox3(0,0,0,64,64,64), 10.));
+  std::auto_ptr<LatticeData> vessel_ld(LatticeData::Make("quad",BBox3(0,0,0,64,64,64), 10.));
   //create a vessel list
   VesselList3d vl(vessel_ld);
   //link the lattice and the vessel

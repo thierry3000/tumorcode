@@ -345,7 +345,9 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
   
   if(vesselgroup.attrs().get<std::string>("CLASS") == "GRAPH")
   {
+#ifdef DEBUG
     cout << "read vl from: \n " << vesselgroup.get_file_name() << endl;
+#endif
     //we have a lattice struture->get it, could also produce an error
     if(!vesselgroup.exists("lattice"))
     {
@@ -353,19 +355,27 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
       throw std::runtime_error(latticeIOError);
     }
     h5cpp::Group ldgroup = vesselgroup.open_group("lattice");//may not be there
-    boost::shared_ptr<LatticeData> ldp = LatticeData::ReadHdf(ldgroup);
-    std::auto_ptr<VesselList3d> vl_local(new VesselList3d(ldp));
+//     std::auto_ptr<LatticeData> ldp = LatticeData::ReadHdf(ldgroup);
+//     //std::auto_ptr<VesselList3d> vl_local(new VesselList3d(ldp));
+//     std::auto_ptr<VesselList3d> vl_local;
+//     vl_local->Init(*ldp);
+//     vl=vl_local;
+    
+    std::auto_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(ldgroup);
+#ifdef DEBUG
+    cout << "ReadVesselList3d read " << endl;
+    ldp->print(cout);
+#endif
+    std::auto_ptr<VesselList3d> vl_local;
+    vl_local.reset(new VesselList3d(ldp));
+    vl_local->Init(*ldp);
     vl=vl_local;
-    //vl->Init(*ldp);
+  
     
 #ifdef DEBUG
     VESSEL_INTEGRITY_CHECK_SWITCH(vl->IntegrityCheck();)
 #endif
-#ifdef DEBUG
-    cout << "ReadVesselList3d read " << endl;
-    //ldp->print(cout);
-    vl->getLD()->print(cout);
-#endif
+
     ReadHdfGraph(vesselgroup, vl.get());
     //this magic can only be done on a lattice
     float original_grid_scale_override = params.get<float>("scale override", -1.);
@@ -387,8 +397,9 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
   }
   else
   {
-    //null!!!!
-    boost::shared_ptr<LatticeData> ldp;
+    //null!!!! 
+    //world no lattice data needed
+    std::auto_ptr<LatticeData> ldp;
     std::auto_ptr<VesselList3d> vl_local(new VesselList3d(ldp));
     vl=vl_local;
     ReadHdfGraph(vesselgroup, vl.get());

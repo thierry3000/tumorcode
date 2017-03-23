@@ -503,7 +503,8 @@ void EllipticEquationSolver::solve ( Epetra_Vector& lhs )
     prec.reset(NULL);
     ifpackprec.reset(NULL);
   }
-  solver_impl.reset();
+  //is this needed or is it messing up the memory
+  //solver_impl.reset();
 }
 #endif
 

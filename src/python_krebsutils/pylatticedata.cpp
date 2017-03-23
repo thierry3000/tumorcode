@@ -20,7 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "pylatticedata.h"
 #include "lattice-data-polymorphic.h"
-#include <boost/serialization/export.hpp>
 
 class PyLd
 {
@@ -120,14 +119,16 @@ public:
 PyLd* read_lattice_data_from_hdf(const py::object &ld_grp_obj)
 {
   h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
-
+  std::printf("if you read this, lattice data is in c++");
   typedef polymorphic_latticedata::LatticeData LD;
-  boost::shared_ptr<LD> ldp(LD::ReadHdf(g_ld));
-
-  typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD1;
-  typedef polymorphic_latticedata::Derived<LatticeDataFCC> LD2;
-  //return new PyLd(ldp.release()); //this is for std::auto_ptr
-  return new PyLd(ldp.get());
+//  return new PyLd(new LD(ld));
+  std::auto_ptr<LD> ldp(LD::ReadHdf(g_ld));
+// 
+//   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD1;
+//   typedef polymorphic_latticedata::Derived<LatticeDataFCC> LD2;
+    return new PyLd(ldp.release()); //this is for std::auto_ptr
+//  return new PyLd(ldp.get());
+//  return new PyLd(ldp.get());
 }
 
 

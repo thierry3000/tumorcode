@@ -122,7 +122,9 @@ void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &para
   double max_boundary_flow = std::numeric_limits< double >::min();
   switch(handling){
     case KEEP:
+#ifdef DEBUG
       std::printf("no boundary changes in");
+#endif
       break;
     case VEIN_AS_FLOW_ARTERY_PRESSURE:
       
@@ -329,6 +331,9 @@ Parameters::Parameters()
   boundary_Condition_handling = KEEP;
   a_pressure = 1.8;
   a_flow = 200000.;
+  pop = 5;
+  individuals = 42;
+  opt_iter = 1;
 }
 
 void Parameters::assign(const ptree& pt)
@@ -357,6 +362,9 @@ void Parameters::assign(const ptree& pt)
   a_pressure = pt.get<double>("a_pressure", 1.8);
   a_flow = pt.get<double>("a_flow", 1.8);
   write2File = pt.get<bool>("write2File", true);
+  pop = pt.get<int>("pop",5);
+  individuals = pt.get<int>("individuals",42);
+  opt_iter = pt.get<int>("opt_iter",42);
 }
 
 ptree Parameters::as_ptree() const
@@ -385,6 +393,9 @@ ptree Parameters::as_ptree() const
 		   ("a_pressure", a_pressure)
 		   ("a_flow", a_flow)
 		   ("write2File", write2File)
+		   ("pop", pop)
+		   ("individuals", individuals)
+		   ("opt_iter", opt_iter)
 		   ;
 }
 
@@ -934,7 +945,7 @@ void ConductiveTransport::Calculate_S_tot()
  * Adaption According to  Pries, Secomb, Gaehtgens 1998
  * "Structural adaption and stability of microvascular networks: theory and simulations"
  */
-std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, VesselList3d *vl, float delta_t_calc)
+std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, VesselList3d &vl, float delta_t_calc)
 {
   // generate a CompressedAdaptionNetwork structure
   CompressedAdaptionNetwork adaption_network;
@@ -1004,11 +1015,11 @@ void KillSmallVessels(VesselList3d &vl, double rad_min)
     vl.DeleteVessel( toKill[i] );
   }
 }
-void SetAdaptionValues(VesselList3d* vl, CompressedAdaptionNetwork& fl, double delta_t, double rad_min)
+void SetAdaptionValues(VesselList3d &vl, CompressedAdaptionNetwork& fl, double delta_t, double rad_min)
 {
   
-  int ecnt = vl->GetECount();
-  int ncnt = vl->GetNCount();
+  int ecnt = vl.GetECount();
+  int ncnt = vl.GetNCount();
   
   int negativeRadiusSuggested =0;
   int tooSmallRadiusSuggested =0;
@@ -1031,9 +1042,9 @@ void SetAdaptionValues(VesselList3d* vl, CompressedAdaptionNetwork& fl, double d
 //     DynArray<FlReal> th_max_delta_r(64,RESERVE);
 //     DynArray<FlReal> th_max_stot(64,RESERVE);
     #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
-    for( int i=0;i<vl->GetECount(); ++i )
+    for( int i=0;i<vl.GetECount(); ++i )
     {
-      Vessel* v = vl->GetEdge( i );
+      Vessel* v = vl.GetEdge( i );
       int kk = fl.org2newEdge[v->Index()];
 //       bool bKill = false;
 //       if(!v->IsCirculated())  // moved to KillSmallVessels()
@@ -1147,11 +1158,11 @@ void SetAdaptionValues(VesselList3d* vl, CompressedAdaptionNetwork& fl, double d
 #if 1
 void GetAdaptionNetwork(
   CompressedAdaptionNetwork& fl, 
-  const VesselList3d* vl
+  VesselList3d& vl
  		      )
 {
-  int ecnt = vl->GetECount();
-  int ncnt = vl->GetNCount();
+  int ecnt = vl.GetECount();
+  int ncnt = vl.GetNCount();
 
   fl.edges.reserve(ecnt);
   fl.newEdge2original.resize(ecnt);
@@ -1161,7 +1172,7 @@ void GetAdaptionNetwork(
   // copy only perfused edges
   for(int i=0; i<ecnt; i++)
   {
-    const Vessel* v = vl->GetEdge(i);
+    const Vessel* v = vl.GetEdge(i);
     if (!v->IsCirculated()) continue;
     //edges
     int kk = fl.newEdge2original.add(i);
@@ -1183,7 +1194,7 @@ void GetAdaptionNetwork(
   { 
     return fl.org2new_vertex[nd->Index()];
   };
-  remap_keys(vl->GetBCMap(), fl.bcs, mapKey);
+  remap_keys(vl.GetBCMap(), fl.bcs, mapKey);
 
 #if 0 //useless vl->BCMap is used for calcflow
   for(int i=0; i<ncnt; ++i)
@@ -1227,9 +1238,9 @@ void GetAdaptionNetwork(
     fl.press.resize(fl.num_vertices());
 #ifdef DEBUG
 #ifndef SILENT
-    for( int i=0; i<vl->GetNCount();++i)
+    for( int i=0; i<vl.GetNCount();++i)
     {
-      printf("vl press: %f\n", vl->GetNode(i)->press);
+      printf("vl press: %f\n", vl.GetNode(i)->press);
     }
 #endif
 #endif
@@ -1237,7 +1248,7 @@ void GetAdaptionNetwork(
     {
       if (fl.org2new_vertex[i] != IntegerMap::unused())
       {
-	const VesselNode *nd = vl->GetNode(i);
+	const VesselNode *nd = vl.GetNode(i);
 	fl.press[fl.org2new_vertex[i]] = nd->press;
       }
     }
@@ -1246,7 +1257,7 @@ void GetAdaptionNetwork(
      */
     for(int i=0, k=0; i<ecnt; ++i)
     {
-      const Vessel* v = vl->GetEdge(i);
+      const Vessel* v = vl.GetEdge(i);
       if (!v->IsCirculated()) continue;
       fl.hema[k] = v->hematocrit;
       fl.flow[k] = v->q*60./1e6;
@@ -1258,19 +1269,21 @@ void GetAdaptionNetwork(
       fl.isBoundaryVessel[k] = v->flags.GetBits(BOUNDARY);
       fl.rad[k] = v->r;
       double wl=0;
-      if (!vl->HasLattice())
+      if (!vl.HasLattice())
       {
         wl = (v->NodeA()->worldpos.transpose()-v->NodeB()->worldpos.transpose()).norm();
 	myAssert(wl>0);
 #ifdef DEBUG
+#if ADAPTION_OUTPUT
 cout<<"vessel no.: "<<v->Index()<<" length: "<<wl<<endl;
 cout<<"posA : "<<v->NodeA()->worldpos<<endl;
 cout<<"posB : "<<v->NodeB()->worldpos<<endl;
 #endif
+#endif
       }
       else
       {
-	const VesselList3d::LatticeData &ld = vl->Ld();
+	const VesselList3d::LatticeData &ld = vl.Ld();
 	wl = v->WorldLength(ld);
       }
       fl.len[k] = wl;
@@ -1318,7 +1331,7 @@ bool check_while_break( int no_vessels, double min_error, double nqdev, double m
 }
 
 
-std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, boost::shared_ptr<VesselList3d> p_vl,bool doDebugOutput)
+std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, VesselList3d &vl,bool doDebugOutput)
 {
   /*
    * first, change the boundary Conditions
@@ -1330,7 +1343,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   //std::auto_ptr<VesselList3d> p_vl(&vl);
 #ifdef DEBUG
   printf("running first CalcFlow in adaptionLoop\n");
-  CalcFlow(*p_vl, bfparams);
+  CalcFlow(vl, bfparams);
   printf("done!\n");
 #endif
 #if 1
@@ -1339,12 +1352,12 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   // is this threadsafe when multiple instances of p_vl exist?
   #pragma omp single
   {
-    ChangeBoundaryConditions(*p_vl,params);
+    ChangeBoundaryConditions(vl,params);
   }
   
 #endif
-  CalcFlow(*p_vl, bfparams);
-  int no_Vessels_before_adaption = p_vl->GetECount();
+  CalcFlow(vl, bfparams);
+  int no_Vessels_before_adaption = vl.GetECount();
   //adaption loop local variables
   FlReal qdev=std::numeric_limits<FlReal>::max();
   FlReal nqdev=std::numeric_limits<FlReal>::max();
@@ -1364,7 +1377,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
    * some data we can look at after convergence, container for local variables
    */
   int how_often=0;//counts iterations untils convergence and can cause failsafe stop
-  DynArray<FlReal> last_vessel_radii(p_vl->GetECount());
+  DynArray<FlReal> last_vessel_radii(vl.GetECount());
   std::vector<FlReal> qdevs;
   std::vector<FlReal> nqdevs;
   std::vector<FlReal> max_delta_r_s;
@@ -1450,23 +1463,27 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
     }
     
     // **************MAIN Routine ******************** for single iteration
-    std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(params, p_vl.get(),delta_t);
+    std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(params, vl,delta_t);
 #if 1
     // am I serious? this would cause a never ending story.
     //UpdateBoundaryConditions(*vl);//new boundary flows, can show up after adaption
-    CalcFlow(*p_vl, bfparams);
+    /* 
+     * segfault at trilinos? AZ_manage_memory?
+     */
+    CalcFlow(vl, bfparams);
+    //flow infos will be passed as return values, so better use new ones
     //vice versa, network can expire different flows because of change in BC
     //an change in radii
 #endif
     qdev = sqrt(qdev);
-    nqdev = qdev/p_vl->GetECount();
+    nqdev = qdev/vl.GetECount();
     //qdev = Adaption::CalcRadiiChange_RK4(params,*vl);
     qdevs.push_back(qdev);
     nqdevs.push_back(nqdev);
     max_delta_r_s.push_back(max_delta_r);
     
     //update stopping condition
-    stopp = limit_error/sqrt(p_vl->GetECount());
+    stopp = limit_error/sqrt(vl.GetECount());
     
     //printf("hack delta t!");
     delta_t_s.push_back(delta_t);
@@ -1480,6 +1497,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
     
     
     //ComputeCirculatedComponents(vl); //done also in calcflow!!!!
+#if ADAPTION_OUTPUT
 #ifndef SILENT
     printf("Iterated adaption #%i, nqdev: %f, max_stot: %f, max_delta_r: %f\n", how_often, nqdev, max_stot, max_delta_r);
 #endif
@@ -1490,6 +1508,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
       if (use_dynamic_t) printf("dynamic t change: t= %f!\n",delta_t);
       printf("limit_error: %f, stopp: %f\n", limit_error,stopp);
     }
+#endif
 #endif
 
     
@@ -1512,15 +1531,15 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
     }
 #endif //DEBUG
 #endif
-  mybreakcondition = check_while_break(p_vl->GetECount(), limit_error,nqdev,max_delta_r, params.qdev, max_stot);
+  mybreakcondition = check_while_break(vl.GetECount(), limit_error,nqdev,max_delta_r, params.qdev, max_stot);
   }
   //end main adaption loop, hopefully convergent here
   
   
-  KillSmallVessels(*p_vl,params.radMin_for_kill);
+  KillSmallVessels(vl,params.radMin_for_kill);
   
   
-  int no_Vessels_after_adaption = p_vl->GetECount();
+  int no_Vessels_after_adaption = vl.GetECount();
   int no_killed = no_Vessels_before_adaption-no_Vessels_after_adaption;
   if( no_killed >0)
     printf("Killed %i of %i Vessels below %f\n", no_Vessels_before_adaption-no_Vessels_after_adaption, no_Vessels_before_adaption,params.radMin_for_kill);
@@ -1547,14 +1566,18 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   
  
   //write the input and output radii to console  
-  for(int w=0;w<p_vl->GetECount();++w)
+  for(int w=0;w<vl.GetECount();++w)
   {
-    const Vessel *v = p_vl->GetEdge(w);
+    const Vessel *v = vl.GetEdge(w);
+#if ADAPTION_OUTPUT
 #ifdef DEBUG
     printf("change at #%i: %f and %f \n",w, last_vessel_radii[w],v->r);
 #endif
+#endif
   }
+#if ADAPTION_OUTPUT
   cout<<format(" nqdev: %f, max_stot: %f, max_delta_r: %f # %i iterations\n ") % nqdev %max_stot %max_delta_r %how_often;
+#endif
   /*
    * return statement   0: convergent
    * 			1: not convergent */
@@ -1562,18 +1585,22 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   FlReal mean_std;
   if(how_often >= params.max_nun_iterations)
   {
+#if ADAPTION_OUTPUT
     cout<<"NOT Convergent!"<<endl;
+#endif
     return std::make_tuple(1, 1000000000.);
   }
   else
   {
+#if ADAPTION_OUTPUT
     cout<<"Convergent!"<<endl;
+#endif
     using namespace boost::accumulators;
     accumulator_set<double, features<tag::mean, tag::variance>> acc;
 #pragma omp parallel for
-  for(int i =0;i<p_vl->GetECount();++i)
+  for(int i =0;i<vl.GetECount();++i)
   {
-    Vessel* v = p_vl->GetEdge(i);
+    Vessel* v = vl.GetEdge(i);
     acc(v->q);
   }
   mean_value = mean(acc);

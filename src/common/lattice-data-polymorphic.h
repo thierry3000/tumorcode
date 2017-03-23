@@ -70,7 +70,7 @@ class LatticeData : boost::noncopyable
     typedef int64 SiteType;
     
     virtual ~LatticeData() = default;
-    virtual boost::shared_ptr<LatticeData> Clone() const {};
+    virtual std::auto_ptr<LatticeData> Clone() const {};
     virtual void Init(const BBox3 &bb, float scale) {};
 
     virtual float Scale() const {};
@@ -101,10 +101,10 @@ class LatticeData : boost::noncopyable
     /*
      * ldtype = quad or fcc
      */
-    static boost::shared_ptr<LatticeData> Make(const char* ldtype, const BBox3 &bb, float scale);
+    static std::auto_ptr<LatticeData> Make(const char* ldtype, const BBox3 &bb, float scale);
 
     // hdf 5 support
-    static boost::shared_ptr<LatticeData> ReadHdf(h5cpp::Group g);
+    static std::auto_ptr<LatticeData> ReadHdf(h5cpp::Group g);
     virtual void WriteHdf(h5cpp::Group g) const {};
 };
 
@@ -130,16 +130,14 @@ class Derived : public LatticeData
 public:
   // trivially forward all calls
   Derived() = default;
-  Derived(const Ld &ld) : ld(ld) {
-    std::printf("create one of this\n");
-  }
+  Derived(const Ld &ld) : ld(ld) { }
   Derived(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
   Derived(const Derived &other) : ld(other.ld) {}
   ~Derived() { }
   //Ld& get() { return ld; }
   Ld get() const { return ld; }
 
-  boost::shared_ptr<LatticeData> Clone() const { return boost::shared_ptr<LatticeData>(new Derived(*this)); }
+  std::auto_ptr<LatticeData> Clone() const { return std::auto_ptr<LatticeData>(new Derived(*this)); }
   virtual void Init(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
 
   virtual float Scale() const { return ld.Scale(); }

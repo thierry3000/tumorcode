@@ -149,6 +149,8 @@ class __PAGMO_VISIBLE adaption_problem : public base
 		mutable Adaption::Parameters params;
 		BloodFlowParameters bfparams;
 		std::string vessel_fn;
+		mutable std::auto_ptr<VesselList3d> vl;
+	        //h5cpp::Group vl_grp;
 };
 }}//namespace pagmo{ namespace problem {
 

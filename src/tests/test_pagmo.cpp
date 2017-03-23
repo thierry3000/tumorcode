@@ -18,15 +18,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <iostream>
-#include "../python_krebsutils/python-helpers.h"
+//#include "../python_krebsutils/python-helpers.h"
 #include "numpy.hpp"
-#include "../adaption/adaption_model2.h"
-#include "../common/calcflow.h"
+//#include "../adaption/adaption_model2.h"
+//#include "../common/calcflow.h"
 #include <algorithm>
 
 #include "hdf5.h"
 #define FILE "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
-//#define PAGMO_ENABLE_MPI
+//#define PAGMO_ENABLE_MPI --> in CMakeLists
 #include <pagmo/src/pagmo.h>
 
 using namespace pagmo;
@@ -34,16 +34,16 @@ using namespace pagmo;
 int test_2()
 {
   std::cout<<"running pagmo test 2"<<std::endl;
-  hid_t       file_id, group_id;  /* identifiers */
-  herr_t      status;
-  
-  /* Create a new file using default properties. */
-  //file_id = H5Fcreate(FILE, H5F_ACC_RDONLY, H5P_DEFAULT, H5P_DEFAULT);
-  file_id = H5Fopen(FILE, H5F_ACC_RDONLY, H5P_DEFAULT);
-  group_id = H5Gopen1(file_id,"parameters");
-  //H5Gget_info(group_id);
-  status = H5Gclose(group_id);
-  status = H5Fclose(file_id);
+//   hid_t       file_id, group_id;  /* identifiers */
+//   herr_t      status;
+//   
+//   /* Create a new file using default properties. */
+//   //file_id = H5Fcreate(FILE, H5F_ACC_RDONLY, H5P_DEFAULT, H5P_DEFAULT);
+//   file_id = H5Fopen(FILE, H5F_ACC_RDONLY, H5P_DEFAULT);
+//   group_id = H5Gopen1(file_id,"parameters");
+//   //H5Gget_info(group_id);
+//   status = H5Gclose(group_id);
+//   status = H5Fclose(file_id);
 }
 
 int test_1()
@@ -54,21 +54,22 @@ int test_1()
   int dim=0;
 #ifdef PAGMO_ENABLE_MPI
   mpi_environment env;
-  mc_steps = 10000000;
-  dim = 400;
+  mc_steps = 1000000;
+  dim = 40;
 #else
-  mc_steps = 10000000;
-  dim = 400;
+  mc_steps = 1000000;
+  dim = 4000;
 #endif
   // Create a problem and an algorithm.
   problem::dejong prob(dim);
   algorithm::monte_carlo algo(mc_steps);
-  // Create an archipelago of 10 MPI islands.
+  algo.set_screen_output(true);
+  // Create an archipelago of 48 MPI islands.
   archipelago a;
   a.set_topology(topology::ring());
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < 20; ++i) {
 #ifdef PAGMO_ENABLE_MPI
-	  a.push_back(mpi_island(algo,prob,1));
+	  a.push_back(mpi_island(algo,prob,16));
 #else
 	  a.push_back(island(algo,prob,1));
 #endif

@@ -26,34 +26,25 @@ inline void save_construct_data(
   Archive &ar, const pagmo::problem::adaption_problem *t, const unsigned int file_version)
 {
   //save data required to construct instances
+  std::printf("save_construct_data: adaption_as_pagmo_problem\n");
   ar & t->params;
   ar & t->bfparams;
   ar & t->vessel_fn;
-  //need identifier somehow???
-  //h5cpp::File *serializeBufferFile = new h5cpp::File("/localdisk/thierry/tmp.h5","a");
-  //h5cpp::Group *vesselgroup = new h5cpp::Group(serializeBufferFile->root().open_group("vol1"));
-  //h5cpp::Group *vesselgroup = new h5cpp::Group(serializeBufferFile->root());
-  //WriteHdfGraph(serializeBufferFile->root(), *t->vl);
 }
 template<class Archive>
 inline void load_construct_data(
   Archive &ar, pagmo::problem::adaption_problem *t, const unsigned int file_version)
 {
   //retrieve data from archive required to construct new instance
+  std::printf("load_construct_data: adaption_as_pagmo_problem\n");
   Adaption::Parameters params;
   ar & params;
   BloodFlowParameters bfparams;
   ar & bfparams;
   std::string vessel_fn;
   ar & vessel_fn;
-  cout<<"I am before here "<< std::flush<<endl;
-  //boost::shared_ptr<VesselList3d> vl;
-  cout<<"I am here "<<endl;
-  //vl->init_from_other_vl();
-  //ReadHdfGraph(,vl);
-  // invoke inplace constructor to initialize instance of adaption_problem
+  //knowing the filename will allow each instance to load the vesselList 
   ::new(t)pagmo::problem::adaption_problem(vessel_fn,params,bfparams);
-  //t(vl,params,bfparams);
 }
 }}//namespace boost{ namespace serialization{
 
@@ -71,24 +62,20 @@ namespace pagmo { namespace problem {
 adaption_problem::adaption_problem(const std::string vessel_fn_, Adaption::Parameters params_, BloodFlowParameters bfparams_):
 params(params_),bfparams(bfparams_),vessel_fn(vessel_fn_), base(3)
 {
+  printf("invoking construtor: adaption_as_pagmo_problem\n");
+  h5cpp::File *readInFile = new h5cpp::File(this->vessel_fn,"r");
+  h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group("adaption/vessels_after_adaption"));
+  this->vl = ReadVesselList3d(vl_grp, make_ptree("filter", false));
   set_lb(0.5);
   set_ub(4.0);
 }
+
 /// Clone method.
 base_ptr adaption_problem::clone() const {
-	//use the copy constructor of a boost::noncopyable
-	//VesselList3d aNewVl(*this->vl);
-	//std::auto_ptr<VesselList3d> my_vl(&aNewVl);
-	//return base_ptr(new adaption_problem(*this));
-	//VesselList3d my_vl(new VesselList3d);
-	//boost::shared_ptr<VesselList3d> my_vl(new VesselList3d(vl->getLD()));// = this->vl->Clone();
-	//boost::shared_ptr<VesselList3d> my_vl = this->vl->Clone();
-  //my_vl->Init(this->vl->Ld());
-// 	my_vl->init_from_other_vl(*this->vl);
-	//my_vl = this->vl->Clone();
+  printf("clone adaption_as_pagmo_problem\n");
 	return base_ptr(new adaption_problem(vessel_fn,params,bfparams));
-	//return base_ptr(new ackley(*this));
 }
+
 /// Implementation of the objective function.
 void adaption_problem::objfun_impl(fitness_vector &f, const decision_vector &x) const
 {
@@ -96,22 +83,33 @@ void adaption_problem::objfun_impl(fitness_vector &f, const decision_vector &x) 
   this->params.k_m = x[0];
   this->params.k_c = x[1];
   this->params.k_s = x[2];
-  H5::H5File *readInFile = new H5::H5File( this->vessel_fn, H5F_ACC_RDONLY);
-  H5::Group vesselgroup = readInFile->openGroup("adaption/vessels_after_adaption");
-  //h5cpp::File *readInFile = new h5cpp::File(this->vessel_fn,"r");
-  //h5cpp::Group *vesselgroup = new h5cpp::Group(readInFile->root().open_group("adaption/vessels_after_adaption"));
-  
-  boost::shared_ptr<VesselList3d> vl =  ReadVesselList3d(&vesselgroup, make_ptree("filter", false));
   std::tuple<uint,FlReal> adaption_loop_return;
   {
-    adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams,vl, false);
+    adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams, *vl, false);
   }
-  double average_cap_flow = std::get<1>(adaption_loop_return);
-  double suggested_cap_flow = 200000.;
-  f[0] = (average_cap_flow-suggested_cap_flow)*(average_cap_flow-suggested_cap_flow);
+  int returnValue = std::get<0>(adaption_loop_return);
+  bool isConvergent = false;
+  if(returnValue == 0)
+  {
+    isConvergent = true;
+  }
+  if(returnValue == 1)
+  {
+    isConvergent = false;
+  }
+  if( isConvergent )
+  {
+    double average_cap_flow = std::get<1>(adaption_loop_return);
+    double suggested_cap_flow = 5000.;
+    f[0] = (average_cap_flow-suggested_cap_flow)*(average_cap_flow-suggested_cap_flow);
 #ifdef DEBUG
 	cout<<format("f[0]: %f\n") % f[0];
 #endif
+  }
+  else
+  {
+    f[0] = std::numeric_limits< double >::max();
+  }
 }
 
 std::string adaption_problem::get_name() const
@@ -121,7 +119,7 @@ std::string adaption_problem::get_name() const
 template<class Archive> 
 void adaption_problem::serialize(Archive& ar, unsigned int)
 {
-  //boost::serialization::void_cast_register<pagmo::problem::adaption_problem, pagmo::problem::base>();
+  std::printf("serialize: adaption_as_pagmo_problem\n");
   ar & boost::serialization::base_object<base>(*this);
   ar & params;
   ar & bfparams;

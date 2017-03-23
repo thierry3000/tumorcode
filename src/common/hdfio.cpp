@@ -52,6 +52,10 @@ void WriteHdfGraph( h5cpp::Group g, const VesselList3d &vl )
   h5cpp::Group gg = g.create_group("nodes");
   gg.attrs().set("COUNT",ncnt);
   h5cpp::Attributes attrs = g.attrs();
+//   H5::Group gg = g.createGroup("nodes");
+//   gg.createAttribute("COUNT");
+//   gg.attrs().set("COUNT",ncnt);
+//   h5cpp::Attributes attrs = g.attrs();
   if(vl.HasLattice())//LATTICE IS THERE
   {
     if(attrs.exists("CLASS"))//correct hdf attribute is checke

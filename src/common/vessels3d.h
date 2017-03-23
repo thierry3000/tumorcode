@@ -204,7 +204,7 @@ class VesselList3d
 {
   typedef polymorphic_latticedata::LatticeData LD;
 public:
-  VesselList3d(boost::shared_ptr<LD> this_ld);
+  VesselList3d(std::auto_ptr<LD> this_ld);
   typedef LD LatticeData; // nicer name for the outside
   typedef LD::SiteType SiteType;
   typedef ListGraph<VesselNode,Vessel> Graphtype;
@@ -248,7 +248,7 @@ public:
   Vessel*     InsertTempEdge( VesselNode* a, VesselNode* b ) { return g.InsertEdge(a,b); }
   void        DeleteTempEdge( Vessel* v ) { g.DeleteEdge(v,false); }
   void        OptimizeMemLayout() { g.Optimize(); }
-  //inline const LD& Ld() const { return *m_ld; }
+//  inline const LD& Ld() const { return *m_ld; }
   inline const BCList& GetBCMap() const {return bclist;}
   //const BCList& GetBCMap() const { return bclist; }
   void          SetBC(const VesselNode* node, FlowBC bc);
@@ -257,12 +257,12 @@ public:
   std::size_t estimateMemoryUsage() const;
   void        IntegrityCheck(int check_lookup = -1);
   
-  boost::shared_ptr<VesselList3d> Clone();
-  boost::shared_ptr<LD> getLD() const;
+  std::auto_ptr<VesselList3d> Clone();
+  //std::auto_ptr<LD> getLD() const;
   private:
     SiteLookup 			lookup_site;
     BondLookup 			lookup_bond;
-    boost::shared_ptr<LD>	m_ld;
+    std::auto_ptr<LD>	m_ld;
     ListGraph<VesselNode,Vessel>g;
     void FillLookup();
     BCList bclist; // boundary conditions

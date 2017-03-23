@@ -171,7 +171,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     params.vesselfile_message = file.root().open_group("parameters").attrs().get<string>("MESSAGE");
     params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
     
-    ///state.vessels.reset(vl.release());
+    state.vessels.reset(vl.release());
     last_vessels_checksum = -1;
   }
 

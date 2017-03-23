@@ -1,7 +1,14 @@
 cmake_minimum_required(VERSION 2.8.8)
 # we need quite a bit of python information for compiling the source
 # declare that here, so that is it is recursive valid
-
+option(PAGMO_MPI "is pagmo mpi?" ON)
+if(PAGMO_MPI)
+message("we will use pagmo with mpi support!")
+  ADD_DEFINITIONS(-DPAGMO_ENABLE_MPI)
+  find_package(MPI)
+  include_directories(${MPI_CXX_INCLUDE_PATH})
+  set(myLibs "${myLibs};${MPI_CXX_LIBRARIES}")
+endif()
 set(CMAKE_DEBUG_POSTFIX "d")
 
 add_subdirectory(detailedO2)
