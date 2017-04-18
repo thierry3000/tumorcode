@@ -15,6 +15,9 @@ buildopt
 trash
 .spyderworkspace
 .spyderproject
+py/.spyproject
+host_snowden.txt
+cmake/modules/*
 *.kate-swp
 *.swp # create by vim
 .directory
