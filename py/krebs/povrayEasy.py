@@ -361,9 +361,10 @@ class EasyPovRayRender(object):
   def addIsosurface(self, volumedata, level, style_object, clip_object, clip_style_object):
     vb = volumedata.value_bounds
     wb = volumedata.worldbox    
+    difference = vb[1]-vb[0]
     if __debug__:    
       print('Adding Isosuface! See if threshold is reasonable:') 
-      print('vb[1]-vb[0]: %f ' % vb[1]-vb[0])
+      print('vb[1]-vb[0]: %f ' % difference)
 
     o = pv.Isosurface(
       pv.Function('-%s(x,y,z)' % (volumedata.name)),

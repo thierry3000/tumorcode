@@ -145,8 +145,8 @@ void Grower::Init(const ptree &settings)
   vl->Init(*ldp);
 
   cout << "vesselgen init ..." << endl;
-  //cout << "  size " << size << " scale " << scale << endl;
-  ldp->print(cout); cout << endl;
+  cout << "  size " << size << " scale " << scale << endl;
+  //ldp->print(cout); cout << endl;
   cout << "  seed " << seed << endl;
 
 #if GFFIELD_ENABLE
