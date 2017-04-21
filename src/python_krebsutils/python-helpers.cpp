@@ -24,7 +24,7 @@ h5cpp::Group PythonToCppGroup(const py::object &op_)
 {
   py::object id_obj1 = py::getattr(op_, "id");
   py::object id_obj2 = py::getattr(id_obj1, "id");
-  int id = py::extract<int>(id_obj2);
+  ssize_t id = py::extract<ssize_t>(id_obj2);
   return h5cpp::Group(id);
 }
 
@@ -32,7 +32,7 @@ h5cpp::Dataset PythonToCppDataset(const py::object &op_)
 {
   py::object id_obj1 = py::getattr(op_, "id");
   py::object id_obj2 = py::getattr(id_obj1, "id");
-  int id = py::extract<int>(id_obj2);
+  ssize_t id = py::extract<ssize_t>(id_obj2);
   return h5cpp::Dataset(id);
 }
 
