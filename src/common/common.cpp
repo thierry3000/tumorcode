@@ -121,7 +121,7 @@ int OmpGetMaxThreadCount()
 void SetNumThreads(int n)
 {
   if (!mp.get()) 
-    throw std::runtime_error("Multiprocessing not initialized! Construct a MultiprocessingInitializer!");
+    throw std::runtime_error("Multiprocessing not initialized! Construct a MultiprocessingInitializer! from SetNumThreads");
   mp->SetNumThreads(n);
 }
 

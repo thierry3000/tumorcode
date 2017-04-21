@@ -19,6 +19,7 @@ else()
   ${myLibs}
   )
 endif()
+message("link_tumor_to_this: ${link_tumor_to_this} ")
 target_link_libraries(tumor_ ${link_tumor_to_this})
 
 set_target_properties(tumor_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)

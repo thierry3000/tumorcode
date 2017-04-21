@@ -1,10 +1,19 @@
 cmake_minimum_required(VERSION 2.6)
 project(adaption)
 
-file(GLOB AdaptionFiles "*.cpp")
+if(USE_PAGMO)
+  #set(AdaptionFiles "python-adaption.cpp adaption_model2.cpp adaption_as_pagmo_problem.cpp")
+  #file(GLOB AdaptionFiles "python-adaption.cpp adaption_model2.cpp adaption_as_pagmo_problem.cpp")
+  add_library(adaption_ SHARED python-adaption.cpp adaption_model2.cpp adaption_as_pagmo_problem.cpp)
+else()
+  #set(AdaptionFiles "python-adaption.cpp adaption_model2.cpp")
+  #file(GLOB AdaptionFiles "python-adaption.cpp adaption_model2.cpp")
+  add_library(adaption_ SHARED python-adaption.cpp adaption_model2.cpp)
+endif()
+#file(GLOB ${AdaptionFiles})
 
-add_library(adaption_ SHARED
-            ${AdaptionFiles})
+#message("AdaptionFiles : ${AdaptionFiles}")
+#add_library(adaption_ SHARED python-adaption.cpp adaption_model2.cpp)
 #but not the headers
 #by this flag we can use decide if pagmo uses MPI
 
@@ -14,7 +23,7 @@ if(USE_PAGMO)
 else()
   target_link_libraries(adaption_ krebs_)
 endif()
-#set_target_properties(adaption_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_target_properties(adaption_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 install(TARGETS adaption_
 	LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)

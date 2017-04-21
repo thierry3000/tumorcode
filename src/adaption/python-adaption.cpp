@@ -19,7 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../python_krebsutils/python-helpers.h"
 #include "numpy.hpp"
+#include "adaption_model2.h"
+
+#ifdef USE_PAGMO
 #include "adaption_as_pagmo_problem.h"
+#endif
+
 #include "../common/calcflow.h"
 #include <algorithm>
 
@@ -129,6 +134,7 @@ void InitParameters(Adaption::Parameters *params, py::dict py_parameters)
  * this caused some major trouble in the past
  * and strings are easy to serialize!
  */
+#ifdef USE_PAGMO
 static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict py_parameters, py::object py_bfparams)
 {
   #if 1
@@ -286,6 +292,7 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
   //return py::make_tuple(pop.champion().x[0],pop.champion().x[1],pop.champion().x[2]);
   return py::make_tuple(1.,2.,3.);
 }
+#endif
 
 
 Adaption::Parameters* AllocateParametersFromDict(const py::dict &d)
@@ -300,7 +307,9 @@ void export_adaption_computation()
   py::def("AllocateAdaptionParametersFromDict", &AllocateParametersFromDict, py::return_value_policy<py::manage_new_object>());
   //py::def("computeAdaption", PyComputeAdaption);
   py::def("testAdaption", TestAdaption);
+#ifdef USE_PAGMO
   py::def("doAdaptionOptimization",PydoAdaptionOptimization);
+#endif
 }
   
 }//namespace
@@ -309,9 +318,9 @@ void export_adaption_computation()
 BOOST_PYTHON_MODULE(libadaption_d)
 #else
 BOOST_PYTHON_MODULE(libadaption_)
-#endif
 {
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   Adaption::export_adaption_computation();
 }
+#endif

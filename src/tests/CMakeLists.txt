@@ -19,19 +19,20 @@ target_link_libraries(test_stepper ${myLibs})
 #add_executable(test_elliptic_solver test_elliptic_solver.cpp)
 #target_link_libraries(test_elliptic_solver ${myLibs})
 
-add_executable(test_pagmo test_pagmo.cpp)
 #set_target_properties(test_pagmo PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX} LINK_FLAGS "-rdynamic")
 #but not the headers
 #by this flag we can use decide if pagmo uses MPI
 
-if(PAGMO_MPI)
-  message("pagmo should be mpi")
-  target_link_libraries(test_pagmo pagmoMPI ${myLibs})
-else()
-  target_link_libraries(test_pagmo krebs_ pagmo boost_system)
-endif()
+# if(USE_PAGMO)
+#   message("pagmo should be mpi")
+#   target_link_libraries(test_pagmo pagmoMPI ${myLibs})
+# else()
+#   add_executable(test_pagmo test_pagmo.cpp)
+#   target_link_libraries(test_pagmo krebs_ pagmo boost_system)
+#    install(TARGETS test_pagmo RUNTIME DESTINATION bin)
+# endif()
 
-if(USE_ADAPTION)
+if(USE_PAGMO)
   add_executable(test_pagmo_s test_pagmo_serialize.cpp)
   if(PAGMO_MPI)
     message("pagmo should be mpi")
@@ -54,4 +55,4 @@ target_link_libraries(test_boost_serialize boost_serialization)
 # target_link_libraries(test_convection_diffusion ${myLibs})
 
 
-install(TARGETS tests test_pagmo test_stepper test_boost_serialize RUNTIME DESTINATION bin)
+install(TARGETS tests test_stepper test_boost_serialize RUNTIME DESTINATION bin)
