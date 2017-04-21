@@ -129,6 +129,8 @@ static void _CheckArray3(const py::object &obj, int dim1, int dim2, int dim3, co
 */
 /** even worse:
  * this function does not seem to be hdf5 1.10 ready. got some strange errors with it.
+ * solved:
+ * this was due to extraction of 32bit int as type, now size_t is used
  */
 h5cpp::Group PythonToCppGroup(const py::object &op_);
 h5cpp::Dataset PythonToCppDataset(const py::object &op_);

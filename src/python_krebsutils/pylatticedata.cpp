@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 class PyLd
 {
   typedef polymorphic_latticedata::LatticeData LatticeData;
-  boost::shared_ptr<LatticeData> ld;
+  std::auto_ptr<LatticeData> ld;
   PyLd() {}
 public:
   const LatticeData& get() const { return *ld; }

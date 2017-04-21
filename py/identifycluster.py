@@ -40,6 +40,8 @@ def getname():
     return 'sleipnir'
   if 'durga' in fullname:
     return 'durga'
+  if 'snowden' in fullname:
+    return 'snowden'
   durga = [ ('arm%i' % i) for i in range(0, 33) ]
   sleipnir = [ ('leg%02i' % i) for i in range(0, 25) ]
   snowden = [ ('leak%02i' % i) for i in range(10,65)]
