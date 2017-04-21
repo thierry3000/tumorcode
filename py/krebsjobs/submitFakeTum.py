@@ -45,7 +45,7 @@ dstdir = os.getcwd()
 #note: according to doeme et al. the tumor radius growth should be around 0.7 mu m / h
 
 import krebsjobs.parameters.fakeTumorParams as parameterSets
-from submitAdaption import create_auto_dicts
+#from submitAdaption import create_auto_dicts
 
 from krebsutils import typelist
 

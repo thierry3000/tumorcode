@@ -480,7 +480,7 @@ oxy_try_2 = deepcopy(bulktissue_small_2d_snowden)
 oxy_try_2.update(
     out_intervall = 100,
     tend = 200000.,
-    num_threads = 28,
+    num_threads = 16,
     )
 
 bulktissue_tutorial = deepcopy(defaultconfig_bulktissue)

@@ -285,6 +285,7 @@ void myprint(boost::property_tree::ptree const& pt)
     }
 }
 
+#ifdef USE_ADAPTION
 void Model::DoStep(double dt, const Adaption::Parameters *adap_params, const BloodFlowParameters *bfparams)
 {
   this->dt = dt;
@@ -312,7 +313,35 @@ void Model::DoStep(double dt, const Adaption::Parameters *adap_params, const Blo
   time += dt;
   this->dt = 0.;
 }
-
+#else
+void Model::DoStep(double dt, const BloodFlowParameters *bfparams)
+{
+  this->dt = dt;
+  myAssert(dt == 1.);
+  
+  if(true)
+  //else
+  {
+    GenerateSprouts();
+    CollapseVessels();
+    if (IS_DEBUG) vl->IntegrityCheck();
+    EnlargeVessels();
+    SmoothVessels();
+    MaturateVessel();
+  }
+  if(num_iteration%10 == 0)
+  {
+    Optimize(vl);
+  }
+  if (IS_DEBUG) vl->IntegrityCheck();
+  ClassifyTumorVessels();
+  //DebugOutVessels(*vl, "firstiter");
+  ComputeCirculatedComponents(vl);
+  ++num_iteration;
+  time += dt;
+  this->dt = 0.;
+}
+#endif
 /*
  * if various checks on the two node point succeded
  * we can insert a new sprout. New sprouts are labeled

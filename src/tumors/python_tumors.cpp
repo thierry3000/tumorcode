@@ -63,7 +63,7 @@ int run_bulktissue_no_vessels(const py::str &param_info_str)
   BloodFlowParameters bfparams;
   VesselModel1::Params vessel_params;
   O2Model::PrezO2Params prezO2params;
-  Adaption::Parameters adaption_params;
+  //Adaption::Parameters adaption_params;
   
   ptree all_pt_params;
   all_pt_params = sparams.as_ptree();
@@ -71,7 +71,7 @@ int run_bulktissue_no_vessels(const py::str &param_info_str)
   all_pt_params.put_child("calcflow", bfparams.as_ptree());
   all_pt_params.put_child("vessels", vessel_params.as_ptree());
   all_pt_params.put_child("prez_o2", prezO2params.as_ptree());
-  all_pt_params.put_child("adaption", adaption_params.as_ptree());
+  //all_pt_params.put_child("adaption", adaption_params.as_ptree());
   cout.rdbuf(my::log().rdbuf());
   {
   //boost::optional<ptree> read_params = pt_params;
@@ -127,13 +127,20 @@ void export_bulktissue_with_vessels()
 }
 
 
-#ifdef DEBUG
-BOOST_PYTHON_MODULE(libtumor_d)
-#else
+// #ifdef DEBUG
+// BOOST_PYTHON_MODULE(libtumor_d)
+// #else
+// BOOST_PYTHON_MODULE(libtumor_)
+// {
+//   //export_faketum();
+//   //export_bulktissue_no_vessels();
+//   export_bulktissue_with_vessels();
+// }
+// #endif
+
 BOOST_PYTHON_MODULE(libtumor_)
-#endif
 {
-  export_faketum();
-  export_bulktissue_no_vessels();
+  //export_faketum();
+  //export_bulktissue_no_vessels();
   export_bulktissue_with_vessels();
 }

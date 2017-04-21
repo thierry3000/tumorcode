@@ -9,8 +9,13 @@ message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 message("CMAKE_EXE_LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
 
 # all variables propagate down the tree so set up as much as possible here
-#set (ENABLE_OMP TRUE CACHE BOOL "enable openmp")
-option(ENABLE_OMP CACHE OFF)
+set (ENABLE_OMP TRUE CACHE BOOL "enable openmp")
+#option(ENABLE_OMP CACHE ON)
+option(USE_ADAPTION CACHE OFF)
+if(USE_ADAPTION)
+  message("USE_ADAPTION preprocessor defined")
+  add_definitions(-DUSE_ADAPTION)
+endif()
 set (MAX_OPTIMIZATION TRUE CACHE BOOL "compile with -march=native (important for VM) and some other optimization options")
 # set (MPI_NEEDED FALSE CACHE BOOL "Must we link to the MPI libraries?")
 set (ADDITIONAL_INCLUDE_DIRS CACHE PATH "Additional dirs to search for included files")
@@ -163,13 +168,14 @@ set(myLibs
 # this must come first as it overwrites preceeding compiler flags
 # need openmp
 if (ENABLE_OMP)
+  message("you activated openmp support, we try to find it now!")
   find_package(OpenMP REQUIRED)
   if (NOT OPENMP_FOUND)
     message(FATAL_ERROR "OpenMP not found")
   endif()
   message(STATUS "OpenMP_CXX_FLAGS      = ${OpenMP_CXX_FLAGS}")
   #to get rid of the no #pragma warnings
-  add_definitions(-DENABLE_OMP)
+  #add_definitions(-DENABLE_OMP)
 endif()
 
 GET_FILENAME_COMPONENT(compiler_name ${CMAKE_C_COMPILER} NAME)

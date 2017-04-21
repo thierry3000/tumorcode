@@ -66,8 +66,10 @@ void FakeTum::Parameters::assign(const ptree &pt)
   #undef DOPT
   const auto bfparamsPtree = pt.get_child_optional("calcflow");
   if (bfparamsPtree) bfparams.assign(*bfparamsPtree);
+#ifdef USE_ADAPTION
   const auto adapt_paramsPtree = pt.get_child_optional("adaption");
   if (adapt_paramsPtree) adap_params.assign(*adapt_paramsPtree);
+#endif
 }
 
 ptree FakeTum::Parameters::as_ptree() const
@@ -93,7 +95,9 @@ ptree FakeTum::Parameters::as_ptree() const
   DOPT(tissuePressureCenterFraction);
   #undef DOPT
   pt.put_child("calcflow", bfparams.as_ptree());
+#if USE_ADAPTION
   pt.put_child("adaption", adap_params.as_ptree());
+#endif
   return pt;
 }
 
@@ -147,9 +151,10 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
   // direct cout through log
   cout.rdbuf(my::log().rdbuf());
   {
+#ifdef USE_ADAPTION
     // BAD HACK
     this->params.adap_params.radMin_for_kill = this->model.params.radMin;
-  
+#endif
     my::SetNumThreads(params.num_threads);
     
     h5cpp::File file(params.fn_vessel, "r");
@@ -257,7 +262,11 @@ void FakeTum::FakeTumorSim::doStep(double dt)
 {
   cout << format("step %i, t=%f") % num_iteration % time << endl;
   CalcFlow(*vl, params.bfparams);
+#ifdef USE_ADAPTION
   model.DoStep(dt, &params.adap_params,&params.bfparams);
+#else
+  //do be implemented
+#endif
   tumor_radius += dt * params.tumor_speed;
 }
 

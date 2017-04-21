@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.8)
 # we need quite a bit of python information for compiling the source
 # declare that here, so that is it is recursive valid
-option(PAGMO_MPI "is pagmo mpi?" ON)
+option(PAGMO_MPI "is pagmo mpi?" OFF)
 if(PAGMO_MPI)
 message("we will use pagmo with mpi support!")
   ADD_DEFINITIONS(-DPAGMO_ENABLE_MPI)
@@ -17,6 +17,10 @@ add_subdirectory(mwlib)
 add_subdirectory(mwlib_tests)
 add_subdirectory(python_krebsutils)
 add_subdirectory(tests)
-add_subdirectory(adaption)
+
+if(USE_ADAPTION)
+  add_subdirectory(adaption)
+endif()
+
 add_subdirectory(iff)
 add_subdirectory(tumors)
