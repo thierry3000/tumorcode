@@ -49,6 +49,8 @@ struct MPPrivate
       MPI_Initialized(&mpi_is_initialized);
       if (!mpi_is_initialized)
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+	//kind of works with 
+	//MPI_Init(&argc, &argv);
     }
 #endif
     SetNumThreads(num_threads_);
@@ -90,6 +92,10 @@ struct MPPrivate
 
 static std::auto_ptr<MPPrivate> mp;
 
+bool MultiprocessingInitializer_exists()
+{
+  return mp.get();
+}
 
 int GetNumThreads()
 {

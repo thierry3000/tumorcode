@@ -27,6 +27,11 @@ import extensions # for efficient asarray with h5py
 import posixpath
 import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../lib'))
+'''overcomes some serious mpi issues!!!
+https://github.com/baidu-research/tensorflow-allreduce/issues/4
+'''
+import ctypes
+ctypes.CDLL("libmpi.so", mode=ctypes.RTLD_GLOBAL)
 
 # leaks a bit of memory each time it is imported!
 from scipy.ndimage.interpolation import geometric_transform

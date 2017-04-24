@@ -220,3 +220,34 @@ bool PyCheckAbort()
   return res != 0;
 }
 
+// static void PyMPI_OPENMPI_dlopen_libmpi(void)
+// {
+// void handle = 0;
+// int mode = RTLD_NOW | RTLD_GLOBAL;
+// /* GNU/Linux and others */
+// #ifdef RTLD_NOLOAD
+// mode |= RTLD_NOLOAD;
+// #endif
+// if (!handle) handle = dlopen("libmpi.so.20", mode);
+// if (!handle) handle = dlopen("libmpi.so.12", mode);
+// if (!handle) handle = dlopen("libmpi.so.1", mode);
+// if (!handle) handle = dlopen("libmpi.so.0", mode);
+// if (!handle) handle = dlopen("libmpi.so", mode);
+// }
+// 
+// static int PyMPI_OPENMPI_MPI_Init(int *argc, char ***argv)
+// {
+// PyMPI_OPENMPI_dlopen_libmpi();
+// return MPI_Init(argc, argv);
+// }
+// #undef MPI_Init
+// #define MPI_Init PyMPI_OPENMPI_MPI_Init
+// 
+// static int PyMPI_OPENMPI_MPI_Init_thread(int *argc, char ***argv,
+// int required, int *provided)
+// {
+// PyMPI_OPENMPI_dlopen_libmpi();
+// return MPI_Init_thread(argc, argv, required, provided);
+// }
+// #undef MPI_Init_thread
+// #define MPI_Init_thread PyMPI_OPENMPI_MPI_Init_thread

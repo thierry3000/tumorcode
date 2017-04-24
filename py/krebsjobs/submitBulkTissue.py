@@ -91,32 +91,64 @@ def run_no_vessels(name, config_, mem, days):
                         change_cwd = True)
 
 if not qsub.is_client and __name__ == '__main__':
-
+#parser = argparse.ArgumentParser(parents=[general_group])
+#subparsers=parser.add_subparsers(dest='action')
+#subparsers.add_parser('Restart',parents=[general_group, second_group])
+#subparsers.add_parser('Start', parents=[general_group])
   import argparse
-  parser = argparse.ArgumentParser(description='Compute BulkTissue tumor. Either with or without vessels')  
-  parser.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/tumorParameters.py')
-  #this is not needed in the case without vessels
-  parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
-  parser.add_argument('--no_vessel', help = 'compute the continuum model of tumor cells, no vessels needed for that', default=False, action='store_true')
-
-  goodArguments, otherArguments = parser.parse_known_args()
-  qsub.parse_args(otherArguments)
+  parent_parser = argparse.ArgumentParser(add_help=False,description='Compute BulkTissue tumor. Either with or without vessels')
+  parent_parser.add_argument('--no_vessel', help = 'compute the continuum model of tumor cells, no vessels needed for that', default=False, action='store_true')
   
-  try:
-    if not goodArguments.tumParamSet in dir(parameterSets):
-      raise AssertionError('Unknown parameter set %s!' % goodArguments.tumParamSet)
-  except Exception, e:
-    print e.message
-    sys.exit(-1)
+  known, other = parent_parser.parse_known_args()
 
-  factory = getattr(parameterSets, goodArguments.tumParamSet)
-  #create filename due to former standards
-  filenames=[]
-  for fn in goodArguments.vesselFileNames:
-    filenames.append(fn.name)
   
-  if goodArguments.no_vessel:
+  parser = argparse.ArgumentParser(add_help=False) 
+  subparsers = parser.add_subparsers()  
+  
+  if known.no_vessel:
+    #s = p2.add_subparsers()
+    parser_no_vessels = subparsers.add_parser('no', parents=[parent_parser])
+    parser_no_vessels.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/tumorParameters.py')
+    goodArguments, otherArguments = parser_no_vessels.parse_known_args()
+    qsub.parse_args(otherArguments)
+    try:
+      if not goodArguments.tumParamSet in dir(parameterSets):
+        raise AssertionError('Unknown parameter set %s!' % goodArguments.tumParamSet)
+    except Exception, e:
+      print e.message
+      sys.exit(-1)
+    factory = getattr(parameterSets, goodArguments.tumParamSet)
     run_no_vessels(goodArguments.tumParamSet, factory, '1GB', 2.)
-  else:
+  #p1 = argparse.ArgumentParser( parents = [ p2 ] )
+  #s = p1.add_subparsers()
+  #p = s.add_parser( 'group' )
+  #p.set_defaults( group=True )  
+  if not known.no_vessel:
+  #p1 = argparse.ArgumentParser(description='Compute BulkTissue tumor. Either with or without vessels')  
+    #s2 = p2.add_subparsers()
+    parser_vessels = subparsers.add_parser('with', parents=[parent_parser])    
+    parser_vessels.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/tumorParameters.py')
+  #this is not needed in the case without vessels
+    parser_vessels.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
+  #parser.add_argument('--no_vessel', help = 'compute the continuum model of tumor cells, no vessels needed for that', default=False, action='store_true')
+    #parser_vessels.add_argument('no_vessel', help = 'compute the continuum model of tumor cells, no vessels needed for that', default=False, action='store_true')
+  
+    goodArguments, otherArguments = parser_vessels.parse_known_args()
+    qsub.parse_args(otherArguments)
+    
+    try:
+      if not goodArguments.tumParamSet in dir(parameterSets):
+        raise AssertionError('Unknown parameter set %s!' % goodArguments.tumParamSet)
+    except Exception, e:
+      print e.message
+      sys.exit(-1)
+  
+    factory = getattr(parameterSets, goodArguments.tumParamSet)
+    #create filename due to former standards
+    filenames=[]
+    for fn in goodArguments.vesselFileNames:
+      filenames.append(fn.name)
+    
+
     for fn in filenames:
       run_with_vessels(fn, goodArguments.tumParamSet, factory, '5GB', 28.)

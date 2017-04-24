@@ -60,6 +60,7 @@ namespace my
   void SetNumThreads(int n);
   int OmpGetCurrentThread();
   int OmpGetMaxThreadCount();
+  bool MultiprocessingInitializer_exists();
 }
 
 
