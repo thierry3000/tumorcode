@@ -564,7 +564,7 @@ BOOST_PYTHON_MODULE(libkrebs_)
   export_NumericalToolsTests();
   //export_iffsim();
   export_vesselgen();
-  export_elliptic_solver_test();
+  //export_elliptic_solver_test();
   export_calcflow();
   export_get_Murray();
   export_compute_interpolation_field();

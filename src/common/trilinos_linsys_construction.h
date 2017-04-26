@@ -44,6 +44,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ml_epetra_preconditioner.h>
 #include <Ifpack.h>
 #include <AztecOO.h>
+
+#include <BelosSolverFactory.hpp>
+#include <BelosLinearProblem.hpp>
+#include <BelosEpetraAdapter.hpp>
+
+// Trilinos forward declarations
+class Epetra_MultiVector;
+class Epetra_RowMatrix;
+class Epetra_Operator;
+class Ifpack_Preconditioner;
+
+namespace Belos
+{
+  template<class ScalarType, class MV, class OP>
+  class LinearProblem;
+}
+typedef double BelosScalarType;
+typedef Epetra_MultiVector BelosMultiVector;
+typedef Epetra_Operator BelosOperator;
+//typedef Belos::BelosLinearProblem<BelosScalarType, BelosMultiVector, BelosOperator> BelosLinearProblem;
+
 #if (defined __GNUC__) && !(defined __INTEL_COMPILER)
 #pragma GCC diagnostic pop
 #endif
@@ -377,6 +398,7 @@ class EllipticEquationSolver : boost::noncopyable
   const Epetra_Operator *sys_operator;
   const Epetra_Vector *rhs;
   boost::scoped_ptr<AztecOO> solver_impl;
+  //boost::scoped_ptr<Belos::SolverFactory<BelosScalarType,BelosMultiVector,BelosOperator>> solver_impl;
   boost::scoped_ptr<Ifpack_Preconditioner> ifpackprec;
   ptree params;
   boost::scoped_ptr<ML_Epetra::MultiLevelPreconditioner> prec;
@@ -391,8 +413,8 @@ public:
 };
 #endif
 
-void SolveEllipticEquation(const Epetra_Operator &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params = boost::property_tree::ptree());
-
+//void SolveEllipticEquation(const Epetra_Operator &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params = boost::property_tree::ptree());
+void SolveEllipticEquation(const Epetra_CrsMatrix &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params);
 
 /*------------------------------------------------------
 ------------------------------------------------------*/
