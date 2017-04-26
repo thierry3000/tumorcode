@@ -139,10 +139,10 @@ public:
   }
 };
 
-/**@brief Used to remove the pointer quality from a pointer type. 
-
-Unwrapped::type gives the type that is pointed to, if M is a pointer type. Else Unwrapped::type is equal to M.
-*/
+/**
+ * @brief Used to remove the pointer quality from a pointer type. 
+ * Unwrapped::type gives the type that is pointed to, if M is a pointer type. Else Unwrapped::type is equal to M.
+ */
 template<class M>
 struct Unwrapped
 {
@@ -173,16 +173,16 @@ It takes template arguments for a model (Model) and operations (Ops). Model must
 to compute the rate of change of the state at the current state at the current time (e.g. see above, 
 the class Callbacks). Model should also contain a type called State, representing the system state under
 consideration. 
-Ops must contain mathematical operations on the state type (e.g. see OpsCallback).
+Ops stands for Operations! must contain mathematical operations on the state type (e.g. see OpsCallback).
 */
 template<STEPPER_TEMPLATE_ARGS>
 class Stepper
 {
 public:
-  /**@brief Typedefs for the Model describing the F in du/dt = F(u, t), the Operations on u, and the type of u.
-  Unwrapped<...> is used to allow the Stepper to either own these components as member variables, or take pointers
-  to externally supplied objects. In the latter case Model_ will be a pointer type, for intance.
-  */ 
+  /* Typedefs for the Model describing the F in du/dt = F(u, t), the Operations on u, and the type of u.
+   * Unwrapped<...> is used to allow the Stepper to either own these components as member variables, or take pointers
+   * to externally supplied objects. In the latter case Model_ will be a pointer type, for intance.
+   */
   typedef typename Unwrapped<Model_>::type Model;
   typedef typename Unwrapped<Ops_>::type Ops;
   typedef typename Model::State State;

@@ -157,6 +157,8 @@ class __PAGMO_VISIBLE adaption_problem : public base
 
 BOOST_CLASS_EXPORT_KEY(pagmo::problem::adaption_problem)
 
-
+#ifdef USE_PAGMO
+int doAdaptionOptimization_without_py();
+#endif
 
 #endif

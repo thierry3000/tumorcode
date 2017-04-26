@@ -189,7 +189,9 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
 
   FlArray visc(flownet.num_edges());
   CalcViscosities(flownet.rad, flownet.hema,bloodFlowParameters, visc);
-
+  //from header
+  //FlArray press;
+  //FlArray len, rad, hema, flow;
   //clear_and_free_memory(flownet.hema);
   
   FlArray cond(flownet.num_edges());
@@ -223,6 +225,10 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
     flowsys.solve();
   
     flownet.press.resize(flownet.num_vertices());
+    //flownet.len.resize(flownet.num_edges());
+    //flownet.rad.resize(flownet.num_edges());
+    //flownet.hema.resize(flownet.num_edges());
+    //flownet.flow.resize(flownet.num_edges());
     
     for (int i=0; i<flownet.num_vertices(); ++i) flownet.press[i] = flowsys.lhs_get(i);
     SetFlowValues(&vl, flownet, cond, flownet.press, flownet.hema);

@@ -101,7 +101,7 @@ struct NewTumorSim : public  boost::noncopyable
   
   // vessel system
   VesselModel1::Model vessel_model; // dynamics   
-  Array3d<float> vessel_volume_fraction, vessel_o2src_clin, vessel_o2src_crhs; // cached data
+  Array3d<float> vessel_volume_fraction, vessel_o2src_clin, vessel_o2src_crhs; // cached data, could also be read from hdf
   int last_vessels_checksum;
   NewSteppers::StepControl vessel_step_ctrl;
 

@@ -645,6 +645,14 @@ vessels = dict(
   bRelativeShearforceCollapse = False,
 )
 ))
+prez_new=deepcopy(prez3)
+prez_new.update(
+    tend = 200,
+    )
+prez_new['tumor'].update(
+    tumor_diameter = 100,
+    time_prol = 1,
+    )
 
 
 

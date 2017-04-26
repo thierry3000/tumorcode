@@ -130,6 +130,7 @@ void InitParameters(Adaption::Parameters *params, py::dict py_parameters)
 //   }
 // #endif
 // }
+
 /* we decide to parse a string name here and NOT the h5py handle
  * this caused some major trouble in the past
  * and strings are easy to serialize!
@@ -318,9 +319,9 @@ void export_adaption_computation()
 BOOST_PYTHON_MODULE(libadaption_d)
 #else
 BOOST_PYTHON_MODULE(libadaption_)
+#endif
 {
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   Adaption::export_adaption_computation();
 }
-#endif
