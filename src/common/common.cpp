@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common.h"
 #include <tbb/task_scheduler_init.h>
 
-#if (defined _OPENMP) //&& (defined OPENMP_ENABLED)
-#include <omp.h>
+#if defined( _OPENMP )
+  #include <omp.h>
 #endif
 
 // //it is good to know the epetra settings before we set up mpi and multithreading
@@ -79,7 +79,7 @@ struct MPPrivate
     num_threads = n;
     tbbinit.terminate();
     tbbinit.initialize(num_threads);
-#ifdef _OPENMP
+#if defined( _OPENMP )
     printf("omp num threads <- %i\n", num_threads);
     omp_set_num_threads(num_threads);
 #endif
@@ -106,7 +106,7 @@ int GetNumThreads()
 
 int OmpGetCurrentThread()
 {
-#if defined(_OPENMP)
+#if defined( _OPENMP )
     assert(omp_in_parallel() || (omp_get_num_threads() == 1 && omp_get_thread_num()==0));
     return omp_get_thread_num();
 #else
@@ -116,7 +116,7 @@ int OmpGetCurrentThread()
 
 int OmpGetMaxThreadCount()
 {
-#if (defined _OPENMP)
+#if defined( _OPENMP )
     return omp_get_max_threads();
 #else
     return 1;

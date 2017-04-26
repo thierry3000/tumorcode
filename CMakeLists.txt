@@ -8,9 +8,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/;${CMAKE_MODULE_PATH}")
 message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 message("CMAKE_EXE_LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
 
-# all variables propagate down the tree so set up as much as possible here
-set (ENABLE_OMP TRUE CACHE BOOL "enable openmp")
-#option(ENABLE_OMP CACHE ON)
 option(USE_ADAPTION CACHE OFF)
 if(USE_ADAPTION)
   message(STATUS "ADAPTION: USE_ADAPTION preprocessor defined")
@@ -181,13 +178,19 @@ set(myLibs
 ### compiler stuff
 # this must come first as it overwrites preceeding compiler flags
 # need openmp
-if (ENABLE_OMP)
-  message("you activated openmp support, we try to find it now!")
+# all variables propagate down the tree so set up as much as possible here
+option(USE_OPENMP CACHE ON)
+if (USE_OPENMP)
+  message(STATUS "openMP: USE_OPENMP preprocessor defined")
   find_package(OpenMP REQUIRED)
+  #add_definitions(-D_OPENMP) #is this done by find_package
   if (NOT OPENMP_FOUND)
     message(FATAL_ERROR "OpenMP not found")
   endif()
   message(STATUS "OpenMP_CXX_FLAGS      = ${OpenMP_CXX_FLAGS}")
+  message(STATUS "OpenMP_C_FLAGS      = ${OpenMP_C_FLAGS}")
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
   #to get rid of the no #pragma warnings
   #add_definitions(-DENABLE_OMP)
 endif()
@@ -203,9 +206,6 @@ else()
   #1478 is a deprecation warning for auto_ptr
   #set(Warnings "-gcc -cxxlib -wd1478") #gnu++0x
   #set(Warnings "-wd1478") #gnu++0x
-  if(OPENMP_FOUND)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  endif()
   message("Set for intel using:")
   message("CMAKE_C_COMPILER: 	${CMAKE_C_COMPILER}")
   message("CMAKE_CXX_COMPILER: 	${CMAKE_CXX_COMPILER}")
