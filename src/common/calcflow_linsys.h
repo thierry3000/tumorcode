@@ -49,8 +49,8 @@ struct Linsys
   typedef EdgeRange::const_iterator EdgeIter;
   typedef boost::unordered_map<int, FlowBC> BcsMap;
 
-  std::auto_ptr<Matrix> sys;
-  std::auto_ptr<Vector> rhs, lhs;
+  Teuchos::RCP<Matrix> sys;
+  Teuchos::RCP<Vector> rhs, lhs;
   double scaling_const;
 
   Linsys() : scaling_const(0.) {}

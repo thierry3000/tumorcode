@@ -950,7 +950,13 @@ std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &
   // generate a CompressedAdaptionNetwork structure
   CompressedAdaptionNetwork adaption_network;
   // read in the needed network stuff
-  GetAdaptionNetwork(adaption_network, vl);
+  uint returnOfGetAdaptionNetwork = GetAdaptionNetwork(adaption_network, vl);
+  
+  //a network with no vessels makes no sense, so we return;
+  if(returnOfGetAdaptionNetwork>0)
+  {
+    return std::make_tuple(42.,42,42.);
+  }
   
 #ifdef DEBUG 
   //if debug, we can look at this data
@@ -1156,7 +1162,7 @@ void SetAdaptionValues(VesselList3d &vl, CompressedAdaptionNetwork& fl, double d
 }
 
 #if 1
-void GetAdaptionNetwork(
+uint GetAdaptionNetwork(
   CompressedAdaptionNetwork& fl, 
   VesselList3d& vl
  		      )
@@ -1186,7 +1192,10 @@ void GetAdaptionNetwork(
     //myAssert(v->NodeA()->press!=v->NodeB()->press);
     fl.edges.push_back(my::make_eqpair(a, b));
   }
-
+  if(fl.edges.size() == 0)
+  {
+    return 1;
+  }
   myAssert(fl.edges.size() > 0);
 
   // copy bcs and map index numbers
@@ -1346,7 +1355,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   CalcFlow(vl, bfparams);
   printf("done!\n");
 #endif
-#if 1
+#if 0
   //this seems to be necessary to get a stable result for the apj stuff
   //used together with change of radii of veins
   // is this threadsafe when multiple instances of p_vl exist?

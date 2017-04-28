@@ -29,6 +29,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <Epetra_Vector.h>
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_LinearProblem.h>
+#include <Tpetra_DefaultPlatform.hpp>
+#include <Tpetra_CrsMatrix.hpp>
+#include <Tpetra_Version.hpp>
+#include <BelosTpetraAdapter.hpp>
+#include <Ifpack2_Factory.hpp>
 #include <AztecOO.h>
 #include <EpetraExt_RowMatrixOut.h>
 #include <EpetraExt_VectorOut.h>
@@ -342,7 +347,7 @@ enum EllipticSolveOutputLevel
 #if 1
 void EllipticEquationSolver::init ( const Epetra_Operator& matrix_, const Epetra_Vector& rhs_, const ptree& params_)
 {
-  sys_matrix = dynamic_cast<const Epetra_RowMatrix*>(&matrix_);
+  //sys_matrix = dynamic_cast<const Epetra_RowMatrix*>(&matrix_);
   sys_operator = &matrix_;
   rhs = &rhs_;
   params = params_;
@@ -423,14 +428,17 @@ void EllipticEquationSolver::init ( const Epetra_Operator& matrix_, const Epetra
 
 void EllipticEquationSolver::solve ( Epetra_Vector& lhs )
 {
+//   problem = 
+//     //Teuchos::rcp (new BelosLinearProblem (Teuchos::rcpFromRef (sys_matrix), Teuchos::rcpFromRef (lhs), Teuchos::rcpFromRef (rhs)));
+//     Teuchos::rcp (new BelosLinearProblem (Teuchos::rcpFromRef (sys_matrix), Teuchos::rcpFromRef (lhs), Teuchos::rcpFromRef (rhs)));
   //if (!solver_impl.get())
   { // for some reason the solver crashes if it is kept betwenn calls to iterate.
-//     if (sys_matrix)
-//       solver_impl.reset(new AztecOO(const_cast<Epetra_RowMatrix*>(sys_matrix), &lhs, const_cast<Epetra_Vector*>(rhs)));
-//     else
-//       solver_impl.reset(new AztecOO(const_cast<Epetra_Operator*>(sys_operator), &lhs, const_cast<Epetra_Vector*>(rhs)));
+    if (sys_matrix)
+      solver_impl.reset(new AztecOO(const_cast<Epetra_RowMatrix*>(sys_matrix), &lhs, const_cast<Epetra_Vector*>(rhs)));
+    else
+      solver_impl.reset(new AztecOO(const_cast<Epetra_Operator*>(sys_operator), &lhs, const_cast<Epetra_Vector*>(rhs)));
   }
-  //myAssert(solver_impl->GetUserOperator() == sys_operator);
+  myAssert(solver_impl->GetUserOperator() == sys_operator);
   
   solver_impl->SetOutputStream(cout);
   
@@ -505,6 +513,7 @@ void EllipticEquationSolver::solve ( Epetra_Vector& lhs )
   }
   //is this needed or is it messing up the memory
   solver_impl.reset();
+  
 }
 #endif
 
@@ -523,6 +532,7 @@ void SolveEllipticEquation(const Epetra_Operator &matrix, const Epetra_Vector &r
 //do NOT delete
 void SolveEllipticEquation(const Epetra_CrsMatrix &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params)
 {
+  cout<<"BELOS?????"<<endl;
   int output = params.get<int>("output", OUT_NORMAL_IN_DEBUG);
   if (output == OUT_NORMAL_IN_DEBUG)
 #ifdef DEBUG
@@ -537,10 +547,38 @@ void SolveEllipticEquation(const Epetra_CrsMatrix &matrix, const Epetra_Vector &
   }
 
   my::Time _t;
-  std::auto_ptr<ML_Epetra::MultiLevelPreconditioner> prec;
+  
+  // Set up Tpetra typedefs.
+  typedef double scalar_type;
+  typedef int local_ordinal_type;
+  typedef long global_ordinal_type;
+  typedef KokkosClassic::DefaultNode::DefaultNodeType node_type;
+  
+  typedef Tpetra::CrsMatrix<scalar_type, local_ordinal_type, global_ordinal_type, node_type> matrix_type;
+  typedef Tpetra::Operator<scalar_type, local_ordinal_type, global_ordinal_type, node_type> op_type;
+  typedef Tpetra::MultiVector<scalar_type, local_ordinal_type, global_ordinal_type, node_type> vec_type;
+  
+  // An Ifpack2::Preconditioner is-a Tpetra::Operator.  Ifpack2
+  // creates a Preconditioner object, but users of iterative methods
+  // want a Tpetra::Operator.  That's why create() returns an Operator
+  // instead of a Preconditioner.
+  typedef Ifpack2::Preconditioner<scalar_type, local_ordinal_type, 
+                                  global_ordinal_type, node_type> prec_type;
+  
+  Teuchos::RCP<prec_type> prec;
+  Ifpack2::Factory factory2;
+  //prec = factory2.create("ILUT", &matrix);
+  Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> _ml_prec;
+  Teuchos::RCP<Ifpack_Preconditioner> _ifpack_preconditioner;
+  
+  Teuchos::oblackholestream blackHole;
+  Teuchos::RCP<const Teuchos::Comm<int>> comm=
+   Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
+  
+  Teuchos::ParameterList mllist;
+  mllist.set ("Num Blocks", 40);
   if (params.get<bool>("use_multigrid", true))
   {
-    Teuchos::ParameterList mllist;
     ML_Epetra::SetDefaults("SA",mllist);
 
     mllist.set("max levels", params.get<int>("max_levels", 10));
@@ -575,51 +613,85 @@ void SolveEllipticEquation(const Epetra_CrsMatrix &matrix, const Epetra_Vector &
     if (output == OUT_FULL)
       ml_output = 10;
     mllist.set("ML output", ml_output);
-
-    prec.reset(new  ML_Epetra::MultiLevelPreconditioner(matrix, mllist, true));
+    
+    //_ml_prec.reset(new  ML_Epetra::MultiLevelPreconditioner(matrix, mllist, true));
   }
+  //_ml_prec->SetParameterList(mllist);
   my::Time t_pc = my::Time() - _t;
 
   //Epetra_LinearProblem problem(const_cast<Epetra_CrsMatrix*>(&matrix), &lhs, const_cast<Epetra_Vector*>(&rhs));
   //AztecOO solver(problem);
-  AztecOO solver(const_cast<Epetra_CrsMatrix*>(&matrix), &lhs, const_cast<Epetra_Vector*>(&rhs));
-  solver.SetOutputStream(cout);
+  //AztecOO solver(const_cast<Epetra_CrsMatrix*>(&matrix), &lhs, const_cast<Epetra_Vector*>(&rhs));
+  typedef Belos::LinearProblem<BelosScalarType, BelosMultiVector, BelosOperator> BelosLinearProblem;
+  Teuchos::RCP<BelosLinearProblem> linear_problem = Teuchos::rcp(
+    //new BelosLinearProblem(Teuchos::rcp(const_cast<Epetra_CrsMatrix*>(&matrix),false),Teuchos::rcp(&lhs,false),Teuchos::rcp(&rhs,false)));
+    new BelosLinearProblem(Teuchos::rcp(&matrix,false),Teuchos::rcp(&lhs,false),Teuchos::rcp(&rhs,false)));
+  const bool success = linear_problem->setProblem();
+  
+  Teuchos::RCP<Teuchos::ParameterList> belosList(new Teuchos::ParameterList());
+  belosList->set("Num Blocks", 40);
+//   Teuchos::ParameterList belosList;
+//   belosList.set("Verbosity", Belos::TimingDetails);
+//   belosList.set("Num Blocks", 40);
+  //int verbosity = Belos::Error + Belos::Warnings;
+  //solver.SetOutputStream(cout);
+  
+  // Look up the Belos name of the method in _methods. This is a
+  // little complicated since std::maps<> don't have const lookup.
+  //std::map<std::string, std::string>::const_iterator it = _methods.find(_method);
+
+  //if (it == _methods.end())
+
+  //_ml_prec->set(*linear_problem, &lhs);
+  // set-up linear solver
+  Belos::SolverFactory<BelosScalarType, BelosMultiVector, BelosOperator> factory;
+  //Teuchos::RCP<Teuchos::ParameterList>
+  //Teuchos::RCP<Belos::SolverManager<BelosScalarType,BelosMultiVector,BelosOperator> > solver = factory.create("cg", Teuchos::rcp(&belosList, false));
+  Teuchos::RCP<Belos::SolverManager<BelosScalarType,BelosMultiVector,BelosOperator> > solver = factory.create("cg",belosList);
+  //linear_problem->setRightPrec(_ml_prec);
+  linear_problem->setProblem();
+  solver->setProblem(linear_problem);
+  
+  // Start solve
+  Belos::ReturnType ret = solver->solve();
+  
+
   //solver.SetAztecOption(AZ_precond, AZ_none);
-  if (prec.get())
-    solver.SetPrecOperator(prec.get());
-  else
-    solver.SetAztecOption(AZ_precond, AZ_Jacobi);
-    //solver.SetAztecOption(AZ_precond, AZ_ls);
-  const string solver_str = params.get("solver", "cg");
-  if (solver_str == "bicgstab")
-    solver.SetAztecOption(AZ_solver, AZ_bicgstab);
-  else if (solver_str == "cg")
-    solver.SetAztecOption(AZ_solver, AZ_cg);
-  else
-    throw std::runtime_error(str(format("wtf is solver %s") % solver_str));
-  int az_output = AZ_none;
-  switch(output)
-  {
-    case OUT_NORMAL: az_output = AZ_warnings; break;
-    case OUT_FULL: az_output = AZ_all; break;
-  }
-  solver.SetAztecOption(AZ_output, az_output);
-  solver.SetAztecOption(AZ_conv, AZ_noscaled); //AZ_Anorm);
-  solver.Iterate(params.get<int>("max_iter", 50), params.get<double>("max_resid", 1.e-9));
-  const double *status = solver.GetAztecStatus();
-  if (status[AZ_why] != AZ_normal && status[AZ_why] != AZ_loss)
-  {
-    if (params.get<bool>("output_matrix_on_failure", false))
-    {
-      std::ofstream f("failmatrix.txt");
-      matrix.Print(f);
-    }
-    //throw ConvergenceFailureException("linear system solve did not converge");
-  }
-  if (output >= OUT_NORMAL)
-  {
-    cout << boost::format("ElEq: time: %s (pc %s), iters: %i, residual: %e") % (my::Time() - _t) % t_pc % status[AZ_its] % status[AZ_r] << endl;
-  }
+//   if (prec.get())
+//     solver.SetPrecOperator(prec.get());
+//   else
+//     solver.SetAztecOption(AZ_precond, AZ_Jacobi);
+//     //solver.SetAztecOption(AZ_precond, AZ_ls);
+//   const string solver_str = params.get("solver", "cg");
+//   if (solver_str == "bicgstab")
+//     solver.SetAztecOption(AZ_solver, AZ_bicgstab);
+//   else if (solver_str == "cg")
+//     solver.SetAztecOption(AZ_solver, AZ_cg);
+//   else
+//     throw std::runtime_error(str(format("wtf is solver %s") % solver_str));
+//   int az_output = AZ_none;
+//   switch(output)
+//   {
+//     case OUT_NORMAL: az_output = AZ_warnings; break;
+//     case OUT_FULL: az_output = AZ_all; break;
+//   }
+//   solver.SetAztecOption(AZ_output, az_output);
+//   solver.SetAztecOption(AZ_conv, AZ_noscaled); //AZ_Anorm);
+//   solver.Iterate(params.get<int>("max_iter", 50), params.get<double>("max_resid", 1.e-9));
+//   const double *status = solver.GetAztecStatus();
+//   if (status[AZ_why] != AZ_normal && status[AZ_why] != AZ_loss)
+//   {
+//     if (params.get<bool>("output_matrix_on_failure", false))
+//     {
+//       std::ofstream f("failmatrix.txt");
+//       matrix.Print(f);
+//     }
+//     //throw ConvergenceFailureException("linear system solve did not converge");
+//   }
+//   if (output >= OUT_NORMAL)
+//   {
+//     cout << boost::format("ElEq: time: %s (pc %s), iters: %i, residual: %e") % (my::Time() - _t) % t_pc % status[AZ_its] % status[AZ_r] << endl;
+//   }
 }
 #endif
 

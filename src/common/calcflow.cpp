@@ -185,7 +185,11 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
   cout << "calcflow (no hematocrit)" << endl;
 #endif
   CompressedFlowNetwork flownet;
-  GetFlowNetwork(flownet, &vl, bloodFlowParameters, keepTheVesselHematocrit);
+  uint returnOfGetFlowNetwork = GetFlowNetwork(flownet, &vl, bloodFlowParameters, keepTheVesselHematocrit);
+  if(returnOfGetFlowNetwork>0)
+  {
+    return;
+  }
 
   FlArray visc(flownet.num_edges());
   CalcViscosities(flownet.rad, flownet.hema,bloodFlowParameters, visc);

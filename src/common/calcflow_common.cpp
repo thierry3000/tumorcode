@@ -325,7 +325,7 @@ FlReal PressureRadiusRelation( FlReal rad, bool bArtery )
 
 /*------------------------------------------------------------------
 --------------------------------------------------------------------*/
-void GetFlowNetwork(CompressedFlowNetwork &fl,
+uint GetFlowNetwork(CompressedFlowNetwork &fl,
                     const VesselList3d* vl,
                     const BloodFlowParameters &bfparams,
                     bool keepTheVesselHematocrit
@@ -359,6 +359,11 @@ void GetFlowNetwork(CompressedFlowNetwork &fl,
    * are labeled as uncirculated. For the next hierachical 
    * iteration this fail here!
    */
+  if(fl.org2new_vertex.num_added()== 0 or fl.edges.size() == 0)
+  {
+    //that does not make sence, but could happen during optimization
+    return 1;
+  }
   myAssert(fl.org2new_vertex.num_added()>0);
   myAssert(fl.edges.size() > 0);
 
@@ -436,6 +441,7 @@ cout<<"posB : "<<v->NodeB()->worldpos<<endl;
       ++k;
     }
   }
+  return 0;
 }
 
 

@@ -87,7 +87,7 @@ void SetFlowValues( VesselList3d* vl,
                     const FlArray &press,
                     const FlArray &hema
 		    );
-void GetFlowNetwork(CompressedFlowNetwork &fl,
+uint GetFlowNetwork(CompressedFlowNetwork &fl,
                     const VesselList3d* vl,
                     const BloodFlowParameters &bfparams,
                     bool keepTheVesselHematocrit

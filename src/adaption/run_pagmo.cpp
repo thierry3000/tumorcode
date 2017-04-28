@@ -98,10 +98,10 @@ int doAdaptionOptimization_without_py()
   std::string myVesselFileString = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5";
   pagmo::problem::adaption_problem prob(myVesselFileString,*params,*bfparams);
   std::printf("pop: %i, individuals: %i", params->pop, params->individuals);
-  pagmo::population pop(prob,params->pop);
-  pagmo::algorithm::pso algo(params->individuals);
-//  pagmo::population pop(prob,3);
-//  pagmo::algorithm::pso algo(5);
+//  pagmo::population pop(prob,params->pop);
+//  pagmo::algorithm::pso algo(params->individuals);
+  pagmo::population pop(prob,3);
+  pagmo::algorithm::pso algo(5);
   algo.set_screen_output(true);
   algo.human_readable();
 #if 0

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 #PROJECT(programs)
-
+add_subdirectory(trilinos)
 include_directories(../common)
 include_directories(${ADDITIONAL_INCLUDE_DIRS})
 
@@ -53,8 +53,5 @@ target_link_libraries(test_boost_serialize boost_serialization)
 
 # add_executable(test_convection_diffusion test_convection_diffusion.cpp)
 # target_link_libraries(test_convection_diffusion ${myLibs})
-
-add_executable(test_belos test_belos.cpp)
-target_link_libraries(test_belos ${myLibs})
 
 install(TARGETS tests test_stepper test_boost_serialize RUNTIME DESTINATION bin)

@@ -45,6 +45,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <Ifpack.h>
 #include <AztecOO.h>
 
+#include <Tpetra_CrsMatrix.hpp>
+#include <Tpetra_DefaultPlatform.hpp>
+#include <Tpetra_Version.hpp>
+#include <BelosTpetraAdapter.hpp>
+
 #include <BelosSolverFactory.hpp>
 #include <BelosLinearProblem.hpp>
 #include <BelosEpetraAdapter.hpp>
@@ -60,10 +65,11 @@ namespace Belos
   template<class ScalarType, class MV, class OP>
   class LinearProblem;
 }
+
 typedef double BelosScalarType;
 typedef Epetra_MultiVector BelosMultiVector;
 typedef Epetra_Operator BelosOperator;
-//typedef Belos::BelosLinearProblem<BelosScalarType, BelosMultiVector, BelosOperator> BelosLinearProblem;
+
 
 #if (defined __GNUC__) && !(defined __INTEL_COMPILER)
 #pragma GCC diagnostic pop
@@ -394,11 +400,35 @@ public:
 #if 1
 class EllipticEquationSolver : boost::noncopyable
 {
+  typedef double scalar_type;
+  typedef int local_ordinal_type;
+  typedef long global_ordinal_type;
+  typedef KokkosClassic::DefaultNode::DefaultNodeType node_type;
+//   RCP<op_type> M = createPreconditioner<matrix_type> (A, precondType, plist, out, err);
+// 
+//   // Create vectors ("multivectors" may store one or more vectors).
+//   RCP<vec_type> X = rcp (new vec_type (A->getDomainMap (), 1)); // Set to zeros by default.
+//   RCP<vec_type> B = rcp (new vec_type (A->getRangeMap (), 1));
+   //= Teuchos::rcp(new vec_type
   const Epetra_RowMatrix *sys_matrix;
   const Epetra_Operator *sys_operator;
   const Epetra_Vector *rhs;
   boost::scoped_ptr<AztecOO> solver_impl;
   //boost::scoped_ptr<Belos::SolverFactory<BelosScalarType,BelosMultiVector,BelosOperator>> solver_impl;
+  typedef Tpetra::MultiVector<scalar_type, local_ordinal_type, global_ordinal_type, node_type> vec_type;
+  typedef Tpetra::CrsMatrix<scalar_type, local_ordinal_type, global_ordinal_type, node_type> matrix_type;
+  typedef Tpetra::Operator<scalar_type, local_ordinal_type, global_ordinal_type, node_type> op_type;
+  //const Teuchos::RCP<vec_type> rhs;
+  //const Teuchos::RCP<vec_type> sys_matrix;
+  //typedef typename MV::scalar_type scalar_type;
+  //typedef typename Tpetra::MultiVector::scalar_type scalar_type;
+  Teuchos::RCP<Teuchos::ParameterList> solverParams = Teuchos::parameterList();
+  Belos::SolverFactory<scalar_type, vec_type, op_type> factory;
+//   Teuchos::RCP<Belos::SolverManager<scalar_type, vec_type, op_type> > solver_impl = 
+//     factory.create ("GMRES", solverParams);
+    
+  typedef Belos::LinearProblem<BelosScalarType, BelosMultiVector, BelosOperator> BelosLinearProblem;
+  Teuchos::RCP<BelosLinearProblem> problem;
   boost::scoped_ptr<Ifpack_Preconditioner> ifpackprec;
   ptree params;
   boost::scoped_ptr<ML_Epetra::MultiLevelPreconditioner> prec;

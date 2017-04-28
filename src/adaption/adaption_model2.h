@@ -180,7 +180,7 @@ namespace Adaption
 		      double delta_t,
 		      double max_r
 		      );
-  void GetAdaptionNetwork(CompressedAdaptionNetwork &fl,
+  uint GetAdaptionNetwork(CompressedAdaptionNetwork &fl,
 		      VesselList3d &vl
 			);
 
