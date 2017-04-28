@@ -210,7 +210,8 @@ void Linsys::solve()
     * solution: only use intel compiler in future
     */
   ptree pt = make_ptree("output", true)("max_iter", 1000)("throw",false)("conv","rhs")("max_resid",1.e-14)("solver","cg")("preconditioner","multigrid")("use_smoothed_aggregation", false);
-  SolveEllipticEquation(*sys, *rhs, *lhs, pt);
+  //returnSolve = SolveEllipticEquation(*sys, *rhs, *lhs, pt);
+  int returnSolve = SolveEllipticEquation(sys, rhs, lhs, pt);
 }
 
 

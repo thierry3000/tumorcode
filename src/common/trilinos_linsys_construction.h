@@ -40,6 +40,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_Map.h>
 #include <Epetra_Vector.h>
+#include <Epetra_MultiVector.h>
 #include <Epetra_BasicRowMatrix.h>
 #include <ml_epetra_preconditioner.h>
 #include <Ifpack.h>
@@ -140,8 +141,10 @@ struct FiniteVolumeMatrixBuilder : public boost::noncopyable
     DIRICHLET_YZ = 2,
   };
  
-  std::auto_ptr<Epetra_CrsMatrix> m;
-  std::auto_ptr<Epetra_Vector> rhs;
+//   std::auto_ptr<Epetra_CrsMatrix> m;
+//   std::auto_ptr<Epetra_Vector> rhs;
+  Teuchos::RCP<Epetra_CrsMatrix> m;
+  Teuchos::RCP<Epetra_Vector> rhs;
   LatticeDataQuad3d ld;
   //BBox3 bb, bb_inner, boxes[9];
   //DynArray<Int3> stencil_points;
@@ -444,7 +447,8 @@ public:
 #endif
 
 //void SolveEllipticEquation(const Epetra_Operator &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params = boost::property_tree::ptree());
-void SolveEllipticEquation(const Epetra_CrsMatrix &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params);
+//int SolveEllipticEquation(const Epetra_CrsMatrix &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params);
+int SolveEllipticEquation(Teuchos::RCP<Epetra_CrsMatrix> matrix, Teuchos::RCP<Epetra_Vector> rhs, Teuchos::RCP<Epetra_Vector> lhs, const boost::property_tree::ptree &params);
 
 /*------------------------------------------------------
 ------------------------------------------------------*/
