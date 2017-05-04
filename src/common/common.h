@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/timer.h"
 
 #include "mwlib/ptree_ext.h"
+#include "trilinos_helper.h"
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>

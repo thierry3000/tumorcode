@@ -4,11 +4,12 @@ project(detailedo2)
 include_directories(../common)
 
 file(GLOB DetailedO2Files "*.cpp")
+# set(DetailedO2Files "${DetailedO2Files};../common/trilinos_linsys_construction.cpp")
 
 add_library(detailedo2_ SHARED
             ${DetailedO2Files})
 
-target_link_libraries(detailedo2_ krebs_)
+target_link_libraries(detailedo2_ krebs_ common)
 
 #set_target_properties(detailedo2_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 

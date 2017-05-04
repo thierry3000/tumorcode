@@ -51,8 +51,11 @@ class Parameters
   double ds2_max_;
   double conc_neglect_s;
   Parameters& operator=(const Parameters&);
+  int iteration_count;
   
 public:
+  int getIterationCount(){return iteration_count;};
+  void increaseIterationCount(){iteration_count++;};
   Parameters();
   void UpdateInternalValues();
 

@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "common.h"
 #include "mwlib/math_ext.h"
-
+#include "Epetra_CrsMatrix.h"
 #include <boost/unordered_map.hpp>
 
 

@@ -97,11 +97,12 @@ int doAdaptionOptimization_without_py()
   //std::string myVesselFileString = boost::python::extract<std::string>(py_vesselgroup_str);
   std::string myVesselFileString = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5";
   pagmo::problem::adaption_problem prob(myVesselFileString,*params,*bfparams);
-  std::printf("pop: %i, individuals: %i", params->pop, params->individuals);
+  std::printf("pop in params: %i, individuals in params: %i", params->pop, params->individuals);
+  std::printf("not used in run_pagmo");
 //  pagmo::population pop(prob,params->pop);
 //  pagmo::algorithm::pso algo(params->individuals);
-  pagmo::population pop(prob,3);
-  pagmo::algorithm::pso algo(5);
+  pagmo::population pop(prob,1);
+  pagmo::algorithm::pso algo(1);
   algo.set_screen_output(true);
   algo.human_readable();
 #if 0
@@ -132,26 +133,27 @@ int doAdaptionOptimization_without_py()
   // Create an archipelago of 10 MPI islands.
   std::printf("creating archipel\n");
 #ifdef PAGMO_ENABLE_MPI
+  std::printf("PAGMO_ENABLE_MPI enabled");
   pagmo::archipelago a; // = pagmo::archipelago(algo,prob);
   for (int i = 0; i < 3; ++i) {
     a.push_back(pagmo::mpi_island(algo,prob,1));
   }
 #else
-  pagmo::archipelago a = pagmo::archipelago(algo,prob,3,10);
+  pagmo::archipelago a = pagmo::archipelago(algo,prob,1,1);
 #endif
   
   a.set_topology(pagmo::topology::ring());
   // Evolve the archipelago 10 times.
   a.human_readable();
   std::printf("start to evolve\n");
-  a.evolve(3);
+  a.evolve(2);
   std::printf("join islands\n");
-  //a.join();
+  a.join();
 #endif
-//   for(auto isl: a.get_islands())
-//   {
-//     std::cout<< isl->get_population().champion().x <<std::endl;
-//   }
+  for(auto isl: a.get_islands())
+  {
+    std::cout<< isl->get_population().champion().x <<std::endl;
+  }
   std::cout<<"Done .. the champion is ..." <<std::endl;
   //std::cout<< pop.champion().x <<std::endl;
   //we return the results of the optimization to python and proceed there

@@ -4,14 +4,17 @@ add_subdirectory(trilinos)
 include_directories(../common)
 include_directories(${ADDITIONAL_INCLUDE_DIRS})
 
+#note: for those tests hdf needs to be build parallel
 add_executable(tests tests.cpp)
 target_link_libraries(tests ${myLibs})
+install(TARGETS tests RUNTIME DESTINATION bin)
 
 # add_executable(test_convection test_convection1.cpp)
 # target_link_libraries(test_convection ${myLibs})
 
 add_executable(test_stepper test_stepper.cpp)
 target_link_libraries(test_stepper ${myLibs})
+install(TARGETS test_stepper RUNTIME DESTINATION bin)
 
 # add_executable(test_level_set test_level_set.cpp)
 # target_link_libraries(test_level_set ${myLibs})
@@ -54,4 +57,4 @@ target_link_libraries(test_boost_serialize boost_serialization)
 # add_executable(test_convection_diffusion test_convection_diffusion.cpp)
 # target_link_libraries(test_convection_diffusion ${myLibs})
 
-install(TARGETS tests test_stepper test_boost_serialize RUNTIME DESTINATION bin)
+install(TARGETS test_boost_serialize RUNTIME DESTINATION bin)

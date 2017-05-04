@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // is include in trilinos_linsys_construction.h
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_LinearProblem.h>
-#include <AztecOO.h>
+//#include <AztecOO.h>
 #include <ml_epetra_preconditioner.h>
 #include <EpetraExt_RowMatrixOut.h>
 #include <EpetraExt_VectorOut.h>
@@ -210,7 +210,6 @@ void Linsys::solve()
     * solution: only use intel compiler in future
     */
   ptree pt = make_ptree("output", true)("max_iter", 1000)("throw",false)("conv","rhs")("max_resid",1.e-14)("solver","cg")("preconditioner","multigrid")("use_smoothed_aggregation", false);
-  //returnSolve = SolveEllipticEquation(*sys, *rhs, *lhs, pt);
   int returnSolve = SolveEllipticEquation(sys, rhs, lhs, pt);
 }
 

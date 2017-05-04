@@ -210,23 +210,11 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
     flowsys.initialize_pattern(flownet.num_vertices(), flownet.edges);
     flowsys.fill_values(flownet.edges, cond, flownet.bcs);
 
-#if 0   // thierrys sparse output
-    time_t rawtime;
-    struct tm*timeinfo;
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-    std::ofstream myMatrixFile;
-    std::string myString ("Epetra_Matrix");
-    myString = myString + asctime(timeinfo) +".txt";
-    myMatrixFile.open(myString.c_str());
-    flowsys.sys->Print(myMatrixFile);
-    std::string myString2 ("Epetra_Sparsity_Pattern");
-    myString2 = myString2 + asctime(timeinfo) + ".ps";
-    Ifpack_PrintSparsity(*flowsys.sys,myString2.c_str());
-    myMatrixFile.close();
-#endif
+    //sparse_matrix_print(*flowsys.sys);
 
     flowsys.solve();
+    
+    //vector_print(*flowsys.lhs);
   
     flownet.press.resize(flownet.num_vertices());
     //flownet.len.resize(flownet.num_edges());
@@ -609,9 +597,10 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
     Linsys flowsys;
     flowsys.initialize_pattern(flownet.num_vertices(), flownet.edges);
     flowsys.scaling_const = CalcFlowCoeff(bloodFlowParameters.viscosityPlasma, 4., 100.);
-    EllipticEquationSolver solver;
+    
     ptree solver_params = make_ptree("output", 1)("preconditioner","multigrid")("use_smoothed_aggregation", false)("max_iter", 200)("throw",false)("conv","rhs")("max_resid",1.e-10);
-
+    
+    
     int last_solver_iterations = std::numeric_limits<int>::max();
     /* note:
      * earlier we initialized with nan.
@@ -630,8 +619,9 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
       flowsys.fill_values(flownet.edges, cond, flownet.bcs);
 
       solver_params.put("keep_preconditioner", iteration>3 && last_solver_iterations<15); // && solver.time_iteration<solver.time_precondition);
-      solver.init(*flowsys.sys, *flowsys.rhs, solver_params);
-      solver.solve(*flowsys.lhs);
+      //solver.init(flowsys.sys, flowsys.rhs, solver_params);
+      EllipticEquationSolver &&solver = EllipticEquationSolver{flowsys.sys, flowsys.rhs, solver_params};
+      solver.solve(flowsys.lhs);
       last_solver_iterations = solver.iteration_count;
 
       flowsys.clear_values();

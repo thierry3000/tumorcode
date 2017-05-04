@@ -1187,8 +1187,8 @@ uint GetAdaptionNetwork(
     int a = fl.org2new_vertex.add(v->NodeA()->Index());
     int b = fl.org2new_vertex.add(v->NodeB()->Index());
     myAssert(a!=b);
-    myAssert(v->NodeA()->press!=0.0);
-    myAssert(v->NodeB()->press!=0.0);
+    //myAssert(v->NodeA()->press!=0.0);
+    //myAssert(v->NodeB()->press!=0.0);
     //myAssert(v->NodeA()->press!=v->NodeB()->press);
     fl.edges.push_back(my::make_eqpair(a, b));
   }

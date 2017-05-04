@@ -105,13 +105,16 @@ np::arraytbase CalcIntervascularInterpolationField(nm::array pypos,
   weight_gridded.clear();
   source_gridded.clear();
   
-  Epetra_Vector lhs(mb.rhs->Map());
-  
+  //Epetra_Vector lhs(mb.rhs->Map());
+  Teuchos::RCP<Epetra_Vector> lhs = Teuchos::rcp(new Epetra_Vector(mb.rhs->Map()));
   ptree solver_params = make_ptree("preconditioner","multigrid")("verbosity", "normal")("use_smoothed_aggregation", false)("max_iter", 500)("conv","rhs")("max_resid",1.e-8);
   
   {
-    EllipticEquationSolver solver;
-    solver.init(*mb.m, *mb.rhs, solver_params);
+//     EllipticEquationSolver solver;
+//     solver.init(mb.m, mb.rhs, solver_params);
+//     solver.solve(lhs);
+    EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
+    //solver.init(mb.m, mb.rhs, solver_params);
     solver.solve(lhs);
   }
 
@@ -123,7 +126,7 @@ np::arraytbase CalcIntervascularInterpolationField(nm::array pypos,
     {
       FOR_BBOX3(p, bbox)
       {
-        res(p[0],p[1],p[2]) = lhs[grid.ld.LatticeToSite(p)];
+        //res(p[0],p[1],p[2]) = lhs[grid.ld.LatticeToSite(p)];
       }
     }
   }
