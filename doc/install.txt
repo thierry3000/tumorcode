@@ -1,0 +1,10 @@
+/*!
+\page installation Installation
+\authors Thierry Fredrich
+
+\section installation_introduction Introduction
+ 
+This document describes how to install \tumorcode Unix-like systems.
+
+
+*/
