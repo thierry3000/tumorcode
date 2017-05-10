@@ -1,7 +1,6 @@
 #ifndef TRILINOS_HELPER_H
 #define TRILINOS_HELPER_H
 
-#include <bits/types/time_t.h>
 #include <Epetra_Vector.h>
 #include <Epetra_CrsMatrix.h>
 #include <Ifpack_Utils.h>
