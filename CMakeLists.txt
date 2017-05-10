@@ -195,11 +195,12 @@ if (USE_OPENMP)
   endif()
   message(STATUS "OpenMP_CXX_FLAGS      = ${OpenMP_CXX_FLAGS}")
   message(STATUS "OpenMP_C_FLAGS      = ${OpenMP_C_FLAGS}")
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  set (CMAKE_C_FLAGS  "${OpenMP_C_FLAGS}   -DOPENMP_ENABLED=1 ${CMAKE_C_FLAGS}  ")
+  set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} -DOPENMP_ENABLED=1 ${CMAKE_CXX_FLAGS}")
   #to get rid of the no #pragma warnings
   #add_definitions(-DENABLE_OMP)
 endif()
+
 
 GET_FILENAME_COMPONENT(compiler_name ${CMAKE_C_COMPILER} NAME)
 string(COMPARE EQUAL ${compiler_name} "icc" IS_INTEL_COMPILER)
