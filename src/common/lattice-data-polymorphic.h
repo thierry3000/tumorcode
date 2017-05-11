@@ -69,7 +69,8 @@ class LatticeData : boost::noncopyable
     typedef Int3 LatticeIndexType;
     typedef int64 SiteType;
     
-    virtual ~LatticeData() = default;
+    //virtual ~LatticeData() = default;
+    virtual ~LatticeData() {}
     virtual std::auto_ptr<LatticeData> Clone() const {};
     virtual void Init(const BBox3 &bb, float scale) {};
 
@@ -133,7 +134,7 @@ public:
   Derived(const Ld &ld) : ld(ld) { }
   Derived(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
   Derived(const Derived &other) : ld(other.ld) {}
-  ~Derived() { }
+  //~Derived() { }
   //Ld& get() { return ld; }
   Ld get() const { return ld; }
 
