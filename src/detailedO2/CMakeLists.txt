@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(detailedo2)
+#project(detailedo2)
 
 include_directories(../common)
 

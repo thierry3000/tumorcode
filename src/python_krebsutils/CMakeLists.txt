@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.8)
-project(python_krebsutils)
+#project(python_krebsutils)
 
 include_directories(../common)
 
@@ -31,11 +31,19 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/py
 	DESTINATION .
 	FILES_MATCHING PATTERN "*.py"
 	)
+#T.F. maybe there is a method to do this properly like below
+#now everything is copied
+# install(DIRECTORY ${CMAKE_SOURCE_DIR}/py
+# 	DESTINATION .
+# 	FILES_MATCHING PATTERN "*.py"
+# 	EXCLUDE PATTERN "*_generic.py"
+# 	)
 #experimental
 #install(FILES_MATCHING PATTERN "submit*.py"
 #        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
 
 #changing permissions of sumit script, make them executable
+message("CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/py
 	DESTINATION .
 	FILES_MATCHING PATTERN "submit*.py"

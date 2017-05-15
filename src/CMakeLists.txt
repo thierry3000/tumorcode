@@ -11,6 +11,10 @@ message("we will use pagmo with mpi support!")
 endif()
 set(CMAKE_DEBUG_POSTFIX "d")
 
+if(USE_ADAPTION)
+  add_subdirectory(adaption)
+endif()
+
 add_subdirectory(detailedO2)
 add_subdirectory(common)
 add_subdirectory(python_krebsutils)
@@ -18,9 +22,7 @@ add_subdirectory(tests)
 add_subdirectory(mwlib)
 add_subdirectory(mwlib_tests)
 
-if(USE_ADAPTION)
-  add_subdirectory(adaption)
-endif()
+
 
 add_subdirectory(iff)
 add_subdirectory(tumors)
