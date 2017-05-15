@@ -19,6 +19,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+import myutils
+cluster_threads = myutils.cluster_threads
 
 from copy import deepcopy
 
@@ -65,3 +67,10 @@ default = dict(
   )
 )
 newradiusdeflation = deepcopy(default)
+newradiusdeflation['num_threads'] = cluster_threads
+
+gero_3month_to_5mm = deepcopy(newradiusdeflation)
+gero_3month_to_5mm.update(
+    tumor_speed = 0.001,
+    tumor_radius = 20.,
+    )
