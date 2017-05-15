@@ -73,4 +73,5 @@ gero_3month_to_5mm = deepcopy(newradiusdeflation)
 gero_3month_to_5mm.update(
     tumor_speed = 0.001,
     tumor_radius = 20.,
+    tend=7000000.,
     )
