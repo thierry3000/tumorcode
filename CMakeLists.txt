@@ -1,32 +1,41 @@
-cmake_minimum_required(VERSION 2.8)
-project(allmystuff)
+cmake_minimum_required(VERSION 3.3)
+project(allmystuff C CXX)
+list(APPEND CMAKE_CXX_SOURCE_FILE_EXTENSIONS c)
 add_definitions(-DSILENT)
-
+find_package(Threads REQUIRED)
 # set a search path for additional custom cmake modules.
 # according to recommendation in https://cmake.org/Wiki/CMake:How_To_Find_Libraries
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/;${CMAKE_MODULE_PATH}")
+message("CMAKE_MODULE_PATH: ${CMAKE_ROOT}")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/;")
 message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 message("CMAKE_EXE_LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
 
-option(USE_ADAPTION CACHE OFF)
+
+include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)
+
+option(USE_ADAPTION "decide to build the adaption library" OFF)
+CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" ON "USE_ADAPTION;" ON)
+CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" ON
+                       "USE_ADAPTION;USE_PAGMO" ON)
+#option(USE_PAGMO OFF)
+#It would be nicer to see if pagmo was compilled 
+#with mpi automatically, pagmo2 is supporting that
+# option(USE_PAGMO_MPI OFF)
+# if(USE_PAGMO_MPI)
+#   set(USE_PAGMO ON)
+# endif()
+if(USE_PAGMO)
+#   if(NOT USE_ADAPTION)
+#     message("so far there is no usage for pagmo without adation, we set it to be true!!!")
+#     set(USE_ADAPTION ON)
+#   endif()
+  message("USE_PAGMO preprocessor defined")
+  add_definitions(-DUSE_PAGMO)
+endif()
+
 if(USE_ADAPTION)
   message(STATUS "ADAPTION: USE_ADAPTION preprocessor defined")
   add_definitions(-DUSE_ADAPTION)
-endif()
-option(USE_PAGMO CACHE OFF)
-#It would be nicer to see if pagmo was compilled 
-#with mpi automatically, pagmo2 is supporting that
-option(USE_PAGMO_MPI CACHE OFF)
-if(USE_PAGMO_MPI)
-  set(USE_PAGMO ON)
-endif()
-if(USE_PAGMO)
-  if(~USE_ADAPTION)
-    message("so far there is no usage for pagmo without adation, we set it to be true!!!")
-    option(USE_ADAPTION CACHE ON)
-  endif()
-  message("USE_PAGMO preprocessor defined")
-  add_definitions(-DUSE_PAGMO)
 endif()
 
 set (MAX_OPTIMIZATION TRUE CACHE BOOL "compile with -march=native (important for VM) and some other optimization options")
@@ -84,6 +93,7 @@ if (MPI_NEEDED)
   message(WARNING "You are using trilinos with mpi support and hdf5 without, do you know what you are doing?")
   endif()
 endif()
+
 #from cmake 2.8 module documentation:
 #The Python_ADDITIONAL_VERSIONS variable can be used to specify a list of version numbers that should be # taken into account when searching for Python. You need to set this variable before calling find_package(PythonLibs).
 #for manual configuration, set PYTHON_INCLUDE_DIR and PYTHON_LIBRARY
@@ -142,8 +152,11 @@ message(STATUS "Boost_lib dirs     	= ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost include dirs 	= ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost_LIBRARIES 	= ${Boost_LIBRARIES}")
 
-message(STATUS "TBB lib          	= ${TBB_tbb_LIBRARY_RELEASE}")
-message(STATUS "TBB include dirs 	= ${TBB_INCLUDE_DIRS}")
+#TF: somehow the cmake is broken here, I overwrite with environmental variabels
+message(STATUS "TBB_LIBRARIES          	= $ENV{TBB_LIBRARY_RELEASE}")
+set(TBB_LIBRARIES_DIR $ENV{TBB_LIBRARY_RELEASE})
+message(STATUS "TBB_INCLUDE_DIR 	      = $ENV{TBB_INCLUDE_DIR}")
+set(TBB_INCLUDE_DIRS $ENV{TBB_INCLUDE_DIR})
 message(STATUS "Trilinos_dir          	= ${Trilinos_DIR}")
 message(STATUS "Trilinos libs         	= ${Trilinos_LIBRARIES}")
 message(STATUS "Trilinos lib dirs     	= ${Trilinos_LIBRARY_DIRS}")
@@ -158,7 +171,8 @@ link_directories(${HDF5_LIBRARY_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(${PNG_INCLUDE_DIRS})
-include_directories(${TBB_INCLUDE_DIR})
+include_directories(${TBB_INCLUDE_DIRS})
+link_directories(${TBB_LIBRARIES_DIR})
 include_directories(${ADDITIONAL_INCLUDE_DIRS})
 link_directories(${ADDITIONAL_LIBRARY_DIRS})
 include_directories("src/")
@@ -168,7 +182,8 @@ set(myLibs
   common  # part of this software
   mwlib   # part of this software
   numpycpp #see https://github.com/DaWelter/numpycpp
-  ${TBB_tbb_LIBRARY_RELEASE}
+  tbb
+  #${TBB_LIBRARIES}
   ${Trilinos_LIBRARIES} # -> trilinos
   ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
   ${Boost_PYTHON_LIBRARY}

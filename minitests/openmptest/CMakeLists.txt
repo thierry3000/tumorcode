@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-PROJECT(openmptest)
+#PROJECT(openmptest)
 
 set (TRILINOS_LIB "" CACHE PATH "Where to find trilinos libs")
 set (TRILINOS_INCLUDE "" CACHE PATH "Where to find trilinos includes")
@@ -20,7 +20,7 @@ include_directories(
   ${TRILINOS_INCLUDE}
 )
 
-set(CMAKE_CXX_FLAGS "-fopenmp")
+#set(CMAKE_CXX_FLAGS "-fopenmp")
 
 ADD_EXECUTABLE(openmptest main.cpp)
 

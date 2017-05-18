@@ -35,7 +35,7 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/export.hpp>
 
-#include <pagmo/src/pagmo.h>
+#include <pagmo/pagmo.h>
 #include <eigen3/Eigen/Dense>
 #include <boost/shared_ptr.hpp>
 #include <boost/serialization/shared_ptr.hpp>

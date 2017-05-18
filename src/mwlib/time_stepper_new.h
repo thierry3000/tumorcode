@@ -209,7 +209,17 @@ protected:
   virtual void doActualStep() = 0;
   virtual void internalInit() {}
   virtual double getStabilityLimitTimeFactor() const { return 1.; }  /// an algorithm specific factor (e.g. RK4 allows slightly larger steps than Euler).
-  void limitDt(StepControl &ctrl) const { ctrl.dt = std::min(ctrl.dt, 0.99*getStabilityLimitTimeFactor()*ctrl.euler_dt); }
+  //TF multiplication throws overflow if ctrl.euler_dt is max doule
+  void limitDt(StepControl &ctrl) const {
+    if(ctrl.euler_dt > 10000000000000)
+    {
+      ctrl.dt = ctrl.dt;
+    }
+    else
+    {
+      ctrl.dt = std::min(ctrl.dt, 0.99*getStabilityLimitTimeFactor()*ctrl.euler_dt);
+    }
+  }
   void checkStepWidthAndThrow(StepControl &ctrl) const
   {
     if (ctrl.dt > getStabilityLimitTimeFactor()*ctrl.euler_dt)

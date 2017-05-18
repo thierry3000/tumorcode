@@ -25,7 +25,7 @@ if __name__ == '__main__':
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
 
-import krebsjobs.parameters.tumorParameters as parameterSets_tum
+import krebsjobs.parameters.parameterSetsBulkTissueTumor as parameterSets_tum
 from krebsjobs.submitAdaption import create_auto_dicts
 from krebsjobs.submitAdaption import typelist
 #from submitAdaption import 

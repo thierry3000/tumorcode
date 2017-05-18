@@ -27,11 +27,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hdf5.h"
 #define FILE "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
 //#define PAGMO_ENABLE_MPI --> in CMakeLists
-#include <pagmo/src/pagmo.h>
+#include <pagmo/pagmo.h>
 
 using namespace pagmo;
 
-int test_2()
+void test_2()
 {
   std::cout<<"running pagmo test 2"<<std::endl;
 //   hid_t       file_id, group_id;  /* identifiers */
@@ -46,19 +46,25 @@ int test_2()
 //   status = H5Fclose(file_id);
 }
 
-int test_1()
+void test_1()
 {
   std::cout<<"running pagmo test 1"<<std::endl;
   // Initialise the MPI environment.
   int mc_steps=0;
   int dim=0;
 #ifdef PAGMO_ENABLE_MPI
+  
   mpi_environment env;
-  mc_steps = 1000000;
-  dim = 40;
+  
+  printf("you chose %i MPI processes.\n", env.get_size());
+  printf("this is rank: %i\n", env.get_rank());
+  printf("is this mt: %i\n", env.is_multithread());
+  
+  mc_steps = 100000;
+  dim = 400;
 #else
-  mc_steps = 1000000;
-  dim = 4000;
+  mc_steps = 100000000;
+  dim = 40;
 #endif
   // Create a problem and an algorithm.
   problem::dejong prob(dim);
@@ -66,10 +72,12 @@ int test_1()
   algo.set_screen_output(true);
   // Create an archipelago of 48 MPI islands.
   archipelago a;
+  int population = 3;
   a.set_topology(topology::ring());
-  for (int i = 0; i < 20; ++i) {
+  for (int i = 0; i < env.get_size(); ++i) {
 #ifdef PAGMO_ENABLE_MPI
-	  a.push_back(mpi_island(algo,prob,16));
+    std::cout<<"I will solve this problem!!!"<<std::endl;
+	  a.push_back(mpi_island(algo,prob,population));
 #else
 	  a.push_back(island(algo,prob,1));
 #endif
@@ -78,7 +86,6 @@ int test_1()
   a.evolve(5);
   a.join();
   
-  return 0;
 }
 
 
@@ -89,6 +96,7 @@ int main(int argc, char **argv)
   std::cout<<"begin test_pagmo"<<std::endl;
   
   test_1();
+  test_2();
 #if 0
   my::MultiprocessingInitializer mpinit(argc, argv);
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);

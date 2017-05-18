@@ -28,8 +28,6 @@ import krebs.adaption
 #import krebs.adaption
 
 from krebsjobs.parameters import parameterSetsAdaption
-#import krebsjobs.submitAdaption
-#import krebsjobs.parameters.tumorParameters as parameterSets_tum
 
 #import krebsutils
 #if sys.flags.debug: # library search path made known by initialization of krebsutils

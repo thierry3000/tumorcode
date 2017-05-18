@@ -218,19 +218,13 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
   
   std::cout<<"running real stuff.. starting pagmo"<<std::endl;
   // Initialise the MPI environment.
-  int mc_steps=0;
-  int dim=0;
-#ifdef PAGMO_ENABLE_MPI
-  pagmo::mpi_environment env;
-  mc_steps = 10000000;
-  dim = 400;
-#else
-  mc_steps = 10;
-  dim = 4;
-#endif
+  // maybe it is a good advice to choose the same number of mpi island as in the mpirun -n command
+
   // Create a problem and an algorithm.
   std::string myVesselFileString = boost::python::extract<std::string>(py_vesselgroup_str);
   pagmo::problem::adaption_problem prob(myVesselFileString,*params,*bfparams);
+  
+  //output what is read from the parameters
   std::printf("pop: %i, individuals: %i", params->pop, params->individuals);
   pagmo::population pop(prob,params->pop);
   pagmo::algorithm::pso algo(params->individuals);
@@ -266,9 +260,16 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
   // Create an archipelago of 10 MPI islands.
   std::printf("creating archipel\n");
 #ifdef PAGMO_ENABLE_MPI
+  std::printf("we assume this is mpi ready");
+  pagmo::mpi_environment env;
+  
+  printf("you chose %i MPI processes.\n", env.get_size());
+  printf("this is rank: %i\n", env.get_rank());
+  printf("is this mt: %i\n", env.is_multithread());
+  
   pagmo::archipelago a; // = pagmo::archipelago(algo,prob);
-  for (int i = 0; i < 3; ++i) {
-    a.push_back(pagmo::mpi_island(algo,prob,1));
+  for (int i = 0; i < env.get_size(); ++i) {
+    a.push_back(pagmo::mpi_island(algo,prob,params->pop));
   }
 #else
   pagmo::archipelago a = pagmo::archipelago(algo,prob,3,10);

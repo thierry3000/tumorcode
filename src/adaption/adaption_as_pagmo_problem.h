@@ -54,11 +54,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/serialization/string.hpp>
 
 //#define PAGMO_ENABLE_MPI --> done in cmake now
-#include <pagmo/src/pagmo.h>
-#include <pagmo/src/config.h>
-#include <pagmo/src/serialization.h>
-#include <pagmo/src/types.h>
-#include <pagmo/src/problem/base.h>
+#include <pagmo/pagmo.h>
+#include <pagmo/config.h>
+#include <pagmo/serialization.h>
+#include <pagmo/types.h>
+#include <pagmo/problem/base.h>
 #include <adaption/adaption_model2.h>
 
 namespace pagmo{ namespace problem{
@@ -158,7 +158,8 @@ class __PAGMO_VISIBLE adaption_problem : public base
 BOOST_CLASS_EXPORT_KEY(pagmo::problem::adaption_problem)
 
 #ifdef USE_PAGMO
-int doAdaptionOptimization_without_py();
+void doAdaptionOptimization_without_py();
+int archi_best_idx(pagmo::archipelago archi);
 #endif
 
 #endif

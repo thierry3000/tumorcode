@@ -31,4 +31,4 @@ execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/param
 execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsFakeTumor_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsFakeTumor.py)
 execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsIff_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsIff.py)
 execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsO2_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsO2.py)
-execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsVesselGen_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsVesselGen_generic.py)
+execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsVesselGen_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsVesselGen.py)

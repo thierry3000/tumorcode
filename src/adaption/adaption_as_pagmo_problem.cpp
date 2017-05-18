@@ -126,6 +126,20 @@ void adaption_problem::serialize(Archive& ar, unsigned int)
   ar & vessel_fn;
 }
 }} //namespaces namespace pagmo { namespace problem {
+
+int archi_best_idx(pagmo::archipelago archi) {
+	double min = archi.get_island(0)->get_population().champion().f[0];
+	int idx=0;
+	for (size_t i=1;i<archi.get_size();++i) {
+		double cur = archi.get_island(i)->get_population().champion().f[0];
+		if (cur < min) {
+			min=cur;
+			idx=i;
+		}
+	}
+	return idx;
+}
+
 BOOST_CLASS_EXPORT_IMPLEMENT(pagmo::problem::adaption_problem)
 
 

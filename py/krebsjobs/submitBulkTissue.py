@@ -35,7 +35,7 @@ import myutils
 import krebs
 import krebs.tumors
 
-import krebsjobs.parameters.tumorParameters as parameterSets
+import krebsjobs.parameters.parameterSetsBulkTissueTumor as parameterSets
 from krebsjobs.submitFakeTum import PrepareConfigurationForSubmission
 
 
@@ -108,7 +108,7 @@ if not qsub.is_client and __name__ == '__main__':
   if known.no_vessel:
     #s = p2.add_subparsers()
     parser_no_vessels = subparsers.add_parser('no', parents=[parent_parser])
-    parser_no_vessels.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/tumorParameters.py')
+    parser_no_vessels.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/parameterSetsBulkTissueTumor.py')
     goodArguments, otherArguments = parser_no_vessels.parse_known_args()
     qsub.parse_args(otherArguments)
     try:
