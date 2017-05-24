@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/function.hpp>
 #include <boost/array.hpp>
+#include <boost/filesystem/convenience.hpp>
 
 class  Vessel;
 class  VesselNode;
@@ -308,4 +309,9 @@ boost::optional<ptree> HandleSimulationProgramArguments(const ptree &default_par
 /** @brief tests if ReadVesselList3d was successful
  */
 void isVesselListGood(VesselList3d &vl);
+
+/** @brief will remove file extension to filename
+ */
+std::string removeFileExtension(const std::string& fileName);
+
 #endif

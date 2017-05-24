@@ -44,16 +44,18 @@ set (ADDITIONAL_INCLUDE_DIRS CACHE PATH "Additional dirs to search for included 
 set (ADDITIONAL_LIBRARY_DIRS CACHE PATH "Additional dirs to search for linked libraries")
 
 find_package(Boost REQUIRED COMPONENTS "program_options")
+message("Boost_PROGRAM_OPTIONS_LIBRARY: ${Boost_PROGRAM_OPTIONS_LIBRARY}")
 set(myLibs "${myLibs};${Boost_PROGRAM_OPTIONS_LIBRARY}")
 find_package(Boost REQUIRED COMPONENTS "system")
+message("Boost_SYSTEM_LIBRARY: ${Boost_SYSTEM_LIBRARY}")
 set(myLibs "${myLibs};${Boost_SYSTEM_LIBRARY}")
+find_package(Boost REQUIRED COMPONENTS "serialization")
+set(myLibs "${myLibs};${Boost_SERIALIZATION_LIBRARY}")
+find_package(Boost REQUIRED COMPONENTS "thread")
+set(myLibs "${myLibs};${Boost_THREAD_LIBRARY}")
+find_package(Boost REQUIRED COMPONENTS "filesystem")
+set(myLibs "${myLibs};${Boost_FILESYSTEM_LIBRARY}")
 
-if(TRUE)#test_pagmo
-  find_package(Boost REQUIRED COMPONENTS "serialization")
-  set(myLibs "${myLibs};${Boost_SERIALIZATION_LIBRARY}")
-  find_package(Boost REQUIRED COMPONENTS "thread")
-  set(myLibs "${myLibs};${Boost_THREAD_LIBRARY}")
-endif()
 
 #note there are system without eigen, so let the configure fail here
 find_package(Eigen3 3.2 QUIET)
@@ -74,7 +76,8 @@ if (";${Trilinos_TPL_LIST};" MATCHES ";MPI;")
   set(MPI_NEEDED TRUE)
 endif()
 
-if (MPI_NEEDED)
+if (MPI_NEEDED OR USE_PAGMO_MPI)
+  #set(MPI_CXX_COMPILER "/usr/bin/mpic++.openmpi") --> system dependent, move to do configure
   find_package(MPI REQUIRED)
   add_definitions(-DMPI_NEEDED)
   message(STATUS "Including MPI")
@@ -86,7 +89,7 @@ if (MPI_NEEDED)
   
   include_directories(${MPI_CXX_INCLUDE_PATH})
   #set(myLibs ${MPI_CXX_LIBRARIES})
-  set(myLibs ${MPI_LIBRARY})
+  set(myLibs "${myLibs};${MPI_LIBRARY}")
   if (HDF5_IS_PARALLEL) #good here
   message(WARNING "good choice here")
   else()

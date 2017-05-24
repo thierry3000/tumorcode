@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _ADAPTION_MODEL_H_
 #define _ADAPTION_MODEL_H_
 
-#define ADAPTION_OUTPUT 0
+#define ADAPTION_OUTPUT 1
 #include <boost/concept_check.hpp>
 #include <boost/graph/graph_concepts.hpp>
 #include <boost/archive/archive_exception.hpp>
@@ -38,6 +38,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/vessels3d.h"
 
 #include "common/calcflow_common.h" //inhere from the CompressedFlowNetwork
+
+#if PAGMO_ENABLE_MPI
+#include <mpi.h>
+#endif
 
 namespace Adaption
 {
@@ -106,6 +110,8 @@ namespace Adaption
     int pop;
     int individuals;
     int opt_iter;
+    string vesselFileName;
+    string vesselGroupName;
     
     void assign(const ptree &pt);
     ptree as_ptree() const;
@@ -143,6 +149,8 @@ namespace Adaption
 	ar & pop;
 	ar & individuals;
 	ar & opt_iter;
+  ar & vesselFileName;
+  ar & vesselGroupName;
       }
   };
   ostream& operator<<(ostream &os, const Parameters &params);
@@ -181,14 +189,16 @@ namespace Adaption
 		      double max_r
 		      );
   uint GetAdaptionNetwork(CompressedAdaptionNetwork &fl,
-		      VesselList3d &vl
+		      const VesselList3d *vl
 			);
 
   void TestAdaption();
   //double CalcRadiiChange(const Parameters &params, VesselList3d &vl);
   //void CalcRadiiChange2(const Parameters &params, VesselList3d &vl);
   std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, VesselList3d &vl, float delta_t_calc);
-  std::tuple<uint,FlReal> runAdaption_Loop(Adaption::Parameters params, BloodFlowParameters bfparams, VesselList3d &vl, bool doDebugOutput);
+  /// return state saying if convergent and mean of capillary flow 
+  //std::tuple<uint,FlReal> runAdaption_Loop(Adaption::Parameters params, BloodFlowParameters bfparams, VesselList3d &vl, bool doDebugOutput);
+  std::tuple<uint,FlReal> runAdaption_Loop(Adaption::Parameters params, BloodFlowParameters bfparams, bool doDebugOutput);
   //std::tuple<uint, FlReal> runAdaption_Loop(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl);
   //uint runAdaption_Loop(boost::shared_ptr<Adaption::Parameters> params, boost::shared_ptr<BloodFlowParameters> bfparams, boost::shared_ptr<VesselList3d> vl, bool doDebugOutput);
 //  uint run_optimization(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl);

@@ -22,13 +22,14 @@ execute_process(COMMAND ln -s ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/submitPovrayR
 #T.F.: to not spoil the repository by different parameterset when
 #variing, we check generic parameterset into the repository and 
 # do not keep track on the acctual used ones
+# -n  option to no overwrite if already present
 message(STATUS "copy generic parameters to normal!")
 #message("PROJECT_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 #message("CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}") 
 #message("CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}") 
-execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsAdaption_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsAdaption.py)
-execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsBulkTissueTumor_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsBulkTissueTumor.py)
-execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsFakeTumor_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsFakeTumor.py)
-execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsIff_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsIff.py)
-execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsO2_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsO2.py)
-execute_process(COMMAND cp ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsVesselGen_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsVesselGen.py)
+execute_process(COMMAND cp -n ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsAdaption_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsAdaption.py)
+execute_process(COMMAND cp -n ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsBulkTissueTumor_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsBulkTissueTumor.py)
+execute_process(COMMAND cp -n ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsFakeTumor_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsFakeTumor.py)
+execute_process(COMMAND cp -n ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsIff_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsIff.py)
+execute_process(COMMAND cp -n ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsO2_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsO2.py)
+execute_process(COMMAND cp -n ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsVesselGen_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsVesselGen.py)

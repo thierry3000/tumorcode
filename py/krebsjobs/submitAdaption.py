@@ -41,6 +41,7 @@ import cProfile
 import krebs
 import krebs.adaption
 
+import krebsjobs.parameters
 from krebsjobs.parameters import parameterSetsAdaption
 
 from krebsutils import typelist
@@ -83,7 +84,12 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
   krebsutils.set_num_threads(num_threads)
   
   #params['name'] = parameter_set_name
-  adaption_refs = krebs.adaption.doit(fn, grp_pattern, adaptionParams)
+  adaptionParams['adaption'].update(
+      vesselFileName = fn,
+      vesselGroupName = grp_pattern,
+      )
+
+  krebs.adaption.doit( adaptionParams)
   
   #h5files.closeall() # just to be sure
 
@@ -259,10 +265,11 @@ if not qsub.is_client and __name__=='__main__':
   #single parameter set chosen  
   if factory.__class__ == dict:
     factory['name'] = goodArguments.AdaptionParamSet
-    run_optimize(factory, filenames, goodArguments.grp_pattern, goodArguments.time)
+    #run_optimize(factory, filenames, goodArguments.grp_pattern, goodArguments.time)
+    run2(factory, filenames, goodArguments.grp_pattern)
   #a list of paramset e.g. for different boundary parameters.
-  if factory.__class__==list:
-    for paramset in factory:
-      run2(paramset, filenames, goodArguments.grp_pattern)
+#  if factory.__class__==list:
+#    for paramset in factory:
+#      run2(paramset, filenames, goodArguments.grp_pattern)
   
       

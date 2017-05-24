@@ -214,12 +214,13 @@ int main()
 	probs.push_back(problem::snopt_toyprob().clone());
 	probs_new.push_back(problem::snopt_toyprob().clone());
 	std::string this_fn = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5";
+  params->vesselFileName = this_fn;
 	params->k_c = 3.3;
-	problem::base_ptr aBigProblem(pagmo::problem::adaption_problem(this_fn,*params,*bfparams).clone());
+	problem::base_ptr aBigProblem(pagmo::problem::adaption_problem(*params,*bfparams).clone());
 	probs.push_back(aBigProblem);
 	//probs.push_back(pagmo::problem::adaption_problem(vl->Clone(),*params,*bfparams).clone());
 	params->k_s = 2.2;
-	probs_new.push_back(pagmo::problem::adaption_problem(this_fn,*params,*bfparams).clone());
+	probs_new.push_back(pagmo::problem::adaption_problem(*params,*bfparams).clone());
 	
     //----- Test TSP -----//
 //     probs_new.push_back(problem::tsp().clone());

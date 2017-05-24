@@ -31,6 +31,7 @@ import extensions # for hdf5 support in np.asarray
 import myutils
 import posixpath
 import math
+import warnings
 from copy import deepcopy
 from krebs.analyzeGeneral   import DataBasicVessel
 from krebs.analyzeBloodFlowResistance import ComputeVascularTreeBloodFlowResistances
@@ -108,13 +109,13 @@ def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
       gvndst.create_dataset('pressure'  , data = pressure   , compression = 9)
 
 def computeAdaption_(gdst, vesselgroup, parameters):
-  myutils.buildLink(gdst, 'SOURCE_VESSELS', vesselgroup)
-  gdst.attrs['PARAMETER_CHECKSUM'] = myutils.checksum(parameters)
-  gdst.attrs['UUID']               = myutils.uuidstr()
+  #myutils.buildLink(gdst, 'SOURCE_VESSELS', vesselgroup)
+  #gdst.attrs['PARAMETER_CHECKSUM'] = myutils.checksum(parameters)
+  #gdst.attrs['UUID']               = myutils.uuidstr()
   #writing parameters as acsii string. but i think it is better to store them as hdf datasets directly
   #ds = gdst.create_dataset('PARAMETERS_AS_JSON', data = np.string_(json.dumps(parameters, indent=2)))
   #myutils.hdf_write_dict_hierarchy(gdst, 'parameters', parameters)
-  gdst.file.flush()
+  #gdst.file.flush()
   # now we can compute Adaption. The c++ routine can a.t.m. only read from hdf so it has to use our new file
   
   r = adaption_cpp.computeAdaption(vesselgroup, parameters['adaption'], parameters['calcflow'], gdst)
@@ -172,25 +173,34 @@ def computeAdaption_(gdst, vesselgroup, parameters):
 #  #=== return filename and path to po2 data ====#
 #  return adaption_data_ref
 
-def doit(fn, pattern, parameters):
+def doit(parameters):
+  fn = parameters['adaption']['vesselFileName']
+  pattern = parameters['adaption']['vesselGroupName']
+  
   #fnpath = dirname(fn)
   #for fn in filenames:
-  fnbase = basename(fn).rsplit('.h5')[0]
+  #fnbase = basename(fn).rsplit('.h5')[0]
   #outfn_no_ext = join(fnpath, fnbase+'_detailedpo2')
   print('starting doit in python')
   output_links = []
 
   f = h5files.open(fn, 'a')
   dirs = myutils.walkh5(f['.'], pattern)
+  f.close()
   print(dirs)
 
 
   for group_path in dirs:
     #cachelocation = (outfn_no_ext+'.h5', group_path+'_'+parameters_name)
-    cachelocation = (fnbase+'_adption_p_'+ parameters['name'] +'.h5', group_path)
-    ref = adaption_cpp.computeAdaption(f, group_path, parameters, cachelocation)
-    print 'computed Adaption stored in:', ref
-    output_links.append(ref)
+    #cachelocation = (fnbase+'_adption_p_'+ parameters['name'] +'.h5', group_path)
+    #ref = adaption_cpp.computeAdaption(f, group_path, parameters['adaption'],parameters['calcflow'], cachelocation)
+    returnState, mean = adaption_cpp.computeAdaption(parameters['adaption'],parameters['calcflow'])
+    if returnState == 0:
+      print("adaption succesful with mean: %f" % mean)
+    if not returnState == 0:
+      warnings.warn("adation broken", RuntimeWarning)
+#    print 'computed Adaption stored in:', ref
+#    output_links.append(ref)
   return output_links
   
 def test():

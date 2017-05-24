@@ -39,6 +39,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "shared-objects.h"
 #include "hdfio.h"
 
+#include <random>
+
 using namespace std;
 //typedef VesselList3d::LatticeData LatticeData;
 typedef polymorphic_latticedata::LatticeData LatticeData;
@@ -826,10 +828,26 @@ void TestTester()
   test.output();
 }
 #endif
+#if 1 
+void TestRandomNumberGenerator()
+{
+  std::random_device rd;
+  std::mt19937 mt(rd());
+  std::default_random_engine generator;
+  std::uniform_real_distribution<double> adapt_dist(0.5,4.0);
+  double aRandomNumber = adapt_dist(mt);
+  cout << aRandomNumber << endl;
+  for(int i=0;i<5;i++)
+  {
+    cout<<adapt_dist(mt)<<endl;
+  }
+}
+#endif
 int main(int argc, char **argv)
 {
-  TestMath();
-  TestBB();
+  TestRandomNumberGenerator();
+  //TestMath();
+  //TestBB();
 #if 0
   TestTester();
 #endif

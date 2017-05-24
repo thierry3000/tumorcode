@@ -91,9 +91,13 @@ void InitParameters(Adaption::Parameters *params, py::dict py_parameters)
   params->tum_manitulate_s3 = GET_ADAPTION_PARAM_FROM_DICT(bool,"tum_manitulate_s3");
   params->tum_manitulate_s4 = GET_ADAPTION_PARAM_FROM_DICT(bool,"tum_manitulate_s4");
   params->tum_manitulate_s5 = GET_ADAPTION_PARAM_FROM_DICT(bool,"tum_manitulate_s5");
-  params->pop = GET_ADAPTION_PARAM_FROM_DICT(int, "pop");
-  params->individuals = GET_ADAPTION_PARAM_FROM_DICT(int, "individuals");
-  params->opt_iter = GET_ADAPTION_PARAM_FROM_DICT(int, "opt_iter");
+  
+  params->vesselFileName = GET_ADAPTION_PARAM_FROM_DICT(string,"vesselFileName");
+  params->vesselGroupName = GET_ADAPTION_PARAM_FROM_DICT(string,"vesselGroupName");
+  
+  GET_ADAPTION_PARAM_IF_NONNONE(params->pop, int, "pop");
+  GET_ADAPTION_PARAM_IF_NONNONE(params->individuals, int, "individuals");
+  GET_ADAPTION_PARAM_IF_NONNONE(params->opt_iter, int, "opt_iter");
   
   //GET_ADAPTION_PARAM_IF_NONNONE(params->pop, int, "pop");
   //GET_ADAPTION_PARAM_IF_NONNONE(params->individuals, int, "individuals");
@@ -130,6 +134,50 @@ void InitParameters(Adaption::Parameters *params, py::dict py_parameters)
 //   }
 // #endif
 // }
+//static py::object PyComputeAdaption(py::object py_vesselgroup, py::dict py_parameters, py::dict py_bfparams, py::object py_h5outputGroup)
+static py::object PyComputeAdaption(py::dict py_parameters, py::dict py_bfparams)
+{
+  cout<<" PyComputeAdaption is called "<<endl;
+#if 1
+  BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
+  
+  Adaption::Parameters params;
+  InitParameters(&params, py_parameters);
+  
+  //PyPrepareForAdaptation(vl, vesselgroup, vessels_after_adaption, bfparams, params);
+
+  
+  //gain some topological info for adaptive parameters
+//   int no_of_roots = 0;
+//   for(int i=0;i<vl->GetNCount();++i)
+//   {
+//     VesselNode *nd = vl->GetNode(i);
+//     if(nd->IsBoundary())no_of_roots++;
+//   }
+//   params.no_of_roots = no_of_roots;
+
+  
+
+  std::tuple<uint,FlReal> return_state;
+  //uint return_state;
+  using namespace boost::accumulators;
+  return_state = runAdaption_Loop(params, bfparams, false);
+  
+//   if(std::get<0>(return_state) == 0)
+//   {
+//     //write vessel list to file
+//     h5cpp::File f= h5cpp::File("adaption_output.h5","w");
+//     h5cpp::Group out_ = f.root();
+//     h5cpp::Group grp_temp = out_.create_group("vessels_after_adaption");
+//     ptree getEverytingPossible = make_ptree("w_adaption", true);
+//     WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
+//   }
+  
+  return py::make_tuple(std::get<0>(return_state), std::get<1>(return_state));
+
+#endif
+} 
+
 
 /* we decide to parse a string name here and NOT the h5py handle
  * this caused some major trouble in the past
@@ -222,7 +270,8 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
 
   // Create a problem and an algorithm.
   std::string myVesselFileString = boost::python::extract<std::string>(py_vesselgroup_str);
-  pagmo::problem::adaption_problem prob(myVesselFileString,*params,*bfparams);
+  params->vesselFileName = myVesselFileString;
+  pagmo::problem::adaption_problem prob(*params,*bfparams);
   
   //output what is read from the parameters
   std::printf("pop: %i, individuals: %i", params->pop, params->individuals);
@@ -288,6 +337,7 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
 //     std::cout<< isl->get_population().champion().x <<std::endl;
 //   }
   std::cout<<"Done .. the champion is ..." <<std::endl;
+  // OUTPUT OF SUCESSFULLY NETWORK WOULD BE FINE
   //std::cout<< pop.champion().x <<std::endl;
   //we return the results of the optimization to python and proceed there
   std::cout<<"return this back to python"<<std::endl;
@@ -307,7 +357,7 @@ Adaption::Parameters* AllocateParametersFromDict(const py::dict &d)
 void export_adaption_computation()
 { 
   py::def("AllocateAdaptionParametersFromDict", &AllocateParametersFromDict, py::return_value_policy<py::manage_new_object>());
-  //py::def("computeAdaption", PyComputeAdaption);
+  py::def("computeAdaption", PyComputeAdaption);
   py::def("testAdaption", TestAdaption);
 #ifdef USE_PAGMO
   py::def("doAdaptionOptimization",PydoAdaptionOptimization);

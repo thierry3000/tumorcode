@@ -61,9 +61,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <pagmo/problem/base.h>
 #include <adaption/adaption_model2.h>
 
+#include <random>
+
 namespace pagmo{ namespace problem{
   class adaption_problem;
 }}
+
 namespace boost{ namespace serialization{
 template<class Archive>
 inline void save_construct_data(
@@ -72,7 +75,6 @@ template<class Archive>
 inline void load_construct_data(
   Archive &ar, pagmo::problem::adaption_problem *t, const unsigned int file_version);
 }}//namespace boost{ namespace serialization{
-
 
 // //from http://www.boost.org/doc/libs/1_54_0/libs/serialization/example/demo_auto_ptr.cpp
 // /////////////////////////////////////////////////////////////
@@ -122,7 +124,7 @@ inline void load_construct_data(
 // //http://stackoverflow.com/questions/20894415/boost-non-intrusively-serialize-a-class-in-separate-load-save-functions
 // }}//namespace boost{ namespace serialization{
 
-namespace pagmo{ namespace problem {
+namespace pagmo{ namespace problem {  
   /* this class is meant to implement the 
    * radii adaption problem to pagmo
    * in order to estimate decent parameters*/
@@ -130,7 +132,7 @@ class __PAGMO_VISIBLE adaption_problem : public base
 {
 	public:
 		//constructor
-		adaption_problem(const std::string vessel_fn_,Adaption::Parameters params_, BloodFlowParameters bfparams) ;
+		adaption_problem(Adaption::Parameters params_, BloodFlowParameters bfparams) ;
 		//copy constructor
 		base_ptr clone() const;
 		std::string get_name() const;
@@ -148,9 +150,6 @@ class __PAGMO_VISIBLE adaption_problem : public base
 		  Archive & ar, adaption_problem *t, const unsigned int file_version);
 		mutable Adaption::Parameters params;
 		BloodFlowParameters bfparams;
-		std::string vessel_fn;
-		std::auto_ptr<VesselList3d> vl;
-	        //h5cpp::Group vl_grp;
 };
 }}//namespace pagmo{ namespace problem {
 

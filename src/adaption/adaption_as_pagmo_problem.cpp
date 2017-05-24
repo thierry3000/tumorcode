@@ -26,25 +26,24 @@ inline void save_construct_data(
   Archive &ar, const pagmo::problem::adaption_problem *t, const unsigned int file_version)
 {
   //save data required to construct instances
-  std::printf("save_construct_data: adaption_as_pagmo_problem\n");
+  //std::printf("save_construct_data: adaption_as_pagmo_problem\n");
   ar & t->params;
   ar & t->bfparams;
-  ar & t->vessel_fn;
 }
 template<class Archive>
 inline void load_construct_data(
   Archive &ar, pagmo::problem::adaption_problem *t, const unsigned int file_version)
 {
   //retrieve data from archive required to construct new instance
+#ifdef DEBUG
   std::printf("load_construct_data: adaption_as_pagmo_problem\n");
+#endif
   Adaption::Parameters params;
   ar & params;
   BloodFlowParameters bfparams;
   ar & bfparams;
-  std::string vessel_fn;
-  ar & vessel_fn;
   //knowing the filename will allow each instance to load the vesselList 
-  ::new(t)pagmo::problem::adaption_problem(vessel_fn,params,bfparams);
+  ::new(t)pagmo::problem::adaption_problem(params,bfparams);
 }
 }}//namespace boost{ namespace serialization{
 
@@ -59,33 +58,61 @@ namespace pagmo { namespace problem {
  */
  
 
-adaption_problem::adaption_problem(const std::string vessel_fn_, Adaption::Parameters params_, BloodFlowParameters bfparams_):
-params(params_),bfparams(bfparams_),vessel_fn(vessel_fn_), base(3)
+adaption_problem::adaption_problem(Adaption::Parameters params_, BloodFlowParameters bfparams_):
+params(params_),bfparams(bfparams_), base(3)
 {
+#ifdef DEBUG
   printf("invoking construtor: adaption_as_pagmo_problem\n");
-  h5cpp::File *readInFile = new h5cpp::File(this->vessel_fn,"r");
-  h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group("adaption/vessels_after_adaption"));
-  this->vl = ReadVesselList3d(vl_grp, make_ptree("filter", false));
+#endif
+  //std::mt19937 mt(rd());
+  //std::uniform_real_distribution<float> adapt_dist(0.5,4.0);
+//   h5cpp::File *readInFile = new h5cpp::File(this->vessel_fn,"r");
+//   h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group("adaption/vessels_after_adaption"));
+//   //h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group("adaption/recomputed"));
+//   this->vl = ReadVesselList3d(vl_grp, make_ptree("filter", false));
   set_lb(0.5);
   set_ub(4.0);
+  // is it really necessary to initialize that?
+  //params.k_m = adapt_dist(mt);
+  //params.k_c = adapt_dist(mt);
+  //params.k_s = adapt_dist(mt);
+//   for(int i=0;i<3;i++)
+//   {
+//     printf("x[0]: %f, ", get_best_x()[i]);
+//   }
+//   printf("\n");
 }
 
 /// Clone method.
 base_ptr adaption_problem::clone() const {
+#ifdef DEBUG
   printf("clone adaption_as_pagmo_problem\n");
-	return base_ptr(new adaption_problem(vessel_fn,params,bfparams));
+#endif
+//   std::mt19937 mt(rd());
+//   params.k_m = adapt_dist(mt);
+//   params.k_c = adapt_dist(mt);
+//   params.k_s = adapt_dist(mt);
+	return base_ptr(new adaption_problem(params,bfparams));
 }
 
 /// Implementation of the objective function.
 void adaption_problem::objfun_impl(fitness_vector &f, const decision_vector &x) const
 {
   pagmo_assert(f.size() == 1);
+  
+#ifdef DEBUG
+  printf("before: this->params.k_m: %f\n", this->params.k_m);
+#endif
   this->params.k_m = x[0];
   this->params.k_c = x[1];
   this->params.k_s = x[2];
+#ifdef DEBUG
+  printf("after: this->params.k_m: %f\n", this->params.k_m);
+#endif
   std::tuple<uint,FlReal> adaption_loop_return;
   {
-    adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams, *vl, false);
+    //adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams, *vl, false);
+    adaption_loop_return = Adaption::runAdaption_Loop(this->params, this->bfparams, false);
   }
   int returnValue = std::get<0>(adaption_loop_return);
   bool isConvergent = false;
@@ -123,7 +150,6 @@ void adaption_problem::serialize(Archive& ar, unsigned int)
   ar & boost::serialization::base_object<base>(*this);
   ar & params;
   ar & bfparams;
-  ar & vessel_fn;
 }
 }} //namespaces namespace pagmo { namespace problem {
 

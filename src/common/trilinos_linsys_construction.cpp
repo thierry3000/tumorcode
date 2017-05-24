@@ -352,11 +352,20 @@ sys_matrix(_matrix), rhs(_rhs), params(_params)
 }
 int EllipticEquationSolver::init(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vector> &_rhs, const ptree& _params)
 {
-  int MyPID = 0;
 #ifdef EPETRA_MPI
-  MPI_Init (&argc, &argv);
-  Epetra_MpiComm Comm (MPI_COMM_WORLD);
-  MyPID = Comm.MyPID ();
+  int MyPID = 0;
+  int isMPIinitialized;
+  int error = MPI_Initialized(&isMPIinitialized);
+  if( isMPIinitialized == 1)
+  {
+    Epetra_MpiComm Comm (MPI_COMM_WORLD);
+    MyPID = Comm.MyPID ();
+  }
+  else
+  {
+    //MPI_Init();
+    printf("did you use the MPI wrapper?\n");
+  }
 #else
   Epetra_SerialComm Comm;
 #endif

@@ -57,7 +57,7 @@ if(USE_ADAPTION)
 endif()
 
 add_executable(test_boost_serialize test_boost_serialize.cpp)
-target_link_libraries(test_boost_serialize ${myLibs})
+target_link_libraries(test_boost_serialize ${myLibs} pagmo)
 
 # add_executable(test_h5cpp test_hdf5_cpp.cpp)
 # link_directories(${HDF5_LIBRARY_DIRS})
