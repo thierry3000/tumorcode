@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 2.6)
+# cmake_minimum_required(VERSION 2.6)
 #PROJECT(programs)
-add_subdirectory(trilinos)
+
 include_directories(../common)
 include_directories(${ADDITIONAL_INCLUDE_DIRS})
 
@@ -83,3 +83,5 @@ if(USE_ADAPTION)
     install(TARGETS run_pagmo RUNTIME DESTINATION bin)
   endif()
 endif()
+
+#add_subdirectory(trilinos)
