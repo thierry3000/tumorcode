@@ -224,52 +224,66 @@ def run_optimize(parameter_set, filenames, grp_pattern, timing):
                   change_cwd = True)
 
 
-if not qsub.is_client and __name__=='__main__':
-  import argparse
-  parser = argparse.ArgumentParser(description='Compute adaption see Secomb model')  
-  parser.add_argument('AdaptionParamSet')
-  #this is not needed in the case without vessels
-  parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin)
-  parser.add_argument('grp_pattern')
-  parser.add_argument('-t','--tumorParams', help='by explicitly enable this you can use tumor parameters for the adaption as well', action='store_true')
-  parser.add_argument('--time', default=False, help='Show time profile', action='store_true')
+#if not qsub.is_client and __name__=='__main__':
+#  import argparse
+#  parser = argparse.ArgumentParser(description='Compute adaption see Secomb model')  
+#  parser.add_argument('AdaptionParamSet')
+#  #this is not needed in the case without vessels
+#  parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin)
+#  parser.add_argument('grp_pattern')
+#  parser.add_argument('-t','--tumorParams', help='by explicitly enable this you can use tumor parameters for the adaption as well', action='store_true')
+#  parser.add_argument('--time', default=False, help='Show time profile', action='store_true')
+#  
+#  goodArguments, otherArguments = parser.parse_known_args()
+#  qsub.parse_args(otherArguments)
+#  
+#  try:
+#    if not goodArguments.AdaptionParamSet in dir(parameterSetsAdaption):
+#      raise AssertionError('Unknown parameter set %s!' % goodArguments.AdaptionParamSet)
+#    dirs = set()
+#    for fn in goodArguments.vesselFileNames:
+#      if not os.path.isfile(fn.name):
+#        raise AssertionError('The file %s is not present!'%fn)
+#      with h5py.File(fn.name, 'r') as f:
+#        d = myutils.walkh5(f, goodArguments.grp_pattern)
+#        if not len(d)>0:
+#          raise AssertionError('pattern "%s" not found in "%s"!' % (grp_pattern, fn))
+#        else:
+#          dirs = set.union(dirs,d)
+#  except Exception, e:
+#    print e.message
+#    sys.exit(-1)
+#  
+#  print('Resolved groups: %s' % ','.join(dirs))
+#  
+#  #create filename due to former standards
+#  filenames=[]
+#  for fn in goodArguments.vesselFileNames:
+#    filenames.append(fn.name)
+#  
+#  factory = getattr(parameterSetsAdaption, goodArguments.AdaptionParamSet)
+#  #single parameter set chosen  
+#  if factory.__class__ == dict:
+#    factory['name'] = goodArguments.AdaptionParamSet
+#    #run_optimize(factory, filenames, goodArguments.grp_pattern, goodArguments.time)
+#    run2(factory, filenames, goodArguments.grp_pattern)
+#  #a list of paramset e.g. for different boundary parameters.
+##  if factory.__class__==list:
+##    for paramset in factory:
+##      run2(paramset, filenames, goodArguments.grp_pattern)
+#  
+def do_optimize_adaption_deap():
+  print("need pso here")
   
-  goodArguments, otherArguments = parser.parse_known_args()
-  qsub.parse_args(otherArguments)
-  
-  try:
-    if not goodArguments.AdaptionParamSet in dir(parameterSetsAdaption):
-      raise AssertionError('Unknown parameter set %s!' % goodArguments.AdaptionParamSet)
-    dirs = set()
-    for fn in goodArguments.vesselFileNames:
-      if not os.path.isfile(fn.name):
-        raise AssertionError('The file %s is not present!'%fn)
-      with h5py.File(fn.name, 'r') as f:
-        d = myutils.walkh5(f, goodArguments.grp_pattern)
-        if not len(d)>0:
-          raise AssertionError('pattern "%s" not found in "%s"!' % (grp_pattern, fn))
-        else:
-          dirs = set.union(dirs,d)
-  except Exception, e:
-    print e.message
-    sys.exit(-1)
-  
-  print('Resolved groups: %s' % ','.join(dirs))
-  
-  #create filename due to former standards
-  filenames=[]
-  for fn in goodArguments.vesselFileNames:
-    filenames.append(fn.name)
-  
-  factory = getattr(parameterSetsAdaption, goodArguments.AdaptionParamSet)
-  #single parameter set chosen  
-  if factory.__class__ == dict:
-    factory['name'] = goodArguments.AdaptionParamSet
-    #run_optimize(factory, filenames, goodArguments.grp_pattern, goodArguments.time)
-    run2(factory, filenames, goodArguments.grp_pattern)
-  #a list of paramset e.g. for different boundary parameters.
-#  if factory.__class__==list:
-#    for paramset in factory:
-#      run2(paramset, filenames, goodArguments.grp_pattern)
-  
-      
+def do_simple_adaption():
+  factory = getattr(parameterSetsAdaption, "pagmo_test")
+  vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
+  grp_name = "adaption/vessels_after_adaption"
+  factory['adaption'].update(
+      vesselFileName = vfile_name,
+      vesselGroupName = grp_name,
+      )
+  print(factory)
+  krebs.adaption.doit(factory)
+if __name__ == '__main__':
+  do_simple_adaption()

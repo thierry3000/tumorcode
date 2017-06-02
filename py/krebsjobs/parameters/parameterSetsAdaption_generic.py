@@ -561,6 +561,11 @@ pagmo_test['calcflow'].update(
   includePhaseSeparationEffect =  False,
 )
 
+deal_test = deepcopy(pagmo_test)
+deal_test['optimization'] = dict(
+    desired_cap_flow = 5000,
+    )
+
 def _value():
   #import random
   pressures = [2.,2.5,3,3.5,4.]

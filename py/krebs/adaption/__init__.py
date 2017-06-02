@@ -33,6 +33,7 @@ import posixpath
 import math
 import warnings
 from copy import deepcopy
+import krebs
 from krebs.analyzeGeneral   import DataBasicVessel
 from krebs.analyzeBloodFlowResistance import ComputeVascularTreeBloodFlowResistances
 
@@ -43,6 +44,21 @@ if sys.flags.debug:
   adaption_cpp = __import__('libadaption_d', globals(), locals())
 else:
   adaption_cpp = __import__('libadaption_', globals(), locals())
+
+def worker_on_client(fn, grp_pattern, adaptionParams, num_threads=1):
+  print('Adaption on %s / %s / param: %s' % (fn, grp_pattern, adaptionParams['name']))
+  #h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
+  krebsutils.set_num_threads(num_threads)
+  
+  #params['name'] = parameter_set_name
+  adaptionParams['adaption'].update(
+      vesselFileName = fn,
+      vesselGroupName = grp_pattern,
+      )
+
+  doit( adaptionParams)
+  
+  #h5files.closeall() # just to be sure
 
 #def buildLink(gdst, linkname, gsrc):
 #  fn = myutils.sanitize_posixpath(basename(gsrc.file.filename)) if gsrc else ''
@@ -173,7 +189,41 @@ def computeAdaption_(gdst, vesselgroup, parameters):
 #  #=== return filename and path to po2 data ====#
 #  return adaption_data_ref
 
+
+  
+  #params['name'] = parameter_set_name
+  
+def doit_optimize_deap(individual):
+  
+  krebsutils.set_num_threads(1)
+  if sys.flags.debug:
+    print("individual in doit_optimize_deap")
+    print(individual)
+    print(individual.adaptionParameters['adaption'])
+  
+    print('starting doit in python')
+  ''' update parameters '''
+  individual.adaptionParameters['adaption'].update(
+      k_c = individual[0],
+      k_m = individual[1],
+      k_s = individual[2],
+      )
+  returnState, mean = adaption_cpp.computeAdaption(individual.adaptionParameters['adaption'],individual.adaptionParameters['calcflow'])
+  
+  if returnState == 0:
+    if sys.flags.debug:
+      print("adaption succesful with mean: %f" % mean)
+  if not returnState == 0:
+    warnings.warn("adation broken", RuntimeWarning)
+  
+  if sys.flags.debug:
+    print('mean: %f' % mean)
+  return (mean-individual.adaptionParameters['optimization']['desired_cap_flow'])**2,
+
+
 def doit(parameters):
+  krebsutils.set_num_threads(1)
+  print(parameters)
   fn = parameters['adaption']['vesselFileName']
   pattern = parameters['adaption']['vesselGroupName']
   
@@ -184,7 +234,7 @@ def doit(parameters):
   print('starting doit in python')
   output_links = []
 
-  f = h5files.open(fn, 'a')
+  f = h5files.open(fn, 'r')
   dirs = myutils.walkh5(f['.'], pattern)
   f.close()
   print(dirs)
@@ -201,7 +251,7 @@ def doit(parameters):
       warnings.warn("adation broken", RuntimeWarning)
 #    print 'computed Adaption stored in:', ref
 #    output_links.append(ref)
-  return output_links
+  return returnState, mean
   
 def test():
     adaption_cpp.testAdaption()

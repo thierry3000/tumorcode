@@ -5,10 +5,12 @@ add_definitions(-DSILENT)
 find_package(Threads REQUIRED)
 # set a search path for additional custom cmake modules.
 # according to recommendation in https://cmake.org/Wiki/CMake:How_To_Find_Libraries
-message("CMAKE_MODULE_PATH: ${CMAKE_ROOT}")
+message("CMAKE_ROOT: ${CMAKE_ROOT}")
+message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/;")
 message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 message("CMAKE_EXE_LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
+message("TrilinosDIR: ${TrilinosDIR}")
 
 
 include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)

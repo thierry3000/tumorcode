@@ -69,10 +69,10 @@ void FiniteVolumeMatrixBuilder::FiniteVolumeMatrixBuilder::Init7Point(const Latt
   }
 
 #ifdef EPETRA_MPI
-    #warning "Compiling with MPI Enabled"
+    //#warning "Compiling with MPI Enabled"
     Epetra_MpiComm epetra_comm(MPI_COMM_SELF);
 #else
-    #warning "Compiling without MPI"
+    //#warning "Compiling without MPI"
     Epetra_SerialComm epetra_comm;
 #endif
   
@@ -137,10 +137,10 @@ void FiniteVolumeMatrixBuilder::FiniteVolumeMatrixBuilder::Init27Point(const Lat
     num_entries[site] = stencil_size.prod();
   }
 #ifdef EPETRA_MPI
-    #warning "Compiling with MPI Enabled"
+    //#warning "Compiling with MPI Enabled"
     Epetra_MpiComm epetra_comm(MPI_COMM_SELF);
 #else
-    #warning "Compiling without MPI"
+    //#warning "Compiling without MPI"
     Epetra_SerialComm epetra_comm;
 #endif
   Epetra_Map epetra_map(num_dof, 0, epetra_comm);
@@ -383,7 +383,11 @@ int EllipticEquationSolver::init(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vect
     MT tol = 1.0e-5;           // relative residual tolerance
 
     sys_matrix->OptimizeStorage ();
+#ifdef EPETRA_MPI
     proc_verbose = verbose && (MyPID==0);  /* Only print on the zero processor */
+#else
+    proc_verbose = verbose;
+#endif
 
     // allocates an IFPACK factory. No data is associated
     // to this object (only method Create()).
