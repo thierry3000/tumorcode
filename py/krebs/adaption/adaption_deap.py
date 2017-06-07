@@ -23,6 +23,7 @@ import os, sys
 from os.path import join, basename, dirname, splitext
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
+import datetime
 import identifycluster
 if identifycluster.name == 'snowden':
   import matplotlib
@@ -41,18 +42,24 @@ from deap import base
 from deap import creator
 from deap import tools
 
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Particle", list, fitness=creator.FitnessMax, speed=list, 
-    smin=None, smax=None, best=None, adaptionParameters=None)
+import h5py
 
+creator.create("FitnessMax", base.Fitness, weights=(-1.0,))
+creator.create("Particle", list, fitness=creator.FitnessMax, speed=list, 
+    smin=None, smax=None, pmin=None, pmax= None, best=None, adaptionParameters=None)
 
 def generate(size, pmin, pmax, smin, smax):
     part = creator.Particle(random.uniform(pmin, pmax) for _ in range(size)) 
     part.speed = [random.uniform(smin, smax) for _ in range(size)]
     part.smin = smin
     part.smax = smax
+    part.pmax = pmax
+    part.pmin = pmin
     factory = getattr(parameterSetsAdaption, "deap_test")
-    vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
+    if 0: # 2d set
+      vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
+    if 1: # 3d set
+      vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-9x11L600-sample13_adption_p_human_guess.h5"
     grp_name = "adaption/vessels_after_adaption"
     factory['adaption'].update(
       vesselFileName = vfile_name,
@@ -64,15 +71,20 @@ def generate(size, pmin, pmax, smin, smax):
 def updateParticle(part, best, phi1, phi2):
     u1 = (random.uniform(0, phi1) for _ in range(len(part)))
     u2 = (random.uniform(0, phi2) for _ in range(len(part)))
-    v_u1 = futures.map(operator.mul, u1, futures.map(operator.sub, part.best, part))
-    v_u2 = futures.map(operator.mul, u2, futures.map(operator.sub, best, part))
-    part.speed = list(futures.map(operator.add, part.speed, futures.map(operator.add, v_u1, v_u2)))
+    v_u1 = futures.map(operator.mul, u1, map(operator.sub, part.best, part))
+    v_u2 = futures.map(operator.mul, u2, map(operator.sub, best, part))
+    part.speed = list(futures.map(operator.add, part.speed, map(operator.add, v_u1, v_u2)))
     for i, speed in enumerate(part.speed):
         if speed < part.smin:
             part.speed[i] = part.smin
         elif speed > part.smax:
             part.speed[i] = part.smax
-    part[:] = list(futures.map(operator.add, part, part.speed))
+    part[:] = list(map(operator.add, part, part.speed))
+    for (ind,v) in enumerate(part[:]):
+      if v<part.pmin:
+        part[ind]=part.pmin
+      if v>part.pmax:
+        part[ind]=part.pmax
 
 def main():
   toolbox = base.Toolbox()
@@ -81,8 +93,7 @@ def main():
   toolbox.register("update", updateParticle, phi1=2.0, phi2=2.0)
   toolbox.register("evaluate", adaption.doit_optimize_deap)
   
-  
-  pop = toolbox.population(n=100)
+  pop = toolbox.population(n=n)
   stats = tools.Statistics(lambda ind: ind.fitness.values)
   stats.register("avg", numpy.mean)
   stats.register("std", numpy.std)
@@ -92,11 +103,12 @@ def main():
   logbook = tools.Logbook()
   logbook.header = ["gen", "evals"] + stats.fields
 
-  GEN = 2
+  
   best = None
   print("starting loop")
   for g in range(GEN):
       fitnesses = list(futures.map(toolbox.evaluate,pop))
+      print("generation: %i " % g)
       for ind, fit in zip(pop,fitnesses):
         ind.fitness.values = fit
       for part in pop:  
@@ -112,13 +124,23 @@ def main():
       #logbook.record(gen=g, evals=len(pop), **stats.compile(pop))
       #print(logbook.stream)
       
-  print("best pop:")
-  print(pop)
+  print("best fitness.values :")
+  print(best.fitness.values)
   print("best")
   print(best)
-  return pop, logbook, best
+  return best
 
 if __name__ == "__main__":
-  main()
+  n = 1000
+  GEN = 20
   
-  
+  best = main()
+  print(os.getcwd())
+  f=h5py.File('deap_results.h5')
+  currentTime = str(datetime.datetime.now().time())
+  myGroup = f.create_group(currentTime)
+  myGroup.create_dataset('best' , data=best)
+  myGroup.create_dataset('fitness values', data=best.fitness.values)
+  myGroup.attrs.create("GEN", data=GEN)
+  myGroup.attrs.create("n", data=n)
+  f.close()

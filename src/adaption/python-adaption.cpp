@@ -135,9 +135,11 @@ void InitParameters(Adaption::Parameters *params, py::dict py_parameters)
 // #endif
 // }
 //static py::object PyComputeAdaption(py::object py_vesselgroup, py::dict py_parameters, py::dict py_bfparams, py::object py_h5outputGroup)
-static py::object PyComputeAdaption(py::dict py_parameters, py::dict py_bfparams)
+static py::object PyComputeAdaption(py::dict py_parameters, py::dict py_bfparams, bool doOutput)
 {
+#ifndef TOTAL_SILENCE
   cout<<" PyComputeAdaption is called "<<endl;
+#endif
 #if 1
   BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
   
@@ -161,7 +163,7 @@ static py::object PyComputeAdaption(py::dict py_parameters, py::dict py_bfparams
   std::tuple<uint,FlReal> return_state;
   //uint return_state;
   using namespace boost::accumulators;
-  return_state = runAdaption_Loop(params, bfparams, false);
+  return_state = runAdaption_Loop(params, bfparams, doOutput);
   
 //   if(std::get<0>(return_state) == 0)
 //   {

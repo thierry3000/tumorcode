@@ -19,6 +19,11 @@ option(USE_ADAPTION "decide to build the adaption library" OFF)
 CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" ON "USE_ADAPTION;" ON)
 CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" ON
                        "USE_ADAPTION;USE_PAGMO" ON)
+option(TOTAL_SILENCE "suppress all output, good for running on cluster" OFF)
+if(TOTAL_SILENCE)
+  message("TOTAL_SILENCE preprocessor defined")
+  add_definitions(-DTOTAL_SILENCE)
+endif()
 #option(USE_PAGMO OFF)
 #It would be nicer to see if pagmo was compilled 
 #with mpi automatically, pagmo2 is supporting that

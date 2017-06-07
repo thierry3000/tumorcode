@@ -208,13 +208,16 @@ def doit_optimize_deap(individual):
       k_m = individual[1],
       k_s = individual[2],
       )
-  returnState, mean = adaption_cpp.computeAdaption(individual.adaptionParameters['adaption'],individual.adaptionParameters['calcflow'])
-  
+  returnState, mean = adaption_cpp.computeAdaption(individual.adaptionParameters['adaption'],individual.adaptionParameters['calcflow'], False)
+  if 0: #hardcore debugging  
+    print('mean: %f' % mean)
+    print('param: %f' % individual.adaptionParameters['optimization']['desired_cap_flow'])
+    print((mean-individual.adaptionParameters['optimization']['desired_cap_flow'])**2,)
   if returnState == 0:
     if sys.flags.debug:
       print("adaption succesful with mean: %f" % mean)
-  if not returnState == 0:
-    warnings.warn("adation broken", RuntimeWarning)
+#  if not returnState == 0:
+#    warnings.warn("adation broken", RuntimeWarning)
   
   if sys.flags.debug:
     print('mean: %f' % mean)
@@ -244,7 +247,7 @@ def doit(parameters):
     #cachelocation = (outfn_no_ext+'.h5', group_path+'_'+parameters_name)
     #cachelocation = (fnbase+'_adption_p_'+ parameters['name'] +'.h5', group_path)
     #ref = adaption_cpp.computeAdaption(f, group_path, parameters['adaption'],parameters['calcflow'], cachelocation)
-    returnState, mean = adaption_cpp.computeAdaption(parameters['adaption'],parameters['calcflow'])
+    returnState, mean = adaption_cpp.computeAdaption(parameters['adaption'],parameters['calcflow'], True)
     if returnState == 0:
       print("adaption succesful with mean: %f" % mean)
     if not returnState == 0:

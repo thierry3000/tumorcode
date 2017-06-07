@@ -1358,8 +1358,9 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group(params.vesselGroupName));
   //h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group("adaption/recomputed"));
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(vl_grp, make_ptree("filter", false));
-  
+#ifndef TOTAL_SILENCE
   printf("runAdaption_Loop with: k_c:%f k_m: %f k_s: %f\n", params.k_c, params.k_m, params.k_s);
+#endif
   int rank,size;
   int flag;// = Is_initialized();
   int tid, nthreads;
@@ -1380,7 +1381,9 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   }
   else
   {
+#ifndef TOTAL_SILENCE
     printf("on thread %i of %i\n", omp_get_num_threads(), omp_get_max_threads());
+#endif
   }
   
   //starting with equal radii with parameters starting value is greate than 0.
@@ -1660,7 +1663,9 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
 #endif
   }
 #if ADAPTION_OUTPUT
+#ifndef TOTAL_SILENCE
   cout<<format("qdev: %f, nqdev: %f, max_stot: %f, max_delta_r: %f # %i iterations\n ") % qdev % nqdev %max_stot %max_delta_r %how_often;
+#endif
 #endif
   /*
    * return statement   0: convergent
@@ -1670,19 +1675,24 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   if(how_often >= params.max_nun_iterations)
   {
 #if ADAPTION_OUTPUT
+#ifndef TOTAL_SILENCE
     cout<<"NOT Convergent!"<<endl;
+#endif
 #endif
     return std::make_tuple(1, 1000000000.);
   }
   else
   {
 #if ADAPTION_OUTPUT
+#ifndef TOTAL_SILENCE
     cout<<"convergent!"<<endl;
+#endif
 #endif
   if(doDebugOutput)//this needs improvements, skipped for now
   {
     //write vessel list to file
-    string stripped = removeFileExtension(params.vesselFileName);
+    string stripped = RemoveAllExtensions(params.vesselFileName);
+    stripped = RemovePath(stripped);
     h5cpp::File f= h5cpp::File( "adaption_" + stripped +".h5","w");
     h5cpp::Group out_ = f.root();
     h5cpp::Group grp_temp = out_.create_group("vessels_after_adaption");
@@ -1696,7 +1706,10 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   for(int i =0;i<vl->GetECount();++i)
   {
     Vessel* v = vl->GetEdge(i);
-    acc(v->q);
+    if( v->IsCapillary() )
+    {
+      acc(v->q);
+    }
   }
   mean_value = mean(acc);
   mean_std = sqrt(variance(acc));

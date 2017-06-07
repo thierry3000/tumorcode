@@ -1311,8 +1311,3 @@ void printPtree(ptree const &pt)
     }
 }
 
-std::string removeFileExtension(const std::string& fileName)
-{
-    return boost::filesystem::change_extension(fileName, "").string();
-}
-

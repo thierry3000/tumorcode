@@ -310,8 +310,4 @@ boost::optional<ptree> HandleSimulationProgramArguments(const ptree &default_par
  */
 void isVesselListGood(VesselList3d &vl);
 
-/** @brief will remove file extension to filename
- */
-std::string removeFileExtension(const std::string& fileName);
-
 #endif
