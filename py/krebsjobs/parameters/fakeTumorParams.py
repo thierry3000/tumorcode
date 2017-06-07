@@ -71,6 +71,7 @@ newradiusdeflation['num_threads'] = cluster_threads
 
 gero_3month_to_5mm = deepcopy(newradiusdeflation)
 gero_3month_to_5mm.update(
+    out_intervall = 43200, # 3600*12 half a day
     tumor_speed = 0.001,
     tumor_radius = 20.,
     tend=7000000.,
