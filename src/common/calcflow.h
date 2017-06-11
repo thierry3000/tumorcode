@@ -47,7 +47,8 @@ enum Rheology
    * American Journal of Physiology - Heart and Circulatory Physiology
    * Microvascular blood viscosity in vivo and the endothelial surface layer.
    */
-  RheologySecomb2005 = 2
+  RheologySecomb2005 = 2,
+  RheologyEnd = 3
 };
 ostream& operator<<(ostream &os, Rheology rheology);
 istream& operator>>(istream &os, Rheology &rheology);

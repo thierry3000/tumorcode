@@ -543,7 +543,9 @@ void ConductiveTransport::SetFlow(int i, FlReal x) const
   myAssert(std::isfinite(x));
   if ( x<1e-6 )//1e-5 worked for type D,E,F
   {
+#ifndef TOTAL_SILENCE
     printf("Warning: Low flow segment at %i\n", i);
+#endif
     //myAssert(x > 0.01);
     x = 1e-6;
   }

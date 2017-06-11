@@ -46,11 +46,67 @@ namespace nm = boost::python::numeric;
 
 namespace Adaption
 {
-bool IsTrue(bool pbool){return pbool;} 
-void InitParameters(Adaption::Parameters *params, py::dict py_parameters)
+//bool IsTrue(bool pbool){return pbool;} 
+
+void InitBFParameters(BloodFlowParameters *params, const py::dict *py_parameters)
 {
-#define GET_ADAPTION_PARAM_FROM_DICT(TYPE, NAME) py::extract<TYPE>(py_parameters.get(NAME))
-#define GET_ADAPTION_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters.get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
+#define GET_ADAPTION_PARAM_FROM_DICT(TYPE, NAME) py::extract<TYPE>(py_parameters->get(NAME))
+#define GET_ADAPTION_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters->get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
+  
+#ifdef DEBUG
+  printf("entered InitBFParameters\n");
+#endif
+  //this could possibly done for every parameter
+  try
+  {
+    double viscosityPlasma = GET_ADAPTION_PARAM_FROM_DICT(double,"viscosityPlasma");
+    if(viscosityPlasma<0)
+      throw std::runtime_error("got bad viscosity from python2");
+    params->viscosityPlasma = viscosityPlasma;
+    double inletHematocrit = GET_ADAPTION_PARAM_FROM_DICT(double,"inletHematocrit");
+    if(inletHematocrit <=0 or inletHematocrit >=1)
+      throw std::runtime_error("got bad inletHematocrit from python2");
+    bool includePhaseSeparationEffect = GET_ADAPTION_PARAM_FROM_DICT(bool,"includePhaseSeparationEffect");
+#ifdef DEBUG
+      cout << "got as bool " << includePhaseSeparationEffect << endl;
+#endif
+    if(includePhaseSeparationEffect == true or includePhaseSeparationEffect == false)
+      params->includePhaseSeparationEffect = includePhaseSeparationEffect;
+    string rheology = GET_ADAPTION_PARAM_FROM_DICT(string,"rheology");
+#ifdef DEBUG
+    cout << "got rheology string" << rheology << endl;
+#endif
+    params->rheology = strTo<Rheology>(rheology);
+    //bfparams.rheology = strTo<Rheology>(py::extract<string>(o.get("rheology", toStr(bfparams.rheology))));
+    //cout << std::numeric_limits<Rheology>::max() << endl;
+    //cout << "end" << toStr(params->rheology) << endl;
+    bool foundRheology=false;
+    for(int i=0;i<RheologyEnd; i++)
+    {
+      if(toStr(Rheology(i)) == rheology)
+      {
+        foundRheology = true;
+      }
+    }
+    if(not foundRheology)
+      throw std::runtime_error("got bad rheology from python2");
+  }
+  catch(std::runtime_error &e)
+  {
+    e.what();
+  }
+
+#undef GET_ADAPTION_PARAM_FROM_DICT
+#undef GET_ADAPTION_PARAM_IF_NONNONE
+#ifdef DEBUG
+  printf("leave InitBFParameters\n");
+#endif
+}
+
+void InitParameters(Adaption::Parameters *params, const py::dict *py_parameters)
+{
+#define GET_ADAPTION_PARAM_FROM_DICT(TYPE, NAME) py::extract<TYPE>(py_parameters->get(NAME))
+#define GET_ADAPTION_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters->get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
   
 #ifdef DEBUG
   printf("entered InitParameters\n");
@@ -101,6 +157,8 @@ void InitParameters(Adaption::Parameters *params, py::dict py_parameters)
   
   //GET_ADAPTION_PARAM_IF_NONNONE(params->pop, int, "pop");
   //GET_ADAPTION_PARAM_IF_NONNONE(params->individuals, int, "individuals");
+#undef GET_ADAPTION_PARAM_FROM_DICT
+#undef GET_ADAPTION_PARAM_IF_NONNONE
 #ifdef DEBUG
   printf("leave InitParameters\n");
 #endif
@@ -135,16 +193,17 @@ void InitParameters(Adaption::Parameters *params, py::dict py_parameters)
 // #endif
 // }
 //static py::object PyComputeAdaption(py::object py_vesselgroup, py::dict py_parameters, py::dict py_bfparams, py::object py_h5outputGroup)
-static py::object PyComputeAdaption(py::dict py_parameters, py::dict py_bfparams, bool doOutput)
+static py::object PyComputeAdaption(const py::dict py_parameters, const py::dict py_bfparams, bool doOutput)
 {
 #ifndef TOTAL_SILENCE
   cout<<" PyComputeAdaption is called "<<endl;
 #endif
 #if 1
-  BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
-  
+  //BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
+  BloodFlowParameters bfparams;
+  InitBFParameters(&bfparams, &py_bfparams);
   Adaption::Parameters params;
-  InitParameters(&params, py_parameters);
+  InitParameters(&params, &py_parameters);
   
   //PyPrepareForAdaptation(vl, vesselgroup, vessels_after_adaption, bfparams, params);
 
@@ -349,16 +408,16 @@ static py::object PydoAdaptionOptimization(py::str py_vesselgroup_str, py::dict 
 #endif
 
 
-Adaption::Parameters* AllocateParametersFromDict(const py::dict &d)
-{
-  std::auto_ptr<Adaption::Parameters> p(new Adaption::Parameters());
-  InitParameters(p.get(), d);
-  return p.release();
-}
+// Adaption::Parameters* AllocateParametersFromDict(const py::dict &d)
+// {
+//   std::auto_ptr<Adaption::Parameters> p(new Adaption::Parameters());
+//   InitParameters(p.get(), d);
+//   return p.release();
+// }
 
 void export_adaption_computation()
 { 
-  py::def("AllocateAdaptionParametersFromDict", &AllocateParametersFromDict, py::return_value_policy<py::manage_new_object>());
+//   py::def("AllocateAdaptionParametersFromDict", &AllocateParametersFromDict, py::return_value_policy<py::manage_new_object>());
   py::def("computeAdaption", PyComputeAdaption);
   py::def("testAdaption", TestAdaption);
 #ifdef USE_PAGMO

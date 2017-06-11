@@ -226,16 +226,12 @@ def doit_optimize_deap(individual):
 
 def doit(parameters):
   krebsutils.set_num_threads(1)
-  print(parameters)
+  if sys.flags.debug:
+    print(parameters)
   fn = parameters['adaption']['vesselFileName']
   pattern = parameters['adaption']['vesselGroupName']
   
-  #fnpath = dirname(fn)
-  #for fn in filenames:
-  #fnbase = basename(fn).rsplit('.h5')[0]
-  #outfn_no_ext = join(fnpath, fnbase+'_detailedpo2')
-  print('starting doit in python')
-  output_links = []
+  print('starting doit in python ... paramset :%s' % parameters['name'])
 
   f = h5files.open(fn, 'r')
   dirs = myutils.walkh5(f['.'], pattern)

@@ -34,7 +34,7 @@ import krebsjobs.parameters.parameterSetsAdaption as parameterSetsAdaption
 
 import operator
 import random
-from scoop import futures
+from scoop import futures, shared
 
 import numpy
 
@@ -47,6 +47,8 @@ import h5py
 creator.create("FitnessMax", base.Fitness, weights=(-1.0,))
 creator.create("Particle", list, fitness=creator.FitnessMax, speed=list, 
     smin=None, smax=None, pmin=None, pmax= None, best=None, adaptionParameters=None)
+n = 1000
+GEN = 30
 
 def generate(size, pmin, pmax, smin, smax):
     part = creator.Particle(random.uniform(pmin, pmax) for _ in range(size)) 
@@ -55,12 +57,9 @@ def generate(size, pmin, pmax, smin, smax):
     part.smax = smax
     part.pmax = pmax
     part.pmin = pmin
-    factory = getattr(parameterSetsAdaption, "deap_test")
-    if 0: # 2d set
-      vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
-    if 1: # 3d set
-      vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-9x11L600-sample13_adption_p_human_guess.h5"
-    grp_name = "adaption/vessels_after_adaption"
+    factory = getattr(parameterSetsAdaption, shared.getConst('adaptionParams'))
+    vfile_name = shared.getConst('vesselInputFile')
+    grp_name = shared.getConst('vessel_grp')
     factory['adaption'].update(
       vesselFileName = vfile_name,
       vesselGroupName = grp_name,
@@ -85,13 +84,14 @@ def updateParticle(part, best, phi1, phi2):
         part[ind]=part.pmin
       if v>part.pmax:
         part[ind]=part.pmax
+        
+toolbox = base.Toolbox()
+toolbox.register("particle", generate, size=3, pmin=0.5, pmax=4, smin=-1, smax=1)
+toolbox.register("population", tools.initRepeat, list, toolbox.particle)
+toolbox.register("update", updateParticle, phi1=2.0, phi2=2.0)
+toolbox.register("evaluate", adaption.doit_optimize_deap)
 
 def main():
-  toolbox = base.Toolbox()
-  toolbox.register("particle", generate, size=3, pmin=0.5, pmax=4, smin=-1, smax=1)
-  toolbox.register("population", tools.initRepeat, list, toolbox.particle)
-  toolbox.register("update", updateParticle, phi1=2.0, phi2=2.0)
-  toolbox.register("evaluate", adaption.doit_optimize_deap)
   
   pop = toolbox.population(n=n)
   stats = tools.Statistics(lambda ind: ind.fitness.values)
@@ -131,9 +131,22 @@ def main():
   return best
 
 if __name__ == "__main__":
-  n = 1000
-  GEN = 20
-  
+  import argparse
+  parser = argparse.ArgumentParser(description='Compute adaption see Secomb model', formatter_class=argparse.ArgumentDefaultsHelpFormatter)  
+  parser.add_argument('AdaptionParamSet')
+  goodArguments, otherArguments = parser.parse_known_args()
+  print("running with %s" % goodArguments.AdaptionParamSet)
+  #adaption parameters
+  shared.setConst(adaptionParams=goodArguments.AdaptionParamSet)
+  #file
+  if 0: # 2d set
+      vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
+  if 1: # 3d set
+    vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-9x11L600-sample13_adption_p_human_guess.h5"
+  shared.setConst(vesselInputFile=vfile_name)
+  #group
+  vessel_grp ="adaption/vessels_after_adaption"
+  shared.setConst(vessel_grp=vessel_grp)
   best = main()
   print(os.getcwd())
   f=h5py.File('deap_results.h5')
@@ -143,4 +156,7 @@ if __name__ == "__main__":
   myGroup.create_dataset('fitness values', data=best.fitness.values)
   myGroup.attrs.create("GEN", data=GEN)
   myGroup.attrs.create("n", data=n)
+  myGroup.attrs.create("vfile", data=vfile_name)
+  myGroup.attrs.create("vessel_grp", data=vessel_grp)
+  myGroup.attrs.create("params", data=goodArguments.AdaptionParamSet)
   f.close()
