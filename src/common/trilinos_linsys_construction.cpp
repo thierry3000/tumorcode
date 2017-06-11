@@ -512,7 +512,7 @@ int EllipticEquationSolver::init(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vect
   TEUCHOS_STANDARD_CATCH_STATEMENTS(verbose, std::cerr, success);
 
 #ifdef EPETRA_MPI
-  MPI_Finalize();
+  //MPI_Finalize();
 #endif
 }
 

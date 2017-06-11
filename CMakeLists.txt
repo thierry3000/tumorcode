@@ -96,7 +96,7 @@ if (MPI_NEEDED OR USE_PAGMO_MPI)
   
   include_directories(${MPI_CXX_INCLUDE_PATH})
   #set(myLibs ${MPI_CXX_LIBRARIES})
-  set(myLibs "${myLibs};${MPI_LIBRARY}")
+  set(myLibs "${myLibs};${MPI_CXX_LIBRARY}")
   if (HDF5_IS_PARALLEL) #good here
   message(WARNING "good choice here")
   else()
