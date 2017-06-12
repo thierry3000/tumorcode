@@ -122,14 +122,16 @@ inline FlReal CalcVelocity( FlReal q, FlReal r )
 
 struct FlowBC
 {
-  enum Pin { PIN = 1 };  // set the node to a fixed blood pressure
-  enum Current { CURRENT = 2 }; // a fixed blood flow rate into the node
-  enum Resist { RESIST = 3 }; // a resistor between the node and a fixed blood pressure
-  FlowBC() : type(PIN),w(0.),val(0.) {}
-  FlowBC(Current, double current) : w(0),val(current),type(CURRENT) {}
-  FlowBC(Pin, double val) : w(0),val(val),type(PIN) {}
-  FlowBC(Resist, double w, double val) : w(w),val(val),type(RESIST) {}
-  uint type; // PIN, CURRENT or RESIST
+  enum Type{ PIN = 1, CURRENT = 2, RESIST = 3};
+  //enum Pin { PIN = 1 };  // set the node to a fixed blood pressure
+  //enum Current { CURRENT = 2 }; // a fixed blood flow rate into the node
+  //enum Resist { RESIST = 3 }; // a resistor between the node and a fixed blood pressure
+  FlowBC() : typeOfInstance(Type::PIN),w(0.),val(0.) {}
+  FlowBC(Type theType, double val_) : w(0),val(val_),typeOfInstance(theType) {}
+  FlowBC(Type theType, double cond_, double val_) : w(cond_), val(val_), typeOfInstance(theType) {}
+  //FlowBC_pin(double val) : w(0),val(val),typeOfInstance(Type::PIN) {}
+  //FlowBC_resit(double w, double val) : w(w),val(val),typeOfInstance(Type::RESIST) {}
+  Type typeOfInstance; // PIN, CURRENT or RESIST
   double w,val; // w = flow conuctivity (?) of series "resistor", val = either blood pressure or flow rate
 //   friend class boost::serialization::access;
 //   template<class Archive>

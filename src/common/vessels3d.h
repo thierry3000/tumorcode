@@ -251,7 +251,7 @@ public:
 //  inline const LD& Ld() const { return *m_ld; }
   inline const BCList& GetBCMap() const {return bclist;}
   //const BCList& GetBCMap() const { return bclist; }
-  void          SetBC(const VesselNode* node, FlowBC bc);
+  void          SetBC(const VesselNode* node, FlowBC &bc);
   void          ClearBC(VesselNode* node);
 
   std::size_t estimateMemoryUsage() const;

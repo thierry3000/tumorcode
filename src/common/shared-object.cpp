@@ -494,7 +494,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
       {
 	const VesselNode* nodeFromBCMap = bc.first;
 	FlowBC theBC = bc.second;
-	switch(theBC.type)
+	switch(theBC.typeOfInstance)
 	{
 	  case FlowBC::PIN:
 	    vl->GetNode(nodeFromBCMap->Index())->press=theBC.val;

@@ -1283,7 +1283,8 @@ void Grower::UpscaleTrees()
       vcnew->flags.AddBits(BOUNDARY);
       if (it != vl->GetBCMap().end())
       {
-        vl->SetBC(vcnew, it->second);
+        FlowBC thisBoundary(it->second.typeOfInstance, it->second.val);
+        vl->SetBC(vcnew, thisBoundary);
         vl->ClearBC(previousRoot);
       }
       previousRoot->flags.DelBits(BOUNDARY);

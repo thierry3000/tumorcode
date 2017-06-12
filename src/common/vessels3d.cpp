@@ -136,16 +136,36 @@ void VesselList3d::Flush()
   this->g.Flush();
 }
 
-void VesselList3d::SetBC(const VesselNode* node, FlowBC fbc)
+void VesselList3d::SetBC(const VesselNode* node, FlowBC &fbc)
 {
   // see if the node is in the list of managed nodes.
   //Don't want dangling nodes here.
   myAssert(GetNode(node->Index()) == node); 
   myAssert(node->IsBoundary());
-  //(*this->bclist)[node]=fbc;
-  //this->bclist->emplace(node,fbc);
-  this->bclist.emplace(node,fbc);
-  //this->bclist->insert(std::pair<const VesselNode*,FlowBC>(node, fbc));
+  
+  /** I dont know why yet, but emplace is not doing the job */
+  //this->bclist.emplace(std::make_pair(node,fbc));
+  
+//   bclist[node].val = fbc.val;
+//   bclist[node].type = fbc.type;
+  bclist[node] = fbc;
+  for( auto it = GetBCMap().begin(); it!= GetBCMap().end(); ++it)
+  {
+    if( it->first->Index() == node->Index() )
+    {
+      //it->second.val = fbc.val;
+      //it->second.type = fbc.type;
+      //this->bclist.erase(it->first);
+      //const VesselNode* vc = GetNode(node->Index());
+      //this->bclist.insert(std::pair<const VesselNode*,FlowBC>(node,fbc));
+    }
+    cout << "here?" << endl;
+    cout << "index: " << it->first->Index() << "bcvalue: " << it->second.val <<endl;
+  }
+  //this->bclist.insert(std::pair<const VesselNode*,FlowBC>(node, fbc));
+  //const VesselNode* vc= GetNode(42);
+  //vl.SetBC(vc,FlowBC(FlowBC::PIN, 4.2));
+  //this->bclist.insert(std::pair<const VesselNode*,FlowBC>(vc,FlowBC(FlowBC::PIN, 4.2)));
   //this->bclist->insert(node,fbc);
   //bclist[node] = fbc;
 }
@@ -630,7 +650,8 @@ std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int m
 
   for (auto it = vl->GetBCMap().begin(); it != vl->GetBCMap().end(); ++it)
   {
-    vlnew->SetBC(vlnew->GetNode(it->first->Index()), it->second);
+    FlowBC aCondition = FlowBC(it->second.typeOfInstance, it->second.val);
+    vlnew->SetBC(vlnew->GetNode(it->first->Index()), aCondition);
   }
   
   return vlnew;

@@ -124,10 +124,10 @@ void WriteHdfGraph( h5cpp::Group g, const VesselList3d &vl )
     {
       for (auto it = vl.GetBCMap().begin(); it != vl.GetBCMap().end(); ++it)
       {
-	bc_node_index.push_back(it->first->Index());
-	bctyp_index.push_back((int)it->second.type);
-	values_of_bcs.push_back(it->second.val);
-	bc_conductivity_value.push_back(it->second.w);
+        bc_node_index.push_back(it->first->Index());
+        bctyp_index.push_back(it->second.typeOfInstance);
+        values_of_bcs.push_back(it->second.val);
+        bc_conductivity_value.push_back(it->second.w);
       }
     }
     else

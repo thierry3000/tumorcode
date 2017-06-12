@@ -130,164 +130,136 @@ void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &para
       
       for( int i=0;i<ncnt; ++i)
       {
-	const VesselNode* vc= vl.GetNode(i);
-	if( vc->Count() >0 )
-	{
-	  if( vc->IsBoundary() and vc->GetEdge(0)->IsCirculated())
-	  {
-	    if( vc->press < min_boundary_pressure)
-	    {
-	      min_boundary_pressure = vc->press;
-	    }
-	    if( vc->GetEdge(0)->q > max_boundary_flow)
-	    {
-	      max_boundary_flow = vc->GetEdge(0)->q;
-	    }
-	  }
-	}
+        const VesselNode* vc= vl.GetNode(i);
+        if( vc->Count() >0 )
+        {
+          if( vc->IsBoundary() and vc->GetEdge(0)->IsCirculated())
+          {
+            if( vc->press < min_boundary_pressure)
+            {
+              min_boundary_pressure = vc->press;
+            }
+            if( vc->GetEdge(0)->q > max_boundary_flow)
+            {
+              max_boundary_flow = vc->GetEdge(0)->q;
+            }
+          }
+        }
       }
       for(int i=0; i<ncnt; ++i)
       {
-	const VesselNode* vc= vl.GetNode(i);
-	// insert boundary nodes into the bcs array
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated())
-	{
-    #if 0  //keep max flow as flow boundary, everything else to pressure
-	  if(vc->GetEdge(0)->q== max_boundary_flow)
-	  {
-	    if(vc->GetEdge(0)->IsArtery())
-	    {
-	      vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -vc->GetEdge(0)->q));
-	    }
-	    if(vc->GetEdge(0)->IsVein())
-	    {
-	      vl.SetBC(vc,FlowBC(FlowBC::CURRENT, vc->GetEdge(0)->q));
-	    }
-	  }
-	  else
-	  {
-	    vl.SetBC(vc,FlowBC(FlowBC::PIN, vc->press));
-	  }
-    #endif
-    #if 0
-	  //all arteries flow, all veins pressure
-	  if(vc->GetEdge(0)->IsArtery())
-	  {
-	    vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -vc->GetEdge(0)->q));
-	  }
-	  if(vc->GetEdge(0)->IsVein())
-	  {
-	    vl.SetBC(vc,FlowBC(FlowBC::PIN, vc->press));
-	  }
-    #endif
-    #if 1
-	  //minmal boundary pressure becomes PIN condition everthing else flow
-	  if(vc->press == min_boundary_pressure)
-	  {
-	    vl.SetBC(vc,FlowBC(FlowBC::PIN, vc->press));
-    #ifdef DEBUG
-	    cout << format("min pressure boundary: %f") % vc->press <<endl;
-    #endif
-	  }
-	  else
-	  {
-	    if( vc->GetEdge(0)->IsArtery() )
-	    {
-	      vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -vc->GetEdge(0)->q));
-    #ifdef DEBUG
-	      cout << format("flow boundary: %f") % -vc->GetEdge(0)->q <<endl;
-    #endif
-	    }
-	    if( vc->GetEdge(0)->IsVein())
-	    {
-	      vl.SetBC(vc,FlowBC(FlowBC::CURRENT, vc->GetEdge(0)->q));
-    #ifdef DEBUG
-	      cout << format("flow boundary: %f") % vc->GetEdge(0)->q <<endl;
-    #endif
-	    }
-	  }
-    #endif
-	  //cout<<format("press : %f\n") % vc->press;
-	  //cout << format("flow boundary node: %i") % id << endl;
-    #ifdef DEBUG
-	  cout<<"Changed bcs map!"<<endl;
-    #endif
-	}
+        const VesselNode* vc= vl.GetNode(i);
+        // insert boundary nodes into the bcs array
+        if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated())
+        {
+          #if 0  //keep max flow as flow boundary, everything else to pressure
+          if(vc->GetEdge(0)->q== max_boundary_flow)
+          {
+            if(vc->GetEdge(0)->IsArtery())
+            {
+              vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -vc->GetEdge(0)->q));
+            }
+            if(vc->GetEdge(0)->IsVein())
+            {
+              vl.SetBC(vc,FlowBC(FlowBC::CURRENT, vc->GetEdge(0)->q));
+            }
+          }
+          else
+          {
+            vl.SetBC(vc,FlowBC(FlowBC::PIN, vc->press));
+          }
+          #endif
+          #if 0
+          //all arteries flow, all veins pressure
+          if(vc->GetEdge(0)->IsArtery())
+          {
+            vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -vc->GetEdge(0)->q));
+          }
+          if(vc->GetEdge(0)->IsVein())
+          {
+            vl.SetBC(vc,FlowBC(FlowBC::PIN, vc->press));
+          }
+          #endif
+          #if 1
+          //minmal boundary pressure becomes PIN condition everthing else flow
+          if(vc->press == min_boundary_pressure)
+          {
+            FlowBC aCondition = FlowBC(FlowBC::Type::PIN, vc->press);
+            vl.SetBC(vc,aCondition);
+          #ifdef DEBUG
+            cout << format("min pressure boundary: %f") % vc->press <<endl;
+          #endif
+          }
+          else
+          {
+            if( vc->GetEdge(0)->IsArtery() )
+            {
+              FlowBC aCondition = FlowBC(FlowBC::Type::CURRENT, -vc->GetEdge(0)->q);
+              vl.SetBC(vc,aCondition);
+          #ifdef DEBUG
+              cout << format("flow boundary: %f") % -vc->GetEdge(0)->q <<endl;
+          #endif
+            }
+            if( vc->GetEdge(0)->IsVein())
+            {
+              FlowBC aCondition = FlowBC(FlowBC::Type::CURRENT, vc->GetEdge(0)->q);
+              vl.SetBC(vc,aCondition);
+          #ifdef DEBUG
+              cout << format("flow boundary: %f") % vc->GetEdge(0)->q <<endl;
+          #endif
+            }
+          }
+          #endif
+          //cout<<format("press : %f\n") % vc->press;
+          //cout << format("flow boundary node: %i") % id << endl;
+          #ifdef DEBUG
+          cout<<"Changed bcs map!"<<endl;
+          #endif
+        }
       }
       break;
     case LARGE_2D:
       for(int i=0; i<ncnt; ++i)
       {
-	const VesselNode* vc= vl.GetNode(i);
-	// insert boundary nodes into the bcs array
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::PIN, 3.7));
-	}
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -500000.0));
-	}
-      }
-      break;
-    case LARGE_2D_2:
+        const VesselNode* vc= vl.GetNode(i);
+        // insert boundary nodes into the bcs array
+        if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
+        {
+          FlowBC aCondition = FlowBC(FlowBC::Type::PIN, 3.7);
+          vl.SetBC(vc,aCondition);
+        }
+        if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
+        {
+          FlowBC aCondition = FlowBC(FlowBC::Type::CURRENT, -500000.0 );
+          vl.SetBC(vc,aCondition);
+        }
+            }
+            break;
+          
+    case VALUE: // this should become the default case
+#ifdef DEBUG
+      std::printf("case VALUE found\n");
+#endif
       for(int i=0; i<ncnt; ++i)
       {
-	const VesselNode* vc= vl.GetNode(i);
-	// insert boundary nodes into the bcs array
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::PIN, 1.8));
-	}
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -800000.0));
-	}
-      }
-      break;
-    case LARGE_2D_3:
-      for(int i=0; i<ncnt; ++i)
-      {
-	const VesselNode* vc= vl.GetNode(i);
-	// insert boundary nodes into the bcs array
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::PIN, 3.5));
-	}
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -800000.0));
-	}
-      }
-      break;
-    case LARGE_2D_like_paper:
-      for(int i=0; i<ncnt; ++i)
-      {
-	const VesselNode* vc= vl.GetNode(i);
-	// insert boundary nodes into the bcs array
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::PIN, 1.8));
-	}
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -16666666.0));
-	}
-      }
-      break;
-    case VALUE:
-      for(int i=0; i<ncnt; ++i)
-      {
-	const VesselNode* vc= vl.GetNode(i);
-	// insert boundary nodes into the bcs array
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::PIN, params.a_pressure));
-	}
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -1*params.a_flow));
-	}
+        const VesselNode* vc= vl.GetNode(i);
+        // insert boundary nodes into the bcs array
+        if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
+        {
+#ifdef DEBUG
+          cout<< format("changing %i to pressure: %f\n") % vc->Index() % params.a_pressure <<endl;
+#endif
+          FlowBC aCondition = FlowBC(FlowBC::Type::PIN, params.a_pressure );
+          vl.SetBC(vc,aCondition);
+        }
+        if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
+        {
+#ifdef DEBUG
+          cout<< format("changing %i to flow: %f\n") % vc->Index() % params.a_flow <<endl;
+#endif
+          FlowBC aCondition = FlowBC(FlowBC::Type::CURRENT, params.a_flow );
+          vl.SetBC(vc,aCondition);
+        }
       }
       break;
     default:
@@ -302,7 +274,7 @@ void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &para
 
 void TestAdaption()
 {
-  std::printf("hello world\n");
+  std::printf("hello world, I am the adaption module!\n");
 }
 /* @brief default parameters*/
 Parameters::Parameters()
@@ -361,8 +333,8 @@ void Parameters::assign(const ptree& pt)
   tum_manitulate_s5 = pt.get<bool>("tum_manitulate_s5", false);
   radMin_for_kill = pt.get<double>("radMin_for_kill", 2.5);
   boundary_Condition_handling = pt.get<uint>("boundary_Condition_handling", KEEP);
-  a_pressure = pt.get<double>("a_pressure", 1.8);
-  a_flow = pt.get<double>("a_flow", 1.8);
+  a_pressure = pt.get<double>("a_pressure", 42.);
+  a_flow = pt.get<double>("a_flow", 42.);
   write2File = pt.get<bool>("write2File", true);
   pop = pt.get<int>("pop",5);
   individuals = pt.get<int>("individuals",42);
@@ -1398,20 +1370,14 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
     }
   }
   
-  /*
-   * first, change the boundary Conditions
-   * by default vesselgen only creates pressure boundary conditions,
-   * it turns out that they are not so nice for adaption
-   */
-  //is good to have well definde pressures and flow, even if this may be redundant
-  //VesselList3d *p_vl = &vl;
-  //std::auto_ptr<VesselList3d> p_vl(&vl);
-#ifdef DEBUG
-  printf("vl.GetECount(): %d\n", vl->GetECount() );
-  printf("running first CalcFlow in adaptionLoop\n");
-  CalcFlow(*vl, bfparams);
-  printf("done!\n");
-  printf("vl.GetECount() after: %d\n", vl->GetECount() );
+#if 1
+  //this seems to be necessary to get a stable result for the apj stuff
+  //used together with change of radii of veins
+  // is this threadsafe when multiple instances of p_vl exist?
+  #pragma omp single
+  {
+    ChangeBoundaryConditions(*vl,params);  // if KEEP is chosen, nothing should happen here
+  }
 #endif
   
 #ifdef DEBUG
@@ -1431,16 +1397,21 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   }
 #endif
   
-#if 0
-  //this seems to be necessary to get a stable result for the apj stuff
-  //used together with change of radii of veins
-  // is this threadsafe when multiple instances of p_vl exist?
-  #pragma omp single
-  {
-    ChangeBoundaryConditions(vl,params);
-  }
-  
+  /*
+   * first, change the boundary Conditions
+   * by default vesselgen only creates pressure boundary conditions,
+   * it turns out that they are not so nice for adaption
+   * is good to have well definde pressures and flow, even if this may be redundant
+   */
+#ifdef DEBUG
+  printf("vl.GetECount(): %d\n", vl->GetECount() );
+  printf("running first CalcFlow in adaptionLoop\n");
+  CalcFlow(*vl, bfparams);
+  printf("done!\n");
+  printf("vl.GetECount() after: %d\n", vl->GetECount() );
 #endif
+  
+  
   CalcFlow(*vl, bfparams);
   int no_Vessels_before_adaption = vl->GetECount();
   //adaption loop local variables

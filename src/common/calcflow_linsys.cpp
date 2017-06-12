@@ -143,7 +143,7 @@ void Linsys::end_filling(const Linsys::BcsMap& bcs)
       // Add elements to the matrix at the place of the boundary node. So boundary nodes get their value also during the matrix solve.
       int id = bc->first;
       const FlowBC &bcx = bc->second;
-      if (bcx.type == FlowBC::PIN)
+      if (bcx.typeOfInstance == FlowBC::PIN)
       {
         int cnt;
         #if 0
@@ -180,11 +180,11 @@ void Linsys::end_filling(const Linsys::BcsMap& bcs)
         rhs_set(id, bcx.val * -scaling_const);
         #endif
       }
-      else if (bcx.type == FlowBC::CURRENT)
+      else if (bcx.typeOfInstance == FlowBC::CURRENT)
       {
         rhs_add(id, bcx.val);
       }
-      else if (bcx.type == FlowBC::RESIST)
+      else if (bcx.typeOfInstance == FlowBC::RESIST)
       {
         sys_add(id, id, -bcx.w);
         rhs_add(id, -bcx.w * bcx.val);
