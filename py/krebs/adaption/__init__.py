@@ -220,7 +220,10 @@ def doit_optimize_deap(individual):
   
   if sys.flags.debug:
     print('mean: %f' % mean)
-  return (mean-individual.adaptionParameters['optimization']['desired_cap_flow'])**2,
+#  return (mean-individual.adaptionParameters['optimization']['desired_cap_flow'])**2,
+  ''' I know it is wired, but now mean is variance 
+      if this works out I have to rename it!!!!'''
+  return mean,
 
 
 def doit(parameters):

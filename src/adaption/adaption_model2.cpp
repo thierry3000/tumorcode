@@ -1699,7 +1699,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   mean_std = sqrt(variance(acc));
 #pragma omp barrier
     
-  return std::make_tuple(0, mean_value);
+  return std::make_tuple(0, mean_std);
   }
 }
 

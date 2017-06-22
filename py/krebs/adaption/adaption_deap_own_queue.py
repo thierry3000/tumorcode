@@ -20,6 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 import os, sys
+import Queue
 from os.path import join, basename, dirname, splitext
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
@@ -135,7 +136,7 @@ def main():
   return best
 
 if __name__ == "__main__":
-  ''' this uses a sytem queueing system'''
+  ''' this uses a I try use python as queueing system'''
   import argparse
   parser = argparse.ArgumentParser(description='Compute adaption see Secomb model', formatter_class=argparse.ArgumentDefaultsHelpFormatter)  
   parser.add_argument('AdaptionParamSet')
