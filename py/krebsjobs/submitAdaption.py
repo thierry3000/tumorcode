@@ -123,19 +123,7 @@ def run_optimize(parameter_set, filenames, grp_pattern, timing):
 
 def do_optimize_adaption_deap():
   print("need pso here")
-  
-## like worker_on_client but fixed filename
-def do_simple_adaption( vfile_name, grp_name, paramset):
-  #factory = getattr(parameterSetsAdaption, "pagmo_test")
-  #vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
-  #grp_name = "adaption/vessels_after_adaption"
-  paramset['adaption'].update(
-      vesselFileName = vfile_name,
-      vesselGroupName = grp_name,
-      )
-  if sys.flags.debug:
-    print(paramset)
-  krebs.adaption.doit(paramset)
+
 
 if not qsub.is_client and __name__=='__main__':
   import argparse
@@ -194,4 +182,4 @@ if not qsub.is_client and __name__=='__main__':
   else:
     print("WARNING: factory is not a dict")
 
-  do_simple_adaption(filenames[0],goodArguments.grp_pattern, factory)
+  krebs.adaption.do_simple_adaption(filenames[0],goodArguments.grp_pattern, factory)

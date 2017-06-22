@@ -139,6 +139,7 @@ void InitParameters(Adaption::Parameters *params, const py::dict *py_parameters)
   GET_ADAPTION_PARAM_IF_NONNONE(params->a_flow, double, "a_flow");
   //std::cout<<params->write2File<<std::endl;
   GET_ADAPTION_PARAM_IF_NONNONE(params->write2File,bool,"write2File")
+  GET_ADAPTION_PARAM_IF_NONNONE(params->outputFileName,string,"outputFileName")
   //std::cout<<params->write2File<<std::endl;
   //std::cout<<params->tum_manitulate_s1<<std::endl;
   params->tum_manitulate_s1 = GET_ADAPTION_PARAM_FROM_DICT(bool,"tum_manitulate_s1");

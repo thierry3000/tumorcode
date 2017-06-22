@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/concept_check.hpp>
 #include <boost/graph/graph_concepts.hpp>
 #include <boost/archive/archive_exception.hpp>
+#include <boost/optional/optional.hpp>
 
 //#include "hdfcppwrapper/hdf_wrapper.h"
 // #include "H5Cpp.h"
@@ -101,6 +102,7 @@ namespace Adaption
     bool tum_manitulate_s4;
     bool tum_manitulate_s5;
     bool write2File;
+    string outputFileName;
     
     double radMin_for_kill;
     uint boundary_Condition_handling;
@@ -140,7 +142,8 @@ namespace Adaption
 	ar & tum_manitulate_s4;
 	ar & tum_manitulate_s5;
 	ar & write2File;
-    
+  ar & outputFileName;
+  
 	ar & radMin_for_kill;
 	ar & boundary_Condition_handling;
 	ar & a_pressure;

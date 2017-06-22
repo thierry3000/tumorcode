@@ -300,6 +300,7 @@ Parameters::Parameters()
    */
   radMin_for_kill = 2.5;
   write2File = true;
+  outputFileName = "empty";
   boundary_Condition_handling = KEEP;
   a_pressure = 1.8;
   a_flow = 200000.;
@@ -336,6 +337,7 @@ void Parameters::assign(const ptree& pt)
   a_pressure = pt.get<double>("a_pressure", 42.);
   a_flow = pt.get<double>("a_flow", 42.);
   write2File = pt.get<bool>("write2File", true);
+  outputFileName = pt.get<string>("outputFileName", "empty");
   pop = pt.get<int>("pop",5);
   individuals = pt.get<int>("individuals",42);
   opt_iter = pt.get<int>("opt_iter",42);
@@ -369,6 +371,7 @@ ptree Parameters::as_ptree() const
 		   ("a_pressure", a_pressure)
 		   ("a_flow", a_flow)
 		   ("write2File", write2File)
+       ("outputFileName", outputFileName)
 		   ("pop", pop)
 		   ("individuals", individuals)
 		   ("opt_iter", opt_iter)
@@ -1652,7 +1655,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
     cout<<"NOT Convergent!"<<endl;
 #endif
 #endif
-    return std::make_tuple(1, 1000000000.);
+    return std::make_tuple(1, 1000000000000.);
   }
   else
   {
@@ -1663,10 +1666,18 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
 #endif
   if(doDebugOutput)//this needs improvements, skipped for now
   {
+    h5cpp::File f;
     //write vessel list to file
-    string stripped = RemoveAllExtensions(params.vesselFileName);
-    stripped = RemovePath(stripped);
-    h5cpp::File f= h5cpp::File( "adaption_" + stripped +".h5","w");
+    if( params.outputFileName.compare("empty") !=0 )
+    {
+      f= h5cpp::File( params.outputFileName ,"w");
+    }
+    else
+    {
+      string stripped = RemoveAllExtensions(params.vesselFileName);
+      stripped = RemovePath(stripped);
+      f= h5cpp::File( "adaption_" + stripped +".h5","w");
+    }
     h5cpp::Group out_ = f.root();
     h5cpp::Group grp_temp = out_.create_group("vessels_after_adaption");
     ptree getEverytingPossible = make_ptree("w_adaption", true);
@@ -1688,7 +1699,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   mean_std = sqrt(variance(acc));
 #pragma omp barrier
     
-    return std::make_tuple(0, mean_value);
+  return std::make_tuple(0, mean_value);
   }
 }
 

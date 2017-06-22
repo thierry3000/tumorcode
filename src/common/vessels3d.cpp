@@ -146,28 +146,16 @@ void VesselList3d::SetBC(const VesselNode* node, FlowBC &fbc)
   /** I dont know why yet, but emplace is not doing the job */
   //this->bclist.emplace(std::make_pair(node,fbc));
   
-//   bclist[node].val = fbc.val;
-//   bclist[node].type = fbc.type;
   bclist[node] = fbc;
-  for( auto it = GetBCMap().begin(); it!= GetBCMap().end(); ++it)
-  {
-    if( it->first->Index() == node->Index() )
-    {
-      //it->second.val = fbc.val;
-      //it->second.type = fbc.type;
-      //this->bclist.erase(it->first);
-      //const VesselNode* vc = GetNode(node->Index());
-      //this->bclist.insert(std::pair<const VesselNode*,FlowBC>(node,fbc));
-    }
-    cout << "here?" << endl;
-    cout << "index: " << it->first->Index() << "bcvalue: " << it->second.val <<endl;
-  }
-  //this->bclist.insert(std::pair<const VesselNode*,FlowBC>(node, fbc));
-  //const VesselNode* vc= GetNode(42);
-  //vl.SetBC(vc,FlowBC(FlowBC::PIN, 4.2));
-  //this->bclist.insert(std::pair<const VesselNode*,FlowBC>(vc,FlowBC(FlowBC::PIN, 4.2)));
-  //this->bclist->insert(node,fbc);
-  //bclist[node] = fbc;
+//   for( auto it = GetBCMap().begin(); it!= GetBCMap().end(); ++it)
+//   {
+//     if( it->first->Index() == node->Index() )
+//     {
+//       
+//     }
+// //     cout << "here?" << endl;
+// //     cout << "index: " << it->first->Index() << "bcvalue: " << it->second.val <<endl;
+//   }
 }
 
 

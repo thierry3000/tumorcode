@@ -19,25 +19,24 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
+import krebsutils as _ku # import of this must come in front of import of detailedo2 libs because some required initialization stuff on the c++ side (see mainboost.cpp)
 from os.path import basename, dirname, join, splitext
 import os, os.path, sys
 import h5py
 import h5files
 import uuid
 import numpy as np
-import extensions # for hdf5 support in np.asarray
+#import extensions # for hdf5 support in np.asarray
 import myutils
-import posixpath
-import math
+#import posixpath
+#import math
 import warnings
-from copy import deepcopy
-import krebs
+#from copy import deepcopy
+#import krebs
 from krebs.analyzeGeneral   import DataBasicVessel
 from krebs.analyzeBloodFlowResistance import ComputeVascularTreeBloodFlowResistances
 
-import krebsutils # import of this must come in front of import of detailedo2 libs because some required initialization stuff on the c++ side (see mainboost.cpp)
+
 sys.path.append(os.path.join(os.path.dirname(__file__),'../../../lib'))
 
 if sys.flags.debug:
@@ -48,7 +47,7 @@ else:
 def worker_on_client(fn, grp_pattern, adaptionParams, num_threads=1):
   print('Adaption on %s / %s / param: %s' % (fn, grp_pattern, adaptionParams['name']))
   #h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
-  krebsutils.set_num_threads(num_threads)
+  _ku.set_num_threads(num_threads)
   
   #params['name'] = parameter_set_name
   adaptionParams['adaption'].update(
@@ -109,7 +108,7 @@ def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
   
   # then we recompute blood flow because the alorithm has changed and we may or may not want hematocrit
   if bloodflowparams['includePhaseSeparationEffect'] == True:
-      pressure, flow, shearforce, hematocrit, flags = krebsutils.calc_vessel_hydrodynamics(gv, return_flags = True, bloodflowparams = bloodflowparams)
+      pressure, flow, shearforce, hematocrit, flags = _ku.calc_vessel_hydrodynamics(gv, return_flags = True, bloodflowparams = bloodflowparams)
       gvedst.create_dataset('flow'      , data = flow       , compression = 9)
       gvedst.create_dataset('shearforce', data = shearforce , compression = 9)
       gvedst.create_dataset('hematocrit', data = hematocrit , compression = 9)
@@ -117,7 +116,7 @@ def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
       gvndst.create_dataset('pressure'  , data = pressure   , compression = 9)
   else:
       print("Computing without phase seperation effect")
-      pressure, flow, shearforce, hematocrit, flags = krebsutils.calc_vessel_hydrodynamics(gv, return_flags = True, bloodflowparams = bloodflowparams)
+      pressure, flow, shearforce, hematocrit, flags = _ku.calc_vessel_hydrodynamics(gv, return_flags = True, bloodflowparams = bloodflowparams)
       gvedst.create_dataset('flow'      , data = flow       , compression = 9)
       gvedst.create_dataset('shearforce', data = shearforce , compression = 9)
       gvedst.create_dataset('hematocrit', data = hematocrit , compression = 9)
@@ -195,7 +194,7 @@ def computeAdaption_(gdst, vesselgroup, parameters):
   
 def doit_optimize_deap(individual):
   
-  krebsutils.set_num_threads(1)
+  _ku.set_num_threads(1)
   if sys.flags.debug:
     print("individual in doit_optimize_deap")
     print(individual)
@@ -225,29 +224,29 @@ def doit_optimize_deap(individual):
 
 
 def doit(parameters):
-  krebsutils.set_num_threads(1)
+  _ku.set_num_threads(1)
   if sys.flags.debug:
     print(parameters)
-  fn = parameters['adaption']['vesselFileName']
-  pattern = parameters['adaption']['vesselGroupName']
+#  fn = parameters['adaption']['vesselFileName']
+#  pattern = parameters['adaption']['vesselGroupName']
   
   print('starting doit in python ... paramset :%s' % parameters['name'])
 
-  f = h5files.open(fn, 'r')
-  dirs = myutils.walkh5(f['.'], pattern)
-  f.close()
-  print(dirs)
+#  f_ = h5files.open(fn, 'r')
+#  dirs = myutils.walkh5(f_['.'], pattern)
+#  f_.close()
+#  print(dirs)
 
 
-  for group_path in dirs:
+#  for group_path in dirs:
     #cachelocation = (outfn_no_ext+'.h5', group_path+'_'+parameters_name)
     #cachelocation = (fnbase+'_adption_p_'+ parameters['name'] +'.h5', group_path)
     #ref = adaption_cpp.computeAdaption(f, group_path, parameters['adaption'],parameters['calcflow'], cachelocation)
-    returnState, mean = adaption_cpp.computeAdaption(parameters['adaption'],parameters['calcflow'], True)
-    if returnState == 0:
-      print("adaption succesful with mean: %f" % mean)
-    if not returnState == 0:
-      warnings.warn("adation broken", RuntimeWarning)
+  returnState, mean = adaption_cpp.computeAdaption(parameters['adaption'],parameters['calcflow'], True)
+  if returnState == 0:
+    print("adaption succesful with mean: %f" % mean)
+  if not returnState == 0:
+    warnings.warn("adation broken", RuntimeWarning)
 #    print 'computed Adaption stored in:', ref
 #    output_links.append(ref)
   return returnState, mean
@@ -286,26 +285,39 @@ def getVesselTypes(vessel_groups):
   capillaries = []
   if ('edges' in vessel_groups.keys()):# in fact it is only one group!
     g = vessel_groups    
-    flags = np.array(krebsutils.read_vessels_from_hdf(g,['flags'])[1])
-    circulated = np.bitwise_and(flags,krebsutils.CIRCULATED)
+    flags = np.array(_ku.read_vessels_from_hdf(g,['flags'])[1])
+    circulated = np.bitwise_and(flags,_ku.CIRCULATED)
     circulated_indeces = np.nonzero(circulated)
-    veins = np.bitwise_and(flags,krebsutils.VEIN)
+    veins = np.bitwise_and(flags,_ku.VEIN)
     veins = veins[circulated_indeces]
-    arteries = np.bitwise_and(flags,krebsutils.ARTERY)
+    arteries = np.bitwise_and(flags,_ku.ARTERY)
     arteries = arteries[circulated_indeces]
-    capillaries = np.bitwise_and(flags,krebsutils.CAPILLARY)
+    capillaries = np.bitwise_and(flags,_ku.CAPILLARY)
     capillaries = capillaries[circulated_indeces]
     veins = np.nonzero(veins)
     arteries =np.nonzero(arteries)
     capillaries = np.nonzero(capillaries)
   else:
     for g in vessel_groups:
-      flags = krebsutils.read_vessels_from_hdf(g,['flags'])
-      goods = np.sum(np.bitwise_and(flags[1],krebsutils.VEIN))
+      flags = _ku.read_vessels_from_hdf(g,['flags'])
+      goods = np.sum(np.bitwise_and(flags[1],_ku.VEIN))
       veins.append(goods)
-      goods = np.sum(np.bitwise_and(flags[1],krebsutils.ARTERY))
+      goods = np.sum(np.bitwise_and(flags[1],_ku.ARTERY))
       arteries.append(goods)
-      goods = np.sum(np.bitwise_and(flags[1],krebsutils.CAPILLARY))
+      goods = np.sum(np.bitwise_and(flags[1],_ku.CAPILLARY))
       capillaries.append(goods)
     
   return veins, arteries, capillaries
+
+## like worker_on_client but fixed filename
+def do_simple_adaption( vfile_name, grp_name, paramset):
+  #factory = getattr(parameterSetsAdaption, "pagmo_test")
+  #vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
+  #grp_name = "adaption/vessels_after_adaption"
+  paramset['adaption'].update(
+      vesselFileName = vfile_name,
+      vesselGroupName = grp_name,
+      )
+  if sys.flags.debug:
+    print(paramset)
+  doit(paramset)

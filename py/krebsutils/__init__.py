@@ -67,7 +67,7 @@ imports_ = [ f.strip() for f in
     SetupFieldLattice, \
     PressureRadiusRelation, \
     SumIsoSurfaceIntersectionWithVessels_, \
-    get_Murray2_p, \
+    get_Murray2, \
     get_Murray_scale, \
     CalcViscosities, \
     CalcConductivities'.split(',')
@@ -111,6 +111,9 @@ typelist = 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split()
 #----------------------------------------------------------------------------------#
 #  utility routines
 #----------------------------------------------------------------------------------#
+def get_Murray(vesselgrp):
+  #return get_Murray2_p(vesselgrp, alpha)
+  return get_Murray2(vesselgrp)
 
 def get_full_tumor_executable_path(name):
   from os.path import join, abspath, normpath, dirname

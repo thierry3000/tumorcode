@@ -34,6 +34,7 @@ import krebsjobs.parameters.parameterSetsAdaption as parameterSetsAdaption
 
 import operator
 import random
+import copy
 from scoop import futures, shared
 
 import numpy
@@ -58,6 +59,9 @@ def generate(size, pmin, pmax, smin, smax):
     part.pmax = pmax
     part.pmin = pmin
     factory = getattr(parameterSetsAdaption, shared.getConst('adaptionParams'))
+    myInt = int(shared.getConst('parameterListIndex'))
+    if( shared.getConst('parameterListIndex') is not None ):
+      factory = factory[myInt]
     vfile_name = shared.getConst('vesselInputFile')
     grp_name = shared.getConst('vessel_grp')
     factory['adaption'].update(
@@ -134,8 +138,14 @@ if __name__ == "__main__":
   import argparse
   parser = argparse.ArgumentParser(description='Compute adaption see Secomb model', formatter_class=argparse.ArgumentDefaultsHelpFormatter)  
   parser.add_argument('AdaptionParamSet')
+  parser.add_argument('--listindex', type=int, help="index of value list" )
   goodArguments, otherArguments = parser.parse_known_args()
   print("running with %s" % goodArguments.AdaptionParamSet)
+  
+  if( str(goodArguments.AdaptionParamSet).startswith('value_li' ) ):
+    bla = int(goodArguments.listindex)
+    print("list index: %i chosen" % bla)
+    shared.setConst(parameterListIndex= bla)
   #adaption parameters
   shared.setConst(adaptionParams=goodArguments.AdaptionParamSet)
   #file
@@ -159,4 +169,5 @@ if __name__ == "__main__":
   myGroup.attrs.create("vfile", data=vfile_name)
   myGroup.attrs.create("vessel_grp", data=vessel_grp)
   myGroup.attrs.create("params", data=goodArguments.AdaptionParamSet)
+  myGroup.attrs.create("paramListIndex", data = goodArguments.listindex)
   f.close()
