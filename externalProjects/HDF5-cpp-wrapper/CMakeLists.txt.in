@@ -1,0 +1,18 @@
+#hdf5 1.10 comes with build in cpp wrapper
+# in future we should change to this
+cmake_minimum_required(VERSION 3.3)
+ 
+project(HDF5-cpp-wrapper NONE)
+ 
+include(ExternalProject)
+ExternalProject_Add(HDF5-cpp-wrapper
+  GIT_REPOSITORY    https://github.com/DaWelter/HDF5-cpp-wrapper.git
+  GIT_TAG           master
+  SOURCE_DIR        "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src"
+  BINARY_DIR        "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-build"
+  CONFIGURE_COMMAND "BUILD_SHARED_LIBS=TRUE"
+  BUILD_COMMAND     ""
+  INSTALL_COMMAND   ""
+  TEST_COMMAND      ""
+)
+

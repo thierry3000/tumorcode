@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #undef APIENTRY
 #undef WINGDIAPI
 
-#include "CImg.h"
+#include <CImg.h>
 #include "helpers-vec.h"
 
 typedef cimg_library::CImg<uchar> CImgType;

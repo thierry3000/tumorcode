@@ -1,4 +1,34 @@
 cmake_minimum_required(VERSION 3.3)
+### build external stuff numpycpp is still needed, maybe we could get rid of this in future withe build in stuff
+### adapted from:
+#   https://crascit.com/2015/07/25/cmake-gtest/
+# Download and unpack numpycpp at configure time
+configure_file(externalProjects/numpycpp/CMakeLists.txt.in externalProjects/numpycpp/CMakeLists.txt)
+message("CMAKE_COMMAND:   ${CMAKE_COMMAND}")
+message("CMAKE_GENERATOR:   ${CMAKE_GENERATOR}")
+# numpycpp has its own modules
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src/.cmake/modules;")
+message("CMAKE_MODULE_PATH at numpycpp build:   ${CMAKE_MODULE_PATH}")
+execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/numpycpp" )
+execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/numpycpp" )
+include_directories("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src")
+# Add numpycpp directly to our build. This adds
+# the following targets: numpycpp
+add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src"
+                 "${CMAKE_BINARY_DIR}/externalProjects/numpycpp-build")
+
+## HDF5-cpp-wrapper does not need compilation
+configure_file(externalProjects/HDF5-cpp-wrapper/CMakeLists.txt.in externalProjects/HDF5-cpp-wrapper/CMakeLists.txt)
+execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper" )
+execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper" )
+include_directories("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src")
+# add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src"
+#                  "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-build")
+                 
 project(allmystuff C CXX)
 list(APPEND CMAKE_CXX_SOURCE_FILE_EXTENSIONS c)
 add_definitions(-DSILENT)
@@ -16,7 +46,8 @@ message("TrilinosDIR: ${TrilinosDIR}")
 include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)
 
 option(USE_ADAPTION "decide to build the adaption library" OFF)
-CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" OFF "USE_ADAPTION;" ON)
+CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" OFF "USE_ADAPTION" ON)
+CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" OFF "NOT USE_ADAPTION" ON)
 CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" OFF
                        "USE_ADAPTION;USE_PAGMO" ON)
 option(TOTAL_SILENCE "suppress all output, good for running on cluster" OFF)
@@ -24,7 +55,8 @@ if(TOTAL_SILENCE)
   message("TOTAL_SILENCE preprocessor defined")
   add_definitions(-DTOTAL_SILENCE)
 endif()
-#option(USE_PAGMO OFF)
+
+
 #It would be nicer to see if pagmo was compilled 
 #with mpi automatically, pagmo2 is supporting that
 # option(USE_PAGMO_MPI OFF)
@@ -282,3 +314,4 @@ message(STATUS "myLibs = ${myLibs}")
 
 # defer to build scripts in the src dir
 add_subdirectory(src)
+add_subdirectory(utils)

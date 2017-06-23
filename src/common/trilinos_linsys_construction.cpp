@@ -544,9 +544,9 @@ int EllipticEquationSolver::solve ( RCP<Epetra_Vector> _lhs )
     }
 
     // Create a Belos solver.
-    RCP<Belos::SolverManager<double,MV,OP> > solver
-      = rcp (new Belos::BiCGStabSolMgr<double,MV,OP> (problem, belosList));
-
+    //note: BiCGStabSolMgr is not present in earlier versions of trilinos
+    //RCP<Belos::SolverManager<double,MV,OP> > solver = rcp (new Belos::BiCGStabSolMgr<double,MV,OP> (problem, belosList));
+    RCP<Belos::SolverManager<double,MV,OP> > solver = rcp (new Belos::BlockCGSolMgr<double,MV,OP> (problem, belosList));
 //     if (proc_verbose) {
 //       cout << endl << endl;
 //       cout << "Dimension of matrix: " << NumGlobalElements << endl;

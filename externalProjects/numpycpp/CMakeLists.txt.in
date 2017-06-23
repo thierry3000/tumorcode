@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.3)
+ 
+project(numpycpp NONE)
+ 
+include(ExternalProject)
+ExternalProject_Add(numpycpp
+  GIT_REPOSITORY    https://github.com/DaWelter/numpycpp.git
+  GIT_TAG           master
+  SOURCE_DIR        "${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src"
+  BINARY_DIR        "${CMAKE_BINARY_DIR}/externalProjects/numpycpp-build"
+  CONFIGURE_COMMAND "BUILD_SHARED_LIBS=TRUE"
+  BUILD_COMMAND     ""
+  INSTALL_COMMAND   ""
+  TEST_COMMAND      ""
+)
