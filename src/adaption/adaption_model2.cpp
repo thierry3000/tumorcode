@@ -1346,14 +1346,20 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+#ifndef TOTAL_SILENCE
     printf("on MPI process %i of %i \n", rank, size);
+#endif
     /* Obtain thread number */
     tid = omp_get_thread_num();
+#ifndef TOTAL_SILENCE
     printf("on thread %i \n", tid);
+#endif
     if( tid == 0 )
     {
       nthreads = omp_get_num_threads();
+#ifndef TOTAL_SILENCE
       printf("this master has %i subthreads\n", nthreads);
+#endif
     }
   }
   else

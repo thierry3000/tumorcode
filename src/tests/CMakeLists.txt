@@ -5,10 +5,13 @@ include_directories(../common)
 include_directories(${ADDITIONAL_INCLUDE_DIRS})
 
 #note: for those tests hdf needs to be build parallel
-add_executable(tests tests.cpp)
-target_link_libraries(tests ${myLibs})
-install(TARGETS tests RUNTIME DESTINATION bin)
-
+if( CMAKE_BUILD_TYPE EQUAL "DEBUG")
+  message("debug build")
+  add_executable(tests tests.cpp)
+  target_link_libraries(tests ${myLibs})
+  install(TARGETS tests RUNTIME DESTINATION bin)
+endif()
+  
 # add_executable(test_convection test_convection1.cpp)
 # target_link_libraries(test_convection ${myLibs})
 

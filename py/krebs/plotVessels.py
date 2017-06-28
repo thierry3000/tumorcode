@@ -213,7 +213,7 @@ def getMultiScatter(scale, vesselgroups):
   return res
 
 
-def plotMultiScatterBeauty(measures, pdfpages, withRadiusPressureRelation=True):
+def plotMultiScatterBeauty(measures, pdfpages, withRadiusPressureRelation=False):
     # data is stored in dict as measureres[(dataname,side)]=dataarray
     avtypes = ['art','capi','vein','tum']
     if not any( side=='tum' for name,side in measures.iterkeys() ):

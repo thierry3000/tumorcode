@@ -37,6 +37,7 @@ enum TissuePressureDistribution
 struct Parameters
 {
   double out_intervall, tend;
+  double dt;
   double apply_adaption_intervall;
   string message;
   string fn_out, fn_vessel, vesselfile_message;

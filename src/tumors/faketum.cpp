@@ -30,6 +30,7 @@ FakeTum::Parameters::Parameters()
   out_intervall = 100;
   apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
   tend = 1000;
+  dt = 1;
   num_threads = 1;
   tumor_radius = 200.;
   tumor_speed = 2.;  // \mu m / hour
@@ -49,6 +50,7 @@ void FakeTum::Parameters::assign(const ptree &pt)
   DOPT(out_intervall);
   DOPT(apply_adaption_intervall);
   DOPT(tend);
+  DOPT(dt);
   DOPT(message);
   DOPT(fn_out);
   DOPT(fn_vessel);
@@ -81,6 +83,7 @@ ptree FakeTum::Parameters::as_ptree() const
   DOPT(out_intervall);
   DOPT(apply_adaption_intervall);
   DOPT(tend);
+  DOPT(dt);
   DOPT(message);
   DOPT(fn_out);
   DOPT(fn_vessel);
@@ -193,7 +196,6 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
   num_iteration = 0.;
   output_num = 0;
   
-  double dt = 1.;
   double next_output_time = 0.;
   double next_adaption_time = 0.;
   
@@ -206,7 +208,7 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
 //   }
   while (true)
   {
-    if (time >= next_adaption_time - dt * 0.1)
+    if (time >= next_adaption_time - params.dt * 0.1)
     {
       //do adaption if wanted
       if(model.params.badaption_on_off)
@@ -228,7 +230,7 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
       }
       next_adaption_time += params.apply_adaption_intervall;
     }
-    if (time >= next_output_time - dt * 0.1)
+    if (time >= next_output_time - params.dt * 0.1)
     {
       
       writeOutput();
@@ -242,14 +244,14 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
     
     if (tumor_radius >  size_limit) break;
 
-    doStep(dt);
+    doStep(params.dt);
     //depricated since adaption is now in tum-only-vessls
 //     if(writeVesselsafter_initial_adaption)
 //     {
 //       writeOutput();
 //       writeVesselsafter_initial_adaption = false;
 //     }
-    time += dt;
+    time += params.dt;
     ++num_iteration;
   }
 

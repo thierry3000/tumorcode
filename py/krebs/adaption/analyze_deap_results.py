@@ -21,16 +21,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import h5py
+import matplotlib
+from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
 
+import os, sys
+from os.path import join, basename, dirname, splitext
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 
-from krebsjobs.parameters import parameterSetsAdaption
+from krebsjobs import parameters
+from parameters import parameterSetsAdaption
 from krebs import adaption as _adap
 
 f = h5py.File('deap_results.h5','r')
 
-def convergenz_plot(f):
+def convergenz_plot(f,pdf):
   group_labels = []
   group_bests = []
   group_fitnesses = []
@@ -50,18 +56,24 @@ def convergenz_plot(f):
   group_fitnesses_mapped = np.zeros(len(group_fitnesses))
   for i, _ in enumerate(group_fitnesses):
     group_fitnesses_mapped[i] = group_fitnesses[i]
+  
   plt.scatter(param_id, group_fitnesses_mapped)
   plt.xticks(param_id, param_id_label, rotation='vertical')
   plt.tight_layout()
   ax = plt.gca()
   ax.set_yscale('log')
-  plt.show()
+  pdf.savefig()
+  #plt.show()
   
 def find_convergent_groups(f):
   convergent_groups=[]
+  variance_stuff = True
   for group in f.keys():
-    if float(np.asarray(f[group + '/fitness values'])) < 1000:
+    if variance_stuff:
       convergent_groups.append(group)
+    else:
+      if float(np.asarray(f[group + '/fitness values'])) < 1000:
+        convergent_groups.append(group)
   return convergent_groups
 
 def redo_adaption_for_convergent_sets(f):
@@ -71,8 +83,10 @@ def redo_adaption_for_convergent_sets(f):
     print("Found group: %s" % group)
     inputFileName = f[group].attrs.get('vfile')
     vessel_grp = f[group].attrs.get('vessel_grp')
-    setName = "value_list"
+    setName = f[group].attrs.get('params')
     paramSetIndex = f[group].attrs.get('paramListIndex')
+    print("redo:")
+    print("file: %s,\t group: %s,\t set: %s,\t index: %i\n"% (inputFileName,vessel_grp,setName,paramSetIndex))
     factory = getattr(parameterSetsAdaption, setName)
     factory = factory[paramSetIndex]
     bests = np.asarray(f[group + '/best'])
@@ -85,8 +99,12 @@ def redo_adaption_for_convergent_sets(f):
         )
     _adap.do_simple_adaption(inputFileName,vessel_grp, factory)
 if __name__ == '__main__':
-  f = h5py.File('deap_results.h5','r')
-  if 1:
-    convergenz_plot(f)
-  if 0:
-    redo_adaption_for_convergent_sets(f)
+  with PdfPages('out_deap_results.pdf') as pdf:
+    rc = matplotlib.rc
+    rc('font', size = 8.)
+    rc('axes', titlesize = 10., labelsize = 8.)
+    f = h5py.File('deap_results.h5','r')
+    if 1:
+      convergenz_plot(f,pdf)
+    if 1:
+      redo_adaption_for_convergent_sets(f)

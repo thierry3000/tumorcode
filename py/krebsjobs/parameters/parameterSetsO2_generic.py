@@ -209,7 +209,7 @@ breastv2.update(
 
 
 breastv3 = deepcopy(breastv2)
-breastv3.update(
+breastv3.update(            #3.7e-3/60 = 6.2e-5 min to second!
   mmcons_m0_norm = 6.2e-5, # = 3.7e-3 ml O2 / ml / min; # fairly low like estimates by rinneberg and beany
   mmcons_m0_tum = 6.2e-5 * 4,
   name = 'breastv3',

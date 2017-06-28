@@ -351,8 +351,11 @@ def obtain_averaged_blood_flow(dataman, files, group, cachelocation):
   for f in files:
     vesselgroup   = f[group]
     tumorgroup    = krebs.analyzeGeneral.try_find_tumor_group_from_vesselgroup(vesselgroup)
-    data = dataman.obtain_data('blood_flow_rbf', vesselgroup, tumorgroup, cachelocation(f[group])).copy()
+    rdata = dataman.obtain_data('blood_flow_rbf', vesselgroup, tumorgroup, cachelocation(f[group])).copy()
+    data = dataman.obtain_data('blood_flow', vesselgroup, tumorgroup, cachelocation(f[group])).copy()
     for k, v in data.iteritems():
+      l[k].append(v)
+    for k, v in rdata.iteritems():
       l[k].append(v)
   for k, v in l.iteritems():
     l[k] = np.average(v), np.std(v)
@@ -434,10 +437,12 @@ if __name__ == '__main__':
         return s
       s = '\n'.join([
         GetTimeLabel(files[0][group]),
-        printit('flow_in', r'\tilde{BF}_{tumor}', '\mu m^3\,Blood\,/\,min'),
+        #printit('flow_in', r'\tilde{BF}_{tumor}', '\mu m^3\,Blood\,/\,min'),
         printit('total_flow_in', r'BF_{total}', '\mu m^3\,Blood\,/\,min'),
-        printit('rBF_tumor', r'\tilde{rBF}_{tumor}', 'ml\,Blood\,/\,(ml\,Tissue\,min)'),
-        printit('rBF_total', r'rBF_{total}', 'ml\,Blood\,/\,(ml\,Tissue\,min)')
+        printit('total_flow_out', r'BF_{total}', '\mu m^3\,Blood\,/\,min'),
+        #printit('rBF_tumor', r'\tilde{rBF}_{tumor}', 'ml\,Blood\,/\,(ml\,Tissue\,min)'),
+        printit('rBF_total', r'rBF_{total}', 'ml\,Blood\,/\,(ml\,Tissue\,min)'),
+        printit('total_volume', r'vol', 'ml')
       ])
       return s
 
@@ -459,7 +464,7 @@ if __name__ == '__main__':
        '#607c8e', #blue grey
     ]  
     
-    if 1:
+    if 0:
       fig, axes = pyplot.subplots(3,1, figsize = mpl_utils.a4size*np.array([0.5, 0.6]))
       groupsByTime = collections.defaultdict(list)
       for g in allgroups:
@@ -488,7 +493,7 @@ if __name__ == '__main__':
       pdfpages.savefig(fig)
       #pyplot.show()
     
-    if 1:
+    if 0:
       groupsByTime = collections.defaultdict(list)
       for g in allgroups:
         groupsByTime[g.name].append(g)
@@ -510,7 +515,7 @@ if __name__ == '__main__':
       for g in allgroups:
         groupsByTimeAndType[g.name][GetVesselTypeLabel(g)].append(g)
         
-    if 1:
+    if 0:
       for timeName, byType in sorted(groupsByTimeAndType.items(), key = lambda (a,b): a):
         fig, ax = pyplot.subplots(1,1, figsize = mpl_utils.a4size*np.array([0.5, 0.2]))
         for typeName, groups in sorted(byType.items(), key = lambda (a,b): a):

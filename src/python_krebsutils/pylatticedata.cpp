@@ -119,7 +119,7 @@ public:
 PyLd* read_lattice_data_from_hdf(const py::object &ld_grp_obj)
 {
   h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
-  std::printf("if you read this, lattice data is in c++");
+  std::printf("if you read this, lattice data is in c++\n");
   typedef polymorphic_latticedata::LatticeData LD;
 //  return new PyLd(new LD(ld));
   std::auto_ptr<LD> ldp(LD::ReadHdf(g_ld));

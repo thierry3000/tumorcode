@@ -554,7 +554,9 @@ void HematocritCalculator::UpdateHematocritAtNode( int upstream_node, int edge_i
       const FlReal diff = std::abs(rbcout-rbcIn)/(rbcout+rbcIn+1.e-20);
       if( diff>1.0e-3f ) 
       {
+#ifndef TOTAL_SILENCE
         printf("WARNING: UpdateHematocritAtNode: RBC conservation violated %f %% (out: %e, in: %e) at node %i\n",diff,rbcout,rbcIn,upstream_node);
+#endif
         /*if( diff>0.5f ) 
         {
           for( int i=0; i<vc->Count(); ++i )

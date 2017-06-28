@@ -43,7 +43,9 @@ struct MPPrivate
   {
 #ifdef EPETRA_MPI
     {
+#ifndef TOTAL_SILENCE
       printf("\n\nEPETRA_MPI flag is set!\n");
+#endif
       int mpi_is_initialized = 0;
       int prov;
       MPI_Initialized(&mpi_is_initialized);

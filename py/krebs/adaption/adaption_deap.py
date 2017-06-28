@@ -48,8 +48,8 @@ import h5py
 creator.create("FitnessMax", base.Fitness, weights=(-1.0,))
 creator.create("Particle", list, fitness=creator.FitnessMax, speed=list, 
     smin=None, smax=None, pmin=None, pmax= None, best=None, adaptionParameters=None)
-n = 1000
-GEN = 20
+n = 380
+GEN = 5
 
 def generate(size, pmin, pmax, smin, smax):
     part = creator.Particle(random.uniform(pmin, pmax) for _ in range(size)) 
@@ -140,6 +140,8 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Compute adaption see Secomb model', formatter_class=argparse.ArgumentDefaultsHelpFormatter)  
   parser.add_argument('AdaptionParamSet')
   parser.add_argument('--listindex', type=int, help="index of value list" )
+  parser.add_argument('--outputFileFolder', type=str, help="where to store the output, default is working directory")
+  parser.add_argument('--fileName', type=str,help="name of vesselfile to optimize")
   goodArguments, otherArguments = parser.parse_known_args()
   print("running with %s" % goodArguments.AdaptionParamSet)
   
@@ -150,13 +152,17 @@ if __name__ == "__main__":
   #adaption parameters
   shared.setConst(adaptionParams=goodArguments.AdaptionParamSet)
   #file
-  if 0: # 2d set
-      vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
-  if 1: # 3d set
-    vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-9x11L600-sample13_adption_p_human_guess.h5"
+  if( goodArguments.fileName ):
+    vfile_name=goodArguments.fileName;
+    vessel_grp ="vessels" #default place for vesselgenerator
+  else:
+    if 0: # 2d set
+        vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-17x1L600-sample05_adption_p_human_guess.h5"
+    if 1: # 3d set
+      vfile_name = "/localdisk/thierry/vessel_trees_better/my_chosen/PSO_data_vessels-large_2d-typeE-9x11L600-sample13_adption_p_human_guess.h5"
+    vessel_grp ="adaption/vessels_after_adaption"
   shared.setConst(vesselInputFile=vfile_name)
   #group
-  vessel_grp ="adaption/vessels_after_adaption"
   shared.setConst(vessel_grp=vessel_grp)
   best = main()
   print(os.getcwd())

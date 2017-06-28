@@ -25,10 +25,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #python2 -m scoop -vvv --hostfile=hosts.txt /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py value_list --listindex=$1
+#python2 -m scoop --nice 19 --hostfile="/home/usersHR/thierry/oldHostsDeap.txt" "/localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py" "value_list3" --listindex=$1 --fileName="/home/usersHR/thierry/mychosen/vessels-default-typeE-11x15L130-sample00.h5"
 
 # Unfortunatelly I was not able to get the loop working in python so I had to do this around it!
 echo "hello from bash"
 echo "Argument 1: $1"
 #python2 -m scoop /tmp/try.py
 
-python2 -m scoop -vvv --hostfile=hosts.txt /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py value_list --listindex=$1
+python2 -m scoop -vvv --nice 19 --hostfile="/home/usersHR/thierry/oldHostsDeap.txt" /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py "value_list3" --listindex=1 --pythonpath=/localdisk/thierry/local/lib64/python2.7/site-packages
+
