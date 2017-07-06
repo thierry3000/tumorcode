@@ -837,7 +837,7 @@ void StationaryDiffusionSolve(const LatticeDataQuad3d &ld,
   {
     FOR_BBOX3(p, mtboxes[i])
     {
-      //result(p) = lhs[ld.LatticeToSite(p)];
+      result(p) = (*lhs)[ld.LatticeToSite(p)];
     }
   }
   cout << format("stationary diffusion solve total time: %f ms") % (my::Time()-t_).to_ms() << endl;
@@ -881,7 +881,7 @@ void StationaryDiffusionSolve(const ContinuumGrid &grid,
     {
       FOR_BBOX3(p, bbox)
       {
-        //result(p) = *lhs[grid.ld.LatticeToSite(p)];
+        result(p) = (*lhs)[grid.ld.LatticeToSite(p)];
       }
     }
   }

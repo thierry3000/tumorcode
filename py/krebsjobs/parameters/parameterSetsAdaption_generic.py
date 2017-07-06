@@ -563,7 +563,7 @@ pagmo_test['calcflow'].update(
 
 deal_test = deepcopy(pagmo_test)
 deal_test['optimization'] = dict(
-    desired_cap_flow = 5000,
+    desired_cap_flow = 20000,
     )
 
 def _value():

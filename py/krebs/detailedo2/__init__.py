@@ -244,7 +244,9 @@ def computePO2(f, group_path, parameters, cachelocation):
     copyVesselnetworkAndComputeFlow(gdst, vesselgroup1, parameters.get("calcflow"))
 
   #==== execute reading or computing and writing =====#
-  fm = h5files.open(cachelocation[0], 'a', search = False) # this is the file where o2 stuff is stored
+  output_buffer_name = basename(cachelocation[0]).rsplit('.h5')[0]
+  fm = h5files.open("%s-%s.h5"%(output_buffer_name, cachelocation[1]), 'a', search = False) # this is the file where o2 stuff is stored  
+  
   CopyInputFileInfo_(fm, f)
   new_flow_data_ref = myutils.hdf_data_caching(read1, write1, fm, ('recomputed_flow', cachelocation[1]), (0, 1))
   fv = h5files.open(new_flow_data_ref.fn,'r+', search = False)

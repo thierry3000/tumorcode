@@ -28,6 +28,7 @@ import os,sys
 from os.path import basename, splitext
 
 from povrayRenderVessels import *
+import povrayEasy
 import myutils
 import math
 import copy
@@ -137,7 +138,7 @@ def renderScene(vesselgroup, tumorgroup, imagefn, options):
       if options.noOverlay:
         epv.render(imagefn+'.png')
       else:
-        RenderImageWithOverlay(epv, imagefn+'.png', None, 'tumor', options)
+        povrayEasy.RenderImageWithOverlay(epv, imagefn+'.png', None, 'tumor', options)
       
 
 

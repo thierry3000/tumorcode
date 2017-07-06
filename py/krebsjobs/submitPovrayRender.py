@@ -104,6 +104,7 @@ class RenderJob(object):
 
       elif 'tumor' in f[self.group_name]:
         from krebs.povrayRenderTumor import renderScene
+        self.params.timepoint = f[self.group_name].attrs.get('time')
         renderScene(f[self.group_name]['vessels'],
                     f[self.group_name]['tumor'],
                     self.imageFilename,
@@ -161,7 +162,7 @@ if __name__ == '__main__':
   #parser.add_argument("--projection_plot", help=" ", default=True)
   parser.add_argument("--not_render_volume", help="For combined images", default=False, action="store_true")
   parser.add_argument("--not_render_vessels", help="For combined images", default=False, action="store_true")
-  
+  parser.add_argument("--timepoint", help="timepoint for tumor overlay", default=None)
   
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)

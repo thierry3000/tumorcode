@@ -37,9 +37,9 @@ def printClientInfo():
 __all__ = [ 'parse_args', 'submit', 'exe', 'func', 'is_client']
 
 ''' globals '''
-defaultMemory = '1MB'
-defaultDays = 42
-defaultNumThreads = 4
+#defaultMemory = '1MB'
+#defaultDays = 42
+#defaultNumThreads = 4
 global goodArgumentsQueue
 goodArgumentsQueue = {} #empty namespace
 installed_queue_system = 'foo'
@@ -49,15 +49,15 @@ is_client = False
 def parse_args(argv):
   import argparse
   parserQueue = argparse.ArgumentParser(prog='qsub',description='Queing system parser.')
-  memory_option = parserQueue.add_argument('-m', '--memory', help= 'Memory assigned by the queing system', type=str, default = '2GB')
-  days_option = parserQueue.add_argument('-d', '--days', help= 'runtime for job in days', type=int, default = 5)
-  threads_option = parserQueue.add_argument('-n', '--numThreads', help= 'num of threads for job', type=int, default = 4)
-  global defaultMemory
-  defaultMemory = memory_option.default
-  global defaultDays
-  defaultDays = days_option.default
-  global defaultNumThreads
-  defaultNumThreads = threads_option.default
+  memory_option = parserQueue.add_argument('-m', '--memory', help= 'Memory assigned by the queing system', type=str, default = None)
+  days_option = parserQueue.add_argument('-d', '--days', help= 'runtime for job in days', type=int, default = None)
+  threads_option = parserQueue.add_argument('-n', '--numThreads', help= 'num of threads for job', type=int, default = None)
+#  global defaultMemory
+#  defaultMemory = memory_option.default
+#  global defaultDays
+#  defaultDays = days_option.default
+#  global defaultNumThreads
+#  defaultNumThreads = threads_option.default
   parserQueue.add_argument('--q-local', help= ' Do not submit to queue, even if queuing system is pressent', default=False, action='store_true')
   parserQueue.add_argument('--q-dry', help= 'Do not run but print configuration to be submitted', default=False, action='store_true')
   parserQueue.add_argument('--q-verbose', help= 'more output', default=False, action='store_true')
@@ -127,9 +127,9 @@ def fmtDate_(days, hours):
     
 
 def write_directives_qsub_(f,name=None, days=None, hours=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False, dependsOnJob = None):
-  mem =goodArgumentsQueue.memory
-  num_cpus = goodArgumentsQueue.numThreads
-  days = goodArgumentsQueue.days
+#  mem =goodArgumentsQueue.memory
+#  num_cpus = goodArgumentsQueue.numThreads
+#  days = goodArgumentsQueue.days
   print >>f, '#PBS -j oe'
   if jobfiledir and not outdir: #DEPRECATED
     outdir = jobfiledir
@@ -153,17 +153,16 @@ def write_directives_qsub_(f,name=None, days=None, hours=None, outdir=None, expo
     print >>f, '#PBS -W depend=afterok:%s' % dependsOnJob
     
     
-def write_directives_slurm_(f, name=None, days=None, hours=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False):
+def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, hours=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False):
   #print >>f, '#PBS -j oe'
   #if jobfiledir and not outdir: #DEPRECATED
   #  outdir = jobfiledir
   #if outdir is not None:
   #  print >>f, '#PBS -o %s' % (outdir)
   #print >>f, 'cd $SLURM_SUBMIT_DIR'
-  
-  mem =goodArgumentsQueue.memory
-  num_cpus = goodArgumentsQueue.numThreads
-  days = goodArgumentsQueue.days
+#  mem = goodArgumentsQueue.memory
+#  num_cpus = goodArgumentsQueue.numThreads
+#  days = goodArgumentsQueue.days
   if name:
     print >>f, '#SBATCH --job-name=%s' % name
   if num_cpus == 1:
@@ -199,7 +198,7 @@ def write_directives_slurm_(f, name=None, days=None, hours=None, outdir=None, ex
 
 
 def submit_(interpreter, submission_program, script):
-  global opts_
+  #global opts_
   # determine how to run
   if submission_program == 'run_locally':
     submission_program = interpreter
@@ -284,55 +283,55 @@ func = Func
 
 
 
-class Exe(object):
-  '''
-    A wrapper around a system call to execute a program.
-
-    You give an object of this kind to the submit function in order to run it.
-
-    cmd - string or sequence of objects which can be converted to strings
-  '''
-  interpreter = 'sh'
-  def __init__(self, *cmds):
-    for i, cmd in enumerate(cmds):
-      if isinstance(cmd, str) or not hasattr(cmd, '__iter__'):
-        cmds[i] = [cmd]
-    self.cmds = cmds
-    self.name_hint = None
-  def generate_script(self, qsubopts):
-    lines = [
-      ' '.join(list(str(q) for q in cmd)) for cmd in self.cmds
-      ]
-    if qsubopts.get('change_cwd', False):
-      lines = [ 'cd %s' % os.getcwd() ] + lines
-    return '\n'.join(lines)
-
-exe = Exe
-
-class SrunExe(object):
-  '''
-    A wrapper around a system call to execute a program.
-
-    You give an object of this kind to the submit function in order to run it.
-
-    cmd - string or sequence of objects which can be converted to strings
-  '''
-  interpreter = 'sh'
-  def __init__(self, *cmds):
-    for i, cmd in enumerate(cmds):
-      if isinstance(cmd, str) or not hasattr(cmd, '__iter__'):
-        cmds[i] = [cmd]
-    self.cmds = cmds
-    self.name_hint = None
-  def generate_script(self, qsubopts):
-    lines = [
-      ' '.join(list(str(q) for q in cmd)) for cmd in self.cmds
-      ]
-    if qsubopts.get('change_cwd', False):
-      lines = [ 'cd %s' % os.getcwd() ] + lines
-    return '\n'.join(lines)
-
-sexe = SrunExe    
+#class Exe(object):
+#  '''
+#    A wrapper around a system call to execute a program.
+#
+#    You give an object of this kind to the submit function in order to run it.
+#
+#    cmd - string or sequence of objects which can be converted to strings
+#  '''
+#  interpreter = 'sh'
+#  def __init__(self, *cmds):
+#    for i, cmd in enumerate(cmds):
+#      if isinstance(cmd, str) or not hasattr(cmd, '__iter__'):
+#        cmds[i] = [cmd]
+#    self.cmds = cmds
+#    self.name_hint = None
+#  def generate_script(self, qsubopts):
+#    lines = [
+#      ' '.join(list(str(q) for q in cmd)) for cmd in self.cmds
+#      ]
+#    if qsubopts.get('change_cwd', False):
+#      lines = [ 'cd %s' % os.getcwd() ] + lines
+#    return '\n'.join(lines)
+#
+#exe = Exe
+#
+#class SrunExe(object):
+#  '''
+#    A wrapper around a system call to execute a program.
+#
+#    You give an object of this kind to the submit function in order to run it.
+#
+#    cmd - string or sequence of objects which can be converted to strings
+#  '''
+#  interpreter = 'sh'
+#  def __init__(self, *cmds):
+#    for i, cmd in enumerate(cmds):
+#      if isinstance(cmd, str) or not hasattr(cmd, '__iter__'):
+#        cmds[i] = [cmd]
+#    self.cmds = cmds
+#    self.name_hint = None
+#  def generate_script(self, qsubopts):
+#    lines = [
+#      ' '.join(list(str(q) for q in cmd)) for cmd in self.cmds
+#      ]
+#    if qsubopts.get('change_cwd', False):
+#      lines = [ 'cd %s' % os.getcwd() ] + lines
+#    return '\n'.join(lines)
+#
+#sexe = SrunExe    
 
 
 def submit_qsub(obj, submission_program, **qsubopts):
@@ -363,7 +362,8 @@ def submit_qsub(obj, submission_program, **qsubopts):
   # add qsub stuff + python script
   f = cStringIO.StringIO()
   print >>f, first_line
-  write_directives_qsub_(f, **qsubopts)
+  if not goodArgumentsQueue.q_local:
+    write_directives_qsub_(f, **qsubopts)
   print >>f, obj.generate_script(qsubopts)
   return submit_(obj.interpreter, submission_program, f.getvalue())
   
@@ -417,37 +417,58 @@ def submit_slurm(obj, submission_program, **slurmopts):
 
 
 def submit(obj, **qsubopts):
-    if 'mem' in qsubopts and goodArgumentsQueue.memory == defaultMemory:
-      print('Memory setting provided by program')
-      global goodArgumentsQueue
-      goodArgumentsQueue.memory = qsubopts.pop('mem')
-    if not goodArgumentsQueue.memory == defaultMemory:
-      if 'mem' in qsubopts:
-        print('OVERRIDE Memory setting provided by program')
-        print('was: %s, will be: %s '%(qsubopts['mem'], goodArgumentsQueue.memory))
-        qsubopts.pop('mem') #pop and not storing!!!
-    if 'days' in qsubopts and goodArgumentsQueue.days == defaultDays:
-      print('Days setting provided by program')
-      global goodArgumentsQueue
-      goodArgumentsQueue.days = qsubopts.pop('days')
-    if not goodArgumentsQueue.days == defaultDays:
-      if 'days' in qsubopts:
-        print('OVERRIDE days setting provided by program')
-        print('was: %s, will be: %s '%(qsubopts['days'], goodArgumentsQueue.days))
-        qsubopts.pop('days') #pop and not storing!!!
-    if 'num_cpus' in qsubopts and goodArgumentsQueue.numThreads == defaultNumThreads:
-      print('threads setting provided by program')
-      global goodArgumentsQueue
-      goodArgumentsQueue.numThreads = qsubopts.pop('num_cpus')
-    if not goodArgumentsQueue.numThreads == defaultNumThreads:
-      if 'num_cpus' in qsubopts:
-        print('OVERRIDE thread setting provided by program')
-        print('was: %s, will be: %s '%(qsubopts['num_cpus'], goodArgumentsQueue.numThreads))
-        qsubopts.pop('num_cpus')
+#    if 'mem' in qsubopts and goodArgumentsQueue.memory == defaultMemory:
+#      print('Memory setting provided by program')
+#      global goodArgumentsQueue
+#      goodArgumentsQueue.memory = qsubopts.pop('mem')
+#    if not goodArgumentsQueue.memory == defaultMemory:
+#      if 'mem' in qsubopts:
+#        print('OVERRIDE Memory setting provided by program')
+#        print('was: %s, will be: %s '%(qsubopts['mem'], goodArgumentsQueue.memory))
+#        qsubopts.pop('mem') #pop and not storing!!!
+#    if 'days' in qsubopts and goodArgumentsQueue.days == defaultDays:
+#      print('Days setting provided by program')
+#      global goodArgumentsQueue
+#      goodArgumentsQueue.days = qsubopts.pop('days')
+#    if not goodArgumentsQueue.days == defaultDays:
+#      if 'days' in qsubopts:
+#        print('OVERRIDE days setting provided by program')
+#        print('was: %s, will be: %s '%(qsubopts['days'], goodArgumentsQueue.days))
+#        qsubopts.pop('days') #pop and not storing!!!
+#    if 'num_cpus' in qsubopts and goodArgumentsQueue.numThreads == defaultNumThreads:
+#      print('threads setting provided by program')
+#      global goodArgumentsQueue
+#      goodArgumentsQueue.numThreads = qsubopts.pop('num_cpus')
+#    if not goodArgumentsQueue.numThreads == defaultNumThreads:
+#      if 'num_cpus' in qsubopts:
+#        print('OVERRIDE thread setting provided by program')
+#        print('was: %s, will be: %s '%(qsubopts['num_cpus'], goodArgumentsQueue.numThreads))
+#        qsubopts.pop('num_cpus')
         
     #print(goodArgumentsQueue.memory)
     #print(defaultMemory)
+    '''
+    override parameters set by read in from files
+    by command line arguments
+    '''
+    #  mem = goodArgumentsQueue.memory
+#  num_cpus = goodArgumentsQueue.numThreads
+#  days = goodArgumentsQueue.days
+    if goodArgumentsQueue.numThreads:
+      print('override thread with from %i to %i' % (qsubopts['num_cpus'],goodArgumentsQueue.numThreads))
+      qsubopts['num_cpus'] = goodArgumentsQueue.numThreads
+    if goodArgumentsQueue.memory:
+      print('override memory with from %s to %s' % (qsubopts['mem'],goodArgumentsQueue.memory))
+      qsubopts['mem'] = goodArgumentsQueue.memory
+    if goodArgumentsQueue.days:
+      print('override time from %f to %f' % (qsubopts['days'],goodArgumentsQueue.days))
+      qsubopts['days'] = goodArgumentsQueue.days
     
+    if __debug__:
+      print(qsubopts)
+    
+    print("goodArgumentsQueue")
+    print(goodArgumentsQueue)
     prog = determine_submission_program_()
     if prog == 'sbatch':
       submit_slurm(obj, prog, **qsubopts)

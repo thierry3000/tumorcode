@@ -121,10 +121,9 @@ def runs_on_client(name,config):
 
   krebsutils.set_num_threads(params.pop('num_threads', 1))
   #krebsutils.run_iffsim(dicttoinfo.dicttoinfo(params), str(outfilename.encode('utf-8')), Measure(outfilename, measure_params))
-
   iff_cpp.run_iffsim(dicttoinfo.dicttoinfo(params), str(outfilename.encode('utf-8')), Measure(outfilename, measure_params))
-
-
+  if __debug__:
+    print('iff_cpp returned')
 
 
 def run_simple(name, config):
@@ -177,6 +176,7 @@ def run(outdir, name, tumorfn, config, p=dict(), piff=dict(), pdrug=dict(), grp_
   print '----------------------------------------'
 
   run_simple(c['fn_out'], c)
+  print('---- run_simple returned ----')
 
 
 

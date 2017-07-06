@@ -22,7 +22,7 @@ if (False)
 else()
   target_link_libraries(krebs_ common vesselgenlib ${myLibs} )
 endif()
-#set_target_properties(krebs_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_target_properties(krebs_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 install(TARGETS krebs_
 	LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
