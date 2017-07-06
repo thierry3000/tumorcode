@@ -107,10 +107,11 @@ bool IffDrugApp3d::InitNewState()
   
 
   std::auto_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(root.open_group(h5_path_lattice));
-  vesselList.reset(new VesselList3d());
+  vesselList.reset(new VesselList3d(ldp));
   vesselList->Init(*ldp);
   h5::Group vesselgroup = root.open_group(h5_path_vessel);
-  ReadHdfGraph(vesselgroup, *vesselList);
+  //ReadHdfGraph(vesselgroup, *vesselList);
+  ReadHdfGraph(vesselgroup, vesselList.get());
   { // read node pressure values
   DynArray<float> press;
   h5::read_dataset(vesselgroup.open_dataset("nodes/pressure"), press);
@@ -501,14 +502,15 @@ int  IffDrugApp3d::Main(const ptree &read_params, const string &outfilename, py:
   {
     return -1;
   }
+  cout << "init successfully passed" << endl;
   real_start_time = my::Time();
   /** @brief calculating the pressure and flow field
    */
   DoIffCalc();
   {
-  //write some output
-  h5::File file(fn_out, "w");
-  MeasureIfFlowState(file.root()); 
+    //write some output
+    h5::File file(fn_out, "w");
+    MeasureIfFlowState(file.root()); 
   } // don't keep file
   
 #ifdef USE_IFDRUGSIM

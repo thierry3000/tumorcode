@@ -20,9 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
+#include <string>
 #include "helpers-vec.h"
 #include "helpers-mem.h"
-
 
 template<int d, class SiteType = int, class StrideType = SiteType>
 class LatticeIndexing // Uniform lattice -> integer type index or pointer
@@ -139,8 +139,6 @@ public:
   }
 };
 
-
-
 struct AxisDirLen
 {
   int dir;
@@ -237,6 +235,7 @@ struct LatticeDataQuad3d : public LatticeIndexing<3, int64, int64>, public Latti
   };    
   
   LatticeDataQuad3d();
+  ~LatticeDataQuad3d(){};
   LatticeDataQuad3d(const LatticeDataQuad3d &ld) : LI(), LWT() { CopyMem(&ld, this, 1); }
   LatticeDataQuad3d(const Int3 &l, float scale=1.0f ) { Init(l, scale); }
   LatticeDataQuad3d(const BBox3 &bb, float scale=1.0f ) { Init(bb, scale); }
@@ -277,8 +276,6 @@ struct LatticeDataFCC : public LatticeIndexing<3, int64, int64>
   typedef Int3 LatticeIndexType;
   typedef int64 SiteType;
   enum { DIR_CNT = 12 };
-  
-  Float3 wo; // world coordinate offset, added in lattice -> world
 
   LatticeDataFCC() { ClearMem( this, 1 ); }
   LatticeDataFCC(const LatticeDataFCC &ld) { CopyMem(&ld, this, 1); }
@@ -303,6 +300,7 @@ struct LatticeDataFCC : public LatticeIndexing<3, int64, int64>
 
   
   void print(std::ostream &os) const;
+  Float3 wo; // world coordinate offset, added in lattice -> world
 
 protected:
   static volatile bool nbs_init;
@@ -311,7 +309,6 @@ protected:
   static Int3 vnb[2][3][DIR_CNT];
   float scale, scale_inv; // lattice spacing and 1/spacing
 };
-
 
 
 enum {
@@ -354,5 +351,5 @@ bool operator==( const LatticeDataFCC& a, const LatticeDataFCC& b );
 inline std::ostream& operator<<(std::ostream &os, const LatticeDataQuad3d &ld) { ld.print(os); return os; }
 inline std::ostream& operator<<(std::ostream &os, const LatticeDataFCC &ld) { ld.print(os); return os; }
 
-
 #endif
+

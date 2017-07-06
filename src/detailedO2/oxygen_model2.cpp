@@ -1133,8 +1133,7 @@ void ComputePo2Field(const Parameters &params,
 		     DomainDecomposition &mtboxes, 
 		     const TissuePhases &phases, 
 		     Array3df po2field, 
-		     FiniteVolumeMatrixBuilder &mb, 
-		     EllipticEquationSolver &solver, 
+		     FiniteVolumeMatrixBuilder &mb,  
 		     bool keep_preconditioner)
 {
   if (params.debug_zero_o2field) return;
@@ -1170,14 +1169,15 @@ void ComputePo2Field(const Parameters &params,
     }
   }
   
-  Epetra_Vector lhs(mb.rhs->Map());
+  RCP<Epetra_Vector> lhs= rcp(new Epetra_Vector(mb.rhs->Map()));
   #pragma omp parallel
   {
     BOOST_FOREACH(const BBox3 bbox, mtboxes.getCurrentThreadRange())
     {
       FOR_BBOX3(p, bbox)
       {
-        lhs[grid.ld.LatticeToSite(p)] = po2field(p);
+        (*lhs)[grid.ld.LatticeToSite(p)] = po2field(p);
+//         lhs->[grid.ld.LatticeToSite(p)] = po2field(p);
       }
     }
   }
@@ -1186,7 +1186,9 @@ void ComputePo2Field(const Parameters &params,
 
   try {
     //EllipticEquationSolver solver;
-    solver.init(*mb.m, *mb.rhs, solver_params);
+    //solver.init(mb.m, mb.rhs, solver_params);
+    //EllipticEquationSolver *solver = new EllipticEquationSolver(mb.m, mb.rhs, solver_params);
+    EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
     solver.solve(lhs);
   }
   catch (const ConvergenceFailureException &e)
@@ -1194,8 +1196,10 @@ void ComputePo2Field(const Parameters &params,
       if (e.reason == ConvergenceFailureException::MAX_ITERATIONS)
       {
         solver_params.put("keep_preconditioner", false);
-        solver.init(*mb.m, *mb.rhs, solver_params);
-        solver.solve(lhs);        
+        EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
+        solver.solve(lhs);
+        /*solver.init(mb.m, mb.rhs, solver_params);
+        solver.solve(lhs);  */      
       }
       else throw e;
   }
@@ -1206,7 +1210,8 @@ void ComputePo2Field(const Parameters &params,
     {
       FOR_BBOX3(p, bbox)
       {
-        po2field(p) = lhs[grid.ld.LatticeToSite(p)];
+        po2field(p) = (*lhs)[grid.ld.LatticeToSite(p)];
+        //po2field(p) = lhs[grid.ld.LatticeToSite(p)];
       }
     }
   }
@@ -1246,7 +1251,7 @@ void ComputePO2(const Parameters &params,
   //could use for example different stencils
   FiniteVolumeMatrixBuilder tissue_diff_matrix_builder;
   //eqation solver is also implemented as struct
-  EllipticEquationSolver tissue_diff_solver;
+  //EllipticEquationSolver tissue_diff_solver;
 
 #if APPROXIMATE_FEM_TRANSVASCULAR_EXCHANGE_TERMS
   tissue_diff_matrix_builder.Init7Point(grid.ld, grid.dim);
@@ -1304,12 +1309,13 @@ void ComputePO2(const Parameters &params,
                   tissue_diff_matrix_builder);
     }
     
-    bool keep_preconditioner = (iteration_num>2 && tissue_diff_solver.iteration_count<25);
+    //bool keep_preconditioner = (iteration_num>2 && tissue_diff_solver.iteration_count<25);
+    bool keep_preconditioner = true;
     
     /*
      * 2) propagate the oxygen from the blood stream to the tissue
      */
-    ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, tissue_diff_solver, keep_preconditioner);
+    ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, keep_preconditioner);
     
     /*
      * From here on the results are handled
@@ -1371,8 +1377,8 @@ void ComputePO2(const Parameters &params,
   
   tissue_diff_matrix_builder.ZeroOut();
   IntegrateVesselPO2(params, vesselpo2, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
-  ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, tissue_diff_solver, true);
-
+  //ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, tissue_diff_solver, true);
+  ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, true);
 }
 
 

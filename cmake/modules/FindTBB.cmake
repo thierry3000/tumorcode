@@ -101,7 +101,7 @@ if(NOT TBB_FOUND)
   ##################################
   
   # Define search paths based on user input and environment variables
-  set(TBB_SEARCH_DIR ${TBB_ROOT_DIR} $ENV{TBB_INSTALL_DIR} $ENV{TBBROOT})
+  set(TBB_SEARCH_DIR ${TBB_INSTALL_DIR} $ENV{TBB_INSTALL_DIR} $ENV{TBBROOT})
   
   # Define the search directories based on the current platform
   if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -209,10 +209,10 @@ if(NOT TBB_FOUND)
     set(TBB_VERSION "${TBB_VERSION_MAJOR}.${TBB_VERSION_MINOR}")
   endif()
   
-  find_package_handle_standard_args(TBB 
-      REQUIRED_VARS TBB_INCLUDE_DIRS TBB_LIBRARIES
-      HANDLE_COMPONENTS
-      VERSION_VAR TBB_VERSION)
+#   find_package_handle_standard_args(TBB 
+#       REQUIRED_VARS TBB_INCLUDE_DIRS TBB_LIBRARIES
+#       HANDLE_COMPONENTS
+#       VERSION_VAR TBB_VERSION)
   
   mark_as_advanced(TBB_INCLUDE_DIRS TBB_LIBRARIES)
 

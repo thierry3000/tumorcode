@@ -29,6 +29,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <Epetra_Vector.h>
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_LinearProblem.h>
+#include <Tpetra_DefaultPlatform.hpp>
+#include <Tpetra_CrsMatrix.hpp>
+#include <Tpetra_Version.hpp>
+#include <BelosTpetraAdapter.hpp>
+//#include <Ifpack2_Factory.hpp>
 #include <AztecOO.h>
 #include <EpetraExt_RowMatrixOut.h>
 #include <EpetraExt_VectorOut.h>
@@ -64,10 +69,10 @@ void FiniteVolumeMatrixBuilder::FiniteVolumeMatrixBuilder::Init7Point(const Latt
   }
 
 #ifdef EPETRA_MPI
-    #warning "Compiling with MPI Enabled"
+    //#warning "Compiling with MPI Enabled"
     Epetra_MpiComm epetra_comm(MPI_COMM_SELF);
 #else
-    #warning "Compiling without MPI"
+    //#warning "Compiling without MPI"
     Epetra_SerialComm epetra_comm;
 #endif
   
@@ -132,10 +137,10 @@ void FiniteVolumeMatrixBuilder::FiniteVolumeMatrixBuilder::Init27Point(const Lat
     num_entries[site] = stencil_size.prod();
   }
 #ifdef EPETRA_MPI
-    #warning "Compiling with MPI Enabled"
+    //#warning "Compiling with MPI Enabled"
     Epetra_MpiComm epetra_comm(MPI_COMM_SELF);
 #else
-    #warning "Compiling without MPI"
+    //#warning "Compiling without MPI"
     Epetra_SerialComm epetra_comm;
 #endif
   Epetra_Map epetra_map(num_dof, 0, epetra_comm);
@@ -340,283 +345,430 @@ enum EllipticSolveOutputLevel
 };
 
 #if 1
-void EllipticEquationSolver::init ( const Epetra_Operator& matrix_, const Epetra_Vector& rhs_, const ptree& params_)
+EllipticEquationSolver::EllipticEquationSolver(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vector> &_rhs, const ptree& _params):
+sys_matrix(_matrix), rhs(_rhs), params(_params)
 {
-  sys_matrix = dynamic_cast<const Epetra_RowMatrix*>(&matrix_);
-  sys_operator = &matrix_;
-  rhs = &rhs_;
-  params = params_;
-
-  string sol_out_lvl = params.get<string>("verbosity","silent");
-  keep_preconditioner = params.get<bool>("keep_preconditioner", false);
-  const string prec_name = params.get<string>("preconditioner","jacobi");
-
-  my::Time _t;
-  if (sys_matrix && prec_name=="multigrid" && (!keep_preconditioner || !prec.get()))
+  int success = init(sys_matrix,rhs,params);
+}
+int EllipticEquationSolver::init(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vector> &_rhs, const ptree& _params)
+{
+#ifdef EPETRA_MPI
+  int MyPID = 0;
+  int isMPIinitialized;
+  int error = MPI_Initialized(&isMPIinitialized);
+  if( isMPIinitialized == 1)
   {
-    Teuchos::ParameterList mllist;
-    ML_Epetra::SetDefaults("SA",mllist);
+    Epetra_MpiComm Comm (MPI_COMM_WORLD);
+    MyPID = Comm.MyPID ();
+  }
+  else
+  {
+    //MPI_Init();
+    printf("did you use the MPI wrapper?\n");
+  }
+#else
+  Epetra_SerialComm Comm;
+#endif
+  
+  ifpackList = Teuchos::rcp (new Teuchos::ParameterList ("my Teuchos List"));
+  
+  bool verbose = false;
+  bool success = true;
+  
+  try {
+    bool proc_verbose = true;
+    int frequency = 10;        // frequency of status test output.
+    int numrhs = 1;            // number of right-hand sides to solve for
+    int maxiters = 1000;         // maximum number of iterations allowed per linear 
+    MT tol = 1.0e-5;           // relative residual tolerance
 
-    mllist.set("max levels", params.get<int>("max_levels", 10));
-    mllist.set("cycle applications", 2);
-    //mllist.set("prec type", "MGW");
+    sys_matrix->OptimizeStorage ();
+#ifdef EPETRA_MPI
+    proc_verbose = verbose && (MyPID==0);  /* Only print on the zero processor */
+#else
+    proc_verbose = verbose;
+#endif
 
-    //mllist.set("increasing or decreasing","increasing");
-    //mllist.set("aggregation: type", "Uncoupled");
-    //mllist.set("aggregation: threshold", 0.3);
+    // allocates an IFPACK factory. No data is associated
+    // to this object (only method Create()).
+    Ifpack Factory;
+
+    // create the preconditioner. For valid PrecType values,
+    // please check the documentation
     
-    if (!params.get<bool>("use_smoothed_aggregation", false))
+    //std::string PrecType = "point relaxation stand-alone"; // incomplete Cholesky
+    std::string PrecType = params.get<string>("preconditioner","jacobi"); // default jacobi
+    keep_preconditioner = params.get<bool>("keep_preconditioner", false);
+    string sol_out_lvl = params.get<string>("verbosity","silent");
+    
+    int OverlapLevel = 0; // must be >= 0. If Comm.NumProc() == 1,
+    // it is ignored.
+    // create ifpack preconditioner
+    if(sys_matrix.get() && PrecType=="multigrid" && (!keep_preconditioner || !ml_prec.get()))
+    {
+#ifdef DEBUG
+      cout<<"hey"<<endl;
+#endif
+      Teuchos::ParameterList mllist;
+      ML_Epetra::SetDefaults("SA",mllist);
+      
+      mllist.set("max levels", params.get<int>("max_levels", 10));
+      mllist.set("cycle applications", 2);
+      
+      if (!params.get<bool>("use_smoothed_aggregation", false))
       mllist.set("aggregation: damping factor", 0.);
-    //mllist.set("eigen-analysis: iterations", 3);
+      
+      mllist.set("smoother: type","Chebyshev"); // <---- this preconditioner ist much more effective than jacobi for complicated tumor vessel networks!!!
+      
+      mllist.set("smoother: pre or post", "both");
+      mllist.set("smoother: sweeps", 2);
+      
+      mllist.set("coarse: max size",10000);
+      mllist.set("coarse: type", "Amesos-UMFPACK");
+      
+      int ml_output = OUT_SILENT;
+      if (sol_out_lvl == "max" || sol_out_lvl == "full")
+        ml_output = 10;
+      mllist.set("ML output", ml_output);
+      
+      try {
+        ml_prec = Teuchos::rcp(new ML_Epetra::MultiLevelPreconditioner(*sys_matrix,mllist,true));
+    } catch (std::exception& e) {
+      std::ostringstream os;
+      os << "ML preconditioner construction threw an exception: "
+         << e.what ();
+      TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error, os.str ());
+    }
+    Teuchos::RCP<Belos::EpetraPrecOp> belosPrec = Teuchos::rcp (new Belos::EpetraPrecOp (ml_prec));
+    this->belos_Prec = belosPrec;
+    }
+//     else if(sys_matrix && prec_name=="ic" && (!keep_preconditioner || !ifpack_prec.get()))
+//     {
+//       ifpack_Prec.reset(new Ifpack_IC(const_cast<Epetra_RowMatrix*>(sys_matrix)));
+//       ifpack_Prec->Initialize();
+//       ifpack_Prec->Compute();
+//     }
+//     else if(sys_matrix && prec_name=="ilu" && (!keep_preconditioner || !ifpack_prec.get()))
+//     {
+//       ifpack_Prec.reset(new Ifpack_ILU(const_cast<Epetra_RowMatrix*>(sys_matrix)));
+//       ifpack_Prec->Initialize();
+//       ifpack_Prec->Compute();
+//     }
+    try {
+      ifpack_Prec = Teuchos::rcp (Factory.Create (PrecType, sys_matrix.get(), OverlapLevel));
+    } catch (std::exception& e) {
+      std::ostringstream os;
+      os << "Ifpack preconditioner construction threw an exception: "
+         << e.what ();
+      TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error, os.str ());
+    }
+    TEUCHOS_TEST_FOR_EXCEPTION
+      (ifpack_Prec.is_null (), std::runtime_error, "Failed to create Ifpack "
+       "preconditioner!");
 
-    mllist.set("smoother: type","Chebyshev"); // <---- this preconditioner ist much more effective than jacobi for complicated tumor vessel networks!!!
-    //mllist.set("smoother: type","Jacobi");
-
-    mllist.set("smoother: pre or post", "both");
-    mllist.set("smoother: sweeps", 2);
-
-//    mllist.set("coarse: max size",128*128);
-//    mllist.set("coarse: type", "Chebyshev");
-
-     mllist.set("coarse: max size",10000);
-     mllist.set("coarse: type", "Amesos-UMFPACK");
-
-    // ML_Set_SpectralNormScheme_PowerMethod
-    // ML_Set_SpectralNormScheme_Calc
-    // ML_Aggregate_Set_DampingFactor
-    // ML_Aggregate_Set_NullSpace).
-
-//     if (keep_preconditioner)
-//       mllist.set("reuse: enable", true);
-     
-    int ml_output = OUT_SILENT;
-    if (sol_out_lvl == "max" || sol_out_lvl == "full")
-      ml_output = 10;
-    mllist.set("ML output", ml_output);
-
-    prec.reset(new  ML_Epetra::MultiLevelPreconditioner(*sys_matrix, mllist, true));
+    try {
+      ifpackList->set ("relaxation: type", "Jacobi");
+    } catch( std::exception& e)
+    {
+      std::ostringstream os;
+      os << "Teuchos parameter list construction threw an exception: "
+         << e.what ();
+      TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error, os.str ());
+    }
+    TEUCHOS_TEST_FOR_EXCEPTION
+      (ifpackList.is_null (), std::runtime_error, "Failed to create Ifpack "
+       "list!");
+    
+    //
+    // Create parameter list for the Belos solver
+    //
+    const int NumGlobalElements = _rhs->GlobalLength ();
+    if (maxiters == -1) {
+      maxiters = NumGlobalElements - 1; // maximum number of iterations to run
+    }
+    
+    
+    //Will be the arguments for the belos Solver
+    Teuchos::RCP<Teuchos::ParameterList> belosList = Teuchos::rcp (new Teuchos::ParameterList ("Belos"));
+    belosList->set ("Maximum Iterations", maxiters);
+    belosList->set ("Convergence Tolerance", tol);
+    if (numrhs > 1) {
+      // Show only the maximum residual norm
+      belosList->set ("Show Maximum Residual Norm Only", true);
+    }
+    if (verbose) {
+      belosList->set ("Verbosity", Belos::Errors + Belos::Warnings +
+                     Belos::TimingDetails + Belos::StatusTestDetails);
+      if (frequency > 0) {
+        belosList->set ("Output Frequency", frequency);
+      }
+    }
+    else {
+      belosList->set ("Verbosity", Belos::Errors + Belos::Warnings +
+                      Belos::FinalSummary);
+    }
+    
   }
-  else if(sys_matrix && prec_name=="ic" && (!keep_preconditioner || !ifpackprec.get()))
-  {
-    ifpackprec.reset(new Ifpack_IC(const_cast<Epetra_RowMatrix*>(sys_matrix)));
-    ifpackprec->Initialize();
-    ifpackprec->Compute();
-  }
-  else if(sys_matrix && prec_name=="ilu" && (!keep_preconditioner || !ifpackprec.get()))
-  {
-    ifpackprec.reset(new Ifpack_ILU(const_cast<Epetra_RowMatrix*>(sys_matrix)));
-    ifpackprec->Initialize();
-    ifpackprec->Compute();
-  }
-//   else if(prec.get())
-//   {
-//     //prec->ReComputePreconditioner(false);
-//     //prec->ComputePreconditioner(true);
-//   }
-  time_precondition = (my::Time() - _t).to_ms();
-  time_iteration = 0;
-  iteration_count = 0;
-  convergent = false;
-  residual = std::numeric_limits<double>::quiet_NaN();
+  TEUCHOS_STANDARD_CATCH_STATEMENTS(verbose, std::cerr, success);
+
+#ifdef EPETRA_MPI
+  //MPI_Finalize();
+#endif
 }
 
-
-void EllipticEquationSolver::solve ( Epetra_Vector& lhs )
+int EllipticEquationSolver::solve ( RCP<Epetra_Vector> _lhs )
 {
-  //if (!solver_impl.get())
-  { // for some reason the solver crashes if it is kept betwenn calls to iterate.
-    if (sys_matrix)
-      solver_impl.reset(new AztecOO(const_cast<Epetra_RowMatrix*>(sys_matrix), &lhs, const_cast<Epetra_Vector*>(rhs)));
-    else
-      solver_impl.reset(new AztecOO(const_cast<Epetra_Operator*>(sys_operator), &lhs, const_cast<Epetra_Vector*>(rhs)));
-  }
-  myAssert(solver_impl->GetUserOperator() == sys_operator);
-  
-  solver_impl->SetOutputStream(cout);
-  
-  if (prec.get())
-    solver_impl->SetPrecOperator(prec.get());
-  else if (ifpackprec.get())
-    solver_impl->SetPrecOperator(ifpackprec.get());
-  else if (sys_matrix)
-  {
-    solver_impl->SetAztecOption(AZ_precond, AZ_Jacobi);
-  }
-  else
-    solver_impl->SetAztecOption(AZ_precond, AZ_none);
-  
-  const string solver_str = params.get("solver", "cg");
-  if (solver_str == "bicgstab")
-    solver_impl->SetAztecOption(AZ_solver, AZ_bicgstab);
-  else if (solver_str == "cg")
-    solver_impl->SetAztecOption(AZ_solver, AZ_cg);
-  else
-    throw std::runtime_error(str(format("wtf is solver %s") % solver_str));
-  int az_output = AZ_none;
+  bool verbose = false;
+  bool success = true;
+  try {
+    //
+    // Construct a preconditioned linear problem
+    // i think this should move to solve
+    //
+    bool leftprec = false;     // left preconditioning or right.
+    bool proc_verbose = true;
+    RCP<Belos::LinearProblem<double,MV,OP> > problem
+      = rcp (new Belos::LinearProblem<double,MV,OP> (sys_matrix, _lhs, rhs));
+    if (leftprec) {
+      problem->setLeftPrec (belos_Prec);
+    }
+    else {
+      problem->setRightPrec (belos_Prec);
+    }
+    bool set = problem->setProblem ();
+    if (! set) {
+      if (proc_verbose) {
+        cout << endl << "ERROR:  Belos::LinearProblem failed to set up correctly!" << endl;
+      }
+      return -1;
+    }
 
-  string sol_out_lvl = params.get<string>("verbosity","silent");
-  if (sol_out_lvl == "max" || sol_out_lvl == "full")
-    az_output = AZ_summary;
-  else if (sol_out_lvl == "normal")
-    az_output = AZ_warnings;
-  
-  solver_impl->SetAztecOption(AZ_output, az_output);
-  const string conv_str = params.get("conv", "r0");
-  if (conv_str == "r0")
-    solver_impl->SetAztecOption(AZ_conv, AZ_r0);
-  else if (conv_str == "rhs")
-    solver_impl->SetAztecOption(AZ_conv, AZ_rhs);
-  else if (conv_str == "Anorm")
-  solver_impl->SetAztecOption(AZ_conv, AZ_Anorm);
-  else if (conv_str == "noscaled")
-    solver_impl->SetAztecOption(AZ_conv, AZ_noscaled);
-  else
-    throw std::runtime_error(str(format("wtf is conv %s") % conv_str));
-
-  my::Time _t;  
-  solver_impl->Iterate(params.get<int>("max_iter", 50), params.get<double>("max_resid", 1.e-9));
-  time_iteration = (my::Time() - _t).to_ms();
-  
-  const double *status = solver_impl->GetAztecStatus();
-  iteration_count = status[AZ_its];
-  residual = status[AZ_scaled_r];
-  convergent = !(status[AZ_why] != AZ_normal && status[AZ_why] != AZ_loss);
-
-  if ((sol_out_lvl != "silent") || !convergent)
-  {
-    string fail_str = "UNKNOWN";
-    if (status[AZ_why] == AZ_normal)          fail_str = "OK";
-    else if (status[AZ_why] == AZ_breakdown)  fail_str = "BREAKDOWN";
-    else if (status[AZ_why] == AZ_loss)       fail_str = "LOSS"; 
-    else if (status[AZ_why] == AZ_maxits)     fail_str = "MAX_ITER";
-    cout << boost::format("ElEq: time: %s (pc %s) ms, iters: %i, residual: %e, %s") % (time_iteration+time_precondition) % time_precondition % iteration_count % residual % fail_str << endl;
+    // Create a Belos solver.
+    //note: BiCGStabSolMgr is not present in earlier versions of trilinos
+    //RCP<Belos::SolverManager<double,MV,OP> > solver = rcp (new Belos::BiCGStabSolMgr<double,MV,OP> (problem, belosList));
+    RCP<Belos::SolverManager<double,MV,OP> > solver = rcp (new Belos::BlockCGSolMgr<double,MV,OP> (problem, belosList));
+//     if (proc_verbose) {
+//       cout << endl << endl;
+//       cout << "Dimension of matrix: " << NumGlobalElements << endl;
+//       cout << "Number of right-hand sides: " << numrhs << endl;
+//       cout << "Max number of CG iterations: " << maxiters << endl;
+//       cout << "Relative residual tolerance: " << tol << endl;
+//       cout << endl;
+//     }
+    // Ask Belos to solve the linear system.
+    Belos::ReturnType ret = solver->solve();
+    //vector_print(*_lhs);
   }
+  TEUCHOS_STANDARD_CATCH_STATEMENTS(verbose, std::cerr, success)
 
-  if (!convergent && params.get("throw", true))
-  {
-    int reason = status[AZ_why]==AZ_maxits ? ConvergenceFailureException::MAX_ITERATIONS : ConvergenceFailureException::OTHER;
-    throw ConvergenceFailureException("linear system solve did not converge", reason);
-  }
-  
-  if (!keep_preconditioner)
-  {
-    prec.reset(NULL);
-    ifpackprec.reset(NULL);
-  }
-  solver_impl.reset();
 }
 #endif
 
 
 #if 1
-void SolveEllipticEquation(const Epetra_Operator &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params)
+int SolveEllipticEquation(Teuchos::RCP<Epetra_CrsMatrix> &matrix, Teuchos::RCP<Epetra_Vector> &rhs, Teuchos::RCP<Epetra_Vector> &lhs, const boost::property_tree::ptree &params)
 {
-  EllipticEquationSolver solver;
-  solver.init(matrix, rhs, params);
+  EllipticEquationSolver solver(matrix, rhs, params);
   solver.solve(lhs);
 }
 #endif
 
 #if 0
-void SolveEllipticEquation(const Epetra_CrsMatrix &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params)
+//note: this is good for experimenting with trilinos
+//do NOT delete
+// void SolveEllipticEquation(const Epetra_CrsMatrix &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params)
+int SolveEllipticEquation(Teuchos::RCP<Epetra_CrsMatrix> _matrix, Teuchos::RCP<Epetra_Vector> _rhs, Teuchos::RCP<Epetra_Vector> _lhs, const boost::property_tree::ptree &params)
 {
-  int output = params.get<int>("output", OUT_NORMAL_IN_DEBUG);
-  if (output == OUT_NORMAL_IN_DEBUG)
-#ifdef DEBUG
-    output = OUT_NORMAL;
+  cout<<"BELOS?????"<<endl;
+  
+  using Teuchos::ParameterList;
+  using Teuchos::RCP;
+  using Teuchos::rcp;
+  using std::cout;
+  using std::endl;
+  typedef double                            ST;
+  typedef Teuchos::ScalarTraits<ST>        SCT;
+  typedef SCT::magnitudeType                MT;
+  typedef Epetra_MultiVector                MV;
+  typedef Epetra_Operator                   OP;
+  typedef Belos::MultiVecTraits<ST,MV>     MVT;
+  typedef Belos::OperatorTraits<ST,MV,OP>  OPT;
+  
+    int MyPID = 0;
+#ifdef EPETRA_MPI
+  MPI_Init (&argc, &argv);
+  Epetra_MpiComm Comm (MPI_COMM_WORLD);
+  MyPID = Comm.MyPID ();
 #else
-    output = OUT_SILENT;
+  Epetra_SerialComm Comm;
 #endif
-  if (params.get<bool>("output_matrix", false))
-  {
-    std::ofstream f("matrix.txt");
-    matrix.Print(f);
-  }
 
-  my::Time _t;
-  std::auto_ptr<ML_Epetra::MultiLevelPreconditioner> prec;
-  if (params.get<bool>("use_multigrid", true))
-  {
-    Teuchos::ParameterList mllist;
-    ML_Epetra::SetDefaults("SA",mllist);
-
-    mllist.set("max levels", params.get<int>("max_levels", 10));
-    mllist.set("cycle applications", 2);
-    //mllist.set("prec type", "MGW");
-
-    //mllist.set("increasing or decreasing","increasing");
-    //mllist.set("aggregation: type", "Uncoupled");
-    //mllist.set("aggregation: threshold", 0.1);
-    if (!params.get<bool>("use_smoothed_aggregation", false))
-      mllist.set("aggregation: damping factor", 0.);
-    //mllist.set("eigen-analysis: iterations", 3);
-
-    //mllist.set("smoother: type","Chebyshev");
-    mllist.set("smoother: type","Jacobi");
-
-    //mllist.set("smoother: pre or post", "both");
-    //mllist.set("smoother: sweeps", 2);
-
-    //mllist.set("coarse: max size",128*128);
-    //mllist.set("coarse: type", "Chebyshev");
-
-    mllist.set("coarse: max size",5000);
-    mllist.set("coarse: type", "Amesos-UMFPACK");
-    
-    // ML_Set_SpectralNormScheme_PowerMethod
-    // ML_Set_SpectralNormScheme_Calc
-    // ML_Aggregate_Set_DampingFactor
-    // ML_Aggregate_Set_NullSpace).
-
-    int ml_output = output;
-    if (output == OUT_FULL)
-      ml_output = 10;
-    mllist.set("ML output", ml_output);
-
-    prec.reset(new  ML_Epetra::MultiLevelPreconditioner(matrix, mllist, true));
-  }
-  my::Time t_pc = my::Time() - _t;
-
-  //Epetra_LinearProblem problem(const_cast<Epetra_CrsMatrix*>(&matrix), &lhs, const_cast<Epetra_Vector*>(&rhs));
-  //AztecOO solver(problem);
-  AztecOO solver(const_cast<Epetra_CrsMatrix*>(&matrix), &lhs, const_cast<Epetra_Vector*>(&rhs));
-  solver.SetOutputStream(cout);
-  //solver.SetAztecOption(AZ_precond, AZ_none);
-  if (prec.get())
-    solver.SetPrecOperator(prec.get());
-  else
-    solver.SetAztecOption(AZ_precond, AZ_Jacobi);
-    //solver.SetAztecOption(AZ_precond, AZ_ls);
-  const string solver_str = params.get("solver", "cg");
-  if (solver_str == "bicgstab")
-    solver.SetAztecOption(AZ_solver, AZ_bicgstab);
-  else if (solver_str == "cg")
-    solver.SetAztecOption(AZ_solver, AZ_cg);
-  else
-    throw std::runtime_error(str(format("wtf is solver %s") % solver_str));
-  int az_output = AZ_none;
-  switch(output)
-  {
-    case OUT_NORMAL: az_output = AZ_warnings; break;
-    case OUT_FULL: az_output = AZ_all; break;
-  }
-  solver.SetAztecOption(AZ_output, az_output);
-  solver.SetAztecOption(AZ_conv, AZ_noscaled); //AZ_Anorm);
-  solver.Iterate(params.get<int>("max_iter", 50), params.get<double>("max_resid", 1.e-9));
-  const double *status = solver.GetAztecStatus();
-  if (status[AZ_why] != AZ_normal && status[AZ_why] != AZ_loss)
-  {
-    if (params.get<bool>("output_matrix_on_failure", false))
-    {
-      std::ofstream f("failmatrix.txt");
-      matrix.Print(f);
-    }
-    throw ConvergenceFailureException("linear system solve did not converge");
-  }
-  if (output >= OUT_NORMAL)
-  {
-    cout << boost::format("ElEq: time: %s (pc %s), iters: %i, residual: %e") % (my::Time() - _t) % t_pc % status[AZ_its] % status[AZ_r] << endl;
-  }
+  bool verbose = false;
+  bool success = true;
+  
+  // This "try" relates to TEUCHOS_STANDARD_CATCH_STATEMENTS near the
+  // bottom of main().  That macro has the corresponding "catch".
+  
+  
+//   int output = params.get<int>("output", OUT_NORMAL_IN_DEBUG);
+//   if (output == OUT_NORMAL_IN_DEBUG)
+// #ifdef DEBUG
+//     output = OUT_NORMAL;
+// #else
+//     output = OUT_SILENT;
+// #endif
+//   if (params.get<bool>("output_matrix", false))
+//   {
+//     std::ofstream f("matrix.txt");
+//     matrix.Print(f);
+//   }
+// 
+//   my::Time _t;
+//   
+//   // Set up Tpetra typedefs.
+//   typedef double scalar_type;
+//   typedef int local_ordinal_type;
+//   typedef long global_ordinal_type;
+//   typedef KokkosClassic::DefaultNode::DefaultNodeType node_type;
+//   
+//   typedef Tpetra::CrsMatrix<scalar_type, local_ordinal_type, global_ordinal_type, node_type> matrix_type;
+//   typedef Tpetra::Operator<scalar_type, local_ordinal_type, global_ordinal_type, node_type> op_type;
+//   typedef Tpetra::MultiVector<scalar_type, local_ordinal_type, global_ordinal_type, node_type> vec_type;
+//   
+//   // An Ifpack2::Preconditioner is-a Tpetra::Operator.  Ifpack2
+//   // creates a Preconditioner object, but users of iterative methods
+//   // want a Tpetra::Operator.  That's why create() returns an Operator
+//   // instead of a Preconditioner.
+//   typedef Ifpack2::Preconditioner<scalar_type, local_ordinal_type, 
+//                                   global_ordinal_type, node_type> prec_type;
+//   
+//   Teuchos::RCP<prec_type> prec;
+//   Ifpack2::Factory factory2;
+//   //prec = factory2.create("ILUT", &matrix);
+//   Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> _ml_prec;
+//   Teuchos::RCP<Ifpack_Preconditioner> _ifpack_preconditioner;
+//   
+//   Teuchos::oblackholestream blackHole;
+//   Teuchos::RCP<const Teuchos::Comm<int>> comm=
+//    Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
+//   
+//   Teuchos::ParameterList mllist;
+//   mllist.set ("Num Blocks", 40);
+//   if (params.get<bool>("use_multigrid", true))
+//   {
+//     ML_Epetra::SetDefaults("SA",mllist);
+// 
+//     mllist.set("max levels", params.get<int>("max_levels", 10));
+//     mllist.set("cycle applications", 2);
+//     //mllist.set("prec type", "MGW");
+// 
+//     //mllist.set("increasing or decreasing","increasing");
+//     //mllist.set("aggregation: type", "Uncoupled");
+//     //mllist.set("aggregation: threshold", 0.1);
+//     if (!params.get<bool>("use_smoothed_aggregation", false))
+//       mllist.set("aggregation: damping factor", 0.);
+//     //mllist.set("eigen-analysis: iterations", 3);
+// 
+//     //mllist.set("smoother: type","Chebyshev");
+//     mllist.set("smoother: type","Jacobi");
+// 
+//     //mllist.set("smoother: pre or post", "both");
+//     //mllist.set("smoother: sweeps", 2);
+// 
+//     //mllist.set("coarse: max size",128*128);
+//     //mllist.set("coarse: type", "Chebyshev");
+// 
+//     mllist.set("coarse: max size",5000);
+//     mllist.set("coarse: type", "Amesos-UMFPACK");
+//     
+//     // ML_Set_SpectralNormScheme_PowerMethod
+//     // ML_Set_SpectralNormScheme_Calc
+//     // ML_Aggregate_Set_DampingFactor
+//     // ML_Aggregate_Set_NullSpace).
+// 
+//     int ml_output = output;
+//     if (output == OUT_FULL)
+//       ml_output = 10;
+//     mllist.set("ML output", ml_output);
+//     
+//     //_ml_prec.reset(new  ML_Epetra::MultiLevelPreconditioner(matrix, mllist, true));
+//   }
+//   //_ml_prec->SetParameterList(mllist);
+//   my::Time t_pc = my::Time() - _t;
+// 
+//   //Epetra_LinearProblem problem(const_cast<Epetra_CrsMatrix*>(&matrix), &lhs, const_cast<Epetra_Vector*>(&rhs));
+//   //AztecOO solver(problem);
+//   //AztecOO solver(const_cast<Epetra_CrsMatrix*>(&matrix), &lhs, const_cast<Epetra_Vector*>(&rhs));
+//   typedef Belos::LinearProblem<BelosScalarType, BelosMultiVector, BelosOperator> BelosLinearProblem;
+//   Teuchos::RCP<BelosLinearProblem> linear_problem = Teuchos::rcp(
+//     //new BelosLinearProblem(Teuchos::rcp(const_cast<Epetra_CrsMatrix*>(&matrix),false),Teuchos::rcp(&lhs,false),Teuchos::rcp(&rhs,false)));
+//     new BelosLinearProblem(Teuchos::rcp(&matrix,false),Teuchos::rcp(&lhs,false),Teuchos::rcp(&rhs,false)));
+//   const bool success = linear_problem->setProblem();
+//   
+//   Teuchos::RCP<Teuchos::ParameterList> belosList(new Teuchos::ParameterList());
+//   belosList->set("Num Blocks", 40);
+// //   Teuchos::ParameterList belosList;
+// //   belosList.set("Verbosity", Belos::TimingDetails);
+// //   belosList.set("Num Blocks", 40);
+//   //int verbosity = Belos::Error + Belos::Warnings;
+//   //solver.SetOutputStream(cout);
+//   
+//   // Look up the Belos name of the method in _methods. This is a
+//   // little complicated since std::maps<> don't have const lookup.
+//   //std::map<std::string, std::string>::const_iterator it = _methods.find(_method);
+// 
+//   //if (it == _methods.end())
+// 
+//   //_ml_prec->set(*linear_problem, &lhs);
+//   // set-up linear solver
+//   Belos::SolverFactory<BelosScalarType, BelosMultiVector, BelosOperator> factory;
+//   //Teuchos::RCP<Teuchos::ParameterList>
+//   //Teuchos::RCP<Belos::SolverManager<BelosScalarType,BelosMultiVector,BelosOperator> > solver = factory.create("cg", Teuchos::rcp(&belosList, false));
+//   Teuchos::RCP<Belos::SolverManager<BelosScalarType,BelosMultiVector,BelosOperator> > solver = factory.create("cg",belosList);
+//   //linear_problem->setRightPrec(_ml_prec);
+//   linear_problem->setProblem();
+//   solver->setProblem(linear_problem);
+//   
+//   // Start solve
+//   Belos::ReturnType ret = solver->solve();
+//   
+// 
+//   //solver.SetAztecOption(AZ_precond, AZ_none);
+// //   if (prec.get())
+// //     solver.SetPrecOperator(prec.get());
+// //   else
+// //     solver.SetAztecOption(AZ_precond, AZ_Jacobi);
+// //     //solver.SetAztecOption(AZ_precond, AZ_ls);
+// //   const string solver_str = params.get("solver", "cg");
+// //   if (solver_str == "bicgstab")
+// //     solver.SetAztecOption(AZ_solver, AZ_bicgstab);
+// //   else if (solver_str == "cg")
+// //     solver.SetAztecOption(AZ_solver, AZ_cg);
+// //   else
+// //     throw std::runtime_error(str(format("wtf is solver %s") % solver_str));
+// //   int az_output = AZ_none;
+// //   switch(output)
+// //   {
+// //     case OUT_NORMAL: az_output = AZ_warnings; break;
+// //     case OUT_FULL: az_output = AZ_all; break;
+// //   }
+// //   solver.SetAztecOption(AZ_output, az_output);
+// //   solver.SetAztecOption(AZ_conv, AZ_noscaled); //AZ_Anorm);
+// //   solver.Iterate(params.get<int>("max_iter", 50), params.get<double>("max_resid", 1.e-9));
+// //   const double *status = solver.GetAztecStatus();
+// //   if (status[AZ_why] != AZ_normal && status[AZ_why] != AZ_loss)
+// //   {
+// //     if (params.get<bool>("output_matrix_on_failure", false))
+// //     {
+// //       std::ofstream f("failmatrix.txt");
+// //       matrix.Print(f);
+// //     }
+// //     //throw ConvergenceFailureException("linear system solve did not converge");
+// //   }
+// //   if (output >= OUT_NORMAL)
+// //   {
+// //     cout << boost::format("ElEq: time: %s (pc %s), iters: %i, residual: %e") % (my::Time() - _t) % t_pc % status[AZ_its] % status[AZ_r] << endl;
+// //   }
 }
 #endif
 
@@ -651,7 +803,9 @@ void StationaryDiffusionSolve(const LatticeDataQuad3d &ld,
     mb.rhs->Scale(*scaling);
   }
 
-  Epetra_Vector lhs(mb.rhs->Map());
+  //Epetra_Vector lhs(mb.rhs->Map());
+  Teuchos::RCP<Epetra_Vector> lhs = Teuchos::rcp(new Epetra_Vector(mb.rhs->Map()));
+  
 
 //   if (pt_params.get<bool>("try_without_multigrid", false))
 //   {
@@ -675,14 +829,15 @@ void StationaryDiffusionSolve(const LatticeDataQuad3d &ld,
 //     }
 //   }
 //   else
-  SolveEllipticEquation(*mb.m, *mb.rhs, lhs, pt_params);
+//   SolveEllipticEquation(*mb.m, *mb.rhs, lhs, pt_params);
+  SolveEllipticEquation(mb.m, mb.rhs, lhs, pt_params);
 
   #pragma omp parallel for schedule(dynamic, 1)
   for (int i=0; i<mtboxes.size(); ++i)
   {
     FOR_BBOX3(p, mtboxes[i])
     {
-      result(p) = lhs[ld.LatticeToSite(p)];
+      result(p) = (*lhs)[ld.LatticeToSite(p)];
     }
   }
   cout << format("stationary diffusion solve total time: %f ms") % (my::Time()-t_).to_ms() << endl;
@@ -715,22 +870,23 @@ void StationaryDiffusionSolve(const ContinuumGrid &grid,
     mb.rhs->Scale(*scaling);
   }
 
-  Epetra_Vector lhs(mb.rhs->Map());
+//   Epetra_Vector lhs(mb.rhs->Map());
+  Teuchos::RCP<Epetra_Vector> lhs = Teuchos::rcp(new Epetra_Vector(mb.rhs->Map()));
 
-  SolveEllipticEquation(*mb.m, *mb.rhs, lhs, pt_params);
+//   SolveEllipticEquation(*mb.m, *mb.rhs, lhs, pt_params);
+  SolveEllipticEquation(mb.m, mb.rhs, lhs, pt_params);
   #pragma omp parallel
   {
     BOOST_FOREACH(const BBox3 bbox, mtboxes.getCurrentThreadRange())
     {
       FOR_BBOX3(p, bbox)
       {
-        result(p) = lhs[grid.ld.LatticeToSite(p)];
+        result(p) = (*lhs)[grid.ld.LatticeToSite(p)];
       }
     }
   }
   cout << format("stationary diffusion solve total time: %f ms") % (my::Time()-t_).to_ms() << endl;
 }
-
 
 
 #define INSTANTIATE_DIFFSOLVE(T) \

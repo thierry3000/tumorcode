@@ -19,10 +19,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #ifndef _ADAPTION_MODEL_H_
 #define _ADAPTION_MODEL_H_
+
+#define ADAPTION_OUTPUT 1
 #include <boost/concept_check.hpp>
 #include <boost/graph/graph_concepts.hpp>
+#include <boost/archive/archive_exception.hpp>
+#include <boost/optional/optional.hpp>
 
 //#include "hdfcppwrapper/hdf_wrapper.h"
+// #include "H5Cpp.h"
+// #ifndef H5_NO_NAMESPACE
+//   using namespace H5;
+// #endif
 #include "mwlib/compressed_row_undirected_graph.h"
 #include "mwlib/dynamicarray.h"
 
@@ -32,6 +40,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "common/calcflow_common.h" //inhere from the CompressedFlowNetwork
 
+#if PAGMO_ENABLE_MPI
+#include <mpi.h>
+#endif
+
 namespace Adaption
 {
   enum TissueIDs
@@ -39,6 +51,16 @@ namespace Adaption
     NORMAL = 0,
     TUMOR  = 1,
     NECRO  = 2
+  };
+  enum BoundaryHandling
+  {
+    KEEP = 0,
+    VEIN_AS_FLOW_ARTERY_PRESSURE  = 1,
+    LARGE_2D = 2,
+    LARGE_2D_2 = 3,
+    LARGE_2D_3 = 4,
+    LARGE_2D_like_paper = 5,
+    VALUE = 42,
   };
   
 
@@ -54,12 +76,10 @@ namespace Adaption
   inline bool isFinite(T x) { return std::isfinite(x); }
 
 
-  class Parameters
+  struct Parameters
   {
-    
-    Parameters& operator=(const Parameters&);
-    
-  public:
+    //Parameters& operator=(const Parameters&);
+    //Parameters(const Parameters &obj);
     Parameters();
     double k_c;
     double k_m;
@@ -82,13 +102,61 @@ namespace Adaption
     bool tum_manitulate_s4;
     bool tum_manitulate_s5;
     bool write2File;
+    string outputFileName;
     
     double radMin_for_kill;
     uint boundary_Condition_handling;
+    double a_pressure;
+    double a_flow;
+    
+    int pop;
+    int individuals;
+    int opt_iter;
+    string vesselFileName;
+    string vesselGroupName;
     
     void assign(const ptree &pt);
     ptree as_ptree() const;
+    
+    template<class Archive>
+      void serialize(Archive &ar, const unsigned int version)
+      {
+	ar & k_c;
+	ar & k_m;
+	ar & k_s;
+	ar & S_0;
+	ar & Q_refdot;
+	ar & max_nun_iterations;
+	ar & qdev;
+	ar & starting_radii;
+        ar & delta_t;
+	ar & no_of_roots;
+	ar & max_flow;
+	ar & min_flow;
+	ar & avg_flow;
+	ar & avgRootNodeConductivity;
+	ar & cond_length;
+	ar & tum_manitulate_s1;
+	ar & tum_manitulate_s2;
+	ar & tum_manitulate_s3;
+	ar & tum_manitulate_s4;
+	ar & tum_manitulate_s5;
+	ar & write2File;
+  ar & outputFileName;
+  
+	ar & radMin_for_kill;
+	ar & boundary_Condition_handling;
+	ar & a_pressure;
+	ar & a_flow;
+	
+	ar & pop;
+	ar & individuals;
+	ar & opt_iter;
+  ar & vesselFileName;
+  ar & vesselGroupName;
+      }
   };
+  ostream& operator<<(ostream &os, const Parameters &params);
 
   struct CompressedAdaptionNetwork : CompressedFlowNetwork
   {
@@ -118,21 +186,27 @@ namespace Adaption
     double avg_flow=0.0;
   };
 
-  void SetAdaptionValues( VesselList3d* vl,
+  void SetAdaptionValues( VesselList3d &vl,
 		      CompressedAdaptionNetwork &fl,
 		      double delta_t,
 		      double max_r
 		      );
-  void GetAdaptionNetwork(CompressedAdaptionNetwork &fl,
-		      const VesselList3d* vl
+  uint GetAdaptionNetwork(CompressedAdaptionNetwork &fl,
+		      const VesselList3d *vl
 			);
 
   void TestAdaption();
   //double CalcRadiiChange(const Parameters &params, VesselList3d &vl);
   //void CalcRadiiChange2(const Parameters &params, VesselList3d &vl);
   std::tuple<FlReal,FlReal,FlReal> CalcRadiiChange_mw(const Adaption::Parameters &params, VesselList3d &vl, float delta_t_calc);
-  uint runAdaption_Loop(const Adaption::Parameters *params, const BloodFlowParameters *bfparams, VesselList3d *vl, h5cpp::Group *vessels_after_adaption, bool doDebugOutput);
-  void GetExtremFlows(const VesselList3d *vl, Adaption::ExtremeFlows *myExtrems);
-  void UpdateBoundaryConditions(VesselList3d &vl);
+  /// return state saying if convergent and mean of capillary flow 
+  //std::tuple<uint,FlReal> runAdaption_Loop(Adaption::Parameters params, BloodFlowParameters bfparams, VesselList3d &vl, bool doDebugOutput);
+  std::tuple<uint,FlReal> runAdaption_Loop(Adaption::Parameters params, BloodFlowParameters bfparams, bool doDebugOutput);
+  //std::tuple<uint, FlReal> runAdaption_Loop(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl);
+  //uint runAdaption_Loop(boost::shared_ptr<Adaption::Parameters> params, boost::shared_ptr<BloodFlowParameters> bfparams, boost::shared_ptr<VesselList3d> vl, bool doDebugOutput);
+//  uint run_optimization(Adaption::Parameters params, BloodFlowParameters bfparams, std::auto_ptr<VesselList3d> vl);
+  Adaption::ExtremeFlows GetExtremFlows(VesselList3d *vl);
+  //void UpdateBoundaryConditions(VesselList3d &vl);
+  void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &params);
 };//end namespace
 #endif

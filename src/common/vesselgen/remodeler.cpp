@@ -141,12 +141,12 @@ void Grower::Init(const ptree &settings)
 
   std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
-  vl.reset( new VesselList3d() );
+  vl.reset( new VesselList3d(ldp) );
   vl->Init(*ldp);
 
   cout << "vesselgen init ..." << endl;
-  //cout << "  size " << size << " scale " << scale << endl;
-  ldp->print(cout); cout << endl;
+  cout << "  size " << size << " scale " << scale << endl;
+  //ldp->print(cout); cout << endl;
   cout << "  seed " << seed << endl;
 
 #if GFFIELD_ENABLE
@@ -1234,6 +1234,8 @@ void Grower::UpscaleTrees()
 {
   // first get vessels on subdivided lattice
   std::auto_ptr<LatticeData> oldld(vl->Ld().Clone());
+  //hope this wont end too bad
+  //std::auto_ptr<LatticeData> oldld(vl->Ld()->get());
   std::auto_ptr<VesselList3d> vl_new = GetSubdivided(vl, 2, oldld->Scale(), 0);
   vl = vl_new;
   const LatticeData &ld = vl->Ld();
@@ -1281,7 +1283,8 @@ void Grower::UpscaleTrees()
       vcnew->flags.AddBits(BOUNDARY);
       if (it != vl->GetBCMap().end())
       {
-        vl->SetBC(vcnew, it->second);
+        FlowBC thisBoundary(it->second.typeOfInstance, it->second.val);
+        vl->SetBC(vcnew, thisBoundary);
         vl->ClearBC(previousRoot);
       }
       previousRoot->flags.DelBits(BOUNDARY);

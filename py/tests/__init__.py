@@ -1,4 +1,6 @@
-/**
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+'''
 This file is part of tumorcode project.
 (http://www.uni-saarland.de/fak7/rieger/homepage/research/tumor/tumor.html)
 
@@ -16,4 +18,4 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+'''

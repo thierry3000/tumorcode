@@ -101,7 +101,11 @@ struct Model
   const HemodynamicBounds* GetHdBounds() const { return &hemodynBounds; }
   void Init(VesselList3d *vl_, const Params &params_, Callbacks &callbacks_);
   //void DoStep(double dt);
+#ifdef USE_ADAPTION
   void DoStep(double dt, const Adaption::Parameters *adap_params, const BloodFlowParameters *bfparams);//for using with adaption
+#else
+  void DoStep(double dt, const BloodFlowParameters *bfparams);
+#endif
 
 private:
   double dt;

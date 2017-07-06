@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // is include in trilinos_linsys_construction.h
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_LinearProblem.h>
-#include <AztecOO.h>
+//#include <AztecOO.h>
 #include <ml_epetra_preconditioner.h>
 #include <EpetraExt_RowMatrixOut.h>
 #include <EpetraExt_VectorOut.h>
@@ -143,7 +143,7 @@ void Linsys::end_filling(const Linsys::BcsMap& bcs)
       // Add elements to the matrix at the place of the boundary node. So boundary nodes get their value also during the matrix solve.
       int id = bc->first;
       const FlowBC &bcx = bc->second;
-      if (bcx.type == FlowBC::PIN)
+      if (bcx.typeOfInstance == FlowBC::PIN)
       {
         int cnt;
         #if 0
@@ -180,11 +180,11 @@ void Linsys::end_filling(const Linsys::BcsMap& bcs)
         rhs_set(id, bcx.val * -scaling_const);
         #endif
       }
-      else if (bcx.type == FlowBC::CURRENT)
+      else if (bcx.typeOfInstance == FlowBC::CURRENT)
       {
         rhs_add(id, bcx.val);
       }
-      else if (bcx.type == FlowBC::RESIST)
+      else if (bcx.typeOfInstance == FlowBC::RESIST)
       {
         sys_add(id, id, -bcx.w);
         rhs_add(id, -bcx.w * bcx.val);
@@ -210,7 +210,7 @@ void Linsys::solve()
     * solution: only use intel compiler in future
     */
   ptree pt = make_ptree("output", true)("max_iter", 1000)("throw",false)("conv","rhs")("max_resid",1.e-14)("solver","cg")("preconditioner","multigrid")("use_smoothed_aggregation", false);
-  SolveEllipticEquation(*sys, *rhs, *lhs, pt);
+  int returnSolve = SolveEllipticEquation(sys, rhs, lhs, pt);
 }
 
 

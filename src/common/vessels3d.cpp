@@ -22,9 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "shared-objects.h"
 #include "vessels3d.h"
 #include "mwlib/math_ext.h"
+#include "boost/foreach.hpp"
 
 #include <memory>
 #include <csignal>
+
 
 //#define DEBUG_CHECKS_ON
 
@@ -51,36 +53,109 @@ float Vessel::WorldLength( const polymorphic_latticedata::LatticeData &ld ) cons
   return (len-1)*ld.Scale();
 }
 
-
-VesselList3d::VesselList3d()
-  : m_ld(nullptr)
+// VesselList3d::VesselList3d()
+//   : m_ld(nullptr) //,bclist(nullptr)
+// {
+//   this->bclist.reset(new BCList);
+// }
+/* a forced constructor */
+VesselList3d::VesselList3d(std::auto_ptr< VesselList3d::LD > this_ld)
 {
+  this->bclist.clear();
+  this->m_ld = this_ld;
+  this->Flush();
+  this->lookup_site.Init(*m_ld);
+  this->lookup_bond.Init(*m_ld);
+  this->g.Reserve( 1024 );
 }
+// std::auto_ptr< polymorphic_latticedata::LatticeData > VesselList3d::getLD() const
+// {
+//   return m_ld;
+// }
 
+
+
+std::auto_ptr< VesselList3d > VesselList3d::Clone()
+{
+  #ifdef DEBUG
+  cout << "this lattice data will be passed to: " << endl;
+  this->m_ld->print(cout);
+  #endif
+  std::auto_ptr<VesselList3d> my_return_list(new VesselList3d(this->m_ld));
+  //my_return_list.reset(new VesselList3d);
+  //my_return_list->Init(this->Ld());
+  //my_return_list->bclist.reset(new BCList);
+  #ifdef DEBUG
+  cout << "recognized: " << endl;
+  my_return_list->m_ld->print(cout);
+#endif
+  //my_return_list->Init(Ld());
+//   #ifdef DEBUG
+//   cout << "recognized: " << endl;
+//   my_return_list->Ld().print(cout);
+// #endif
+  //my_return_list->bclist.reset(new BCList);
+  for( int i=0;i<GetNCount();i++)
+  {
+    const VesselNode *p_currentNode = GetNode(i);
+    VesselNode *newNode = my_return_list->InsertNode(p_currentNode);//to new vessellist
+    newNode->flags = p_currentNode->flags;
+    for(auto entry: GetBCMap())
+    {
+      if(p_currentNode == entry.first)
+      {
+	my_return_list->SetBC(newNode, entry.second);
+      }
+    }
+
+  }
+  for( int i=0;i<GetECount();i++)
+  {
+    const Vessel *p_currentVessel = GetEdge(i);
+    my_return_list->InsertVessel(p_currentVessel);
+  }
+  
+  return my_return_list;
+}
 
 void VesselList3d::Init( const LD &_ld )
 {
-    Flush();
-    m_ld = _ld.Clone();
-    lookup_site.Init(*m_ld);
-    lookup_bond.Init(*m_ld);
-    g.Reserve( 1024 );
+    //this->bclist.clear();
+    this->Flush();
+    //this->m_ld = _ld.Clone();
+    //this->m_ld.reset(&_ld);
+    this->lookup_site.Init(*m_ld);
+    this->lookup_bond.Init(*m_ld);
+    this->g.Reserve( 1024 );
 }
 
 void VesselList3d::Flush()
 {
-  lookup_site.Clear();
-  lookup_bond.Clear();
-  g.Flush();
+  this->lookup_site.Clear();
+  this->lookup_bond.Clear();
+  this->g.Flush();
 }
 
-void VesselList3d::SetBC(const VesselNode* node, FlowBC fbc)
+void VesselList3d::SetBC(const VesselNode* node, FlowBC &fbc)
 {
   // see if the node is in the list of managed nodes.
   //Don't want dangling nodes here.
   myAssert(GetNode(node->Index()) == node); 
   myAssert(node->IsBoundary());
+  
+  /** I dont know why yet, but emplace is not doing the job */
+  //this->bclist.emplace(std::make_pair(node,fbc));
+  
   bclist[node] = fbc;
+//   for( auto it = GetBCMap().begin(); it!= GetBCMap().end(); ++it)
+//   {
+//     if( it->first->Index() == node->Index() )
+//     {
+//       
+//     }
+// //     cout << "here?" << endl;
+// //     cout << "index: " << it->first->Index() << "bcvalue: " << it->second.val <<endl;
+//   }
 }
 
 
@@ -88,7 +163,7 @@ void VesselList3d::ClearBC(VesselNode* node)
 {
   myAssert(GetNode(node->Index()) == node); // see if the node is in the list of managed nodes. Don't want dangling nodes here.
   myAssert(node->IsBoundary());
-  bclist.erase(node);
+  this->bclist.erase(node);
 }
 
 
@@ -124,6 +199,40 @@ VesselNode* VesselList3d::InsertNode( const Float3 &a )
     n->worldpos = a;
     return n;
 }
+VesselNode* VesselList3d::InsertNode(const VesselNode *p_n)
+{
+  VesselNode *newNode 		= this->InsertNode(p_n->lpos);
+  newNode->press 		= p_n->press;
+  newNode->residual 		= p_n->residual;
+  newNode->worldpos 		= p_n->worldpos;
+  newNode->bctyp 		= p_n->bctyp;
+  newNode->value_of_bc 		= p_n->value_of_bc;
+  newNode->flags 		= p_n->flags;
+  newNode->has_been_visited 	= p_n->has_been_visited;
+  //if pn in boundarymap
+  // add also to this->bclist;
+  return newNode; 
+}
+void VesselList3d::InsertVessel(const Vessel* p_v)
+{
+  Vessel *newVessel 		= this->InsertVessel(p_v->NodeA()->lpos,p_v->NodeB()->lpos);
+  newVessel->r 			= p_v->r;
+  newVessel->flags 		= p_v->flags;
+  newVessel->q 			= p_v->q;
+  newVessel->f 			= p_v->f;
+  newVessel->hematocrit 	= p_v->hematocrit;
+  newVessel->conductivitySignal = p_v->conductivitySignal;
+  newVessel->metabolicSignal 	= p_v->metabolicSignal;
+  newVessel->S_total 		= p_v->S_total;
+  newVessel->maturation 	= p_v->maturation;
+  newVessel->reference_r 	= p_v->reference_r;
+  newVessel->timeSprout 	= p_v->timeSprout;
+  newVessel->timeInTumor 	= p_v->timeInTumor;
+  
+  newVessel->len 		= p_v->len;
+  newVessel->dir 		= p_v->dir;
+}
+
 
 Vessel* VesselList3d::InsertVessel( VesselNode* na, VesselNode* nb )
 {
@@ -183,8 +292,10 @@ Vessel* VesselList3d::InsertVessel( const Int3 &a, const Int3 &b )
     myAssert(Ld().IsInsideLattice(a) && Ld().IsInsideLattice(b));
     VesselNode* na = lookup_site.FindAtSite(Ld().LatticeToSite(a));
     VesselNode* nb = lookup_site.FindAtSite(Ld().LatticeToSite(b));
-    if( !na ) na = InsertNode(a);
-    if( !nb ) nb = InsertNode(b);
+    if( !na ) 
+      na = InsertNode(a);
+    if( !nb ) 
+      nb = InsertNode(b);
     return InsertVessel( na, nb );
 }
 
@@ -504,7 +615,7 @@ std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int m
   std::auto_ptr<LatticeData> newldp(ld.Clone());
   newldp.get()->Init(newbox,  newscale);
 
-  std::auto_ptr<VesselList3d> vlnew( new VesselList3d() );
+  std::auto_ptr<VesselList3d> vlnew( new VesselList3d(newldp) );
   vlnew->Init(*newldp);
 
   // insert new nodes into empty new vessellist
@@ -527,29 +638,10 @@ std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int m
 
   for (auto it = vl->GetBCMap().begin(); it != vl->GetBCMap().end(); ++it)
   {
-    vlnew->SetBC(vlnew->GetNode(it->first->Index()), it->second);
+    FlowBC aCondition = FlowBC(it->second.typeOfInstance, it->second.val);
+    vlnew->SetBC(vlnew->GetNode(it->first->Index()), aCondition);
   }
   
-//   for (int i=0; i<ecnt; ++i)
-//   {
-//     const Vessel* v = vl->GetEdge(i);
-//     //if( !v->IsCirculated() ) continue; // filter uncirculated
-//     VesselNode* node[2];
-//     const VesselNode* oldnodes[2] = { v->NodeA(), v->NodeB() };
-//     for (int j=0; j<2; ++j)
-//     {
-//       Int3 pos  = newpos[oldnodes[j]->Index()];
-//       node[j] = vlnew->FindNode(pos);
-//       if (!node[j])
-//       {
-//         node[j] = vlnew->InsertNode(pos);
-//         *(VNodeData*)node[j] = *(VNodeData*)oldnodes[j];
-//       }
-//     }
-//     Vessel* newv = vlnew->InsertVessel(node[0], node[1]);
-//     *(VData*)newv = *(VData*)v;
-//     //vlnew->IntegrityCheck();
-//   }
   return vlnew;
 }
 
@@ -830,5 +922,3 @@ void CheckToposort(const VesselList3d &vl, const DynArray<int> &order)
     }
   }
 }
-
-

@@ -30,9 +30,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/timer.h"
 
 #include "mwlib/ptree_ext.h"
+#include "trilinos_helper.h"
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/scoped_ptr.hpp>
 
 
 using boost::optional;
@@ -59,6 +61,7 @@ namespace my
   void SetNumThreads(int n);
   int OmpGetCurrentThread();
   int OmpGetMaxThreadCount();
+  bool MultiprocessingInitializer_exists();
 }
 
 

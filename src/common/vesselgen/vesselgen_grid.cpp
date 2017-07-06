@@ -31,7 +31,7 @@ void vesselgen_generate_grid(const h5cpp::Group outgroup, const Int3 &size, floa
   typedef VesselList3d::LatticeData LatticeData;
   std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
-  boost::scoped_ptr<VesselList3d> vl( new VesselList3d() );
+  std::auto_ptr<VesselList3d> vl( new VesselList3d(ldp) );
   vl->Init(*ldp);
 
   TreeRootList tree_roots;
@@ -80,7 +80,7 @@ void vesselgen_generate_grid_no_flow(const h5cpp::Group outgroup, const Int3 &si
   typedef VesselList3d::LatticeData LatticeData;
   std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
-  boost::scoped_ptr<VesselList3d> vl( new VesselList3d() );
+  std::auto_ptr<VesselList3d> vl( new VesselList3d(ldp) );
   vl->Init(*ldp);
 
   TreeRootList tree_roots;
@@ -137,7 +137,7 @@ void vesselgen_generate_single(h5cpp::Group outgroup, const Int3 &size, const in
   typedef VesselList3d::LatticeData LatticeData;
   std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
-  boost::scoped_ptr<VesselList3d> vl( new VesselList3d() );
+  boost::scoped_ptr<VesselList3d> vl( new VesselList3d(ldp) );
   vl->Init(*ldp);
 
   auto InsertVessel = [&](VesselNode* nd1, VesselNode* nd2) -> Vessel*
@@ -159,97 +159,97 @@ void vesselgen_generate_single(h5cpp::Group outgroup, const Int3 &size, const in
   VesselNode* root[2] = { NULL, NULL };
   int dir = 0;
   
-  if (dynamic_cast<polymorphic_latticedata::Derived<LatticeDataQuad3d>*>(ldp.get()) != NULL)
-  {
-    int step = std::max(1, segment_size);
-    Int3 p(0, size[1]/2, size[2]/2);
-
-    VesselNode* nd_last = NULL;
-    while (true)
-    {
-      VesselNode* nd =InsertNode(p);
-      if (nd_last)
-        InsertVessel(nd_last, nd);
-
-      if (p[0] == size[0]-1) break;
-
-      p[0] += step;
-      p[0] = std::min(p[0], size[0]-1);
-      nd_last = nd;
-    }
-
-    p[0] = 0;
-    root[0] = vl->FindNode(p);
-    p[0] = size[0]-1;
-    root[1] = vl->FindNode(p);
-  }
-  else
-  {
-    const LatticeDataFCC& ld = dynamic_cast<const polymorphic_latticedata::Derived<LatticeDataFCC>*>(ldp.get())->get();
-    int reversedDirs[12];
-    GetReverseDir(ld, reversedDirs);
-    
-    Int3 icenter = size/2;
-    VesselNode* node_center = InsertNode(icenter);
-
-    dir = 6;
-    switch (direction_mode) // got the numbers from latticedatatest.py
-    {
-      case DIRECTION_DIAG_XY: dir = 8; break;
-      case DIRECTION_DIAG_XYZ: dir = 11; break;
-    }
-
-    {
-      Int3 p         = icenter;
-      VesselNode* nd = node_center;
-      int length_counter = 0; // how many steps since the last node
-      while (true)
-      {
-        Int3 nextp = ld.NbLattice(p, dir);
-        ++length_counter;
-        
-        if (!ld.IsInsideLattice(nextp)) break;
-
-        if (length_counter >= segment_size)
-        {
-          VesselNode* nextnd = vl->InsertNode(nextp);
-          InsertVessel(nd, nextnd);
-
-          length_counter = 0;
-          nd = nextnd;
-        }
-
-        p  = nextp;
-      }
-      root[0] = nd;
-    }
-
-    dir = reversedDirs[dir];
-
-    { // copy & past from the brackets above
-      Int3 p         = icenter;
-      VesselNode* nd = node_center;
-      int length_counter = 0; // how many steps since the last node
-      while (true)
-      {
-        Int3 nextp = ld.NbLattice(p, dir);
-        ++length_counter;
-
-        if (!ld.IsInsideLattice(nextp)) break;
-
-        if (length_counter >= segment_size)
-        {
-          VesselNode* nextnd = vl->InsertNode(nextp);
-          InsertVessel(nd, nextnd);
-
-          length_counter = 0;
-          nd = nextnd;
-        }
-        p  = nextp;
-      }
-      root[1] = nd; // exception: not copy pasted
-    } // end copy pasted
-  }
+//   if (dynamic_cast<polymorphic_latticedata::Derived<LatticeDataQuad3d>*>(ldp.get()) != NULL)
+//   {
+//     int step = std::max(1, segment_size);
+//     Int3 p(0, size[1]/2, size[2]/2);
+// 
+//     VesselNode* nd_last = NULL;
+//     while (true)
+//     {
+//       VesselNode* nd =InsertNode(p);
+//       if (nd_last)
+//         InsertVessel(nd_last, nd);
+// 
+//       if (p[0] == size[0]-1) break;
+// 
+//       p[0] += step;
+//       p[0] = std::min(p[0], size[0]-1);
+//       nd_last = nd;
+//     }
+// 
+//     p[0] = 0;
+//     root[0] = vl->FindNode(p);
+//     p[0] = size[0]-1;
+//     root[1] = vl->FindNode(p);
+//   }
+//   else
+//   {
+//     const LatticeDataFCC& ld = dynamic_cast<const polymorphic_latticedata::Derived<LatticeDataFCC>*>(ldp.get())->get();
+//     int reversedDirs[12];
+//     GetReverseDir(ld, reversedDirs);
+//     
+//     Int3 icenter = size/2;
+//     VesselNode* node_center = InsertNode(icenter);
+// 
+//     dir = 6;
+//     switch (direction_mode) // got the numbers from latticedatatest.py
+//     {
+//       case DIRECTION_DIAG_XY: dir = 8; break;
+//       case DIRECTION_DIAG_XYZ: dir = 11; break;
+//     }
+// 
+//     {
+//       Int3 p         = icenter;
+//       VesselNode* nd = node_center;
+//       int length_counter = 0; // how many steps since the last node
+//       while (true)
+//       {
+//         Int3 nextp = ld.NbLattice(p, dir);
+//         ++length_counter;
+//         
+//         if (!ld.IsInsideLattice(nextp)) break;
+// 
+//         if (length_counter >= segment_size)
+//         {
+//           VesselNode* nextnd = vl->InsertNode(nextp);
+//           InsertVessel(nd, nextnd);
+// 
+//           length_counter = 0;
+//           nd = nextnd;
+//         }
+// 
+//         p  = nextp;
+//       }
+//       root[0] = nd;
+//     }
+// 
+//     dir = reversedDirs[dir];
+// 
+//     { // copy & past from the brackets above
+//       Int3 p         = icenter;
+//       VesselNode* nd = node_center;
+//       int length_counter = 0; // how many steps since the last node
+//       while (true)
+//       {
+//         Int3 nextp = ld.NbLattice(p, dir);
+//         ++length_counter;
+// 
+//         if (!ld.IsInsideLattice(nextp)) break;
+// 
+//         if (length_counter >= segment_size)
+//         {
+//           VesselNode* nextnd = vl->InsertNode(nextp);
+//           InsertVessel(nd, nextnd);
+// 
+//           length_counter = 0;
+//           nd = nextnd;
+//         }
+//         p  = nextp;
+//       }
+//       root[1] = nd; // exception: not copy pasted
+//     } // end copy pasted
+//   }
 
   if (root[0]->lpos[0] > root[1]->lpos[1])
     std::swap(root[0], root[1]);
@@ -291,7 +291,7 @@ void vesselgen_generate_symmetric(const h5cpp::Group outgroup, const int &expone
   }
   std::auto_ptr<LatticeData> ldp = LatticeData::Make("quad", BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
-  boost::scoped_ptr<VesselList3d> vl( new VesselList3d() );
+  boost::scoped_ptr<VesselList3d> vl( new VesselList3d(ldp) );
   vl->Init(*ldp);
 
   TreeRootList tree_roots;

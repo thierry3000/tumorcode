@@ -21,10 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "pylatticedata.h"
 #include "lattice-data-polymorphic.h"
 
-
-namespace h5 = h5cpp;
-
-
 class PyLd
 {
   typedef polymorphic_latticedata::LatticeData LatticeData;
@@ -119,24 +115,27 @@ public:
 
 
 
-
+//pointer issue changed to boost::shared_ptr
 PyLd* read_lattice_data_from_hdf(const py::object &ld_grp_obj)
 {
-  h5::Group g_ld = PythonToCppGroup(ld_grp_obj);
-
+  h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
+  std::printf("if you read this, lattice data is in c++\n");
   typedef polymorphic_latticedata::LatticeData LD;
+//  return new PyLd(new LD(ld));
   std::auto_ptr<LD> ldp(LD::ReadHdf(g_ld));
-
-  typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD1;
-  typedef polymorphic_latticedata::Derived<LatticeDataFCC> LD2;
-  return new PyLd(ldp.release());
+// 
+//   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD1;
+//   typedef polymorphic_latticedata::Derived<LatticeDataFCC> LD2;
+    return new PyLd(ldp.release()); //this is for std::auto_ptr
+//  return new PyLd(ldp.get());
+//  return new PyLd(ldp.get());
 }
 
 
 void write_lattice_data_to_hdf(py::object py_h5grp, const std::string &name, const PyLd *cpp_py_ld)
 {
-  h5::Group g = PythonToCppGroup(py_h5grp);
-  h5::Group g_ld = g.create_group(name);
+  h5cpp::Group g = PythonToCppGroup(py_h5grp);
+  h5cpp::Group g_ld = g.create_group(name);
   cpp_py_ld->get().WriteHdf(g_ld);
 }
 
@@ -150,6 +149,9 @@ PyLd* PySetupFieldLattice(const py::object &py_wbbox, int dim, float spacing, fl
   SetupFieldLattice(wbbox, dim, spacing, safety_spacing, ld);
   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD;
   return new PyLd(new LD(ld));
+  //serialization issues here!!!
+  //LD alattice = new LD(ld);
+  //return new PyLd(alattice);
 }
 
 
@@ -238,6 +240,7 @@ void exportLatticeData()
   py::def("write_lattice_data_to_hdf", write_lattice_data_to_hdf);
   py::def("SetupFieldLattice", PySetupFieldLattice, py::return_value_policy<py::manage_new_object>());
   
+  //serialize fuck
   mw_py_impl::LdFromPy<LatticeDataQuad3d>::Register();
   mw_py_impl::LdFromPy<LatticeDataFCC>::Register();
   mw_py_impl::LdToPy<LatticeDataQuad3d>::Register();

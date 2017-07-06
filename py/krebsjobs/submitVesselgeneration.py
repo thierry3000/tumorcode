@@ -29,7 +29,7 @@ from os.path import basename
 import qsub
 import krebsutils
 from krebs.vesselgenerator import *
-import krebsjobs.parameters.vesselGenParams as vParams
+import krebsjobs.parameters.parameterSetsVesselGen as vParams
 
 from krebsutils import typelist
 import identifycluster
@@ -130,7 +130,7 @@ if (not qsub.is_client) and __name__=="__main__":
   parser = argparse.ArgumentParser(prog='submitVesselgeneration',description='Compute an artificial blood vessel network.')
   #default is False
   parser.add_argument('-t','--type', nargs='+', help='Type of root node configurations, range from 0 to 8 \n negative value will create \'ensemble_size samples\' for each type', default=[8], type=int)
-  parser.add_argument('-p','--VesselParamSet', help='specify Parameterset for creation, possible configs are found in /krebsjobs/parameters/vesselGenParams.py')
+  parser.add_argument('-p','--VesselParamSet', help='specify Parameterset for creation, possible configs are found in /krebsjobs/parameters/parameterSetsVesselGen.py')
   parser.add_argument('-w','--width_cube', help='Size of vesselcube you want to create', default=1000, type=float)
   parser.add_argument('--twoD', help='Creates only 2D network, default is 3D', default=False, action='store_true')  
   parser.add_argument('-i','--iter_h', help='Number of hieracial iterations', default=1, type=int)  

@@ -44,8 +44,8 @@ dstdir = os.getcwd()
 
 #note: according to doeme et al. the tumor radius growth should be around 0.7 mu m / h
 
-import krebsjobs.parameters.fakeTumorParams as parameterSets
-from submitAdaption import create_auto_dicts
+import krebsjobs.parameters.parameterSetsFakeTumor as parameterSets
+#from submitAdaption import create_auto_dicts
 
 from krebsutils import typelist
 
@@ -59,7 +59,7 @@ def getDomainSizeFromVesselFile(fn):
 
 
 def MakeVesselFilenamePart(fn):
-  with h5files.open(fn,'a') as f:
+  with h5files.open(fn, mode='a') as f:
     if 'parameters' in f:
       if 'MESSAGE' in f['parameters'].attrs:
         msg = f['parameters'].attrs['MESSAGE']
@@ -126,7 +126,7 @@ def run(vessel_fn, name, config_, mem, days):
 if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Compute Fake tumor. Vessels are needed for that')  
-  parser.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/fakeTumorParams.py')
+  parser.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/fparameterSetsFakeTumor.py')
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
 
   goodArguments, otherArguments = parser.parse_known_args()

@@ -90,6 +90,9 @@ const string FormatTimeSec( double s );
 const string FormatTimeMs( uint ms );
 const string strprintf( const char* format, ... );
 void DebugOutString( const char* format, ... );
+
+/** @brief will remove file extension to filename
+ */
 const string RemoveExtension( const string &s );
 const string RemoveAllExtensions( const string &s );
 const string GetExtension( const string &s );

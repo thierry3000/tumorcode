@@ -45,7 +45,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace py = boost::python;
 namespace np = boost::python::numpy;
-namespace h5 = h5cpp;
 
 enum Mode {
   DATA_PER_NODE = 1,
@@ -53,49 +52,10 @@ enum Mode {
   DATA_LINEAR = 4,
 };
 
-#if 0
-np::arraytbase read_vessel_positions_from_hdf(const py::object &vess_grp_obj)
-{
-  typedef polymorphic_latticedata::LatticeData LD;
-  
-  h5::Group g_vess = PythonToCppGroup(vess_grp_obj);
-  h5::Group g_nodes = g_vess["nodes"];
-  np::ssize_t ndims[] = { 3, g_nodes.attrs().get<int>("COUNT") };
-  // create numpy array for output
-  np::arrayt<float>wp(np::zeros(2, ndims, np::getItemtype<float>()));
-  
-  if( g_vess.exists("lattice") and g_vess.attrs().get<string>("CLASS")=="GRAPH")
-  {
-    h5::Group g_ld = g_vess['lattice'];
-    std::auto_ptr<LD> ldp(LD::ReadHdf(g_ld));
-    const LD &ld = *ldp;
-    h5::Dataset ds_pos = g_vess.open_dataset("nodes/lattice_pos");
-    std::vector<LD::SiteType> sites;
-    h5::read_dataset(ds_pos, sites);
-    //np::ssize_t ndims[] = { 3, (int)sites.size() };
-    //fill the array
-    for (int i=0; i<sites.size(); ++i)
-    {
-      Float3 p = ld.LatticeToWorld(ld.SiteToLattice(sites[i]));
-      myAssert(ld.IsInsideLattice(ld.SiteToLattice(sites[i])));
-      for (int j=0; j<3; ++j)
-      {
-	wp(j, i) = p[j];
-      }
-    }
-  }
-  else if (g_vess.attrs().get<string>("CLASS")=="REALWORLD")
-  {
-    
-  }
-  return wp;
-}
-#endif
-
 py::object read_vessel_positions_from_hdf(const py::object &vess_grp_obj)
 {
   
-  h5::Group g_vess = PythonToCppGroup(vess_grp_obj);
+  h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   np::ssize_t ndims[] = { 3, vl->GetNCount() };
@@ -127,7 +87,7 @@ py::object read_vessel_positions_from_hdf(const py::object &vess_grp_obj)
 py::object read_vessel_positions_from_hdf_edges(const py::object &vess_grp_obj)
 {
   
-  h5::Group g_vess = PythonToCppGroup(vess_grp_obj);
+  h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   np::ssize_t ndims[] = { 3, vl->GetECount() };
@@ -604,7 +564,7 @@ BOOST_PYTHON_MODULE(libkrebs_)
   export_NumericalToolsTests();
   //export_iffsim();
   export_vesselgen();
-  export_elliptic_solver_test();
+  //export_elliptic_solver_test();
   export_calcflow();
   export_get_Murray();
   export_compute_interpolation_field();

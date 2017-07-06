@@ -21,7 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define _FAKETUM_H_
 
 #include "common/common.h"
-#include "adaption/adaption_model2.h"
+#ifdef USE_ADAPTION
+  #include "adaption/adaption_model2.h"
+#endif
 #include "common/vesselmodel1.h"
 
 #include "mwlib/log.h"
@@ -35,6 +37,7 @@ enum TissuePressureDistribution
 struct Parameters
 {
   double out_intervall, tend;
+  double dt;
   double apply_adaption_intervall;
   string message;
   string fn_out, fn_vessel, vesselfile_message;
@@ -48,7 +51,9 @@ struct Parameters
   double tissuePressureWidth;
   double tissuePressureCenterFraction;
   BloodFlowParameters bfparams;
+#ifdef USE_ADAPTION
   Adaption::Parameters adap_params;
+#endif
   
   Parameters();
   void assign(const ptree &pt);

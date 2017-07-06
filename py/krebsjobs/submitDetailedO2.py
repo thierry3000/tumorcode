@@ -123,8 +123,12 @@ if not qsub.is_client and __name__=='__main__':
   parser.add_argument('-r', '--render',  help = 'launch rendering of overview images', default = False, action = 'store_true')
   parser.add_argument('--systemsize'   , help = 'num threads = 1 * systemsize, memory = 2 Gb * systemsize (for o2 computation; analysis uses different scaling (see source)', default = None, action = 'store')
   goodArguments, otherArguments = parser.parse_known_args()
+  #print('before: %i' % qsub.goodArgumentsQueue.days)
   qsub.parse_args(otherArguments)
-  
+  #print('after: %i' % qsub.defaultDays)
+  if qsub.goodArgumentsQueue.days:
+    print('qsub, days used: set to %i' % qsub.goodArgumentsQueue.days)
+
   #create filename due to former standards
   filenames=[]
   for fn in goodArguments.vesselFileNames:

@@ -1,25 +1,94 @@
-cmake_minimum_required(VERSION 2.6)
+# cmake_minimum_required(VERSION 2.6)
 #PROJECT(programs)
 
 include_directories(../common)
 include_directories(${ADDITIONAL_INCLUDE_DIRS})
 
-add_executable(tests tests.cpp)
-target_link_libraries(tests ${myLibs})
-
+#note: for those tests hdf needs to be build parallel
+if( CMAKE_BUILD_TYPE EQUAL "DEBUG")
+  message("debug build")
+  add_executable(tests tests.cpp)
+  target_link_libraries(tests ${myLibs})
+  install(TARGETS tests RUNTIME DESTINATION bin)
+endif()
+  
 # add_executable(test_convection test_convection1.cpp)
 # target_link_libraries(test_convection ${myLibs})
 
 add_executable(test_stepper test_stepper.cpp)
 target_link_libraries(test_stepper ${myLibs})
+install(TARGETS test_stepper RUNTIME DESTINATION bin)
 
 # add_executable(test_level_set test_level_set.cpp)
 # target_link_libraries(test_level_set ${myLibs})
 
-add_executable(test_elliptic_solver test_elliptic_solver.cpp)
-target_link_libraries(test_elliptic_solver ${myLibs})
+#add_executable(test_elliptic_solver test_elliptic_solver.cpp)
+#target_link_libraries(test_elliptic_solver ${myLibs})
+
+#set_target_properties(test_pagmo PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX} LINK_FLAGS "-rdynamic")
+#but not the headers
+#by this flag we can use decide if pagmo uses MPI
+
+# if(USE_PAGMO)
+#   message("pagmo should be mpi")
+#   target_link_libraries(test_pagmo pagmoMPI ${myLibs})
+# else()
+#   add_executable(test_pagmo test_pagmo.cpp)
+#   target_link_libraries(test_pagmo krebs_ pagmo boost_system)
+#    install(TARGETS test_pagmo RUNTIME DESTINATION bin)
+# endif()
+if(USE_PAGMO)
+  add_executable(test_pagmo test_pagmo.cpp)
+  if(PAGMO_MPI)
+    message("pagmo should be mpi")
+    target_link_libraries(test_pagmo common adaption_ ${myLibs} pagmo)
+  else()
+    target_link_libraries(test_pagmo common adaption_ ${myLibs} pagmo)
+  endif()
+  install(TARGETS test_pagmo RUNTIME DESTINATION bin)
+endif()
+
+if(USE_PAGMO)
+  add_executable(test_pagmo_s test_pagmo_serialize.cpp)
+  if(PAGMO_MPI)
+    message("pagmo should be mpi")
+    target_link_libraries(test_pagmo_s common adaption_ ${myLibs} pagmo)
+  else()
+    target_link_libraries(test_pagmo_s common adaption_ ${myLibs} pagmo)
+  endif()
+  install(TARGETS test_pagmo_s RUNTIME DESTINATION bin)
+endif()
+
+add_executable(test_boost_serialize test_boost_serialize.cpp)
+if(USE_PAGMO)
+  target_link_libraries(test_boost_serialize ${myLibs} pagmo)
+else()
+  target_link_libraries(test_boost_serialize ${myLibs})
+endif()
+
+# add_executable(test_h5cpp test_hdf5_cpp.cpp)
+# link_directories(${HDF5_LIBRARY_DIRS})
+# target_link_libraries(test_h5cpp hdf5 hdf5_cpp)
+# install(TARGETS test_h5cpp RUNTIME DESTINATION bin)
 
 # add_executable(test_convection_diffusion test_convection_diffusion.cpp)
 # target_link_libraries(test_convection_diffusion ${myLibs})
 
-install(TARGETS tests test_stepper test_elliptic_solver RUNTIME DESTINATION bin)
+install(TARGETS test_boost_serialize RUNTIME DESTINATION bin)
+
+if(USE_PAGMO)
+  if(USE_PAGMO_MPI)
+    message("pagmo should be mpi")
+    find_package(MPI)
+    message("MPI_CXX_LIBRARIES: ${MPI_CXX_LIBRARIES} ")
+    add_executable(run_pagmo run_pagmo.cpp)
+    target_link_libraries(run_pagmo adaption_ pagmo ${MPI_CXX_LIBRARIES})
+    install(TARGETS run_pagmo RUNTIME DESTINATION bin)
+  else()
+    add_executable(run_pagmo run_pagmo.cpp)
+    target_link_libraries(run_pagmo adaption pagmo)
+    install(TARGETS run_pagmo RUNTIME DESTINATION bin)
+  endif()
+endif()
+
+#add_subdirectory(trilinos)

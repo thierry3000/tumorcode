@@ -41,7 +41,7 @@ import krebs.analyzeBloodFlow
 import h5py
 import numpy as np
 
-import krebsjobs.parameters.vesselGenParams
+import krebsjobs.parameters.parameterSetsVesselGen
 
 
 def ObtainDataOfVesselFile(f):
@@ -246,7 +246,7 @@ if not qsub.is_client:
       cube_width  = 1100.
     '''try to match luedemann et al'''
     if 0:
-      params = getattr(krebsjobs.parameters.vesselGenParams, 'paramset24')
+      params = getattr(krebsjobs.parameters.parameterSetsVesselGen, 'paramset24')
       params['calcflow'].update(
         rheology = 'RheologySecomb2005' #irrelevant since includePhaseSeparationEffect = False
       )
@@ -254,7 +254,7 @@ if not qsub.is_client:
       scales      = [50., 75., 100., 125.,150,]
       cube_width  = 1100.
     if 1:
-      params = getattr(krebsjobs.parameters.vesselGenParams, 'paramset24')
+      params = getattr(krebsjobs.parameters.parameterSetsVesselGen, 'paramset24')
       params['calcflow'].update(
         rheology = 'RheologySecomb2005' #irrelevant since includePhaseSeparationEffect = False
       )

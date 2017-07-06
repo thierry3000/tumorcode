@@ -1,0 +1,31 @@
+/*!
+\mainpage
+This is the beta version of the %tumorcode Manual generated with doxygen.
+ As it was generated semi-automatically from th sources files 
+ which are not yet fully documented. To obtain the latest 
+ changes see your 
+ [githubpage](https://github.com/thierry3000/tumorcode)
+ .
+ For the latest scientific achivemetns using tumorcode viste 
+ the [research page](http://www.uni-saarland.de/fak7/rieger/homepage/research.html) 
+ Prof. Heiko Rieger.
+
+About tumorcode
+==========
+In 2006 D.- S. Lee, Heiko Rieger and K. Bartha started with 
+computer simulations focusing on vascular remodeling in
+growing solid tumors. Since than this code was continously 
+improved and maintained by employees of Prof. Rieger.
+In the meantime numerous publication followed und 
+the code in now in the public domain.
+
+Demos and Examples
+==================
+
+License
+=======
+tumorcode is distributed under the GNU General Public License.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/

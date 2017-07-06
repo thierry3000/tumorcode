@@ -189,7 +189,9 @@ void VessGenApp::run(const ptree &input_pt_)
     input_pt = input_pt_;
     outfilename = input_pt.get<string>("out_fn");
     quality_buff_size = input_pt.get<int>("max_num_iter") / 10;
-    my::SetNumThreads(input_pt.get<int>("num_threads", 1));
+    //TF: I think vessel gen should be single threaded
+    //my::SetNumThreads(input_pt.get<int>("num_threads", 1));
+    my::SetNumThreads(1);
     
     Grower grower;
     grower.Run(input_pt, boost::bind(&VessGenApp::Callback, this, _1));

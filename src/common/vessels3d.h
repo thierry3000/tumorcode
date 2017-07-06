@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef VESSELS3D_H_
 #define VESSELS3D_H_
 
+#include <boost/shared_ptr.hpp>
+
 #include "lattice-data-polymorphic.h"
 #include "mwlib/listgraph.h"
 //#include "shared-objects.h"
@@ -132,7 +134,7 @@ class VesselNode: public VNodeData, public ListTreeNode<VesselNode,Vessel,MAX_NU
 {
 public:
   Int3 lpos;  
-  VesselNode() : VNodeData() {}  
+  VesselNode() : VNodeData() {}
 };
 
 class Vessel: public VData, public ListTreeEdge<VesselNode,Vessel>, public FixedSizeAllocated<Vessel>
@@ -196,18 +198,20 @@ struct UserDataArrays
 #endif
 
 
+
+
 class VesselList3d
 {
   typedef polymorphic_latticedata::LatticeData LD;
 public:
-  VesselList3d();
-  
+  VesselList3d(std::auto_ptr<LD> this_ld);
   typedef LD LatticeData; // nicer name for the outside
   typedef LD::SiteType SiteType;
   typedef ListGraph<VesselNode,Vessel> Graphtype;
-  typedef boost::unordered_map<const VesselNode*, FlowBC> BCList; // boundary condition list
+  typedef boost::unordered_map <const VesselNode*, FlowBC> BCList; // boundary condition list
 
   void Flush();
+  void Reset();
   void Init( const LD &ld );
   inline const LD& Ld() const { return *m_ld; }
   inline bool HasLattice() const { return m_ld.get() != nullptr; }
@@ -222,12 +226,15 @@ public:
   int GetECount() const { return g.num_edges(); }
   int GetNCount() const { return g.num_nodes(); }
 
-  VesselNode* InsertNode( const Int3 &a );
-  Vessel*     InsertVessel( const Int3 &a, const Int3 &b );
-  Vessel*     InsertVessel( VesselNode* a, VesselNode* b );
-  
-  VesselNode* InsertNode( const Float3 &a );
-  Vessel*     InsertVessel( const Float3 &a, const Float3 &b );
+  VesselNode* 	InsertNode( const Int3 &a );
+  VesselNode* 	InsertNode( const Float3 &a );
+  VesselNode*	InsertNode( const VesselNode *p_n);
+  Vessel*     	InsertVessel( const Int3 &a, const Int3 &b );
+  //this was created with world stuff, maybe I need to redo that
+  //most MW stuff is not bad
+  Vessel*     	InsertVessel( VesselNode* a, VesselNode* b );
+  Vessel*     	InsertVessel( const Float3 &a, const Float3 &b );
+  void 		InsertVessel( const Vessel *p_v);
   
   void        DeleteVessel( Vessel* v, bool bDeleteNodes = true );
   void        DeleteVesselWorld( Vessel* v, bool bDeleteNodes = true );
@@ -241,22 +248,27 @@ public:
   Vessel*     InsertTempEdge( VesselNode* a, VesselNode* b ) { return g.InsertEdge(a,b); }
   void        DeleteTempEdge( Vessel* v ) { g.DeleteEdge(v,false); }
   void        OptimizeMemLayout() { g.Optimize(); }
-  const BCList& GetBCMap() const { return bclist; }
-  void          SetBC(const VesselNode* node, FlowBC bc);
+//  inline const LD& Ld() const { return *m_ld; }
+  inline const BCList& GetBCMap() const {return bclist;}
+  //const BCList& GetBCMap() const { return bclist; }
+  void          SetBC(const VesselNode* node, FlowBC &bc);
   void          ClearBC(VesselNode* node);
 
   std::size_t estimateMemoryUsage() const;
   void        IntegrityCheck(int check_lookup = -1);
   
+  std::auto_ptr<VesselList3d> Clone();
+  //std::auto_ptr<LD> getLD() const;
   private:
-  SiteLookup lookup_site;
-  BondLookup lookup_bond;
-  std::auto_ptr<LD>           m_ld;
-  ListGraph<VesselNode,Vessel> g;
-  void FillLookup();
-  BCList bclist; // boundary conditions
-  void DeleteUnusedNode(VesselNode* vc, int site);
+    SiteLookup 			lookup_site;
+    BondLookup 			lookup_bond;
+    std::auto_ptr<LD>	m_ld;
+    ListGraph<VesselNode,Vessel>g;
+    void FillLookup();
+    BCList bclist; // boundary conditions
+    void DeleteUnusedNode(VesselNode* vc, int site);
 };
+
 
 inline std::size_t estimateMemoryUsage(const VesselList3d &vl) { return vl.estimateMemoryUsage(); }
 
@@ -265,7 +277,7 @@ inline std::size_t estimateMemoryUsage(const VesselList3d &vl) { return vl.estim
 ------------------------------------------------------*/
 
 uint Optimize( VesselList3d *vl );
-std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary = 1);
+std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary = 1);
 std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, float scale);
 /* Make it so that one vessels covers one and only one lattice bonds. 
  * Removes any vessel which is longer than one bond and replaces it with
@@ -300,4 +312,4 @@ inline VesselNode* GetDownstreamNode( Vessel* v)
 
 void CheckToposort(const VesselList3d &vl, const DynArray<int> &order);
 
-#endif
+#endif //#define VESSELS3D_H_

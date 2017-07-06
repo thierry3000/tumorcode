@@ -50,14 +50,15 @@ def plot_hydorodynamic_charicteristics(vessel_grp,pp):
         
     for NodeA, NodeB in itertools.izip(node_a_index,node_b_index):
         pressure_at_vessel.append((pressure_at_nodes[NodeA]+pressure_at_nodes[NodeB])/2 * 1/0.1333)
+    
     fig = matplotlib.figure.Figure()
     ax1 = fig.add_subplot(211)
     #plt.subplot(2,1,1)
     ax1.semilogy(pressure_at_vessel,shearforce,'*')
     ax1.grid()
     ax1.set_xlabel('pressure/ mmHg')
-    ax1.set_xlim([10,100])
-    ax1.set_ylim([1,1000])
+    #ax1.set_xlim([10,100])
+    #ax1.set_ylim([1,1000])
     ax1.set_ylabel('shearstress dyne/cm^2')
     ax2 = fig.add_subplot(212, sharex=ax1)
     ax2.semilogy(pressure_at_vessel,diameter,'r*')
@@ -387,7 +388,7 @@ if __name__ == '__main__':
     for fn in filenames:
       f = h5py.File(fn)
       no_of_iterations = '1'
-      vesselgrp = f['/adaption/vessels_after_adaption']
+      vesselgrp = f['vessels_after_adaption']
       common_filename = os.path.splitext(os.path.basename(fn))[0]
     
       with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_stimulies.pdf') as pp:

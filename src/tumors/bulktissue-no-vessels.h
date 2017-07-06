@@ -31,7 +31,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "shared-objects.h"
 #include "oxygen_model.h"
 #include <boost/property_tree/info_parser.hpp>
-#include "adaption/adaption_model2.h"
+#ifdef USE_ADAPTION
+  #include "adaption/adaption_model2.h"
+#endif
 
 namespace BulkTissueWithoutVessels
 {

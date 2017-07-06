@@ -101,7 +101,7 @@ struct Params
   ptree as_ptree() const;
   void init(const LatticeDataQuad3d &ld);
   
-  float time_prol, /// mean division times (?)
+  float  time_prol, /// mean division times (?)
          time_death, /// mean survival time before apoptosis (?)
          time_prol_tumor,
          time_death_tumor,

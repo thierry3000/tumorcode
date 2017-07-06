@@ -24,8 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/any.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/unordered_map.hpp>
+
 #include <boost/function.hpp>
 #include <boost/foreach.hpp>
 

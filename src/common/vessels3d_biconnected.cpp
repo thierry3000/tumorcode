@@ -259,7 +259,9 @@ static void FindBiComponents(const GRAPH &g,
 
 void ComputeCirculatedComponents(VesselList3d* list)
 {
-  //printf("We are in ComputeCirculatedComponents!");
+#ifdef DEBUG
+  printf("enter ComputeCirculatedComponents!");
+#endif
   vector<Vessel*> vboundary;
   vboundary.reserve( 32 );
   vector<VesselNode*> vcboundary;
@@ -347,7 +349,9 @@ void ComputeCirculatedComponents(VesselList3d* list)
       v->NodeB()->flags.DelBits(CONNECTED);
     }
   }
-
+#ifdef DEBUG
+  printf("exit ComputeCirculatedComponents!");
+#endif
 #if 0
   void WriteVesselList3d(const VesselList3d& vl, h5cpp::Group vesselgroup, const ptree& params = ptree());
   {// maximum debug

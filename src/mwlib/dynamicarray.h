@@ -22,6 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "vector_ext.h"
 #include "myAssert.h"
+#include "boost/serialization/access.hpp"
+#include "boost/serialization/base_object.hpp"
 
 namespace ConsTags
 {

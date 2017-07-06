@@ -59,7 +59,6 @@ else:
 
 #globals
 calculated_mean_cap_flow = 0.0
-use_initial_guess = False
 
 # velocity in capillary about 1mm/s = 1000mu/s
 # typical diameter 5mu e.g r=2.5mu
@@ -93,7 +92,7 @@ def do_pSO_for_file(x,dst_file, vesselgroup, parameters):
   parameters['adaption']['k_m'] = x[0]
   parameters['adaption']['k_c'] = x[1]
   parameters['adaption']['k_s'] = x[2]
-  parameters['adaption']['cond_length'] = x[3]
+  #parameters['adaption']['cond_length'] = x[3]
   #parameters['adaption']['Q_refdot'] = x[4]
   # running adaption
   print('creating dataset: %s' % alabel)
@@ -134,25 +133,28 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
   krebsutils.set_num_threads(num_threads)
   
   vesselgroup = h5files.open(fn, 'r', search = False)[grp_pattern]
-  f_opt_data = h5files.open('PSO_data_%s.h5' % basename(fn), 'a', search = False)
+  f_opt_data = h5files.open('PSO_data_%s_%s.h5' % (basename(fn),adaptionParams['name']), 'a', search = False)
   
   adaptionParams['counter'] = 0
   #for default_pso use only 20, hope this speed up
   #for all other simulations 50 was used here
   adaptionParams['adaption']['max_nun_iterations'] = 100
+  #large_3d_H2 had no convergence after a
+  #night. So I try more iterations per run
+  #adaptionParams['adaption']['max_nun_iterations'] = 500
   adaptionParams['adaption']['Q_refdot'] = 40
   adaptionParams['adaption']['S_0'] = 20
   # initialize parameters
-  x_0= [1.5, 1.5, 1, 2500.]
-  lb= [0.5, 0.5, 0.5, 500]
-  ub= [4, 4, 4, 3500]
+  #x_0= [1.5, 1.5, 1]
+  lb= [0.5, 0.5, 0.5]
+  ub= [4, 4, 4]
 #  x_0= [1.5, 1.5, 1, 2500.,40]
 #  lb= [0.5, 0.5, 0.5, 500,10]
 #  ub= [4, 4, 4, 3500,80]
-  x_0[0] =adaptionParams['adaption']['k_m']
-  x_0[1] =adaptionParams['adaption']['k_c']
-  x_0[2] =adaptionParams['adaption']['k_s']
-  x_0[3] =adaptionParams['adaption']['cond_length']
+  #x_0[0] =adaptionParams['adaption']['k_m']
+  #x_0[1] =adaptionParams['adaption']['k_c']
+  #x_0[2] =adaptionParams['adaption']['k_s']
+  #x_0[3] =adaptionParams['adaption']['cond_length']
   #x_0[4] =adaptionParams['adaption']['Q_refdot']
   
   if 0:#hope_final
@@ -192,7 +194,7 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
       (Default: 0.5)
   '''
   if 1:#medium for small configs
-    swarmsize = 400
+    swarmsize = 500
     maxiter = 5
     minstep = 1e-8  #default 1e-8
     minfunc = 0.001  #default 1e-8
@@ -256,7 +258,6 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
                      args=args)
   if 1:
     xopt, fopt = pso(do_pSO_for_file,
-                     x_0,
                      lb,
                      ub,
                      debug=True,
@@ -266,8 +267,6 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
                      minfunc=minfunc,
                      omega=omega,
                      processes=processes,
-                     use_initial_guess=use_initial_guess,
-                     phig=0.25,
                      args=args)                   
   
   f_opt_data.attrs.create('xopt', data = xopt)
@@ -373,6 +372,12 @@ if not qsub.is_client and __name__=='__main__':
         sys.exit(-1)
         
     factory = getattr(parameterSetsAdaption, goodArguments_run.AdaptionParamSet)
-    factory['name'] = goodArguments_run.AdaptionParamSet
-    run2(factory, filenames, goodArguments_run.grp_pattern)
+    #single parameter set chosen  
+    if factory.__class__ == dict:
+      factory['name'] = goodArguments_run.AdaptionParamSet
+      run2(factory, filenames, goodArguments_run.grp_pattern)
+    #a list of paramset e.g. for different boundary parameters.
+    if factory.__class__==list:
+      for paramset in factory:
+        run2(paramset, filenames, goodArguments_run.grp_pattern)    
       

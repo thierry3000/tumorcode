@@ -35,7 +35,7 @@ namespace h5 = h5cpp;
 
 namespace murray
 {
-/* @brief Get radii for the vesseltree
+/** @brief Get radii for the vesseltree
  * 
  * analyze only where there is a intersection
  */
@@ -408,152 +408,181 @@ static py::object get_Murray2(const py::object &vess_grp_obj)
   return py::object(murray);
 }
 //try parallel here!!!
-static py::object get_Murray2_p(const py::object &vess_grp_obj, py::object murrayalpha)
+static py::object get_Murray2_p(const py::object &vess_grp_obj)
 {
-  double alpha = py::extract<double>(murrayalpha);
+  //double alpha = py::extract<double>(murrayalpha);
   h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
   std::auto_ptr<VesselList3d> vl;
   vl = ReadVesselList3d(vesselgroup, make_ptree("filter", true));
   int ncnt = vl.get()->GetNCount();
 
-  FlArray radius_mother;
-  radius_mother.resize(ncnt);
-  FlArray radius_daughther1;
-  radius_daughther1.resize(ncnt);
-  FlArray radius_daughther2;
-  radius_daughther2.resize(ncnt);
+  std::vector<double> radius_mother_v;
+  std::vector<double> radius_daughther1_v;
+  std::vector<double> radius_daughther2_v;
+  std::vector<double> radius_mother_a;
+  std::vector<double> radius_daughther1_a;
+  std::vector<double> radius_daughther2_a;
+  
   for(int i = 0;i<ncnt; ++i)
   {
     VesselNode* nd = vl.get()->GetNode(i);
+#if 0
     if( nd->Count() == 2) // for strait lines
     {
       uint current_daughter=0;
       if( nd->GetEdge(0)->IsArtery() and nd->GetEdge(1)->IsArtery() )
       {
-	for(int k = 0;k<2;++k)
-	{
-	  //upstream = mother const int  imd = ee[0]==theconsideredNode ? ee[1] : ee[0];
-	  VesselNode* neighbor_nd;
-	  neighbor_nd = nd->GetEdge(k)->GetNode(0) == nd ? nd->GetEdge(k)->GetNode(1):nd->GetEdge(k)->GetNode(0);
-	  if( nd->press < neighbor_nd->press)
-	  {
-	    radius_mother[i] = nd->GetEdge(k)->r;
-	  }
-	  else
-	  {
-	    if(current_daughter == 0)
-	    {
-	      radius_daughther1[i] = nd->GetEdge(k)->r;
-	      radius_daughther2[i] = nd->GetEdge(k)->r; //little hackish
-	      current_daughter++;
-	    }
-	    //should not happen in the straight case!
-// 	    if(current_daughter == 1)
-// 	    {
-// 	      radius_daughther2[i] = nd->GetEdge(k)->r;
-// 	      current_daughter++;
-// 	    }
-	  }
-	}
+        for(int k = 0;k<2;++k)
+        {
+          //upstream = mother const int  imd = ee[0]==theconsideredNode ? ee[1] : ee[0];
+          VesselNode* neighbor_nd;
+          neighbor_nd = nd->GetEdge(k)->GetNode(0) == nd ? nd->GetEdge(k)->GetNode(1):nd->GetEdge(k)->GetNode(0);
+          if( nd->press < neighbor_nd->press)
+          {
+            radius_mother[i] = nd->GetEdge(k)->r;
+          }
+          else
+          {
+            if(current_daughter == 0)
+            {
+              radius_daughther1[i] = nd->GetEdge(k)->r;
+              radius_daughther2[i] = nd->GetEdge(k)->r; //little hackish
+              current_daughter++;
+            }
+            //should not happen in the straight case!
+      // 	    if(current_daughter == 1)
+      // 	    {
+      // 	      radius_daughther2[i] = nd->GetEdge(k)->r;
+      // 	      current_daughter++;
+      // 	    }
+          }
+        }
       }
       //venous part
       if( nd->GetEdge(0)->IsVein() and nd->GetEdge(1)->IsVein() )
       {
-	for(int k = 0;k<2;++k)
-	{
-	  //upstream = mother const int  imd = ee[0]==theconsideredNode ? ee[1] : ee[0];
-	  VesselNode* neighbor_nd;
-	  neighbor_nd = nd->GetEdge(k)->GetNode(0) == nd ? nd->GetEdge(k)->GetNode(1):nd->GetEdge(k)->GetNode(0);
-	  if( nd->press < neighbor_nd->press)
-	  {
-	    if(current_daughter == 0)
-	    {
-	      radius_daughther1[i] = nd->GetEdge(k)->r;
-	      radius_daughther2[i] = nd->GetEdge(k)->r;
-	      current_daughter++;
-	    }
-// 	    if(current_daughter == 1)
-// 	    {
-// 	      radius_daughther2[i] = nd->GetEdge(k)->r;
-// 	      current_daughter++;
-// 	    }
-	  }
-	  else
-	  {
-	    radius_mother[i] = nd->GetEdge(k)->r;
-	  }
-	}
+        for(int k = 0;k<2;++k)
+        {
+          //upstream = mother const int  imd = ee[0]==theconsideredNode ? ee[1] : ee[0];
+          VesselNode* neighbor_nd;
+          neighbor_nd = nd->GetEdge(k)->GetNode(0) == nd ? nd->GetEdge(k)->GetNode(1):nd->GetEdge(k)->GetNode(0);
+          if( nd->press < neighbor_nd->press)
+          {
+            if(current_daughter == 0)
+            {
+              radius_daughther1[i] = nd->GetEdge(k)->r;
+              radius_daughther2[i] = nd->GetEdge(k)->r;
+              current_daughter++;
+            }
+      // 	    if(current_daughter == 1)
+      // 	    {
+      // 	      radius_daughther2[i] = nd->GetEdge(k)->r;
+      // 	      current_daughter++;
+      // 	    }
+          }
+          else
+          {
+            radius_mother[i] = nd->GetEdge(k)->r;
+          }
+        }
       }
     }
+#endif
 
     if( nd->Count() == 3 ) //for the Y-intersections
     {
-      uint current_daughter=0;
-      if( nd->GetEdge(0)->IsArtery() and nd->GetEdge(1)->IsArtery() and nd->GetEdge(2)->IsArtery())
+      std::vector<double> radii;
+      for(int k=0;k<3;++k)
       {
-	for(int k = 0;k<3;++k)
-	{
-	  //upstream = mother const int  imd = ee[0]==theconsideredNode ? ee[1] : ee[0];
-	  VesselNode* neighbor_nd;
-	  neighbor_nd = nd->GetEdge(k)->GetNode(0) == nd ? nd->GetEdge(k)->GetNode(1):nd->GetEdge(k)->GetNode(0);
-	  if( nd->press < neighbor_nd->press)
-	  {
-	    radius_mother[i] = nd->GetEdge(k)->r;
-	  }
-	  else
-	  {
-	    if(current_daughter == 0)
-	    {
-	      radius_daughther1[i] = nd->GetEdge(k)->r;
-	      current_daughter++;
-	    }
-	    if(current_daughter == 1)
-	    {
-	      radius_daughther2[i] = nd->GetEdge(k)->r;
-	      current_daughter++;
-	    }
-	  }
-	}
+        radii.push_back(nd->GetEdge(k)->r);
       }
-      //venous part
-      if( nd->GetEdge(0)->IsVein() and nd->GetEdge(1)->IsVein() and nd->GetEdge(2)->IsVein())
+      std::sort (radii.begin(),radii.end());
+      if(nd->GetEdge(0)->IsArtery() and nd->GetEdge(1)->IsArtery() and nd->GetEdge(2)->IsArtery())
       {
-	for(int k = 0;k<3;++k)
-	{
-	  //upstream = mother const int  imd = ee[0]==theconsideredNode ? ee[1] : ee[0];
-	  VesselNode* neighbor_nd;
-	  neighbor_nd = nd->GetEdge(k)->GetNode(0) == nd ? nd->GetEdge(k)->GetNode(1):nd->GetEdge(k)->GetNode(0);
-	  if( nd->press < neighbor_nd->press)
-	  {
-	    if(current_daughter == 0)
-	    {
-	      radius_daughther1[i] = nd->GetEdge(k)->r;
-	      current_daughter++;
-	    }
-	    if(current_daughter == 1)
-	    {
-	      radius_daughther2[i] = nd->GetEdge(k)->r;
-	      current_daughter++;
-	    }
-	  }
-	  else
-	  {
-	    radius_mother[i] = nd->GetEdge(k)->r;
-	  }
-	}
+        radius_mother_a.push_back(radii[2]);
+        radius_daughther1_a.push_back(radii[0]);
+        radius_daughther2_a.push_back(radii[1]);
       }
+      if(nd->GetEdge(0)->IsVein() and nd->GetEdge(1)->IsVein() and nd->GetEdge(2)->IsVein())
+      {
+        radius_mother_v.push_back(radii[2]);
+        radius_daughther1_v.push_back(radii[0]);
+        radius_daughther2_v.push_back(radii[1]);
+      }
+//       //arterial part
+//       uint current_daughter=0;
+//       if( nd->GetEdge(0)->IsArtery() and nd->GetEdge(1)->IsArtery() and nd->GetEdge(2)->IsArtery())
+//       {
+//         for(int k = 0;k<3;++k)
+//         {
+//           //upstream = mother const int  imd = ee[0]==theconsideredNode ? ee[1] : ee[0];
+//           VesselNode* neighbor_nd;
+//           neighbor_nd = nd->GetEdge(k)->GetNode(0) == nd ? nd->GetEdge(k)->GetNode(1):nd->GetEdge(k)->GetNode(0);
+//           if( nd->press < neighbor_nd->press)
+//           {
+//             radius_mother[i] = nd->GetEdge(k)->r;
+//           }
+//           else
+//           {
+//             if(current_daughter == 0)
+//             {
+//               radius_daughther1[i] = nd->GetEdge(k)->r;
+//               current_daughter++;
+//             }
+//             if(current_daughter == 1)
+//             {
+//               radius_daughther2[i] = nd->GetEdge(k)->r;
+//               current_daughter++;
+//             }
+//           }
+//         }
+//       }
+//       //venous part
+//       if( nd->GetEdge(0)->IsVein() and nd->GetEdge(1)->IsVein() and nd->GetEdge(2)->IsVein())
+//       {
+//         for(int k = 0;k<3;++k)
+//         {
+//           //upstream = mother const int  imd = ee[0]==theconsideredNode ? ee[1] : ee[0];
+//           VesselNode* neighbor_nd;
+//           neighbor_nd = nd->GetEdge(k)->GetNode(0) == nd ? nd->GetEdge(k)->GetNode(1):nd->GetEdge(k)->GetNode(0);
+//           if( nd->press < neighbor_nd->press)
+//           {
+//             if(current_daughter == 0)
+//             {
+//               radius_daughther1[i] = nd->GetEdge(k)->r;
+//               current_daughter++;
+//             }
+//             if(current_daughter == 1)
+//             {
+//               radius_daughther2[i] = nd->GetEdge(k)->r;
+//               current_daughter++;
+//             }
+//           }
+//           else
+//           {
+//             radius_mother[i] = nd->GetEdge(k)->r;
+//           }
+//         }
+//       }
     }
   }
-   np::ssize_t ndims[] = { 3, ncnt };
-   np::arrayt<float>murray = np::zeros(2, ndims, np::getItemtype<float>());
-
-  for(int i=0;i<ncnt;++i)
+  np::ssize_t ndims[] = { 3, ncnt };
+  np::arrayt<float>murray_v = np::zeros(2, ndims, np::getItemtype<float>());
+  np::arrayt<float>murray_a = np::zeros(2, ndims, np::getItemtype<float>());
+   
+  for(int i=0;i<radius_mother_v.size();++i)
   {
-    murray(0,i) = radius_daughther1[i];
-    murray(1,i) = radius_daughther2[i];
-    murray(2,i) = radius_mother[i];
+    murray_v(0,i) = radius_daughther1_v[i];
+    murray_v(1,i) = radius_daughther2_v[i];
+    murray_v(2,i) = radius_mother_v[i];
   }
-  return py::object(murray);
+  for(int i=0;i<radius_mother_a.size();++i)
+  {
+    murray_a(0,i) = radius_daughther1_a[i];
+    murray_a(1,i) = radius_daughther2_a[i];
+    murray_a(2,i) = radius_mother_a[i];
+  }
+  return py::make_tuple(py::object(murray_v),py::object(murray_a));
 }
 
 }
@@ -562,6 +591,6 @@ void export_get_Murray()
 {
   //py::def("get_Murray", murray::get_Murray);
   //py::def("get_Murray2", murray::get_Murray2);
-  py::def("get_Murray2_p", murray::get_Murray2);
+  py::def("get_Murray2", murray::get_Murray2_p);
   py::def("get_Murray_scale", murray::get_Murray_scale);
 }

@@ -39,6 +39,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "shared-objects.h"
 #include "hdfio.h"
 
+#include <random>
+
 using namespace std;
 //typedef VesselList3d::LatticeData LatticeData;
 typedef polymorphic_latticedata::LatticeData LatticeData;
@@ -401,7 +403,7 @@ void TestVesselList()
   std::auto_ptr<LatticeData> ldp(LatticeData::Make("fcc", BBox3(0,0,0,10,10,10), 30.));
   Vessel *v, *v2;
   VesselNode *vc2;
-  VesselList3d vl;
+  VesselList3d vl(ldp);
   vl.Init(*ldp);
   v = vl.InsertVessel(Int3(0,5,5), Int3(9,5,5));
   vl.IntegrityCheck();
@@ -454,7 +456,7 @@ void TestVesselFieldCoupling()
   //create a lattice structure
   std::auto_ptr<LatticeData> vessel_ld(LatticeData::Make("quad",BBox3(0,0,0,64,64,64), 10.));
   //create a vessel list
-  VesselList3d vl;
+  VesselList3d vl(vessel_ld);
   //link the lattice and the vessel
   vl.Init(*vessel_ld);
   //add a vessel
@@ -549,59 +551,61 @@ void WriteSampling(const VesselList3d &vl, const LatticeDataQuad3d &ld, int dim,
 }
 
 
-void TestVesselFieldCoupling2(int argc, char** argv)
-{
-  string fn = argv[1];
-  uint seed = 12345;
-  if (argc > 2)
-  {
-    std::istringstream ss;
-    //(argv[2]);
-    //ss >> seed;
-    //if (argc > 3)
-    {
-      ss.str(argv[2]);
-      int np;
-      ss >> np;
-      my::SetNumThreads(np);
-    }
-  }
-  
-  h5cpp::File f(fn, "r");
-  h5cpp::Group vess_grp = f.root().open_group("vessels"),
-                ld_grp = f.root().open_group("vessels/lattice");
-  std::auto_ptr<LatticeData> ldp(LatticeData::ReadHdf(ld_grp));
-  LatticeData &ld = *ldp;
-  ld.SetOriginPosition(-ld.GetWorldBox().max*0.5);
-  VesselList3d vl;
-  vl.Init(ld);
-  ReadHdfGraph(vess_grp, vl);
-
-  cout << "read" << endl;
-  ld.print(cout);
-  cout << endl;
-
-  Int3 vlldsize = Size(vl.Ld().Box());
-  int dim = vlldsize[2]<=1 ? (vlldsize[1]<=1 ? 1 : 2) : 3;
-  LatticeDataQuad3d field_ld;
-  SetupFieldLattice(vl.Ld().GetWorldBox(), dim, 30, 0, field_ld);
-  cout << "field ld: "; field_ld.print(cout); cout << endl;
-  
-  f = h5cpp::File(RemovePath(RemoveExtension(fn))+"-rasterized.h5", "w");
-  h5cpp::Group ld_group = f.root().create_group("field_ld30");
-  WriteHdfLd(ld_group, field_ld);
-  
-  ptree params = make_ptree("seed", seed)("cut_at", 1.)("samples_per_cell", 1);
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("basecase"), params);
-
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("noclip"), make_ptree(params)("cut_at", -1));
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("samples2"), make_ptree(params)("samples_per_cell", 4));
-
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed1234"), make_ptree(params)("seed", 1234));
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed2345"), make_ptree(params)("seed", 2345));
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed3456"), make_ptree(params)("seed", 3456));
-  WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed4567"), make_ptree(params)("seed", 4567));
-}
+// void TestVesselFieldCoupling2(int argc, char** argv)
+// {
+//   string fn = argv[1];
+//   uint seed = 12345;
+//   if (argc > 2)
+//   {
+//     std::istringstream ss;
+//     //(argv[2]);
+//     //ss >> seed;
+//     //if (argc > 3)
+//     {
+//       ss.str(argv[2]);
+//       int np;
+//       ss >> np;
+//       my::SetNumThreads(np);
+//     }
+//   }
+//   
+//   h5cpp::File f(fn, "r");
+//   h5cpp::Group vess_grp = f.root().open_group("vessels"),
+//                 ld_grp = f.root().open_group("vessels/lattice");
+//   std::auto_ptr<LatticeData> ldp(LatticeData::ReadHdf(ld_grp));
+//   LatticeData &ld = *ldp;
+//   ld.SetOriginPosition(-ld.GetWorldBox().max*0.5);
+//   std::auto_ptr<VesselList3d> vl;
+//   vl->Init(ld);
+//   //VesselList3d vl;
+//   //vl.Init(ld);
+//   ReadHdfGraph(vess_grp, vl.get());
+// 
+//   cout << "read" << endl;
+//   ld.print(cout);
+//   cout << endl;
+// 
+//   Int3 vlldsize = Size(vl.Ld().Box());
+//   int dim = vlldsize[2]<=1 ? (vlldsize[1]<=1 ? 1 : 2) : 3;
+//   LatticeDataQuad3d field_ld;
+//   SetupFieldLattice(vl.Ld().GetWorldBox(), dim, 30, 0, field_ld);
+//   cout << "field ld: "; field_ld.print(cout); cout << endl;
+//   
+//   f = h5cpp::File(RemovePath(RemoveExtension(fn))+"-rasterized.h5", "w");
+//   h5cpp::Group ld_group = f.root().create_group("field_ld30");
+//   WriteHdfLd(ld_group, field_ld);
+//   
+//   ptree params = make_ptree("seed", seed)("cut_at", 1.)("samples_per_cell", 1);
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("basecase"), params);
+// 
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("noclip"), make_ptree(params)("cut_at", -1));
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("samples2"), make_ptree(params)("samples_per_cell", 4));
+// 
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed1234"), make_ptree(params)("seed", 1234));
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed2345"), make_ptree(params)("seed", 2345));
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed3456"), make_ptree(params)("seed", 3456));
+//   WriteSampling(vl, field_ld, dim, ld_group, f.root(), ("seed4567"), make_ptree(params)("seed", 4567));
+// }
 /* you need to provide an iff simulation dataset here */
 void TestVesselFieldCoupling3(int argc, char** argv)
 {
@@ -624,7 +628,7 @@ void TestVesselFieldCoupling3(int argc, char** argv)
   h5cpp::File f(fn, "r");
   h5cpp::Group vess_grp = f.root().open_group("iff/vessels"),
                 ld_grp = f.root().open_group("iff/vessels/lattice");
-  std::auto_ptr<LatticeData> ldp(LatticeData::ReadHdf(ld_grp));
+  boost::shared_ptr<LatticeData> ldp(LatticeData::ReadHdf(ld_grp));
   LatticeData &ld = *ldp;
   ld.SetOriginPosition(-ld.GetWorldBox().max*0.5);
   //VesselList3d vl;
@@ -824,10 +828,26 @@ void TestTester()
   test.output();
 }
 #endif
+#if 1 
+void TestRandomNumberGenerator()
+{
+  std::random_device rd;
+  std::mt19937 mt(rd());
+  std::default_random_engine generator;
+  std::uniform_real_distribution<double> adapt_dist(0.5,4.0);
+  double aRandomNumber = adapt_dist(mt);
+  cout << aRandomNumber << endl;
+  for(int i=0;i<5;i++)
+  {
+    cout<<adapt_dist(mt)<<endl;
+  }
+}
+#endif
 int main(int argc, char **argv)
 {
-  TestMath();
-  TestBB();
+  TestRandomNumberGenerator();
+  //TestMath();
+  //TestBB();
 #if 0
   TestTester();
 #endif
@@ -836,9 +856,9 @@ int main(int argc, char **argv)
   //TestConvolution();
   //testptree();
   //TestDeltaAndHeaviside();
-  TestVesselFieldCoupling();
+  //TestVesselFieldCoupling();
   //TestVesselFieldCoupling2(argc, argv);
-  TestVesselFieldCoupling3(argc,argv);
+  //TestVesselFieldCoupling3(argc,argv);
   //TestVesselList();
   //TestLatticeData();
   //TestVecDebug();
@@ -863,5 +883,8 @@ int main(int argc, char **argv)
   log << "test" << " new " << " line " << endl;
   log.pop();
   #endif
+#if 1
+  
+#endif
   return 0;
 }

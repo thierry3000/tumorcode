@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <limits>
 #include <ostream>
 #include <assert.h>
+#include <boost/serialization/access.hpp>
 
 namespace my
 {
@@ -345,7 +346,11 @@ struct Bitfield
   inline Bitfield& AddBits( T b, T mask ) { bits = (bits&(~mask)) | (b&mask);  return *this;  }
   inline const T GetBits( T mask ) const { return bits&mask; }
   inline bool AllBitsSet( T mask ) const { return (bits&mask)==mask; }
-  inline Bitfield& DelBits( T b ) { bits &= (~b);  return *this;  }
+  inline Bitfield& DelBits( T b )
+  { 
+    bits &= (~b);
+    return *this;
+  }
   inline Bitfield& ToggleBits( T b ) { bits = (bits^b);  return *this;  }
 
   inline Bitfield& operator |= (const T x) { AddBits(x); return *this; }

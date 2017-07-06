@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hdf_wrapper.h"
 
 #if 1  //multiple declaration is always bad!!! before this was h5=h5cpp
-namespace h5cpp_intern {
+
 
 template<class T, int dim>
 inline void set_array(h5cpp::Attributes attrs, const std::string &name, const Vec<T,dim> &vec)
@@ -42,7 +42,6 @@ inline Vec<T,dim> get_array(h5cpp::Attributes attrs, const std::string &name)
   return r;
 }
 
-}
 #endif
 
 #endif

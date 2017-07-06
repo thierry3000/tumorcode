@@ -360,7 +360,11 @@ class EasyPovRayRender(object):
 
   def addIsosurface(self, volumedata, level, style_object, clip_object, clip_style_object):
     vb = volumedata.value_bounds
-    wb = volumedata.worldbox
+    wb = volumedata.worldbox    
+    difference = vb[1]-vb[0]
+    if __debug__:    
+      print('Adding Isosuface! See if threshold is reasonable:') 
+      print('vb[1]-vb[0]: %f ' % difference)
 
     o = pv.Isosurface(
       pv.Function('-%s(x,y,z)' % (volumedata.name)),
@@ -546,6 +550,15 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename):
 #  bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
 #  width, height = bbox.width, bbox.height
 #  bbox0 = Bbox.from_extents([0.1,0.1,2.9,2.9])
+  if options.timepoint:
+    #ax = fig.add_axes([0.05, 0.05, 0.26, 0.018]) # left bottom width height
+    days_float = float(options.timepoint)/(3600.*24.) # timepoint comes in second
+    ax.text(0.6,-0.09,r"time: %.1f days" % days_float,
+             horizontalalignment='left',
+             verticalalignment='bottom',
+             transform=ax.transAxes,
+             size=mytextsize*0.7,
+             fontweight='bold')
   fig.savefig(output_filename, dpi=dpi, bbox_inches=None ) # overwrite the original
 
 

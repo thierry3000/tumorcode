@@ -23,6 +23,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import h5py
 import atexit
 import os
+import sys
+
+if sys.flags.debug:
+    print("h5py.__file__: %s" % h5py.__file__)
+
 '''
   Need this because - citing the h5py docs
   http://www.h5py.org/docs/whatsnew/2.0.html#file-objects-must-be-manually-closed
@@ -98,12 +103,13 @@ class H5Files(object):
     f.close()
 
   def closeall(self):
-    for f in self.files.itervalues(): f.close()
+    #for f in self.files.itervalues(): f.close()
     self.files = dict()
 
 
 
 h5files_ = H5Files()
+#obvious hack to close all files, is this still necessary with the new h5py?
 atexit.register(H5Files.closeall, h5files_)
 
 open = h5files_.open

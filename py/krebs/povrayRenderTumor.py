@@ -28,6 +28,7 @@ import os,sys
 from os.path import basename, splitext
 
 from povrayRenderVessels import *
+import povrayEasy
 import myutils
 import math
 import copy
@@ -79,7 +80,8 @@ def addBulkTissueTumor(epv, tumorgroup, trafo, options):
 
 def renderScene(vesselgroup, tumorgroup, imagefn, options):
     if vesselgroup is not None:
-      wbbox = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice']).worldBox
+      vgrp = vesselgroup['lattice']
+      wbbox = krebsutils.read_lattice_data_from_hdf(vgrp).worldBox
     else:
       wbbox = krebsutils.read_lattice_data_from_hdf(tumorgroup.file['field_ld']).worldBox
     trafo = calc_centering_normalization_trafo(wbbox)
@@ -136,7 +138,7 @@ def renderScene(vesselgroup, tumorgroup, imagefn, options):
       if options.noOverlay:
         epv.render(imagefn+'.png')
       else:
-        RenderImageWithOverlay(epv, imagefn+'.png', None, 'tumor', options)
+        povrayEasy.RenderImageWithOverlay(epv, imagefn+'.png', None, 'tumor', options)
       
 
 

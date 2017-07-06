@@ -24,8 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "common.h"
 #include "mwlib/math_ext.h"
-
+#include "Epetra_CrsMatrix.h"
 #include <boost/unordered_map.hpp>
+
 
 typedef double FlReal;
 class VesselList3d;
@@ -46,7 +47,8 @@ enum Rheology
    * American Journal of Physiology - Heart and Circulatory Physiology
    * Microvascular blood viscosity in vivo and the endothelial surface layer.
    */
-  RheologySecomb2005 = 2
+  RheologySecomb2005 = 2,
+  RheologyEnd = 3
 };
 ostream& operator<<(ostream &os, Rheology rheology);
 istream& operator>>(istream &os, Rheology &rheology);
@@ -61,6 +63,15 @@ struct BloodFlowParameters
   Rheology rheology;
   double inletHematocrit;
   bool includePhaseSeparationEffect; // non-homogeneous intravascular hematocrit distribution, Warning: computationally very expensive
+  friend class boost::serialization::access;
+  template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+      ar & viscosityPlasma;
+      ar & rheology;
+      ar & inletHematocrit;
+      ar & includePhaseSeparationEffect;
+    }
 };
 
 ostream& operator<<(ostream &os, const BloodFlowParameters &bfparams);
@@ -111,22 +122,28 @@ inline FlReal CalcVelocity( FlReal q, FlReal r )
 
 struct FlowBC
 {
-  enum Pin { PIN = 1 };  // set the node to a fixed blood pressure
-  enum Current { CURRENT = 2 }; // a fixed blood flow rate into the node
-  enum Resist { RESIST = 3 }; // a resistor between the node and a fixed blood pressure
-  FlowBC() : type(PIN),w(0.),val(0.) {}
-  FlowBC(Current, double current) : w(0),val(current),type(CURRENT) {}
-  FlowBC(Pin, double val) : w(0),val(val),type(PIN) {}
-  FlowBC(Resist, double w, double val) : w(w),val(val),type(RESIST) {}
-  uint type; // PIN, CURRENT or RESIST
+  enum Type{ PIN = 1, CURRENT = 2, RESIST = 3};
+  //enum Pin { PIN = 1 };  // set the node to a fixed blood pressure
+  //enum Current { CURRENT = 2 }; // a fixed blood flow rate into the node
+  //enum Resist { RESIST = 3 }; // a resistor between the node and a fixed blood pressure
+  FlowBC() : typeOfInstance(Type::PIN),w(0.),val(0.) {}
+  FlowBC(Type theType, double val_) : w(0),val(val_),typeOfInstance(theType) {}
+  FlowBC(Type theType, double cond_, double val_) : w(cond_), val(val_), typeOfInstance(theType) {}
+  //FlowBC_pin(double val) : w(0),val(val),typeOfInstance(Type::PIN) {}
+  //FlowBC_resit(double w, double val) : w(w),val(val),typeOfInstance(Type::RESIST) {}
+  Type typeOfInstance; // PIN, CURRENT or RESIST
   double w,val; // w = flow conuctivity (?) of series "resistor", val = either blood pressure or flow rate
+//   friend class boost::serialization::access;
+//   template<class Archive>
+//   void serialize(Archive &ar, const unsigned int version)
+//   {
+//       // save/load base class information
+//       ar & type & w & val;
+//   }
 };
 
 
 void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &params, bool keepTheVesselHematocrit); // Either override the vessel hematocrit with a constant or leave the vessel hematocrit values alone and just compute pressure, flow and force using the segments hematocrit
 void CalcFlow(VesselList3d &vl, const BloodFlowParameters &params);
-void ChangeBoundaryConditions(VesselList3d &vl, uint boundary_handling  );
-//void ChangeBoundaryConditionsFix(VesselList3d &vl);
-//void ChangeBoundaryConditionsLARGE_2D(VesselList3d &vl);
 bool MarkFailingVesselHidden(VesselList3d &vl);
 #endif // CALCFLOW_H

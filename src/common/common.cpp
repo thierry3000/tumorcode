@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common.h"
 #include <tbb/task_scheduler_init.h>
 
-#if (defined _OPENMP) //&& (defined OPENMP_ENABLED)
-#include <omp.h>
+#if defined( _OPENMP )
+  #include <omp.h>
 #endif
 
 // //it is good to know the epetra settings before we set up mpi and multithreading
@@ -43,12 +43,16 @@ struct MPPrivate
   {
 #ifdef EPETRA_MPI
     {
+#ifndef TOTAL_SILENCE
       printf("\n\nEPETRA_MPI flag is set!\n");
+#endif
       int mpi_is_initialized = 0;
       int prov;
       MPI_Initialized(&mpi_is_initialized);
       if (!mpi_is_initialized)
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+	//kind of works with 
+	//MPI_Init(&argc, &argv);
     }
 #endif
     SetNumThreads(num_threads_);
@@ -77,8 +81,10 @@ struct MPPrivate
     num_threads = n;
     tbbinit.terminate();
     tbbinit.initialize(num_threads);
-#ifdef _OPENMP
+#if defined( _OPENMP )
+#if DEBUG
     printf("omp num threads <- %i\n", num_threads);
+#endif
     omp_set_num_threads(num_threads);
 #endif
   }
@@ -90,6 +96,10 @@ struct MPPrivate
 
 static std::auto_ptr<MPPrivate> mp;
 
+bool MultiprocessingInitializer_exists()
+{
+  return mp.get();
+}
 
 int GetNumThreads()
 {
@@ -100,7 +110,7 @@ int GetNumThreads()
 
 int OmpGetCurrentThread()
 {
-#if defined(_OPENMP)
+#if defined( _OPENMP )
     assert(omp_in_parallel() || (omp_get_num_threads() == 1 && omp_get_thread_num()==0));
     return omp_get_thread_num();
 #else
@@ -110,7 +120,7 @@ int OmpGetCurrentThread()
 
 int OmpGetMaxThreadCount()
 {
-#if (defined _OPENMP)
+#if defined( _OPENMP )
     return omp_get_max_threads();
 #else
     return 1;
@@ -121,7 +131,7 @@ int OmpGetMaxThreadCount()
 void SetNumThreads(int n)
 {
   if (!mp.get()) 
-    throw std::runtime_error("Multiprocessing not initialized! Construct a MultiprocessingInitializer!");
+    throw std::runtime_error("Multiprocessing not initialized! Construct a MultiprocessingInitializer! from SetNumThreads");
   mp->SetNumThreads(n);
 }
 

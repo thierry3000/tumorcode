@@ -25,166 +25,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "vessels3d.h"
 #include "shared-objects.h"
 
-#include <boost/unordered_map.hpp>
+#include "calcflow.h"
 #include <boost/foreach.hpp>
 #include <limits>
 #include <fstream>
 #include "Ifpack_Utils.h"
 
-void ChangeBoundaryConditions(VesselList3d &vl, uint handling)
-{
-#ifdef DEBUG
-  printf("entered ChangeBoundaryConditions\n");
-#endif
-  int ncnt = vl.GetNCount();
-  switch(handling){
-    case KEEP:
-      std::printf("no boundary changes in");
-      break;
-    case VEIN_AS_FLOW_ARTERY_PRESSURE:
-      double min_boundary_pressure = std::numeric_limits< double >::max();
-      double max_boundary_flow = std::numeric_limits< double >::min();
-      for( int i=0;i<ncnt; ++i)
-      {
-	const VesselNode* vc= vl.GetNode(i);
-	if( vc->Count() >0 )
-	{
-	  if( vc->IsBoundary() and vc->GetEdge(0)->IsCirculated())
-	  {
-	    if( vc->press < min_boundary_pressure)
-	    {
-	      min_boundary_pressure = vc->press;
-	    }
-	    if( vc->GetEdge(0)->q > max_boundary_flow)
-	    {
-	      max_boundary_flow = vc->GetEdge(0)->q;
-	    }
-	  }
-	}
-      }
-      for(int i=0; i<ncnt; ++i)
-      {
-	const VesselNode* vc= vl.GetNode(i);
-	// insert boundary nodes into the bcs array
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated())
-	{
-    #if 0  //keep max flow as flow boundary, everything else to pressure
-	  if(vc->GetEdge(0)->q== max_boundary_flow)
-	  {
-	    if(vc->GetEdge(0)->IsArtery())
-	    {
-	      vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -vc->GetEdge(0)->q));
-	    }
-	    if(vc->GetEdge(0)->IsVein())
-	    {
-	      vl.SetBC(vc,FlowBC(FlowBC::CURRENT, vc->GetEdge(0)->q));
-	    }
-	  }
-	  else
-	  {
-	    vl.SetBC(vc,FlowBC(FlowBC::PIN, vc->press));
-	  }
-    #endif
-    #if 0
-	  //all arteries flow, all veins pressure
-	  if(vc->GetEdge(0)->IsArtery())
-	  {
-	    vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -vc->GetEdge(0)->q));
-	  }
-	  if(vc->GetEdge(0)->IsVein())
-	  {
-	    vl.SetBC(vc,FlowBC(FlowBC::PIN, vc->press));
-	  }
-    #endif
-    #if 1
-	  //minmal boundary pressure becomes PIN condition everthing else flow
-	  if(vc->press == min_boundary_pressure)
-	  {
-	    vl.SetBC(vc,FlowBC(FlowBC::PIN, vc->press));
-    #ifdef DEBUG
-	    cout << format("min pressure boundary: %f") % vc->press <<endl;
-    #endif
-	  }
-	  else
-	  {
-	    if( vc->GetEdge(0)->IsArtery() )
-	    {
-	      vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -vc->GetEdge(0)->q));
-    #ifdef DEBUG
-	      cout << format("flow boundary: %f") % -vc->GetEdge(0)->q <<endl;
-    #endif
-	    }
-	    if( vc->GetEdge(0)->IsVein())
-	    {
-	      vl.SetBC(vc,FlowBC(FlowBC::CURRENT, vc->GetEdge(0)->q));
-    #ifdef DEBUG
-	      cout << format("flow boundary: %f") % vc->GetEdge(0)->q <<endl;
-    #endif
-	    }
-	  }
-    #endif
-	  //cout<<format("press : %f\n") % vc->press;
-	  //cout << format("flow boundary node: %i") % id << endl;
-    #ifdef DEBUG
-	  cout<<"Changed bcs map!"<<endl;
-    #endif
-	}
-      }
-      break;
-    case LARGE_2D:
-      for(int i=0; i<ncnt; ++i)
-      {
-	const VesselNode* vc= vl.GetNode(i);
-	// insert boundary nodes into the bcs array
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::PIN, 3.7));
-	}
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -500000.0));
-	}
-      }
-      break;
-    case LARGE_2D_2:
-      for(int i=0; i<ncnt; ++i)
-      {
-	const VesselNode* vc= vl.GetNode(i);
-	// insert boundary nodes into the bcs array
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::PIN, 1.8));
-	}
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -800000.0));
-	}
-      }
-      break;
-    case LARGE_2D_like_paper:
-      for(int i=0; i<ncnt; ++i)
-      {
-	const VesselNode* vc= vl.GetNode(i);
-	// insert boundary nodes into the bcs array
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::PIN, 1.8));
-	}
-	if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
-	{
-	  vl.SetBC(vc,FlowBC(FlowBC::CURRENT, -16666666.0));
-	}
-      }
-      break;
-    default:
-      cout<<"no proper boundary handling found!"<<endl;
-  }//switch
-  
-  
-#ifdef DEBUG
-  printf("leave ChangeBoundaryConditions\n");
-#endif
-}
+
 
 // void ChangeBoundaryConditionsFix(VesselList3d &vl)
 // {
@@ -338,11 +185,17 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
   cout << "calcflow (no hematocrit)" << endl;
 #endif
   CompressedFlowNetwork flownet;
-  GetFlowNetwork(flownet, &vl, bloodFlowParameters, keepTheVesselHematocrit);
+  uint returnOfGetFlowNetwork = GetFlowNetwork(flownet, &vl, bloodFlowParameters, keepTheVesselHematocrit);
+  if(returnOfGetFlowNetwork>0)
+  {
+    return;
+  }
 
   FlArray visc(flownet.num_edges());
   CalcViscosities(flownet.rad, flownet.hema,bloodFlowParameters, visc);
-
+  //from header
+  //FlArray press;
+  //FlArray len, rad, hema, flow;
   //clear_and_free_memory(flownet.hema);
   
   FlArray cond(flownet.num_edges());
@@ -351,91 +204,27 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
   clear_and_free_memory(flownet.len);
   clear_and_free_memory(flownet.rad);
   
-#if 0
-  {
-    NetworkLinearChainRemover chainremover;
-    {
-      CompressedGraph g;
-      g.beginConstruct();
-      g.add_edges(flownet.edges);
-      g.endConstruct();
-      //g.print(cout);
-      //cout << std::endl;
-
-      DynArray<bool> boundary_points(flownet.num_vertices());
-      for (boost::unordered_map<int, FlowBC>::const_iterator it = flownet.bcs.begin(); it != flownet.bcs.end(); ++it)
-        boundary_points[it->first] = true;
-      
-      chainremover.initialize(g, cond, boundary_points);
-      //print_container(cout, chainremover.edges());
-      //cout << std::endl;
-    }
-
-    // translate indices
-    IntegerMap to_unchained_index;
-    to_unchained_index.resize(flownet.num_vertices());
-    std::vector<my::eqpair<int> > new_edges(chainremover.edges().size());
-    for (int i=0; i<new_edges.size(); ++i)
-    {
-      int a = to_unchained_index.add(chainremover.edges()[i].first);
-      int b = to_unchained_index.add(chainremover.edges()[i].second);
-      new_edges[i] = my::make_eqpair(a,b);
-    }
-    boost::unordered_map<int, FlowBC> bcmap;
-    remap_keys(flownet.bcs, bcmap, to_unchained_index);
-
-    { // construct the linear system and solve it
-      Linsys flowsys;
-      flowsys.scaling_const = Median(cond);
-      flowsys.initialize_pattern(to_unchained_index.num_added(), new_edges);
-      flowsys.fill_values(new_edges, chainremover.cond(), bcmap);
-      clear_and_free_memory(new_edges);
-
-      flowsys.solve();
-
-      flownet.press.resize(flownet.num_vertices());
-
-      for (int i=0; i<flownet.num_vertices(); ++i)
-        if (to_unchained_index[i] != IntegerMap::unused())
-          flownet.press[i] = flowsys.lhs_get(to_unchained_index[i]);
-    }
-
-    chainremover.distribute_pressures(flownet.press);
-
-    SetFlowValues(vl, flownet, cond, flownet.press, NULL);
-    
-    cout << "max relative mass loss: " << CalcFlowResidual(flownet, cond) << endl;
-    CalcFluxResidual(*vl, flownet);
-  }
-#else
   {
     Linsys flowsys;
     flowsys.scaling_const = CalcFlowCoeff(bloodFlowParameters.viscosityPlasma, 4., 100.); //Median(cond);
     flowsys.initialize_pattern(flownet.num_vertices(), flownet.edges);
     flowsys.fill_values(flownet.edges, cond, flownet.bcs);
 
-#if 0   // thierrys sparse output
-    time_t rawtime;
-    struct tm*timeinfo;
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-    std::ofstream myMatrixFile;
-    std::string myString ("Epetra_Matrix");
-    myString = myString + asctime(timeinfo) +".txt";
-    myMatrixFile.open(myString.c_str());
-    flowsys.sys->Print(myMatrixFile);
-    std::string myString2 ("Epetra_Sparsity_Pattern");
-    myString2 = myString2 + asctime(timeinfo) + ".ps";
-    Ifpack_PrintSparsity(*flowsys.sys,myString2.c_str());
-    myMatrixFile.close();
-#endif
+    //sparse_matrix_print(*flowsys.sys);
 
     flowsys.solve();
+    
+    //vector_print(*flowsys.lhs);
   
     flownet.press.resize(flownet.num_vertices());
+    //flownet.len.resize(flownet.num_edges());
+    //flownet.rad.resize(flownet.num_edges());
+    //flownet.hema.resize(flownet.num_edges());
+    //flownet.flow.resize(flownet.num_edges());
     
     for (int i=0; i<flownet.num_vertices(); ++i) flownet.press[i] = flowsys.lhs_get(i);
     SetFlowValues(&vl, flownet, cond, flownet.press, flownet.hema);
+    
     
 #if 0
     {
@@ -475,7 +264,7 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
 
   //h5cpp::File f("debugvessels.h5","w");
   //WriteVesselList3d(*vl, f.root().create_group("vessels"), make_ptree("w_all",true));
-#endif
+
   }
   bool ok = MarkFailingVesselHidden(vl);
   if (!ok)
@@ -765,7 +554,9 @@ void HematocritCalculator::UpdateHematocritAtNode( int upstream_node, int edge_i
       const FlReal diff = std::abs(rbcout-rbcIn)/(rbcout+rbcIn+1.e-20);
       if( diff>1.0e-3f ) 
       {
+#ifndef TOTAL_SILENCE
         printf("WARNING: UpdateHematocritAtNode: RBC conservation violated %f %% (out: %e, in: %e) at node %i\n",diff,rbcout,rbcIn,upstream_node);
+#endif
         /*if( diff>0.5f ) 
         {
           for( int i=0; i<vc->Count(); ++i )
@@ -808,9 +599,10 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
     Linsys flowsys;
     flowsys.initialize_pattern(flownet.num_vertices(), flownet.edges);
     flowsys.scaling_const = CalcFlowCoeff(bloodFlowParameters.viscosityPlasma, 4., 100.);
-    EllipticEquationSolver solver;
+    
     ptree solver_params = make_ptree("output", 1)("preconditioner","multigrid")("use_smoothed_aggregation", false)("max_iter", 200)("throw",false)("conv","rhs")("max_resid",1.e-10);
-
+    
+    
     int last_solver_iterations = std::numeric_limits<int>::max();
     /* note:
      * earlier we initialized with nan.
@@ -829,8 +621,9 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
       flowsys.fill_values(flownet.edges, cond, flownet.bcs);
 
       solver_params.put("keep_preconditioner", iteration>3 && last_solver_iterations<15); // && solver.time_iteration<solver.time_precondition);
-      solver.init(*flowsys.sys, *flowsys.rhs, solver_params);
-      solver.solve(*flowsys.lhs);
+      //solver.init(flowsys.sys, flowsys.rhs, solver_params);
+      EllipticEquationSolver &&solver = EllipticEquationSolver{flowsys.sys, flowsys.rhs, solver_params};
+      solver.solve(flowsys.lhs);
       last_solver_iterations = solver.iteration_count;
 
       flowsys.clear_values();
@@ -893,15 +686,16 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
   }
 }
 
-
+/* NB: this is completely NOT threadsafe!!!!*/
 void CalcFlow(VesselList3d &vl, const BloodFlowParameters &params)
 {
+#pragma omp single
+  {
   ComputeCirculatedComponents(&vl);
   if (params.includePhaseSeparationEffect)
     CalcFlowWithPhaseSeparation(vl, params);
   else
     CalcFlowSimple(vl, params, true);
+  }//#pragma omp single
 }
-
-
 #endif

@@ -42,7 +42,7 @@ import imp
 import krebs.detailedo2 as detailedo2
 import krebsjobs.parameters.parameterSetsO2
 import krebsjobs.submitFakeTum
-import krebsjobs.parameters.tumorParameters
+import krebsjobs.parameters.parameterSetsBulkTissueTumor
 import krebs.povrayRenderOxygenDetailed
 import krebs.analyzeTissueOxygen
 
@@ -76,7 +76,7 @@ if __name__ == '__main__' and not qsub.is_client:
   filenames = argv[3:]
 
   try:
-    if not tumorParameterName in dir(krebsjobs.parameters.tumorParameters):
+    if not tumorParameterName in dir(krebsjobs.parameters.parameterSetsBulkTissueTumor):
       raise AssertionError('Unknown tumor parameter set %s!' % tumorParameterName)
     if not o2ParameterName in dir(krebsjobs.parameters.parameterSetsO2):
       raise AssertionError('Unknown o2 parameter set %s!' % o2ParameterName)
@@ -90,7 +90,7 @@ if __name__ == '__main__' and not qsub.is_client:
   #tumor_parameter_sets = [('defaultconfig', tum_only_vessels.defaultconfig)]
   #o2_parameter_set_name = 'breastv2'
 
-  tumorParameterSet = getattr(krebsjobs.parameters.tumorParameters, tumorParameterName)
+  tumorParameterSet = getattr(krebsjobs.parameters.parameterSetsBulkTissueTumor, tumorParameterName)
   o2ParameterSet = getattr(krebsjobs.parameters.parameterSetsO2, o2ParameterName)
   for vessel_fn in filenames:
     #for name, tumor_parameters in tumor_parameter_sets:

@@ -142,7 +142,9 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
   all_pt_params.put_child("vessels", VesselModel1::Params().as_ptree());
   all_pt_params.put_child("tumor", NewBulkTissueModel::Params().as_ptree());
   all_pt_params.put_child("prez_o2", O2Model::PrezO2Params().as_ptree() );
+#ifdef USE_ADAPTION
   all_pt_params.put_child("adaption", Adaption::Parameters().as_ptree());
+#endif
   { 
     //boost::optional<ptree> read_params = HandleSimulationProgramArguments(all_pt_params, argc, argv);
     //boost::optional<ptree> read_params = all_pt_params;
@@ -371,7 +373,11 @@ void BulkTissue::NewTumorSim::advanceVesselState()
   cell_pressure = ost.pressure;  
   
   // do step
+#ifdef USE_ADAPTION
   vessel_model.DoStep(1.,nullptr,nullptr);
+#else
+  vessel_model.DoStep(1.,nullptr);
+#endif
   CalcFlow(*state.vessels, params.bfparams);
 
   // update data for interaction

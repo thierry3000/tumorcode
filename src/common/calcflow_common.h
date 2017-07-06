@@ -39,15 +39,6 @@ inline T getNAN() { return std::numeric_limits<T>::quiet_NaN(); }
 template<class T>
 inline bool isFinite(T x) { return std::isfinite(x); }
 
-enum BoundaryHandling
-  {
-    KEEP = 0,
-    VEIN_AS_FLOW_ARTERY_PRESSURE  = 1,
-    LARGE_2D = 2,
-    LARGE_2D_2 = 3,
-    LARGE_2D_like_paper = 4,
-  };
-
 struct CompressedFlowNetwork
 {
   FlArray press;
@@ -96,7 +87,7 @@ void SetFlowValues( VesselList3d* vl,
                     const FlArray &press,
                     const FlArray &hema
 		    );
-void GetFlowNetwork(CompressedFlowNetwork &fl,
+uint GetFlowNetwork(CompressedFlowNetwork &fl,
                     const VesselList3d* vl,
                     const BloodFlowParameters &bfparams,
                     bool keepTheVesselHematocrit

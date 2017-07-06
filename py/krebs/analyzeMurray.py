@@ -21,39 +21,68 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 # -*- coding: utf-8 -*-
 
-import h5py
+import os, sys
+from os.path import join, basename, dirname, splitext
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
+
 import h5files
 import numpy as np
 import krebsutils as ku
 import os
 import matplotlib.pyplot as plt
-import adaption
+#import adaption
 import mpl_utils
 
 def DoGetMurrayForSingleFileGENERAL(fn,pattern, pdfpages):
-  alpha = 3
   afile = h5files.open(fn, 'r')
   vesselgrp = afile[pattern]
   print(vesselgrp)
-  result = ku.get_Murray(vesselgrp, alpha)
-  result = removeZeros(result)
-  
-  max_ = np.max(result[0,:])
+  result_venous, result_a = ku.get_Murray(vesselgrp)
+  #result = ku.get_Murray(vesselgrp, alpha)
+  result_venous = removeZeros(result_venous)
+  result_a = removeZeros(result_a)
  
-  x=np.arange(0,max_,0.1)
-  y=x
-  fig1, (ax1, ax2) = plt.subplots(2,1,sharex=True, sharey=True)
-  ax1.set_title('Murray for \n%s\n%i points considered' % (os.path.basename(afile.filename),result.shape[1]))
-  ax1.scatter(result[0,:],result[1,:])
-  ax1.set_ylabel('mother')
-  ax1.plot(x,y,'k')
+  #x=np.arange(0,max_,0.1)
+  #y=x
+  #fig1, (ax1, ax2) = plt.subplots(2,1,sharex=True, sharey=True)
+  fig1, (ax1, ax2) = plt.subplots(2,1)
+  ### plot murrays law with exponent
+  alphas = np.arange(2,6,0.5)
+  max_ = np.max(result_venous[2,:])
+  min_ = np.min(result_venous[0,:])
+  x = np.arange(min_,max_, 0.1)
+  font = {'family': 'serif',
+        'color':  'black',
+        'weight': 'normal',
+        'size': 4,
+        'rotation': 30,
+        'verticalalignment': 'bottom',
+        'horizontalalignment': 'left',
+        }
+  for alpha in alphas:
+    ax1.text(np.power(2 * x[-1]**alpha, 1/float(alpha)), x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
+    ax1.plot(np.power(2 * x**alpha, 1/float(alpha)) , x, c='k', linewidth=0.1)
+  
+  ### plot data
+  ax1.set_title('Murray for file:\n%s\n%i venous points, %i arterial points' % (os.path.basename(afile.filename),result_venous.shape[1], result_a.shape[1]), size=6)
+  pointsize = 0.1
+  venous = ax1.scatter(np.power(result_venous[0,:]**3+result_venous[1,:]**3,1/float(3)),result_venous[2,:],c='b', s=pointsize, label='bldk')
+  arterial = ax1.scatter(np.power(result_a[0,:]**3+result_a[1,:]**3,1/float(3)),result_a[2,:],c='r',s=pointsize)
+  ax1.set_xlabel(r'$\sqrt[3]{r_{daughter_1}^3 + r_{daughter_2}^3}$')
+  ax1.set_ylabel(r'$r_{mother}$')
+  ax1.legend((venous,arterial),('Venous', 'Arterial'),loc='lower right')
   ax1.grid()
   
-  hist, bin_edges = np.histogram(result[0,:]-result[1,:], bins=50)
+  
+  ### histogramm deviation of daughters
+  hist, bin_edges = np.histogram(result_a[1,:]-result_a[0,:], bins=50) #note. they are sorted in on c++ side
   width = 0.7*(bin_edges[1]-bin_edges[0])
   centers = (bin_edges[:-1]+bin_edges[1:])/2
-  ax2.bar(centers,hist, align='center', width=width)
-  
+  ax2.bar(centers,hist/float(len(result_a[0,:])), align='center', width=width, color='red')
+  ax2.set_xlabel(r'$\|r_{daughter 1}- r_{daughter 2}\|$')
+  ax2.set_ylabel(r'$p$')
+  fig1.tight_layout()
   pdfpages.savefig(fig1) 
 
 def DoGetMurrayForSingleFile(fn,pattern):
@@ -186,7 +215,7 @@ if __name__ == "__main__":
   filenames = args[:]
   
 #either specify group, like in tumor simuations or take all from the ensemble
-  if 1:    
+  if 0:    
     for afilename in filenames:
         print("got file: %s" % afilename)
     if not filenames:

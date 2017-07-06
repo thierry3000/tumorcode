@@ -20,8 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "lattice-data.h"
 #include <float.h>
-#include "math_ext.h"
 
+#include "math_ext.h"
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/export.hpp>
 
 #define LatticeWorldTransform_TEMPL_ARG1 template<int dim_>
 #define LatticeWorldTransform_CLASS LatticeWorldTransform<dim_>
@@ -204,8 +207,6 @@ Int3 LatticeDataQuad3d::GetLatticeIndexOnRefinedGrid(const Int3& pos, int refine
   return pos * (1 + refinement_subdivision);
 }
 
-
-
 volatile bool LatticeDataFCC::nbs_init = false;
 Int3 LatticeDataFCC::vnb[2][3][LatticeDataFCC::DIR_CNT];
 
@@ -335,7 +336,6 @@ Int3 LatticeDataFCC::NbLattice( const Int3 &p, int dir ) const
   return p + vnb[p[1]&1][my::mod(p[2],3)][dir];
   
 }
-
 
 static Int3 fcc2cartesian(const Int3 &p)
 {
@@ -474,4 +474,3 @@ bool operator==( const LatticeDataFCC& a, const LatticeDataFCC& b )
 {
   return a.Box()==b.Box() && a.Scale()==b.Scale() && a.LatticeToSite(a.Box().min) == b.LatticeToSite(b.Box().min);
 }
-

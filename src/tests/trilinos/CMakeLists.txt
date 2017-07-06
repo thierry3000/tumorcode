@@ -1,0 +1,12 @@
+# note Ifpack2 not provided on durga
+string(COMPARE EQUAL "$ENV{CLUSTER}" "lusi-arch" string_compare_result)
+#message("$ENV{CLUSTER}")
+#message("string_compare_result: ${string_compare_result}")
+if(string_compare_result)
+  add_executable(test_belos test_belos.cpp)
+  target_link_libraries(test_belos ${myLibs} ifpack2)
+  install(TARGETS test_belos RUNTIME DESTINATION bin)
+endif()
+add_executable(PrecBiCGStabExFile PrecBiCGStabExFile.cpp)
+target_link_libraries(PrecBiCGStabExFile ${myLibs})
+install(TARGETS PrecBiCGStabExFile RUNTIME DESTINATION bin)

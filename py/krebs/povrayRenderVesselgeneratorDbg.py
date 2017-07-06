@@ -27,7 +27,7 @@ You have to switch the flag
 
 full_debug_output = True,
 
-in the vesselGenParams.py set to True in order to produce
+in the parameterSetsVesselGen.py set to True in order to produce
 a file called dbgvessels.h5
 there all intermediate steps from the vessel creation process 
 are stored.

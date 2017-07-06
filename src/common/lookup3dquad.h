@@ -131,24 +131,25 @@ class SiteLookup
   typedef polymorphic_latticedata::LatticeData LD;
   typedef LD::SiteType S;
   typedef VesselNode* V;
-  //typedef typename LD::SiteType S;
-  V default_value;
+  
   typedef S K; // key type
   typedef boost::unordered_map<K, V> Map;
   Map map;
-  const LD* m_ld;    
+  const LD* m_ld;
+  //boost::shared_ptr<LD> m_ld;
+  V default_value;
 
 public:
   SiteLookup() : default_value(),m_ld(NULL) {}
-
   const LD& ld() const { return *m_ld; }
-
+  //const LD& ld() const { return *m_ld.get(); }
   S Count() const { return map.size(); }
-
   void Init( const LD &_ld, V default_value_ = V())
   {
     map.clear();
     m_ld = &_ld;
+    //boost::shared_ptr<LD> p(new (_ld.Clone()));
+    //m_ld = _ld.Clone();
     default_value = default_value_;
   }
 
