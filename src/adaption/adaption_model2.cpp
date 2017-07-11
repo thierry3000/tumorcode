@@ -1324,7 +1324,7 @@ bool check_while_break( int no_vessels, double min_error, double nqdev, double m
 
 
 //std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, VesselList3d &vl,bool doDebugOutput)
-std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, bool doDebugOutput)
+std::tuple<uint,FlReal,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, bool doDebugOutput)
 {
 //   for( auto it: params.as_ptree())
 //   {
@@ -1661,7 +1661,7 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
     cout<<"NOT Convergent!"<<endl;
 #endif
 #endif
-    return std::make_tuple(1, 1000000000000.);
+    return std::make_tuple(1, 4242424242424242424242., 4242424242424242424242. );
   }
   else
   {
@@ -1705,7 +1705,8 @@ std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters
   mean_std = sqrt(variance(acc));
 #pragma omp barrier
     
-  return std::make_tuple(0, mean_value);
+  //return std::make_tuple(0, mean_value);
+  return std::make_tuple(0, mean_value, mean_std);
   }
 }
 

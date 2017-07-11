@@ -159,6 +159,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
   {
     h5cpp::File file(params.fn_vessel, "r");
     ptree pt;
+    //factor by which lattice is subdivided for tumor growth
     pt.put("scale subdivide", 10.);
     pt.put("scale override", params.override_scale);
     std::auto_ptr<VesselList3d> vl = ReadVesselList3d(file.root().open_group("vessels"),pt);

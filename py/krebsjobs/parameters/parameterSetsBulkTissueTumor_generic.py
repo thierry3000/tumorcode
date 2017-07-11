@@ -397,6 +397,14 @@ defaultconfig_bulktissue = dict(
     surface_tension = -1.,
   ),
 )
+''' neat parameters for desktop pc'''
+default = deepcopy(defaultconfig_bulktissue)
+default.update(
+    num_threads = 6,
+    lattice_scale  = 50,
+    out_intervall = 60, #1 min
+    tend = 600., #5 min
+)
 bulktissue_small_2d_snowden = dict(
   # this is the configuration which is used in submit-bulktissue-w-vessels
   lattice_size  = "set me to match the vessel domain",

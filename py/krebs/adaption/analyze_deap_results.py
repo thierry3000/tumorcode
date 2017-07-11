@@ -99,12 +99,12 @@ def redo_adaption_for_convergent_sets(f):
         )
     _adap.do_simple_adaption(inputFileName,vessel_grp, factory)
 if __name__ == '__main__':
+  f = h5py.File('deap_results.h5','r')
   with PdfPages('out_deap_results.pdf') as pdf:
     rc = matplotlib.rc
     rc('font', size = 8.)
     rc('axes', titlesize = 10., labelsize = 8.)
-    f = h5py.File('deap_results.h5','r')
     if 1:
       convergenz_plot(f,pdf)
-    if 1:
-      redo_adaption_for_convergent_sets(f)
+  if 1:
+    redo_adaption_for_convergent_sets(f)

@@ -365,7 +365,9 @@ class EasyPovRayRender(object):
     if __debug__:    
       print('Adding Isosuface! See if threshold is reasonable:') 
       print('vb[1]-vb[0]: %f ' % difference)
-
+    threshold = -(level-vb[0])/difference
+    if np.isnan(threshold) or np.isinf(threshold):
+      threshold = -1.
     o = pv.Isosurface(
       pv.Function('-%s(x,y,z)' % (volumedata.name)),
       ['max_gradient', volumedata.max_grad],
@@ -374,7 +376,7 @@ class EasyPovRayRender(object):
               wb[:,0], wb[:,1]
           )
       ),
-      ['threshold', -(level-vb[0])/(vb[1]-vb[0])],
+      ['threshold', threshold],
       ['all_intersections'],
       #['scale', (wb[:,1]-wb[:,0])],
       #['translate', (wb[:,0])],

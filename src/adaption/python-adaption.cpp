@@ -220,7 +220,7 @@ static py::object PyComputeAdaption(const py::dict py_parameters, const py::dict
 
   
 
-  std::tuple<uint,FlReal> return_state;
+  std::tuple<uint,FlReal,FlReal> return_state;
   //uint return_state;
   using namespace boost::accumulators;
   return_state = runAdaption_Loop(params, bfparams, doOutput);
@@ -235,7 +235,7 @@ static py::object PyComputeAdaption(const py::dict py_parameters, const py::dict
 //     WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
 //   }
   
-  return py::make_tuple(std::get<0>(return_state), std::get<1>(return_state));
+  return py::make_tuple(std::get<0>(return_state), std::get<1>(return_state), std::get<2>(return_state));
 
 #endif
 } 

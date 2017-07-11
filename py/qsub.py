@@ -142,7 +142,7 @@ def write_directives_qsub_(f,name=None, days=None, hours=None, outdir=None, expo
   if days or hours:
     days, hours = fmtDate_(days, hours)
     print >>f, '#PBS -l walltime=%i:00:00' % max(1, hours + days*24)
-  mem =goodArgumentsQueue.memory
+#  mem =goodArgumentsQueue.memory
   if mem:
     if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
       raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
@@ -362,7 +362,7 @@ def submit_qsub(obj, submission_program, **qsubopts):
   # add qsub stuff + python script
   f = cStringIO.StringIO()
   print >>f, first_line
-  if not goodArgumentsQueue.q_local:
+  if not submission_program == 'run_locally':
     write_directives_qsub_(f, **qsubopts)
   print >>f, obj.generate_script(qsubopts)
   return submit_(obj.interpreter, submission_program, f.getvalue())
