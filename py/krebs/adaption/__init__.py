@@ -207,7 +207,7 @@ def doit_optimize_deap(individual):
       k_m = individual[1],
       k_s = individual[2],
       )
-  returnState, mean, varOfMean = adaption_cpp.computeAdaption(individual.adaptionParameters['adaption'],individual.adaptionParameters['calcflow'], False)
+  returnState, mean = adaption_cpp.computeAdaption(individual.adaptionParameters['adaption'],individual.adaptionParameters['calcflow'], False)
   if 0: #hardcore debugging  
     print('mean: %f' % mean)
     print('param: %f' % individual.adaptionParameters['optimization']['desired_cap_flow'])
@@ -221,8 +221,9 @@ def doit_optimize_deap(individual):
   if sys.flags.debug:
     print('mean: %f' % mean)
 #  return (mean-individual.adaptionParameters['optimization']['desired_cap_flow'])**2,
-  
-  return varOfMean,
+  ''' I know it is wired, but now mean is variance 
+      if this works out I have to rename it!!!!'''
+  return mean,
 
 
 def doit(parameters):
