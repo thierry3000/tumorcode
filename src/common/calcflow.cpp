@@ -587,10 +587,11 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
   bool ok = true;
   {
     CompressedFlowNetwork flownet;
-    GetFlowNetwork(flownet, &vl, bloodFlowParameters, false);
+    uint returnOfGetFlowNetwork = GetFlowNetwork(flownet, &vl, bloodFlowParameters, false);
     flownet.flow.resize(flownet.num_edges());
     flownet.press.resize(flownet.num_vertices());
-    //flownet.hema.fill(params.inletHematocrit); // well defined values for the first compuation of viscosities // Dafug??? this was hardcoded to 0.45 but we would rather actually like to have it filled in GetFlowNetwork i suppose
+    flownet.hema.fill(bloodFlowParameters.inletHematocrit); // well defined values for the first compuation of viscosities // Dafug??? this was hardcoded to 0.45 but we would rather actually like to have it filled in GetFlowNetwork i suppose
+    //if read in could be zero, which is bad for oxygen calculations
     FlArray visc(flownet.num_edges());
     FlArray cond(flownet.num_edges());
     FlArray hema_last(flownet.num_edges(), getNAN<FlReal>()), flow_last(flownet.num_edges(), getNAN<FlReal>());
@@ -695,7 +696,7 @@ void CalcFlow(VesselList3d &vl, const BloodFlowParameters &params)
   if (params.includePhaseSeparationEffect)
     CalcFlowWithPhaseSeparation(vl, params);
   else
-    CalcFlowSimple(vl, params, true);
+    CalcFlowSimple(vl, params, false);
   }//#pragma omp single
 }
 #endif

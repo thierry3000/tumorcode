@@ -473,9 +473,10 @@ void SetFlowValues( VesselList3d* vl,
       int a = fl.org2new_vertex[v->NodeA()->Index()];
       int b = fl.org2new_vertex[v->NodeB()->Index()];
       myAssert(a != IntegerMap::unused() && b != IntegerMap::unused());
-
-      v->hematocrit = hema[k];
-
+      if(hema[k]>0)
+        v->hematocrit = hema[k];
+      else
+        cout<< "bad hema at " << k << "... " << hema[k] <<endl;
       double wl;
       if( !vl->HasLattice() )
       {

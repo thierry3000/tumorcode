@@ -176,6 +176,7 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
   {
     iter_data.put<my::Time>("real_start_time", real_start_time);
     h5cpp::File file(outfilename+".h5", "w");
+    //CalcFlow(grower.get_vl(),);
     DoOutput(file, grower.get_vl(), grower, iter_data, input_pt);
   }
   

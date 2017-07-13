@@ -368,7 +368,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
 #endif
     std::auto_ptr<VesselList3d> vl_local;
     vl_local.reset(new VesselList3d(ldp));
-    vl_local->Init(*ldp);
+    //vl_local->Init(*ldp);
     vl=vl_local;
   
     
@@ -387,7 +387,10 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
     // subdivide the grid to other lattice spacing
     if (grid_scale > 0)
     {
-      myAssert(ldp->Scale()/grid_scale - int(ldp->Scale()/grid_scale) < 1.e-3  && ldp->Scale()/grid_scale > 1.);
+      // ldp is now bound to vl,  use vl->Ld().Scale() instead
+      double scale_of_vessel_data = vl->Ld().Scale();
+      // check whether subdivision makes sense
+      myAssert(scale_of_vessel_data/grid_scale - int(scale_of_vessel_data/grid_scale) < 1.e-3  && scale_of_vessel_data/grid_scale > 1.);
       vl = GetSubdivided( vl, grid_scale);
 
     #ifdef DEBUG

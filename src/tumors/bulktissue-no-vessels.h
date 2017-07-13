@@ -17,6 +17,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#ifndef _BULKTISSUENOVESSELS_H_
+#define _BULKTISSUENOVESSELS_H_
+
 #pragma once // include this file only once per compilation unit (see https://en.wikipedia.org/wiki/Pragma_once)
 
 #include <fenv.h>
@@ -86,3 +89,5 @@ struct SimulationParameters
 void run(const ptree &params);
 
 }//end namespace BulkTissueWithoutVessels
+
+#endif //#ifndef _BULKTISSUENOVESSELS_H_

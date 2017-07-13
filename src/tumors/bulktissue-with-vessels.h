@@ -17,6 +17,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#ifndef _BULKTISSUEWITHVESSELS_H_
+#define _BULKTISSUEWITHVESSELS_H_
+
 #pragma once // include this file only once per compilation unit (see https://en.wikipedia.org/wiki/Pragma_once)
 
 #include <fenv.h>
@@ -35,6 +39,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "convection_diffusion_solver.h"
 #include "calcflow.h"
 #include "time_stepper_utils_new.h"
+
+/** from milotti
+ */
+#ifdef MILOTTI_MTS
+#include "sim.h"
+#include "InputFromFile.h"
+#include "CellType.h"
+#include "Environment.h"
+#include "EnvironmentalSignals.h"
+#include "geom-2.h"
+#include "CellsSystem.h"
+#endif
 
 namespace BulkTissue
 {
@@ -150,6 +166,11 @@ struct NewTumorSim : public  boost::noncopyable
   void advanceTumorState(double dt);
   void advanceVesselState();
   void writeOutput(double time);
+  //milotti mts
+#ifdef MILOTTI_MTS
+  CellsSystem currentCellsSystem;
+#endif
 };
 }//end namespace BulkTissue
 
+#endif //#ifndef _BULKTISSUEWITHVESSELS_H_

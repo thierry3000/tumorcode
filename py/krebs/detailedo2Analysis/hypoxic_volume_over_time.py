@@ -26,9 +26,16 @@ if __name__ == '__main__':
   
 import sys
 import numpy as np
-import matplotlib
+#import matplotlib
+
+#import identifycluster
+#if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
+#  matplotlib.use('agg')
+#import matplotlib.pyplot as plt
+''' this imports matplotlib and takes care of the cluster settings'''
+import mpl_utils 
 import matplotlib.pyplot as plt
-import mpl_utils
+
 import qsub
 import myutils
 import h5files
@@ -98,7 +105,7 @@ def run(goodArguments):
       hypoxicVolumes.append(hypoxicVolumes_per_time)
       tumorVolumes.append(tumorVolumes_per_time)
       
-  fig1 = matplotlib.figure.Figure()
+  fig1 = plt.figure()
   ax1 = fig1.add_subplot(111)
 #  ax1.scatter(timepoints,np.mean(hypoxicVolumes,0),color='r',label=r"hypoxic($PO_2$<%.1f mmHg)" %threshold)
 #  ax1.scatter(timepoints,np.mean(tumorVolumes,0),color='b',label=r"tumor radius")
@@ -114,7 +121,58 @@ def run(goodArguments):
   with mpl_utils.PdfWriter('hypoxic_%s.pdf' % common) as pdfpages:
     pdfpages.savefig(fig1, postfix='_vesselsglobal')
   
+def run_out_in_single_file(goodArguments):
+  print('starting with arguments: %s' % goodArguments)
+  no_files = len(goodArguments.oxygenFiles)
   
+  hypoxicVolumes=[]
+  tumorVolumes=[]
+  threshold = 15
+  test = myutils.MeanValueArray.empty()
+  
+  hypoxicVolumes_per_time=[]
+  tumorVolumes_per_time=[]
+  timepoints=[]
+  
+  for aFile in goodArguments.oxygenFiles:
+    with h5files.open(aFile.name) as f:
+      try:
+        if not 'po2' in f:
+          raise AssertionError('no proper oxygen file: %s!'%f)
+      except Exception, e:
+        print e.message
+        sys.exit(-1)
+      paths = myutils.walkh5(f, 'po2/out*')
+      print('found paths: %s' % paths)
+      
+      for path in paths:
+        hypoxicFraction,hypoxicTissueVolume = estimate_ratio_hypoxic(f[path], threshold)
+        hypoxicVolumes_per_time.append(hypoxicTissueVolume)      
+        t=f[path]['SOURCE'].attrs['time']
+        r=f[path]['SOURCE/tumor'].attrs['TUMOR_RADIUS']
+        volume=4/3.*3.1414*r*r*r/1e9
+        tumorVolumes_per_time.append(volume)
+        t = t/(3600.0*24)#days
+        timepoints.append(t)
+      hypoxicVolumes.append(hypoxicVolumes_per_time)
+      tumorVolumes.append(tumorVolumes_per_time)
+      
+  print("timepoints: %s" % timepoints)    
+  fig1 = plt.figure()
+  ax1 = fig1.add_subplot(111)
+#  ax1.scatter(timepoints,np.mean(hypoxicVolumes,0),color='r',label=r"hypoxic($PO_2$<%.1f mmHg)" %threshold)
+#  ax1.scatter(timepoints,np.mean(tumorVolumes,0),color='b',label=r"tumor radius")
+  ax1.errorbar(timepoints,np.mean(hypoxicVolumes,0),np.std(hypoxicVolumes,0),color='r',label=r"hypoxic($PO_2$<%.1f mmHg)" %threshold)
+  ax1.scatter(timepoints,np.mean(tumorVolumes,0),color='b',label=r"tumor radius")
+  
+  ax1.set_xlabel('time/ d')
+  ax1.set_ylabel(r"volume/$mm^3$")
+  #ax1.set_ylabel(r"hypoxic volume ($PO_2$<%.1f mmHg)/$mm^3$" %threshold)
+  ax1.legend(loc=2)
+  common = os.path.commonprefix([afile.name for afile in goodArguments.oxygenFiles])
+  ax1.set_title('file: %s' % common)
+  with mpl_utils.PdfWriter('hypoxic_%s.pdf' % common) as pdfpages:
+    pdfpages.savefig(fig1, postfix='_vesselsglobal')
 
 if __name__ == '__main__':
   import argparse
@@ -141,8 +199,8 @@ if __name__ == '__main__':
     print e.message
     sys.exit(-1)
     
-  run(goodArguments)
-
+  #run(goodArguments)
+  run_out_in_single_file(goodArguments)
 #  if not 'auto' in tumorParameterName:
 #    factory = getattr(parameterSets, tumorParameterName)
 #    if type(factory).__name__ == 'function':
