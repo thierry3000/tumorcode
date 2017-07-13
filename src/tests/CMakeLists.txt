@@ -15,9 +15,9 @@ endif()
 # add_executable(test_convection test_convection1.cpp)
 # target_link_libraries(test_convection ${myLibs})
 
-add_executable(test_stepper test_stepper.cpp)
-target_link_libraries(test_stepper ${myLibs})
-install(TARGETS test_stepper RUNTIME DESTINATION bin)
+#add_executable(test_stepper test_stepper.cpp)
+#target_link_libraries(test_stepper ${myLibs})
+#install(TARGETS test_stepper RUNTIME DESTINATION bin)
 
 # add_executable(test_level_set test_level_set.cpp)
 # target_link_libraries(test_level_set ${myLibs})
@@ -59,11 +59,11 @@ if(USE_PAGMO)
   install(TARGETS test_pagmo_s RUNTIME DESTINATION bin)
 endif()
 
-add_executable(test_boost_serialize test_boost_serialize.cpp)
+
 if(USE_PAGMO)
+  add_executable(test_boost_serialize test_boost_serialize.cpp)
   target_link_libraries(test_boost_serialize ${myLibs} pagmo)
-else()
-  target_link_libraries(test_boost_serialize ${myLibs})
+  install(TARGETS test_boost_serialize RUNTIME DESTINATION bin)
 endif()
 
 # add_executable(test_h5cpp test_hdf5_cpp.cpp)
@@ -74,7 +74,7 @@ endif()
 # add_executable(test_convection_diffusion test_convection_diffusion.cpp)
 # target_link_libraries(test_convection_diffusion ${myLibs})
 
-install(TARGETS test_boost_serialize RUNTIME DESTINATION bin)
+
 
 if(USE_PAGMO)
   if(USE_PAGMO_MPI)
