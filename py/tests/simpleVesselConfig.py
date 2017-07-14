@@ -118,14 +118,15 @@ def createMostBasic_world(fn):
     f2['mostBasic_world/vessels'].attrs.create('CLASS','REALWORLD')
     
     '''get some hydrodynamics parameters'''
-    import krebsjobs.parameters.parameterSetsAdaption
-    set_name = 'adaption_symetricA_world_break'
-    adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, set_name)
+    import krebsjobs.parameters.parameterSetsVesselGen
+    set_name = 'default'
+    vesselGenParams = getattr(krebsjobs.parameters.parameterSetsVesselGen, set_name)
     #CALCULATE!!!!
-    myutils.hdf_write_dict_hierarchy(f2['/'], 'mostBasic_world/parameters', adaptionParams['calcflow'])
+    myutils.hdf_write_dict_hierarchy(f2['/'], 'mostBasic_world/parameters', vesselGenParams['calcflow'])
     f2['mostBasic_world/parameters'].attrs.create('name', set_name)
     f2['/'].file.flush()
-    dd = ku.calc_vessel_hydrodynamics(f2['mostBasic_world/vessels'],adaptionParams['calcflow']['includePhaseSeparationEffect'] , False, None, adaptionParams['calcflow'])
+    #calc_vessel_hydrodynamics(vesselgroup, calc_hematocrit=False, return_flags=False, override_hematocrit = None, bloodflowparams = dict(),storeCalculationInHDF=False)
+    dd = ku.calc_vessel_hydrodynamics(f2['mostBasic_world/vessels'], bloodflowparams = vesselGenParams['calcflow'], storeCalculationInHDF = True)
     
     print('Calcflow done')
     
@@ -136,6 +137,13 @@ if __name__ == '__main__':
 #create stuff  
   fn = 'test_configs.h5'
   f = h5py.File(fn)
-  if not 'mostBasic' in f:
+  if not 'mostBasic_world' in f:
     createMostBasic_world(f)
+  else:
+    input_var = raw_input('you want to redo mostBasic_wold: ')
+    #print(str(input_var))
+    #imput_var = sys.stdin.readline()
+    if str(input_var) == 'y':
+      del f['mostBasic_world']
+      createMostBasic_world(f)
   

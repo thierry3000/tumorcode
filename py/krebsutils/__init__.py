@@ -83,6 +83,17 @@ imports_ = [ f.strip() for f in 'testCalcOxy, testCalcOxy2, testCalcOxy3, testCa
 imports_ = [ f for f in imports_ if hasattr(libkrebs, f) ]
 locals().update( (f,getattr(libkrebs, f)) for f in imports_)
 
+''' arguments are: 
+      vesselgroup
+      return_flags          --- decide if  vessel flags are returned
+      bloodflowparams       --- need for calcflow
+      simple                --- if simple, no hematocrit is returned
+      storeCalculationInHDF --- add a "recomputed" subfolder to the vesselfile
+    return values:
+      a python list object with elements:
+    (pressure, flow, force, **hematocrit**, **flags**)
+      ** values are optional
+'''
 calc_vessel_hydrodynamics_Ccode = libkrebs.calc_vessel_hydrodynamics
 read_vessel_positions_from_hdf_ = libkrebs.read_vessel_positions_from_hdf
 read_vessel_positions_from_hdf_edges_ = libkrebs.read_vessel_positions_from_hdf_edges
@@ -532,17 +543,19 @@ def calc_vessel_hydrodynamics_(vesselgroup, calc_hematocrit, return_flags, overr
   """
   # this is very messy now due to the new bloodflowparameters
   simple = True # keep hematocrit that is already set in teh vesselgraph
-  if override_hematocrit is not None:
-    bloodflowparams['inletHematocrit'] = float(override_hematocrit)
-  if calc_hematocrit:
-    bloodflowparams['includePhaseSeparationEffect'] = True
-  if ('inletHematocrit' in bloodflowparams) or ('includePhaseSeparationEffect' in bloodflowparams):
-    simple = False # assign new hematocrit
+  ''' do not use the override_hematorit flag anymore'''
+#  if override_hematocrit is not None:
+#    bloodflowparams['inletHematocrit'] = float(override_hematocrit)
+#  if calc_hematocrit:
+#    bloodflowparams['includePhaseSeparationEffect'] = True
+#  if ('inletHematocrit' in bloodflowparams) or ('includePhaseSeparationEffect' in bloodflowparams):
+#    simple = False # assign new hematocrit
   if not bool(bloodflowparams):
     print('Warning: bloodflowparams are empty!!!')
     print('Using c++ default falue')
   #usage:
   #const py::object &vess_grp_obj ,bool return_flags, const BloodFlowParameters &bfparams, bool simple
+  
   return calc_vessel_hydrodynamics_Ccode(vesselgroup, return_flags, bloodflowparams, simple, storeCalculationInHDF)
 
 

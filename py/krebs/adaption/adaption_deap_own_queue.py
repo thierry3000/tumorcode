@@ -30,7 +30,7 @@ import Queue
 import krebsjobs.parameters.parameterSetsAdaption as parameterSetsAdaption
 
 if __name__ == '__main__':
-  paramsetNameToConsider = 'value_list6'
+  paramsetNameToConsider = 'value_list9'
   vesselFileNameToConsider = '/home/usersHR/thierry/mychosen/vessels-default-typeE-11x15L130-sample00.h5'
   factory = getattr(parameterSetsAdaption, paramsetNameToConsider)
   num_of_sets = len(factory)
