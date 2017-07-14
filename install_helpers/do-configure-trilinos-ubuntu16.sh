@@ -1,9 +1,11 @@
 #!/bin/sh
-DST=$2
+DST=/usr/local/trilinos
 cmake \
       -D Trilinos_ENABLE_ALL_OPTIONAL_PACKAGES:BOOL=OFF \
       -D Trilinos_ENABLE_Amesos:BOOL=ON \
       -D Trilinos_ENABLE_Ifpack:BOOL=ON \
+      -D Trilinos_ENABLE_Belos:BOOL=ON \
+      -D Trilinos_ENABLE_Tpetra:BOOL=ON \
       -D Trilinos_ENABLE_OpenMP:BOOL=ON \
       -D Trilinos_ENABLE_Sacado:BOOL=ON \
       -D Trilinos_ENABLE_ML:BOOL=ON \
