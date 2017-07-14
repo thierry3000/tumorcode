@@ -46,9 +46,12 @@ message("TrilinosDIR: ${TrilinosDIR}")
 include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)
 
 option(USE_ADAPTION "decide to build the adaption library" OFF)
-CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" OFF "USE_ADAPTION" ON)
-CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" OFF
-                       "USE_ADAPTION;USE_PAGMO" ON)
+option(USE_PAGMO "decide to use pagmo library" OFF)
+#this means USE_PAGMO is OFF only if one build adaption
+# skip this for now in the master branch!!!!
+#CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" OFF "USE_ADAPTION" ON)
+#CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" OFF
+#                       "USE_ADAPTION;USE_PAGMO" ON)
 option(TOTAL_SILENCE "suppress all output, good for running on cluster" OFF)
 if(TOTAL_SILENCE)
   message("TOTAL_SILENCE preprocessor defined")
