@@ -28,8 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "shared-objects.h"
 #include "common.h"
 
-#include <boost/python/module.hpp>
-#include <boost/python/def.hpp>
+//#include <boost/python/module.hpp>
+//#include <boost/python/def.hpp>
 #include "faketum.h"
 
 #include "bulktissue-no-vessels.h"
@@ -44,6 +44,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef USE_ADAPTION
   #include "../adaption/adaption_model2.h"
 #endif
+
+namespace py = boost::python;
 
 namespace Tumors{
 #ifdef MILOTTI_MTS
@@ -183,10 +185,12 @@ BOOST_PYTHON_MODULE(libtumors_)
 //   }
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   Tumors::export_faketum();
-  Tumors::export_faketum_mts();
-  Tumors::export_bulktissue_no_vessels();
+  //Tumors::export_faketum_mts();
+  //Tumors::export_bulktissue_no_vessels();
+  //bla
   
-#ifdef MILOTTI_MTS
-  Tumors::export_bulktissue_with_vessels();
-#endif
+// #ifdef MILOTTI_MTS
+//   Tumors::export_bulktissue_with_vessels();
+// #endif
+  //bla
 }

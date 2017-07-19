@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "../python_krebsutils/python-helpers.h"
-#include "numpy.hpp"
+//#include "numpy.hpp"
 #include "oxygen_model2.h"
 #include "calcflow.h"
 
@@ -34,9 +34,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/python/errors.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
-namespace py = boost::python;
-namespace np = boost::python::numpy;
-namespace nm = boost::python::numeric;
+//namespace py = boost::python;
+//namespace np = boost::python::numpy;
+//namespace nm = boost::python::numeric;
 namespace h5 = h5cpp;
 
 /**
@@ -761,4 +761,5 @@ BOOST_PYTHON_MODULE(libdetailedo2_)
 {
   PyEval_InitThreads();
   DetailedPO2::export_oxygen_computation();
+  //bla
 }

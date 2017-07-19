@@ -1,4 +1,6 @@
-include_directories(../)
+cmake_minimum_required(VERSION 2.8.8)
+
+#include_directories(../)
 include_directories(../common)
 
 if(USE_MILOTTI_MTS)
@@ -34,7 +36,7 @@ if(USE_MILOTTI_MTS)
 
   #message("set comiler flags: ${CMAKE_CXX_FLAGS}")
 else()
-  file(GLOB Tumor_Files "bulktissue-no-vessels.cpp;bulktissue-with-vessels.cpp;faketum.cpp;python_tumors.cpp")
+  file(GLOB Tumor_Files bulktissue-no-vessels.cpp bulktissue-with-vessels.cpp faketum.cpp python-tumors.cpp)
 endif()
 
 add_library(tumors_ SHARED ${Tumor_Files})
@@ -57,4 +59,4 @@ target_link_libraries(tumors_ ${link_tumor_to_this})
 #set_target_properties(tumors_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 install(TARGETS tumors_ 
-	LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+	LIBRARY DESTINATION ${PYTHON_LIB_COMMON_INSTALL_DIR})
