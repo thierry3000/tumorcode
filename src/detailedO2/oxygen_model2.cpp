@@ -41,7 +41,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace DetailedPO2
 {
-  
 void WriteOutput(h5cpp::Group basegroup,
                  const VesselList3d &vl,
                  const Parameters &params,
@@ -1061,23 +1060,23 @@ void IntegrateVesselPO2(const Parameters &params,
 
 
 
-void PrepareNetworkInfo(const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots)
+void DetailedP02Sim::PrepareNetworkInfo(DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots)
 {
   DynArray<int> order;
-  TopoSortVessels(vl, order);
-  CheckToposort(vl, order);
+  TopoSortVessels(*vl, order);
+  CheckToposort(*vl, order);
 
-  sorted_vessels.resize(vl.GetECount());
+  sorted_vessels.resize(vl->GetECount());
   for (int i=0; i<order.size(); ++i)
   {
     myAssert(order[i]>=0);
-    sorted_vessels[order[i]] = vl.GetEdge(i);
+    sorted_vessels[order[i]] = vl->GetEdge(i);
   }
 
   roots.reserve(32);
-  for (int i=0; i<vl.GetECount(); ++i)
+  for (int i=0; i<vl->GetECount(); ++i)
   {
-    const Vessel* v = vl.GetEdge(i);
+    const Vessel* v = vl->GetEdge(i);
     if (!v->IsCirculated()) continue;
     
     if (v->NodeA()->IsBoundary())
@@ -1221,31 +1220,98 @@ void ComputePo2Field(const Parameters &params,
 }
 
 
+void DetailedP02Sim::init(Parameters &params_, VesselList3d &vl,double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size,h5cpp::Group &tumorgroup)
+{
+  params = params_;
+  world = vl.HasLattice();
+  {
+    //this worked only for lattices
+    //int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
+    int dim=0;
+    if (world)
+    {
+      dim = 3;
+    }
+    else
+    {
+      dim = (::Size(vl.Ld().Box())[2]<=1) ? 2 : 3;
+    }
+    
+    if (grid_lattice_size)
+    {
+      ld.Init(*grid_lattice_size, grid_lattice_const);
+      ld.SetCellCentering(Bool3(1, 1, dim>2));
+      wbox = vl.Ld().GetWorldBox();
+      worldCenter = 0.5*(wbox.max + wbox.min);
+      gridCenter = 0.5*(ld.GetWorldBox().max + ld.GetWorldBox().min);
+      ld.SetOriginPosition(ld.GetOriginPosition() + (worldCenter - gridCenter));
+    }
+    else
+    {
+      //added safety space to reduce boundary errors
+      if (world)
+      {
+        SetupFieldLattice(vl.GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
+      }
+      else
+      {
+        SetupFieldLattice(vl.Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
+      }
+    }
+    grid.init(ld, dim);
+    mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
+    if (params.loglevel > 0)
+    {
+      cout << "continuum grid:" << endl;
+      grid.ld.print(cout);
+      cout << endl;
+    }
+    if (params.loglevel > 0)
+    {
+      cout << "vessel lattice" << endl;
+      if (world)
+      {
+        cout<<vl.GetWorldBoxFromVesselsOnly()<<endl;
+      }
+      else
+      {
+        vl.Ld().print(cout);
+      }
+      cout << endl;
+    }
+    isVesselListGood(vl);
+    SetupTissuePhases(phases, grid, mtboxes, tumorgroup);//filling
+    
+    //set up field with same discrete points as in the given grid, leave data memory uninitialized
+    //po2field is declared by mother function by not initialized, that happening here
+    po2field = Array3df(grid.Box(), Cons::DONT);
+    po2field.fill(params.debug_zero_o2field ? 0.f : params.po2init_cutoff);
+    
+    //vesselpo2.resize(vl.GetECount(), Float2(NANf()));
+    po2vessels.resize(vl.GetECount(), Float2(NANf()));
+  }
+}
+
 /**
  * @brief Head function called by python interface
  */
-void ComputePO2(const Parameters &params, 
-		VesselList3d& vl, 
-		ContinuumGrid &grid, 
-		DomainDecomposition &mtboxes, 
-		Array3df &po2field, 
-		VesselPO2Storage &vesselpo2, 
-		const TissuePhases &phases,
-		ptree &metadata,
-		bool world
-               )
+// void ComputePO2(
+//     const Parameters &params, 
+// 		VesselList3d& vl, 
+// 		ContinuumGrid &grid, 
+// 		DomainDecomposition &mtboxes, 
+// 		Array3df &po2field, 
+// 		VesselPO2Storage &vesselpo2, 
+// 		const TissuePhases &phases,
+// 		ptree &metadata,
+// 		bool world
+//                )
+int DetailedP02Sim::run()
 {
   DynArray<const Vessel*> sorted_vessels;
   DynArray<const VesselNode*> roots;
   //executes topological ordering
-  PrepareNetworkInfo(vl, sorted_vessels, roots);
-  
-  //set up field with same discrete points as in the given grid, leave data memory uninitialized
-  //po2field is declared by mother function by not initialized, that happening here
-  po2field = Array3df(grid.Box(), Cons::DONT);
-  po2field.fill(params.debug_zero_o2field ? 0.f : params.po2init_cutoff);
-  
-  vesselpo2.resize(vl.GetECount(), Float2(NANf()));
+  PrepareNetworkInfo(sorted_vessels, roots);
 
   //sets up the linear trilionos matrix system, builder is implemented as struct
   //could use for example different stencils
@@ -1264,7 +1330,7 @@ void ComputePO2(const Parameters &params,
   //maybe 0 or prams.po2init_cutoff
   last_po2field.fill(po2field);
   // an other buffer
-  DynArray<Float2> last_vessel_po2(vl.GetECount(), Float2(0.));//begining and end 0.
+  DynArray<Float2> last_vessel_po2(vl->GetECount(), Float2(0.));//begining and end 0.
 
   metadata.add_child("iterations", ptree());
   
@@ -1280,8 +1346,9 @@ void ComputePO2(const Parameters &params,
     {
       h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
       WriteOutput(f.root().create_group(str(format("out%04i-a") % iteration_num)),
-                  vl, params,
-                  vesselpo2,
+                  *vl, params,
+                  //vesselpo2,
+                  po2vessels,
                   sorted_vessels,
                   grid, po2field,
                   tissue_diff_matrix_builder);
@@ -1296,14 +1363,16 @@ void ComputePO2(const Parameters &params,
     /*
      * 1) propagate the oxygen along the blood stream
      */
-    IntegrateVesselPO2(params, vesselpo2, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
+    //IntegrateVesselPO2(params, vesselpo2, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
+    IntegrateVesselPO2(params, po2vessels, *vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
 
     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
     {
       h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
       WriteOutput(f.root().create_group(str(format("out%04i-b") % iteration_num)),
-                  vl, params,
-                  vesselpo2,
+                  *vl, params,
+                  //vesselpo2,
+                  po2vessels,
                   sorted_vessels,
                   grid, po2field,
                   tissue_diff_matrix_builder);
@@ -1327,14 +1396,23 @@ void ComputePO2(const Parameters &params,
       delta_fieldM = delta_vessM = ConvergenceCriteriumAccumulatorMaxNorm<double>();
       delta_field2 = delta_vess2 = ConvergenceCriteriumAccumulator2Norm<double>();
       //save the changes to prior run
-      for (int i=0; i<vesselpo2.size(); ++i)
+//       for (int i=0; i<vesselpo2.size(); ++i)
+//       {
+//         delta_vessM.Add(vesselpo2[i][0]-last_vessel_po2[i][0]);
+//         delta_vessM.Add(vesselpo2[i][1]-last_vessel_po2[i][1]);
+//         delta_vess2.Add(vesselpo2[i][0]-last_vessel_po2[i][0]);
+//         delta_vess2.Add(vesselpo2[i][1]-last_vessel_po2[i][1]);
+//         vesselpo2[i] = vesselpo2[i]*(1.-f)+f*last_vessel_po2[i];
+//         last_vessel_po2[i] = vesselpo2[i];
+//       }
+      for (int i=0; i<po2vessels.size(); ++i)
       {
-        delta_vessM.Add(vesselpo2[i][0]-last_vessel_po2[i][0]);
-        delta_vessM.Add(vesselpo2[i][1]-last_vessel_po2[i][1]);
-        delta_vess2.Add(vesselpo2[i][0]-last_vessel_po2[i][0]);
-        delta_vess2.Add(vesselpo2[i][1]-last_vessel_po2[i][1]);
-        vesselpo2[i] = vesselpo2[i]*(1.-f)+f*last_vessel_po2[i];
-        last_vessel_po2[i] = vesselpo2[i];
+        delta_vessM.Add(po2vessels[i][0]-last_vessel_po2[i][0]);
+        delta_vessM.Add(po2vessels[i][1]-last_vessel_po2[i][1]);
+        delta_vess2.Add(po2vessels[i][0]-last_vessel_po2[i][0]);
+        delta_vess2.Add(po2vessels[i][1]-last_vessel_po2[i][1]);
+        po2vessels[i] = po2vessels[i]*(1.-f)+f*last_vessel_po2[i];
+        last_vessel_po2[i] = po2vessels[i];
       }
       //loop over all points in the ContinuumGrid
       FOR_BBOX3(p, grid.Box())
@@ -1366,9 +1444,10 @@ void ComputePO2(const Parameters &params,
       }
     }//end interupt
     last_po2field.initCopy(po2field);
-    last_vessel_po2 = vesselpo2;
+    //last_vessel_po2 = vesselpo2;
+    last_vessel_po2 = po2vessels;
     if (my::checkAbort())
-      return;
+      return 1;
   }//end loop nointerations
   if (params.loglevel == 0)
     cout << endl;
@@ -1376,9 +1455,12 @@ void ComputePO2(const Parameters &params,
     cout << "computing final results" << endl;
   
   tissue_diff_matrix_builder.ZeroOut();
-  IntegrateVesselPO2(params, vesselpo2, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
+  //IntegrateVesselPO2(params, vesselpo2, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
+  IntegrateVesselPO2(params, po2vessels, *vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
+  
   //ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, tissue_diff_solver, true);
   ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, true);
+  return 0;
 }
 
 
@@ -1671,4 +1753,75 @@ void TestSingleVesselPO2Integration()
 #endif
 }
 
+void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, h5cpp::Group &tumorgroup)
+{
+  // there is a tumor group provided by the python side
+  
+  //h5cpp::Group   tumorgroup      = PythonToCppGroup(py_tumorgroup);
+  //if (tumorgroup.attrs().exists("TYPE") && tumorgroup.attrs().get<string>("TYPE")=="faketumor")
+  if( determineTumorType(tumorgroup) == TumorTypes::FAKE)
+  {
+    double tumor_radius = tumorgroup.attrs().get<double>("TUMOR_RADIUS");
+    phases = DetailedPO2::TissuePhases(2, grid.Box());
+    #pragma omp parallel
+    {
+      BOOST_FOREACH(const BBox3 &bbox, mtboxes.getCurrentThreadRange())
+      {
+        FOR_BBOX3(p, bbox)
+        {
+          Float3 wp =  grid.ld.LatticeToWorld(p);
+          double r = wp.norm();
+          double f = my::smooth_heaviside_sin(-r+tumor_radius, grid.Spacing()); // is = 1 within the tumor
+          phases.phase_arrays[DetailedPO2::NORMAL](p) = 1.f-f;
+          phases.phase_arrays[DetailedPO2::TUMOR](p) = f;
+        }
+      }
+    }
+  }
+  else if (determineTumorType(tumorgroup) == TumorTypes::BULKTISSUE)
+  {
+    h5cpp::Dataset cell_vol_fraction_ds = tumorgroup.open_dataset("conc");
+    h5cpp::Dataset tumor_fraction_ds = tumorgroup.open_dataset("ptc");
+    h5cpp::Dataset necro_fraction_ds = tumorgroup.open_dataset("necro");
+    h5cpp::Group   ldgroup        = tumor_fraction_ds.get_file().root().open_group(tumor_fraction_ds.attrs().get<string>("LATTICE_PATH"));
+
+    Array3df cell_vol_fraction;
+    Array3df tumor_fraction;
+    Array3df necro_fraction;
+    LatticeDataQuad3d fieldld;
+    ReadHdfLd(ldgroup, fieldld);
+    ReadArray3D(cell_vol_fraction_ds, cell_vol_fraction);
+    ReadArray3D(tumor_fraction_ds, tumor_fraction);
+    ReadArray3D(necro_fraction_ds, necro_fraction);
+
+    phases = DetailedPO2::TissuePhases(3, grid.Box());
+
+    #pragma omp parallel
+    {
+      BOOST_FOREACH(const BBox3 &bbox, mtboxes.getCurrentThreadRange())
+      {
+        FOR_BBOX3(p, bbox)
+        {
+    //interpolate fields to point p on the lattice
+    float this_cell_vol_fraction = FieldInterpolate::ValueAveraged(cell_vol_fraction, fieldld, FieldInterpolate::Const(0.f), grid.ld.LatticeToWorld(p));
+          float this_tumor_fraction = FieldInterpolate::ValueAveraged(tumor_fraction, fieldld, FieldInterpolate::Const(0.f), grid.ld.LatticeToWorld(p));
+          float this_necro_fraction = FieldInterpolate::ValueAveraged(necro_fraction, fieldld, FieldInterpolate::Const(0.f), grid.ld.LatticeToWorld(p));
+    
+    phases.phase_arrays[DetailedPO2::NORMAL](p) = (1.f-this_tumor_fraction)*this_cell_vol_fraction;
+          phases.phase_arrays[DetailedPO2::TUMOR](p) = this_tumor_fraction*this_cell_vol_fraction;
+    phases.phase_arrays[DetailedPO2::NECRO](p) = this_necro_fraction*this_cell_vol_fraction;
+        }
+      }
+    }
+  }
+  
+  // if there is no tumorgroup provided by the python side
+  // we fill everything with normal tissue
+  else 
+  {
+    phases = DetailedPO2::TissuePhases(1, grid.Box());
+    phases.phase_arrays[DetailedPO2::NORMAL].fill(1.);
+  }
 }
+
+}//namespace DetailedPO2

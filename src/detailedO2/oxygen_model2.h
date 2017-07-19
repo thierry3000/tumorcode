@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace DetailedPO2
 {
+  
 enum TissueIDs
 {
   NORMAL = 0,
@@ -50,7 +51,7 @@ class Parameters
   double ds2_zeros_[2];
   double ds2_max_;
   double conc_neglect_s;
-  Parameters& operator=(const Parameters&);
+  //Parameters& operator=(const Parameters&);
   int iteration_count;
   
 public:
@@ -138,8 +139,9 @@ struct TissuePhases
 };
 
 
-void ComputePO2(const Parameters &params, VesselList3d& vl, ContinuumGrid &grid, DomainDecomposition &mtboxes, Array3df &po2field, VesselPO2Storage &storage, const TissuePhases &phases, ptree &metadata, bool world);
+//void ComputePO2(const Parameters &params, VesselList3d& vl, ContinuumGrid &grid, DomainDecomposition &mtboxes, Array3df &po2field, VesselPO2Storage &storage, const TissuePhases &phases, ptree &metadata, bool world);
 double ComputeCircumferentialMassTransferCoeff(const Parameters &params, double r);
+void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, h5cpp::Group &tumorgroup);
 
 typedef Eigen::Matrix<float, 5, 1> VesselPO2SolutionRecord; //x, po2, ext_po2, conc_flux, dS/dx;
 
@@ -165,7 +167,32 @@ struct Measurement : boost::noncopyable
 void TestSaturationCurve();
 void TestSingleVesselPO2Integration();
 
-
+struct DetailedP02Sim : public boost::noncopyable
+{
+  bool world;
+  std::auto_ptr<VesselList3d> vl;
+  Parameters params;
+  ContinuumGrid grid;
+  DomainDecomposition mtboxes;
+  LatticeDataQuad3d ld;
+  FloatBBox3 wbox;
+  Float3 worldCenter;
+  Float3 gridCenter;
+  BloodFlowParameters bfparams;
+  
+  Array3df po2field;
+  DetailedPO2::VesselPO2Storage po2vessels;
+  ptree metadata;
+  // Get to know where tumor is and where normal tissue is.
+  // I.e. get volume fractions of each cell type.
+  // after this call the 3D field phases is filled with
+  // 3 vallues giving the portion of corresponding tissue type
+  DetailedPO2::TissuePhases phases;//Declaration
+  void init(Parameters &params,VesselList3d &vl, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, h5cpp::Group &tumorgroup);
+  int run();
+  void PrepareNetworkInfo(DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots);
 };
+
+};//end namespace
 
 #endif

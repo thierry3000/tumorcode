@@ -543,6 +543,8 @@ def calc_vessel_hydrodynamics_(vesselgroup, calc_hematocrit, return_flags, overr
   """
   # this is very messy now due to the new bloodflowparameters
   simple = True # keep hematocrit that is already set in teh vesselgraph
+  if calc_hematocrit:
+    simple = False
   ''' do not use the override_hematorit flag anymore'''
 #  if override_hematocrit is not None:
 #    bloodflowparams['inletHematocrit'] = float(override_hematocrit)
