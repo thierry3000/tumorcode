@@ -68,6 +68,55 @@ default = dict(
     includePhaseSeparationEffect = False,
   )
 )
+
+plos_One_2016 = dict(
+    tumor_speed = 2.,
+    tumor_radius = 250.,
+    rGF = 200.,
+    stopping_radius_fraction = 0.6,
+    tend = 1000,
+    tissuePressureCenterFraction = 0,
+    tissuePressureDistribution = 'sphere',
+    tissuePressureWith = 500,
+    num_threads = 6,
+    vessels = dict(
+        bRadiusSmoothing = False,
+        bRelativeShearforceCollapse = False,
+        bShearStressControlledDilatationAndRadiusDependentCollapse = False,
+        bSproutModelSimple = False,
+        dematuration_rate = 0.05,
+        distSproutMin = 8,
+        forceCollapse = 0.00025,
+        forceEnlarge = 0.01,
+        gfVessProl = 0.0005,
+        isShearForceEffectLinear = False,
+        maturation_crit = 0,
+        onlyReduceMaturationIfUnderperfused = True,
+        pressMax = 13,
+        pressMin = 0,
+        probCollapse = 1,
+        radInit = 2.6,
+        radMax = 8.14502,
+        radMin = 2.9,
+        radiusSmoothingDiffusionCoeff = 1,
+        seed = 12348,
+        sproutDelay = 12,
+        sproutMaxVesselWallThickness = 50,
+        sproutMaxVesselWallThicknessArterial = 50,
+        timeEcRadiusDeflate = 60,
+        timeEcRadiusInflate = 144,
+        timeProlEcSprout = 2,
+        timeProlEcSproutLifetime = 50,
+        vesselCompressionFactor = 1,
+        ),
+    calcflow = dict(
+        includePhaseSeparationEffect=0,
+        inletHematocrit = 0.37,
+        rheology = 'RheologyForHuman',
+        viscosityPlasma = 1.2e-6,
+        )
+    )
+  
 newradiusdeflation = deepcopy(default)
 
 forCatSim = deepcopy(default)

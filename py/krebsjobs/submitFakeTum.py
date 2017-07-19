@@ -102,15 +102,15 @@ def PrepareConfigurationForSubmission(vessel_fn, name, prepend, config_):
     name = splitext(basename(out_fn))[0]
   return name, c
   
-def worker_on_client(fn, grp_pattern, tumParams, num_threads):
-  print('Fake tum on %s / %s / param: %s' % (fn, grp_pattern, tumParams['name']))
-  h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
-  krebsutils.set_num_threads(num_threads)
-  
-  
-  fake_tum_refs = krebs.tumors.run_faketum(fn, grp_pattern, tumParams)
-  
-  h5files.closeall() # just to be sure
+#def worker_on_client(fn, grp_pattern, tumParams, num_threads):
+#  print('Fake tum on %s / %s / param: %s' % (fn, grp_pattern, tumParams['name']))
+#  h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
+#  krebsutils.set_num_threads(num_threads)
+#  
+#  
+#  fake_tum_refs = krebs.tumors.run_faketum(fn, grp_pattern, tumParams)
+#  
+#  h5files.closeall() # just to be sure
 
 def run(vessel_fn, name, config_, mem, days):
   name, c = PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTum', config_)

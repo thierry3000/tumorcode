@@ -300,16 +300,18 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
 
 void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
 {
-  cout << format("step %i, t=%f") % num_iteration % time << endl;
+  cout << format("start mts at tumor time: %f\n" ) % time;
   //   //from milotti
 
 
   uint returnValue = currentCellsSystem.runMainLoop( time * 3600 );
-  currentCellsSystem.Print2logfile("Cells at the end of the run");
-  currentCellsSystem.WriteCellsSystem( );					// dump of the final configuration
+  if ( currentCellsSystem.Get_ready2start() )
+  {
+    currentCellsSystem.Print2logfile("Cells at the end of the run");
+    currentCellsSystem.WriteCellsSystem( );					// dump of the final configuration
+  }
   
-  cout << "Final configuration written on file" << endl;
-
+  cout << format(" mts at tumor time: %f\n" ) % time;
 //   //end milotti
 }
 

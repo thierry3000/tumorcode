@@ -126,7 +126,7 @@ def fmtDate_(days, hours):
     return days, hours
     
 
-def write_directives_qsub_(f,name=None, days=None, hours=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False, dependsOnJob = None):
+def write_directives_qsub_(f,name=None, mem=None, num_cpus=None, days=None, hours=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False, dependsOnJob = None):
 #  mem =goodArgumentsQueue.memory
 #  num_cpus = goodArgumentsQueue.numThreads
 #  days = goodArgumentsQueue.days

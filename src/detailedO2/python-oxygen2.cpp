@@ -251,6 +251,7 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
   //h5cpp::Group group = PythonToCppGroup(py_group);
   //h5cpp::Group vesselgroup = group.open_group(path_vessels);
   h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
+  //checks if we have a REALWORLD simuation or a lattice
   bool world = vesselgroup.attrs().get<string>("CLASS") == "REALWORLD";
   
   
@@ -290,11 +291,11 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
       //added safety space to reduce boundary errors
       if (world)
       {
-	SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
+        SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
       }
       else
       {
-	SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
+        SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
       }
     }
     grid.init(ld, dim);

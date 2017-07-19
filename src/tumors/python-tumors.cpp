@@ -176,21 +176,19 @@ BOOST_PYTHON_MODULE(libtumors_)
 #endif
 {
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
-//   if (my::MultiprocessingInitializer_exists())
-//   {
-//   }
-//   else
-//   {
-//     my::initMultithreading(0, NULL, 1);
-//   }
+  if (my::MultiprocessingInitializer_exists())
+  {
+  }
+  else
+  {
+    my::initMultithreading(0, NULL, 1);
+  }
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   Tumors::export_faketum();
-  //Tumors::export_faketum_mts();
-  //Tumors::export_bulktissue_no_vessels();
-  //bla
+  Tumors::export_faketum_mts();
+  Tumors::export_bulktissue_no_vessels();
   
-// #ifdef MILOTTI_MTS
-//   Tumors::export_bulktissue_with_vessels();
-// #endif
-  //bla
+#ifdef MILOTTI_MTS
+  Tumors::export_bulktissue_with_vessels();
+#endif
 }
