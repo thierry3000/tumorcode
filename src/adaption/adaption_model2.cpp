@@ -528,15 +528,19 @@ void ConductiveTransport::SetFlow(int i, FlReal x) const
 }
 void ConductiveTransport::SetHema(int i, FlReal x) const
 {
-  if( x < 0.1 )
+  if( x < 0.01 )
   {
-    //printf("Warning: Low hema segment at %i\n", i);
+    #ifndef TOTAL_SILENCE
+    printf("Warning: Low hema segment at %i\n", i);
+    #endif
     //myAssert(x > 0.001);
-    x = 0.1;
+    x = 0.01;
   }
-  if( x > 0.9 )
+  if( x > 0.99 )
   {
-    //printf("Warning: High hema segment at %i\n", i);
+    #ifndef TOTAL_SILENCE
+    printf("Warning: High hema segment at %i\n", i);
+    #endif
     //myAssert(x > 0.001);
     x = 0.9;
   }

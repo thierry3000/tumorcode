@@ -48,8 +48,8 @@ import h5py
 creator.create("FitnessMax", base.Fitness, weights=(-1.0,))
 creator.create("Particle", list, fitness=creator.FitnessMax, speed=list, 
     smin=None, smax=None, pmin=None, pmax= None, best=None, adaptionParameters=None)
-n = 550
-GEN = 5
+n = 560
+GEN = 10
 
 def generate(size, pmin, pmax, smin, smax):
     part = creator.Particle(random.uniform(pmin, pmax) for _ in range(size)) 
@@ -166,16 +166,18 @@ if __name__ == "__main__":
   shared.setConst(vessel_grp=vessel_grp)
   best = main()
   print(os.getcwd())
-  f=h5py.File('deap_results.h5')
-  currentTime = str(datetime.datetime.now().time())
-  myGroup = f.create_group(currentTime)
-  myGroup.create_dataset('best' , data=best)
-  myGroup.create_dataset('fitness values', data=best.fitness.values)
-  myGroup.attrs.create("GEN", data=GEN)
-  myGroup.attrs.create("n", data=n)
-  myGroup.attrs.create("vfile", data=vfile_name)
-  myGroup.attrs.create("vessel_grp", data=vessel_grp)
-  myGroup.attrs.create("params", data=goodArguments.AdaptionParamSet)
-  myGroup.attrs.create("paramListIndex", data = goodArguments.listindex)
-  myGroup.attrs.create("type", data="variance opt")
-  f.close()
+  with h5py.File('deap_results_%s.h5' % str(goodArguments.AdaptionParamSet)) as f:
+  #f=h5py.File('deap_results_%s.h5' % str(goodArguments.AdaptionParamSet))
+    currentTime = str(datetime.datetime.now().time())
+    myGroup = f.create_group(str(goodArguments.listindex))
+    myGroup.attrs.create("time", data=currentTime)
+    myGroup.create_dataset('best' , data=best)
+    myGroup.create_dataset('fitness values', data=best.fitness.values)
+    myGroup.attrs.create("GEN", data=GEN)
+    myGroup.attrs.create("n", data=n)
+    myGroup.attrs.create("vfile", data=vfile_name)
+    myGroup.attrs.create("vessel_grp", data=vessel_grp)
+    myGroup.attrs.create("params", data=goodArguments.AdaptionParamSet)
+    myGroup.attrs.create("paramListIndex", data = goodArguments.listindex)
+    myGroup.attrs.create("type", data="variance opt")
+  #f.close()

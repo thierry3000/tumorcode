@@ -31,18 +31,50 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
 #include "faketum.h"
+
 #include "bulktissue-no-vessels.h"
 #include "bulktissue-with-vessels.h"
 
+#define BOOST_RESULT_OF_USE_DECLTYPE 1
+
+#ifdef MILOTTI_MTS
+  #include "faketum_mts.h"
+#endif
+
 #ifdef USE_ADAPTION
   #include "../adaption/adaption_model2.h"
+#endif
+
+namespace Tumors{
+#ifdef MILOTTI_MTS
+/** @brief fake tumor with multicellular tumor spheroids
+ * here a growing sphere of tumor cells is assumed, no tumor model is used for
+ * that. One needs a growing speed
+ */
+void run_fakeTumor_mts(const py::str &param_info_str)
+{
+  std::cout << "run_fakeTumor_mts on c++ called" << std::endl;
+  feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+  //construct default parameters
+  FakeTum::Parameters defaultParams;
+  printPtree(defaultParams.as_ptree());
+  ptree pt_params = convertInfoStr(param_info_str, defaultParams.as_ptree());
+  printPtree(pt_params);
+  FakeTumMTS::FakeTumorSimMTS s;
+  int returnCode = s.run(pt_params);
+  //return returnCode;
+}
+void export_faketum_mts()
+{
+  py::def("run_faketum_mts_", run_fakeTumor_mts);
+}
 #endif
 
 /** @brief fake tumor
  * here a growing sphere of tumor cells is assumed, no tumor model is used for
  * that. One needs a growing speed
  */
-int run_fakeTumor(const py::str &param_info_str)
+void run_fakeTumor(const py::str &param_info_str)
 {
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   //construct default parameters
@@ -52,7 +84,7 @@ int run_fakeTumor(const py::str &param_info_str)
   printPtree(pt_params);
   FakeTum::FakeTumorSim s;
   int returnCode = s.run(pt_params);
-  return returnCode;
+  //return returnCode;
 }
 void export_faketum()
 {
@@ -61,7 +93,7 @@ void export_faketum()
 
 /** @brief BulkTissue no vessels
  */
-int run_bulktissue_no_vessels(const py::str &param_info_str)
+void run_bulktissue_no_vessels(const py::str &param_info_str)
 {
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   /* Prameter Handling */
@@ -115,7 +147,8 @@ void export_bulktissue_no_vessels()
 /** @brief BulkTissue with vessels
  * the complete stuff
  */
-int run_bulktissue_with_vessels(const py::str &param_info_str)
+//static py::object
+void run_bulktissue_with_vessels(const py::str &param_info_str)
 {
   BulkTissue::Params someDefaults;
   const ptree neededDefaults = someDefaults.as_ptree();
@@ -125,7 +158,7 @@ int run_bulktissue_with_vessels(const py::str &param_info_str)
    
   BulkTissue::NewTumorSim theBulkTissueSim;
   theBulkTissueSim.run(pt_params);
-  return 0;
+  //return 0;
 }
 
 void export_bulktissue_with_vessels()
@@ -133,22 +166,27 @@ void export_bulktissue_with_vessels()
   py::def("run_bulktissue_with_vessels_", run_bulktissue_with_vessels);
 }
 
+}//end namespace Tumors
 #ifdef DEBUG
-BOOST_PYTHON_MODULE(libtumor_d)
+BOOST_PYTHON_MODULE(libtumors_d)
 #else
-BOOST_PYTHON_MODULE(libtumor_)
+BOOST_PYTHON_MODULE(libtumors_)
 #endif
 {
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
-  if (my::MultiprocessingInitializer_exists())
-  {
-  }
-  else
-  {
-    my::initMultithreading(0, NULL, 1);
-  }
+//   if (my::MultiprocessingInitializer_exists())
+//   {
+//   }
+//   else
+//   {
+//     my::initMultithreading(0, NULL, 1);
+//   }
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
-  export_faketum();
-  export_bulktissue_no_vessels();
-  export_bulktissue_with_vessels();
+  Tumors::export_faketum();
+  Tumors::export_faketum_mts();
+  Tumors::export_bulktissue_no_vessels();
+  
+#ifdef MILOTTI_MTS
+  Tumors::export_bulktissue_with_vessels();
+#endif
 }

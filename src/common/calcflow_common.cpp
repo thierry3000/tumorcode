@@ -46,6 +46,7 @@ void BloodFlowParameters::assign(const ptree &pt)
   rheology        = pt.get<Rheology>("rheology", RheologyForRats);
   inletHematocrit = pt.get<double>("inletHematocrit", 0.45);
   includePhaseSeparationEffect = pt.get<bool>("includePhaseSeparationEffect", false);
+  //includePhaseSeparationEffect = true;
 }
 
 ptree BloodFlowParameters::as_ptree() const

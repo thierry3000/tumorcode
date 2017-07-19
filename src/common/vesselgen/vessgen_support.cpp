@@ -309,7 +309,8 @@ double MeasureBloodVolume( const VesselList3d& vl, float dest_lattice_scale, int
     vol += l * v->r*v->r * my::mconst::pi();
   }
   double bloodVolume = vol / dom_vol;
-  myAssert(bloodVolume>0.);
+  /** might also break for uncirculated network */
+  //myAssert(bloodVolume>0.);
   return bloodVolume;
 }
 

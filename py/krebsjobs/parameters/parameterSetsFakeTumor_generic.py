@@ -23,7 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from copy import deepcopy
 import myutils
 cluster_threads = myutils.cluster_threads
-
+'''
+    tumor_speed / \mum / h
+'''
 default = dict(
   num_threads = 6,
   out_intervall = 100,

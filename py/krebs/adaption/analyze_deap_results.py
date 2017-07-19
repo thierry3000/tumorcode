@@ -34,7 +34,7 @@ from krebsjobs import parameters
 from parameters import parameterSetsAdaption
 from krebs import adaption as _adap
 
-f = h5py.File('deap_results.h5','r')
+#f = h5py.File('deap_results.h5','r')
 
 def convergenz_plot(f,pdf):
   group_labels = []
@@ -52,17 +52,19 @@ def convergenz_plot(f,pdf):
     print(f[group].attrs.get('paramListIndex'))
     param_id.append(int(f[group].attrs.get('paramListIndex')))
     param_id_label.append('%i %s' % (f[group].attrs.get('paramListIndex') , group[0:5]) )
-  
   group_fitnesses_mapped = np.zeros(len(group_fitnesses))
   for i, _ in enumerate(group_fitnesses):
     group_fitnesses_mapped[i] = group_fitnesses[i]
-  
+  print(group_fitnesses_mapped)
+  print(param_id)
   plt.scatter(param_id, group_fitnesses_mapped)
+  print("finshed that")
   plt.xticks(param_id, param_id_label, rotation='vertical')
   plt.tight_layout()
   ax = plt.gca()
   ax.set_yscale('log')
   pdf.savefig()
+  print("finished convergenz plot")
   #plt.show()
   
 def find_convergent_groups(f):
@@ -99,8 +101,19 @@ def redo_adaption_for_convergent_sets(f):
         )
     _adap.do_simple_adaption(inputFileName,vessel_grp, factory)
 if __name__ == '__main__':
-  f = h5py.File('deap_results.h5','r')
-  with PdfPages('out_deap_results.pdf') as pdf:
+  import argparse
+  parser = argparse.ArgumentParser(description='redo adaption from deap optimization', formatter_class=argparse.ArgumentDefaultsHelpFormatter)  
+  #parser.add_argument('AdaptionParamSet')
+  #parser.add_argument('--listindex', type=int, help="index of value list" )
+  #parser.add_argument('--outputFileFolder', type=str, help="where to store the output, default is working directory")
+  parser.add_argument('--fileName', type=str,help="deap output")
+  goodArguments, otherArguments = parser.parse_known_args()
+  #print("running with %s" % goodArguments.AdaptionParamSet)
+  
+  
+  f = h5py.File(goodArguments.fileName,'r')
+  basenameOfFile = basename(goodArguments.fileName)
+  with PdfPages('out_deap_results_%s.pdf' % basenameOfFile) as pdf:
     rc = matplotlib.rc
     rc('font', size = 8.)
     rc('axes', titlesize = 10., labelsize = 8.)

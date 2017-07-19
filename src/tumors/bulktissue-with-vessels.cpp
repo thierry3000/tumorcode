@@ -275,36 +275,6 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     writeOutput(t);
   };
   
-  //from milotti
-#ifdef MILOTTI_MTS
-  int run_type = 1; //command file
-  bool terminal = false;
-  string run_name;
-  //CellsSystem CellsSystem;	// Standard allocation of the CellsSystem (in this case, the initial dynamic reserve is 2000000)
-  currentCellsSystem.Set_Commands( "/localdisk/thierry/git_codes/Sim3D-v3/parameters/commands.txt" );
-  currentCellsSystem.Set_CellTypeFile( "/localdisk/thierry/git_codes/Sim3D-v3/parameters/CellType.txt" );
-  currentCellsSystem.Set_CellTypeFileAlt( "/localdisk/thierry/git_codes/Sim3D-v3/parameters/CellType.txt" );
-  currentCellsSystem.Set_EnvironmentFile( "/localdisk/thierry/git_codes/Sim3D-v3/parameters/Environment.txt" );
-  currentCellsSystem.InitializeCellsSystem( terminal );
-  cout << "Initialization milotti completed" << endl;
-  currentCellsSystem.RunDefinition( );// Run number and output directory output directory & output file opening for metabolism
-  currentCellsSystem.Set_nconfiguration( 0 ); // The configuration number is initialized to 0
-  currentCellsSystem.Geometry( );// Initial calculation of cluster geometry
-  currentCellsSystem.Set_time_from_CGAL(0.);	// Timer reset from last call to CGAL
-  if(run_type == 0 || run_type == 1)
-    currentCellsSystem.Print2logfile("Cell status at the end of initialization");
-  else if (run_type == 2)
-    currentCellsSystem.Print2logfile("Cell status at restart of simulation");
-  
-
-  currentCellsSystem.CPU_timer(Start_timer);		// start del CPU timer (e reset del timer degli intertempi)
-  currentCellsSystem.Timing( true );				// reset del timer
-  currentCellsSystem.StepStat( true );			// reset delle statistiche (azzera anche il vettore convergence_fail)
-
-  cout << "\nStartup milotti completed" << endl;
-#endif
-  //end milotti
-  
   //this starts the simulation
   NewSteppers::run(doStep, doObserve, all_pt_params);
 
@@ -320,42 +290,6 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
 bool BulkTissue::NewTumorSim::doStep(NewSteppers::StepControl &ctrl)
 {
   ctrl.dt = std::min(1., ctrl.dt);
-//   //from milotti
-//   int run_type = 1; //command file
-//   bool terminal = false;
-//   string run_name;
-//   CellsSystem CellsSystem;	// Standard allocation of the CellsSystem (in this case, the initial dynamic reserve is 2000000)
-//   CellsSystem.Set_Commands( "/localdisk/thierry/git_codes/Sim3D-v3/parameters/commands.txt" );
-//   CellsSystem.Set_CellTypeFile( "/localdisk/thierry/git_codes/Sim3D-v3/parameters/CellType.txt" );
-//   CellsSystem.Set_CellTypeFileAlt( "/localdisk/thierry/git_codes/Sim3D-v3/parameters/CellType.txt" );
-//   CellsSystem.Set_EnvironmentFile( "/localdisk/thierry/git_codes/Sim3D-v3/parameters/Environment.txt" );
-//   CellsSystem.InitializeCellsSystem( terminal );
-//   cout << "Initialization milotti completed" << endl;
-//   CellsSystem.RunDefinition( );// Run number and output directory output directory & output file opening for metabolism
-//   CellsSystem.Set_nconfiguration( 0 ); // The configuration number is initialized to 0
-//   CellsSystem.Geometry( );// Initial calculation of cluster geometry
-//   CellsSystem.Set_time_from_CGAL(0.);	// Timer reset from last call to CGAL
-//   if(run_type == 0 || run_type == 1)
-//     CellsSystem.Print2logfile("Cell status at the end of initialization");
-//   else if (run_type == 2)
-//     CellsSystem.Print2logfile("Cell status at restart of simulation");
-//   
-// 
-//   CellsSystem.CPU_timer(Start_timer);		// start del CPU timer (e reset del timer degli intertempi)
-//   CellsSystem.Timing( true );				// reset del timer
-//   CellsSystem.StepStat( true );			// reset delle statistiche (azzera anche il vettore convergence_fail)
-// 
-//   cout << "\nStartup milotti completed" << endl;
-#ifdef MILOTTI_MTS
-  uint returnValue = currentCellsSystem.runMainLoop();
-  currentCellsSystem.Print2logfile("Cells at the end of the run");
-  currentCellsSystem.WriteCellsSystem( );					// dump of the final configuration
-  
-  cout << "Final configuration written on file" << endl;
-  
-  currentCellsSystem.CloseOutputFiles();						// Closing output files
-#endif
-//   //end milotti
   
   // advance the subsystem which is most back in time
   if (vessel_step_ctrl.t < tumor_step_ctrl.t)

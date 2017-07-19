@@ -1,12 +1,8 @@
 include_directories(../)
 include_directories(../common)
-file(GLOB Tumor_Files "*.cpp")
-#file(GLOB Tumor_Files "bulktissue-with-vessels.cpp python_tumors.cpp")
 
-#add_library(bulktissue_with STATIC bulktissue-with-vessels.cpp)
-
-add_library(tumor_ SHARED ${Tumor_Files})
 if(USE_MILOTTI_MTS)
+  file(GLOB Tumor_Files "*.cpp")
   set(myLibs "${myLibs};milotti_mts")
   message("CMAKE_CXX_COMPILER:        ${CMAKE_CXX_COMPILER}")
   message("CMAKE_CXX_COMPILER_ID:     ${CMAKE_CXX_COMPILER_ID}")
@@ -37,8 +33,12 @@ if(USE_MILOTTI_MTS)
   set(myLibs "${myLibs};gmp")
 
   #message("set comiler flags: ${CMAKE_CXX_FLAGS}")
-  
+else()
+  file(GLOB Tumor_Files "bulktissue-no-vessels.cpp;bulktissue-with-vessels.cpp;faketum.cpp;python_tumors.cpp")
 endif()
+
+add_library(tumors_ SHARED ${Tumor_Files})
+
 if(USE_ADAPTION)
   set(link_tumor_to_this 
   krebs_
@@ -52,9 +52,9 @@ else()
   )
 endif()
 message("link_tumor_to_this: ${link_tumor_to_this} ")
-target_link_libraries(tumor_ ${link_tumor_to_this})
+target_link_libraries(tumors_ ${link_tumor_to_this})
 
-set_target_properties(tumor_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+#set_target_properties(tumors_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-install(TARGETS tumor_ 
+install(TARGETS tumors_ 
 	LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)

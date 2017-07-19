@@ -35,7 +35,7 @@ default = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologySecomb2005',
     inletHematocrit = 0.37,
-    includePhaseSeparationEffect = True,
+    includePhaseSeparationEffect = 1,
   )
 )
 large_2d = dict(
@@ -51,7 +51,7 @@ large_2d = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologySecomb2005',
     inletHematocrit = 0.37,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 irino_vess = dict(
@@ -69,7 +69,7 @@ irino_vess = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologySecomb2005', # WARNING: changed to new model of secomb
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   ),
 )
 
@@ -146,7 +146,7 @@ paramset8 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.37,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 
@@ -163,7 +163,7 @@ paramset10 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.37,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 
@@ -182,7 +182,7 @@ paramset11 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset12 = dict(
@@ -201,7 +201,7 @@ paramset12 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset13 = dict(
@@ -220,7 +220,7 @@ paramset13 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset13 = dict(
@@ -239,7 +239,7 @@ paramset13 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset14 = dict(
@@ -258,7 +258,7 @@ paramset14 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset15 = dict(
@@ -277,7 +277,7 @@ paramset15 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset16 = dict(
@@ -296,7 +296,7 @@ paramset16 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset17 = dict(
@@ -315,7 +315,7 @@ paramset17 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset18 = dict(
@@ -334,7 +334,7 @@ paramset18 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset19 = dict(
@@ -353,7 +353,7 @@ paramset19 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset20 = dict(
@@ -372,7 +372,7 @@ paramset20 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset21 = dict(
@@ -391,7 +391,7 @@ paramset21 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset22 = dict(
@@ -410,7 +410,7 @@ paramset22 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset23 = dict(
@@ -429,7 +429,7 @@ paramset23 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 paramset24 = dict(
@@ -448,7 +448,7 @@ paramset24 = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologyForHuman',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = False,
+    includePhaseSeparationEffect = 0,
   )
 )
 video_create = dict(
@@ -468,7 +468,7 @@ video_create = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologySecomb2005',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = True,
+    includePhaseSeparationEffect = 1,
   )
 )
 '''
@@ -494,7 +494,7 @@ swine = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologySecomb2005',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = True,
+    includePhaseSeparationEffect = 1,
   )
 )
 

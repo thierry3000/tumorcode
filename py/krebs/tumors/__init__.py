@@ -39,9 +39,9 @@ from dicttoinfo import Vec
 
 
 if sys.flags.debug:
-  tumor_cpp = __import__('libtumor_d', globals(), locals())
+  tumor_cpp = __import__('libtumors_d', globals(), locals())
 else:
-  tumor_cpp = __import__('libtumor_', globals(), locals())
+  tumor_cpp = __import__('libtumors_', globals(), locals())
   
 def vess_size_to_tum_size(fn, tum_lattice_const):
   vesselgroup = h5files.open(fn, 'r')['/vessels']
@@ -132,7 +132,12 @@ def set_lattice_size(c, vesselfilename):
     c['tumor']['init_shape'] = 'sphere'
   c['lattice_size'] = Vec((sx,sy,sz))
   return c
-  
+
+def run_faketum_mts(configstr):
+  if qsub.is_client:
+    qsub.printClientInfo()
+  return tumor_cpp.run_faketum_mts_(configstr)
+
 def run_faketum(configstr):
   if qsub.is_client:
     qsub.printClientInfo()

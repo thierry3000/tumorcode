@@ -40,18 +40,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "calcflow.h"
 #include "time_stepper_utils_new.h"
 
-/** from milotti
- */
-#ifdef MILOTTI_MTS
-#include "sim.h"
-#include "InputFromFile.h"
-#include "CellType.h"
-#include "Environment.h"
-#include "EnvironmentalSignals.h"
-#include "geom-2.h"
-#include "CellsSystem.h"
-#endif
-
 namespace BulkTissue
 {
 enum TissueId {
@@ -166,10 +154,6 @@ struct NewTumorSim : public  boost::noncopyable
   void advanceTumorState(double dt);
   void advanceVesselState();
   void writeOutput(double time);
-  //milotti mts
-#ifdef MILOTTI_MTS
-  CellsSystem currentCellsSystem;
-#endif
 };
 }//end namespace BulkTissue
 
