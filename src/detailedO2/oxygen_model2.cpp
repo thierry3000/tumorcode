@@ -78,7 +78,7 @@ class myexception: public std::exception
     return "tumor type not implemented on cpp side";
   }
 };
-TumorTypes determineTumorType(h5cpp::Group tumorgroup)
+TumorTypes determineTumorType(h5cpp::Group *tumorgroup)
 {
 // #ifdef DEBUG
 //     cout<<format("tumorgroup.attrs().exists(\"TYPE\"): %s\n") % (bool)(tumorgroup.attrs().exists("TYPE"));
@@ -88,7 +88,7 @@ TumorTypes determineTumorType(h5cpp::Group tumorgroup)
   TumorTypes tumortype;  
   try
     {
-      string detailedTumorDescription = tumorgroup.attrs().get<string>("TYPE");
+      string detailedTumorDescription = tumorgroup->attrs().get<string>("TYPE");
       if( detailedTumorDescription == "faketumor" )
       {
 	tumortype = TumorTypes::FAKE;
@@ -1060,23 +1060,23 @@ void IntegrateVesselPO2(const Parameters &params,
 
 
 
-void DetailedP02Sim::PrepareNetworkInfo(DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots)
+void DetailedP02Sim::PrepareNetworkInfo(const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots)
 {
   DynArray<int> order;
-  TopoSortVessels(*vl, order);
-  CheckToposort(*vl, order);
+  TopoSortVessels(vl, order);
+  CheckToposort(vl, order);
 
-  sorted_vessels.resize(vl->GetECount());
+  sorted_vessels.resize(vl.GetECount());
   for (int i=0; i<order.size(); ++i)
   {
     myAssert(order[i]>=0);
-    sorted_vessels[order[i]] = vl->GetEdge(i);
+    sorted_vessels[order[i]] = vl.GetEdge(i);
   }
 
   roots.reserve(32);
-  for (int i=0; i<vl->GetECount(); ++i)
+  for (int i=0; i<vl.GetECount(); ++i)
   {
-    const Vessel* v = vl->GetEdge(i);
+    const Vessel* v = vl.GetEdge(i);
     if (!v->IsCirculated()) continue;
     
     if (v->NodeA()->IsBoundary())
@@ -1220,10 +1220,13 @@ void ComputePo2Field(const Parameters &params,
 }
 
 
-void DetailedP02Sim::init(Parameters &params_, VesselList3d &vl,double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size,h5cpp::Group &tumorgroup)
+void DetailedP02Sim::init(Parameters &params_, BloodFlowParameters &bfparams_,h5cpp::Group &vesselgroup, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size,h5cpp::Group *tumorgroup)
 {
+  bfparams = bfparams_;
+  vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
+  CalcFlow(*vl, bfparams);
   params = params_;
-  world = vl.HasLattice();
+  world = !vl->HasLattice();
   {
     //this worked only for lattices
     //int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
@@ -1234,14 +1237,14 @@ void DetailedP02Sim::init(Parameters &params_, VesselList3d &vl,double grid_latt
     }
     else
     {
-      dim = (::Size(vl.Ld().Box())[2]<=1) ? 2 : 3;
+      dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
     }
     
     if (grid_lattice_size)
     {
       ld.Init(*grid_lattice_size, grid_lattice_const);
       ld.SetCellCentering(Bool3(1, 1, dim>2));
-      wbox = vl.Ld().GetWorldBox();
+      wbox = vl->Ld().GetWorldBox();
       worldCenter = 0.5*(wbox.max + wbox.min);
       gridCenter = 0.5*(ld.GetWorldBox().max + ld.GetWorldBox().min);
       ld.SetOriginPosition(ld.GetOriginPosition() + (worldCenter - gridCenter));
@@ -1251,11 +1254,11 @@ void DetailedP02Sim::init(Parameters &params_, VesselList3d &vl,double grid_latt
       //added safety space to reduce boundary errors
       if (world)
       {
-        SetupFieldLattice(vl.GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
+        SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
       }
       else
       {
-        SetupFieldLattice(vl.Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
+        SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
       }
     }
     grid.init(ld, dim);
@@ -1271,15 +1274,15 @@ void DetailedP02Sim::init(Parameters &params_, VesselList3d &vl,double grid_latt
       cout << "vessel lattice" << endl;
       if (world)
       {
-        cout<<vl.GetWorldBoxFromVesselsOnly()<<endl;
+        cout<<vl->GetWorldBoxFromVesselsOnly()<<endl;
       }
       else
       {
-        vl.Ld().print(cout);
+        vl->Ld().print(cout);
       }
       cout << endl;
     }
-    isVesselListGood(vl);
+    isVesselListGood(*vl);
     SetupTissuePhases(phases, grid, mtboxes, tumorgroup);//filling
     
     //set up field with same discrete points as in the given grid, leave data memory uninitialized
@@ -1288,7 +1291,11 @@ void DetailedP02Sim::init(Parameters &params_, VesselList3d &vl,double grid_latt
     po2field.fill(params.debug_zero_o2field ? 0.f : params.po2init_cutoff);
     
     //vesselpo2.resize(vl.GetECount(), Float2(NANf()));
-    po2vessels.resize(vl.GetECount(), Float2(NANf()));
+    po2vessels.resize(vl->GetECount(), Float2(NANf()));
+    
+    //executes topological ordering
+    PrepareNetworkInfo(*vl, sorted_vessels, roots);
+    //note vl is lost after this call!!!!
   }
 }
 
@@ -1308,10 +1315,6 @@ void DetailedP02Sim::init(Parameters &params_, VesselList3d &vl,double grid_latt
 //                )
 int DetailedP02Sim::run()
 {
-  DynArray<const Vessel*> sorted_vessels;
-  DynArray<const VesselNode*> roots;
-  //executes topological ordering
-  PrepareNetworkInfo(sorted_vessels, roots);
 
   //sets up the linear trilionos matrix system, builder is implemented as struct
   //could use for example different stencils
@@ -1753,15 +1756,20 @@ void TestSingleVesselPO2Integration()
 #endif
 }
 
-void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, h5cpp::Group &tumorgroup)
+void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, h5cpp::Group *tumorgroup)
 {
   // there is a tumor group provided by the python side
   
   //h5cpp::Group   tumorgroup      = PythonToCppGroup(py_tumorgroup);
   //if (tumorgroup.attrs().exists("TYPE") && tumorgroup.attrs().get<string>("TYPE")=="faketumor")
-  if( determineTumorType(tumorgroup) == TumorTypes::FAKE)
+  if( tumorgroup == nullptr)
   {
-    double tumor_radius = tumorgroup.attrs().get<double>("TUMOR_RADIUS");
+    phases = DetailedPO2::TissuePhases(1, grid.Box());
+    phases.phase_arrays[DetailedPO2::NORMAL].fill(1.);
+  }
+  else if( determineTumorType(tumorgroup) == TumorTypes::FAKE)
+  {
+    double tumor_radius = tumorgroup->attrs().get<double>("TUMOR_RADIUS");
     phases = DetailedPO2::TissuePhases(2, grid.Box());
     #pragma omp parallel
     {
@@ -1780,9 +1788,9 @@ void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &g
   }
   else if (determineTumorType(tumorgroup) == TumorTypes::BULKTISSUE)
   {
-    h5cpp::Dataset cell_vol_fraction_ds = tumorgroup.open_dataset("conc");
-    h5cpp::Dataset tumor_fraction_ds = tumorgroup.open_dataset("ptc");
-    h5cpp::Dataset necro_fraction_ds = tumorgroup.open_dataset("necro");
+    h5cpp::Dataset cell_vol_fraction_ds = tumorgroup->open_dataset("conc");
+    h5cpp::Dataset tumor_fraction_ds = tumorgroup->open_dataset("ptc");
+    h5cpp::Dataset necro_fraction_ds = tumorgroup->open_dataset("necro");
     h5cpp::Group   ldgroup        = tumor_fraction_ds.get_file().root().open_group(tumor_fraction_ds.attrs().get<string>("LATTICE_PATH"));
 
     Array3df cell_vol_fraction;
@@ -1817,11 +1825,7 @@ void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &g
   
   // if there is no tumorgroup provided by the python side
   // we fill everything with normal tissue
-  else 
-  {
-    phases = DetailedPO2::TissuePhases(1, grid.Box());
-    phases.phase_arrays[DetailedPO2::NORMAL].fill(1.);
-  }
+
 }
 
 }//namespace DetailedPO2

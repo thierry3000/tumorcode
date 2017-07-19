@@ -185,10 +185,10 @@ BOOST_PYTHON_MODULE(libtumors_)
   }
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   Tumors::export_faketum();
-  Tumors::export_faketum_mts();
   Tumors::export_bulktissue_no_vessels();
+  Tumors::export_bulktissue_with_vessels();
   
 #ifdef MILOTTI_MTS
-  Tumors::export_bulktissue_with_vessels();
+  Tumors::export_faketum_mts();
 #endif
 }

@@ -141,7 +141,7 @@ struct TissuePhases
 
 //void ComputePO2(const Parameters &params, VesselList3d& vl, ContinuumGrid &grid, DomainDecomposition &mtboxes, Array3df &po2field, VesselPO2Storage &storage, const TissuePhases &phases, ptree &metadata, bool world);
 double ComputeCircumferentialMassTransferCoeff(const Parameters &params, double r);
-void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, h5cpp::Group &tumorgroup);
+void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, h5cpp::Group *tumorgroup);
 
 typedef Eigen::Matrix<float, 5, 1> VesselPO2SolutionRecord; //x, po2, ext_po2, conc_flux, dS/dx;
 
@@ -188,9 +188,12 @@ struct DetailedP02Sim : public boost::noncopyable
   // after this call the 3D field phases is filled with
   // 3 vallues giving the portion of corresponding tissue type
   DetailedPO2::TissuePhases phases;//Declaration
-  void init(Parameters &params,VesselList3d &vl, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, h5cpp::Group &tumorgroup);
+  void init(Parameters &params,BloodFlowParameters &bfparams, h5cpp::Group &vesselgroup, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, h5cpp::Group *tumorgroup);
   int run();
-  void PrepareNetworkInfo(DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots);
+  void PrepareNetworkInfo(const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots);
+  
+  DynArray<const Vessel*> sorted_vessels;
+  DynArray<const VesselNode*> roots;
 };
 
 };//end namespace
