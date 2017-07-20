@@ -267,7 +267,8 @@ void FakeTum::FakeTumorSim::doStep(double dt)
 #ifdef USE_ADAPTION
   model.DoStep(dt, &params.adap_params,&params.bfparams);
 #else
-  //do be implemented
+//   //do be implemented
+  model.DoStep(dt, &params.bfparams);
 #endif
   tumor_radius += dt * params.tumor_speed;
 }
