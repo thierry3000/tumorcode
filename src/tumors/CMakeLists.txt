@@ -41,20 +41,27 @@ endif()
 
 add_library(tumors_ SHARED ${Tumor_Files})
 
+set(myLibs "${myLibs};krebs_")
 if(USE_ADAPTION)
-  set(link_tumor_to_this 
-  krebs_
-  adaption_
-  ${myLibs}
-  )
-else()
-  set(link_tumor_to_this 
-  krebs_
-  ${myLibs}
-  )
+  set(myLibs "${myLibs};adaption_")
 endif()
-message("link_tumor_to_this: ${link_tumor_to_this} ")
-target_link_libraries(tumors_ ${link_tumor_to_this})
+if(USE_MILOTTI_MTS)
+  set(myLibs "${myLibs};detailedo2_")
+endif()
+# if(USE_ADAPTION)
+#   set(link_tumor_to_this 
+#   krebs_
+#   adaption_
+#   ${myLibs}
+#   )
+# else()
+#   set(link_tumor_to_this 
+#   krebs_
+#   ${myLibs}
+#   )
+# endif()
+message("link_tumor_to_this: ${myLibs} ")
+target_link_libraries(tumors_ ${myLibs})
 
 #set_target_properties(tumors_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 

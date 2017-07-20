@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _OXYGEN_MODEL2_H_
 #define _OXYGEN_MODEL2_H_
 
+#include "../python_krebsutils/python-helpers.h"
 #include "hdf_wrapper.h"
 
 #include "common/shared-objects.h"
@@ -41,7 +42,7 @@ enum TumorTypes
   FAKE = 0,
   BULKTISSUE = 1
 };
-TumorTypes determineTumorType(h5cpp::Group tumorgroup);
+TumorTypes determineTumorType(h5cpp::Group &tumorgroup);
 
 /* todo:
  * turn parameters into variables and make it so that parameters can be given from the calling routine
@@ -141,7 +142,8 @@ struct TissuePhases
 
 //void ComputePO2(const Parameters &params, VesselList3d& vl, ContinuumGrid &grid, DomainDecomposition &mtboxes, Array3df &po2field, VesselPO2Storage &storage, const TissuePhases &phases, ptree &metadata, bool world);
 double ComputeCircumferentialMassTransferCoeff(const Parameters &params, double r);
-void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, h5cpp::Group *tumorgroup);
+void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, boost::optional<h5cpp::Group> tumorgroup);
+TumorTypes determineTumorType(h5cpp::Group *tumorgroup);
 
 typedef Eigen::Matrix<float, 5, 1> VesselPO2SolutionRecord; //x, po2, ext_po2, conc_flux, dS/dx;
 
@@ -170,7 +172,7 @@ void TestSingleVesselPO2Integration();
 struct DetailedP02Sim : public boost::noncopyable
 {
   bool world;
-  std::auto_ptr<VesselList3d> vl;
+  //std::auto_ptr<VesselList3d> vl;
   Parameters params;
   ContinuumGrid grid;
   DomainDecomposition mtboxes;
@@ -188,13 +190,16 @@ struct DetailedP02Sim : public boost::noncopyable
   // after this call the 3D field phases is filled with
   // 3 vallues giving the portion of corresponding tissue type
   DetailedPO2::TissuePhases phases;//Declaration
-  void init(Parameters &params,BloodFlowParameters &bfparams, h5cpp::Group &vesselgroup, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, h5cpp::Group *tumorgroup);
-  int run();
+  void init(Parameters &params,BloodFlowParameters &bfparams, VesselList3d &vl, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, boost::optional<h5cpp::Group> tumorgroup);
+  int run(VesselList3d &vl);
   void PrepareNetworkInfo(const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots);
   
   DynArray<const Vessel*> sorted_vessels;
   DynArray<const VesselNode*> roots;
 };
+template<class T>
+static T checkedExtractFromDict(const py::dict &d, const char* name);
+void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters);
 
 };//end namespace
 

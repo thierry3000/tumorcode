@@ -22,10 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 h5cpp::Group PythonToCppGroup(const py::object &op_)
 {
-  py::object id_obj1 = py::getattr(op_, "id");
-  py::object id_obj2 = py::getattr(id_obj1, "id");
-  ssize_t id = py::extract<ssize_t>(id_obj2);
-  return h5cpp::Group(id);
+  if( !op_.is_none() )
+  {
+    py::object id_obj1 = py::getattr(op_, "id");
+    py::object id_obj2 = py::getattr(id_obj1, "id");
+    ssize_t id = py::extract<ssize_t>(id_obj2);
+    return h5cpp::Group(id);
+  }
 }
 
 h5cpp::Dataset PythonToCppDataset(const py::object &op_)

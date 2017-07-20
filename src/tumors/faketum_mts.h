@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/vesselmodel1.h"
 
 #include "mwlib/log.h"
+#include "../detailedO2/oxygen_model2.h"
 
 /** from milotti
  */
@@ -39,6 +40,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   #include "geom-2.h"
   #include "CellsSystem.h"
 #endif
+
+namespace h5 = h5cpp;
 
 namespace FakeTumMTS{
 enum TissuePressureDistribution
@@ -78,6 +81,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
   VesselModel1::Model model;
 
   FakeTumMTS::Parameters params;
+  DetailedPO2::Parameters o2_params;
   ptree all_pt_params;
 
   double tumor_radius;
@@ -95,7 +99,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
   //int run(int argc, char **argv);
   int run(const ptree &params);
   void doStep(double dt);
-  void writeOutput();
+  h5::Group writeOutput();
   
   //milotti mts
 

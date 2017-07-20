@@ -39,6 +39,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef MILOTTI_MTS
   #include "faketum_mts.h"
+  #include "../detailedO2/oxygen_model2.h"
 #endif
 
 #ifdef USE_ADAPTION
@@ -53,7 +54,7 @@ namespace Tumors{
  * here a growing sphere of tumor cells is assumed, no tumor model is used for
  * that. One needs a growing speed
  */
-void run_fakeTumor_mts(const py::str &param_info_str)
+void run_fakeTumor_mts(const py::str &param_info_str, py::dict py_oxy_parameters)
 {
   std::cout << "run_fakeTumor_mts on c++ called" << std::endl;
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
@@ -63,6 +64,7 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   ptree pt_params = convertInfoStr(param_info_str, defaultParams.as_ptree());
   printPtree(pt_params);
   FakeTumMTS::FakeTumorSimMTS s;
+  DetailedPO2::InitParameters(s.o2_params, py_oxy_parameters);
   int returnCode = s.run(pt_params);
   //return returnCode;
 }

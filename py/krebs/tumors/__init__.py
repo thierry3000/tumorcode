@@ -131,10 +131,10 @@ def set_lattice_size(c, vesselfilename):
   c['lattice_size'] = Vec((sx,sy,sz))
   return c
 
-def run_faketum_mts(configstr):
+def run_faketum_mts(configstr, o2_params):
   if qsub.is_client:
     qsub.printClientInfo()
-  return tumor_cpp.run_faketum_mts_(configstr)
+  return tumor_cpp.run_faketum_mts_(configstr, o2_params)
 
 def run_faketum(configstr):
   if qsub.is_client:

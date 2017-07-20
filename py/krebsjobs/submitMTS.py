@@ -45,6 +45,7 @@ dstdir = os.getcwd()
 #note: according to doeme et al. the tumor radius growth should be around 0.7 mu m / h
 
 import krebsjobs.parameters.parameterSetsFakeTumor as parameterSets
+from krebsjobs.parameters import parameterSetsO2
 #from submitAdaption import create_auto_dicts
 
 from krebsutils import typelist
@@ -107,15 +108,15 @@ def worker_on_client(fn, grp_pattern, tumParams, num_threads):
   h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
   krebsutils.set_num_threads(num_threads)
   
-  
-  fake_tum_mts_refs = krebs.tumors.run_faketum_mts(fn, grp_pattern, tumParams)
+  fake_tum_mts_refs = krebs.tumors.run_faketum_mts(fn, grp_pattern, tumParams, o2params)
   
   h5files.closeall() # just to be sure
 
 def run(vessel_fn, name, config_, mem, days):
   name, c = PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTum', config_)
   configstr = dicttoinfo(c)
-  qsub.submit(qsub.func(krebs.tumors.run_faketum_mts, configstr),
+  o2params = getattr(parameterSetsO2, "breastv3")
+  qsub.submit(qsub.func(krebs.tumors.run_faketum_mts, configstr, o2params),
                             name = 'job_'+name,
                             mem = mem,
                             days = days,

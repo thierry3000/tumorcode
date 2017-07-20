@@ -233,6 +233,17 @@ int FakeTumMTS::FakeTumorSimMTS::run(const ptree &pt_params)
 //   {
 //     writeVesselsafter_initial_adaption = true;
 //   }
+  
+//   boost::optional<h5cpp::Group> lastTumorGroupWrittenByFakeTum;
+  h5cpp::Group lastTumorGroupWrittenByFakeTum;
+  //set up oxygen calculation
+  DetailedPO2::DetailedP02Sim o2_sim;
+  // this should be read from file later on
+  //DetailedPO2::Parameters oxy_params;
+  double grid_lattice_const = 40;
+  double safety_layer_size = 120;
+  boost::optional<Int3> grid_lattice_size;
+  
   while (true)
   {
     if (time >= next_adaption_time - params.dt * 0.1)
@@ -260,7 +271,10 @@ int FakeTumMTS::FakeTumorSimMTS::run(const ptree &pt_params)
     if (time >= next_output_time - params.dt * 0.1)
     {
       
-      writeOutput();
+      lastTumorGroupWrittenByFakeTum = writeOutput();
+      o2_sim.init(o2_params, params.bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum);
+      o2_sim.run(*vl);
+      
       next_output_time += params.out_intervall;
     }
 
@@ -290,11 +304,13 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
 {
   cout << format("step %i, t=%f") % num_iteration % time << endl;
   CalcFlow(*vl, params.bfparams);
-#ifdef USE_ADAPTION
-  model.DoStep(dt, &params.adap_params,&params.bfparams);
-#else
-  //do be implemented
-#endif
+  /* do not use adaptation stuff for mts*/
+// #ifdef USE_ADAPTION
+//   model.DoStep(dt, &params.adap_params,&params.bfparams);
+// #else
+//   //do be implemented
+// #endif
+  model.DoStep(dt, &params.bfparams);
   tumor_radius += dt * params.tumor_speed;
 }
 
@@ -315,11 +331,10 @@ void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
 //   //end milotti
 }
 
-namespace h5 = h5cpp;
-
-void FakeTumMTS::FakeTumorSimMTS::writeOutput()
+h5::Group FakeTumMTS::FakeTumorSimMTS::writeOutput()
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
+  //if this is the first output, we have to create the file, otherwise we append
   h5::File f(params.fn_out, output_num==0 ? "w" : "a");
   h5::Group g, root = f.root();
 
@@ -362,4 +377,5 @@ void FakeTumMTS::FakeTumorSimMTS::writeOutput()
     WriteScalarField(gtum, "tc_density", tum_field, ld, field_ld_group);
   }
   ++output_num;
+  return gout;
 }
