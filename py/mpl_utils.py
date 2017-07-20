@@ -30,10 +30,10 @@ if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
   matplotlib.use('agg')
 
 ''' pay attention: most likely this functions are imported somewhere else'''
-from mpl_toolkits.axes_grid.inset_locator import inset_axes
-from mpl_toolkits.axes_grid.anchored_artists import AnchoredSizeBar
-from mpl_toolkits.axes_grid.anchored_artists import AnchoredText
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+#from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+#from mpl_toolkits.axes_grid.anchored_artists import AnchoredText
+#from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.gridspec as gridspec
 from matplotlib.offsetbox import AnchoredOffsetbox, AuxTransformBox, VPacker,\
      TextArea, DrawingArea

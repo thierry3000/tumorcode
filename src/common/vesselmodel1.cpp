@@ -50,7 +50,7 @@ inline float GetMaturation( const VesselNode *node )
     {
       for( int i=0; i<node->Count(); ++i )
       {
-	vcMat += node->GetEdge(i)->maturation;
+        vcMat += node->GetEdge(i)->maturation;
       }
       vcMat /= node->Count();
     }

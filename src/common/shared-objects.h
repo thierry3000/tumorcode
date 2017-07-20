@@ -193,7 +193,18 @@ T Value(const ConstArray3d<T>& ff, const LatticeDataQuad3d &ld, const OOD &ood, 
 //-----------------------------------
 //-----------------------------------
 
-
+/** @brief
+ * As the name suggests, this guy will create samples.
+ * You need to provide:
+ * 1) world coodinates of the vesselsegment under consideration
+ * 2) radius 
+ * 3) how many sample points you want
+ * 
+ * There are different types. You can sample on
+ *    SURFACE 
+ *    LINE  
+ *    VOLUME
+ */
 class CylinderNetworkSampler
 {
 public:

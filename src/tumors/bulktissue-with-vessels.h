@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "vesselmodel1.h"
 #include "bulktissuemodel1_new.h"
 #include "growthfactor_model.h"
-#include "oxygen_model.h"
+#include "simple_oxygen_model.h"
 #include "mwlib/log.h"
 
 #include "shared-objects.h"

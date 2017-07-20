@@ -32,7 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "bulktissuemodel1_new.h"
 #include "vesselmodel1.h"//needed for parameter handling!!!!
 #include "shared-objects.h"
-#include "oxygen_model.h"
+#include "simple_oxygen_model.h"
 #include <boost/property_tree/info_parser.hpp>
 #ifdef USE_ADAPTION
   #include "adaption/adaption_model2.h"

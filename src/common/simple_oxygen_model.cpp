@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "oxygen_model.h"
+#include "simple_oxygen_model.h"
 #include "shared-objects.h"
 #include "continuum-flow.h"
 #include <boost/property_tree/info_parser.hpp>
@@ -114,7 +114,11 @@ ptree PrezO2Params::as_ptree() const
   #undef DOPT2
   return pt;
 }
-  
+/** l_coeff could be e.g vessel_o2src_clin
+ *  rhs     could be e.g vessel_o2src_crhs
+ * 
+ * as in bulktissue-with-vessels.cpp
+ */
 void AddSourceDistribution(const BBox3 &bbox, const LatticeDataQuad3d &field_ld, int dim, Array3d<float> l_coeff, Array3d<float> rhs, const VesselList3d::LatticeData &vessld, const DynArray<const Vessel*> &vessels, const ptree &params)
 {
   const double capillary_wall_permeability = params.get<double>("capillary_wall_permeability");
@@ -123,8 +127,12 @@ void AddSourceDistribution(const BBox3 &bbox, const LatticeDataQuad3d &field_ld,
   const double maturation_at_r5 = GetInitialThickness(5.0f);
   //const double maturation_at_r20= GetInitialThickness(20.0f);
   const double hematocrit_init = params.get<double>("hematocrit_init");
-/* In 2d, the samples are projected on the xy plane.
-   It is assumed that a 2d slice is 200 micron in height. Hence the scaling factor. */
+/** 
+ * In 2d, the samples are projected on the xy plane.
+ * It is assumed that a 2d slice is 200 micron in height. Hence the scaling factor. 
+ * 
+ * 3D case this is just 1.
+ */
   const double dim_coeff = dim==2 ? (field_ld.Scale()/params.get<double>("fake_height_2d",200.)) : 1.;
   
   CylinderNetworkSampler sampler; sampler.Init(field_ld.Scale(), params);

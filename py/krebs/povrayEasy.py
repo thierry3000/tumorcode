@@ -21,16 +21,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 #from plottools import Vec3
-from vec import Vec3
 
+
+import subprocess # need to find povray version
 import os
+import sys
+import numpy as np
+import math
+
+sys.path.append(os.path.join(os.path.dirname(__file__),'../'))
+from vec import Vec3
 import mkstemp
 import krebsutils
 import povray as pv
-import numpy as np
-import math
 import myutils
-
 import matplotlib
 '''
 due to no graphics on the clusters, we have to use a differetn renderer
@@ -43,7 +47,24 @@ import matplotlib.pyplot
 import mpl_utils
 
 ##############################################################################
+def getPovrayVersion():
+  #result = subprocess.check_output("povray", stderr=subprocess.STDOUT, shell=True)
+  #from subprocess import Popen, PIPE
 
+  p = subprocess.Popen(['povray', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  output, err = p.communicate()
+  rc = p.returncode
+  print(err)
+  ''' err should look like
+  POV-Ray 3.7.0.2.unofficial
+  '''
+  label = 'POV-Ray '
+  posOfLabel = err.find(label)
+  #print("posOfLabel is: %s" % posOfLabel)
+  major = err[len(label) + posOfLabel]
+  minor = err[len(label) + posOfLabel+2]
+  return major, minor
+  
 def CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, options):
     if options.noOverlay:
       epv.render(imagefn)
@@ -228,7 +249,11 @@ class EasyPovRayRender(object):
     else:
       alpha = ""
     num_threads = self.params.num_threads
-    num_threads = ("+WT%i" % num_threads) if num_threads>1 else ""
+    major, minor = getPovrayVersion()
+    if minor.isdigit() and minor>=7:
+      num_threads = ("+WT%i" % num_threads) if num_threads>1 else ""
+    else:
+      num_threads = ""
     res = self.params.res
     resx=float(res[0])
     resy=float(res[1])
@@ -569,3 +594,8 @@ def RenderImageWithOverlay(epv, imagefn, colormap, label, options):
   epv.render(tf.filename)
   #plotsettings = dict(myutils.iterate_items(kwargs, ['dpi','fontcolor','wbbox'], skip=True))    
   OverwriteImageWithColorbar(options,tf.filename, colormap, label, output_filename = imagefn)
+
+if __name__ == "__main__":
+  version = getPovrayVersion()
+  print("ehlo")
+  print(version)
