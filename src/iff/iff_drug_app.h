@@ -110,7 +110,7 @@ class IffDrugApp3d
   IfDrug::Params ift_params;
   ContinuumGrid grid;
   DynArray<BBox3> mtboxes;
-  std::auto_ptr<VesselList3d> vesselList;
+  std::auto_ptr<VesselList3d> vl;
   VesselsInBoxes vesselsInBoxes;
   Array3d<float> theta_tumor, theta_necro, phi_cells, phi_water;
 

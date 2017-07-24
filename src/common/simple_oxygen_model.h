@@ -42,9 +42,9 @@ namespace O2Model
  *   hematocrit_init
  * the blood o2 level is computed as v->hematocrit/hematocrit_init
  */
-struct PrezO2Params
+struct SimpleO2Params
 {
-  PrezO2Params();
+  SimpleO2Params();
   void assign(const ptree &pt);
   ptree as_ptree() const;
   static void update_ptree(ptree &dst, const ptree &src);
@@ -58,11 +58,11 @@ struct PrezO2Params
   bool use_o2_source_decay;
 };
 
-void AddSourceDistribution(Array3d<float> clinear_field, Array3d<float> rhs_field,
-                                 const LatticeDataQuad3d &field_ld,
-                                 int dim,
-                                 const VesselList3d &vl,
-                                 const boost::property_tree::ptree &params);
+// void AddSourceDistribution(Array3d<float> clinear_field, Array3d<float> rhs_field,
+//                                  const LatticeDataQuad3d &field_ld,
+//                                  int dim,
+//                                  const VesselList3d &vl,
+//                                  const boost::property_tree::ptree &params);
 void AddSourceDistribution(const BBox3 &bbox,
                            const LatticeDataQuad3d &field_ld,
                            int dim,

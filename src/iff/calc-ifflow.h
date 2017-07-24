@@ -36,7 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 //#define USE_IFDRUGSIM
 
-/*
+/**
   units:
     time - sec
     space - micron
@@ -125,7 +125,7 @@ struct IfFlowState : boost::noncopyable
 
 class VesselExavasationModel : boost::noncopyable, public VirtualGridFunctions<double, 2>
 {
-  /*
+  /** @brief
    * This should be a concrete implementation of a abstract base class.
    * A similar class could be used for oxygen exavasation
    */
@@ -143,14 +143,14 @@ public:
 
   void Init(const VesselList3d &vl_, const ContinuumGrid &grid_, const VesselsInBoxes &vesselsinboxes_);
 
-  /*
+  /** @brief
    * Get info about wall permeability, etc, The source term is coeff * (value - outside_value)
    * This term is evaluated for some sampling points, where *a and *b are linearly interpolated along the
    * centeral axis of the vessel
    */
   virtual bool GetVesselInfo(const Vessel* v, double &coeffa, double &coeffb, double &vala, double &valb) const = 0;
   
-  /*
+  /** @brief
    * computes the factors in  source_i = sum_j c_ij (p_j - pe_i),
    * where clinear_i = - sum_j c_ij, and cconst_i = sum_j c_ij p_j
    * The j-summation is over samples on the vessel tree, and the i-index stands for a grid cell
@@ -214,6 +214,9 @@ enum {
 };
 
 
+/** @note
+ * this class is defined header only.
+ */
 class SimpleTissueModel : boost::noncopyable, public VirtualGridFunctions<double, 2>
 {
 public:
@@ -238,8 +241,8 @@ public:
 
 
 /**
- * \brief This class calculated iff in tissue
- * \note Future project make these coupled like the o2 calculation
+ * @brief This class calculated iff in tissue
+ * @note Future project make these coupled like the o2 calculation
  * 
  * This class models the transport of IF from the 
  * vessels to the surrounding tissue. The exchange with 
@@ -271,17 +274,17 @@ public:
             const VirtualGridFunctions<double, 2> &tissue_model_,
             const IffParams &params_);
   
-  /*
+  /**
    * initialize and compute the pressure field
    */
   void calculate();
-  /*
+  /**
    * "postprocessing":
    * initialize and fill the IfFlowState structure with data determined by flags
    * mtbox, if >= 0, determines which area to fill, corresponding to the mt boxes in ifbase
    */
   void getOutState(IfFlowState &state, int flags);
-  /*
+  /**
    * "postprocessing" :
    * fill the state structure, but only the region indicated by mtbox,
    * mutex is to protect shared data of state since multiple regions may be filled simultaneously

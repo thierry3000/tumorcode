@@ -106,7 +106,7 @@ void run_bulktissue_no_vessels(const py::str &param_info_str)
     NewBulkTissueModel::Params pparams;
     BloodFlowParameters bfparams;
     VesselModel1::Params vessel_params;
-    O2Model::PrezO2Params prezO2params;
+    O2Model::SimpleO2Params prezO2params;
     //Adaption::Parameters adaption_params;
     
     ptree all_pt_params;

@@ -101,7 +101,7 @@ struct Model : public boost::noncopyable
 {
   void init(const Int3 &size, double scale, int ndims_, BulkTissueWithoutVessels::State &state, const ptree &pt_params_)
   {
-    pt_params = O2Model::PrezO2Params().as_ptree();
+    pt_params = O2Model::SimpleO2Params().as_ptree();
     boost::property_tree::update(pt_params, pt_params_);
     params.assign(pt_params);
     
@@ -394,7 +394,7 @@ struct Model : public boost::noncopyable
   int iteration_num;
   double tumor_radius_estimate; // last known estimate, mean distance from origin taken over tumor interface.
   // parameters
-  O2Model::PrezO2Params params;
+  O2Model::SimpleO2Params params;
   ptree pt_params;
   // models
   NewBulkTissueModel::Model bulktissue_model; // continuum mechanics model, responsible for propagating State::tumor_state in time + utility functions like determining source strength of cell density

@@ -141,7 +141,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
   all_pt_params.put("fake_height_2d", 200.);
   all_pt_params.put_child("vessels", VesselModel1::Params().as_ptree());
   all_pt_params.put_child("tumor", NewBulkTissueModel::Params().as_ptree());
-  all_pt_params.put_child("prez_o2", O2Model::PrezO2Params().as_ptree() );
+  all_pt_params.put_child("prez_o2", O2Model::SimpleO2Params().as_ptree() );
 #ifdef USE_ADAPTION
   all_pt_params.put_child("adaption", Adaption::Parameters().as_ptree());
 #endif
@@ -422,7 +422,13 @@ void BulkTissue::NewTumorSim::UpdateVesselVolumeFraction()
     {
       int dummy_;
       volumegen.Fill(bbox, vessel_volume_fraction, vessboxes[bbox.global_index], dummy_);
-      O2Model::AddSourceDistribution(bbox, grid.ld, grid.dim, vessel_o2src_clin, vessel_o2src_crhs, state.vessels->Ld(), vessboxes[bbox.global_index], all_pt_params);
+      O2Model::AddSourceDistribution( bbox, grid.ld, 
+                                      grid.dim, 
+                                      vessel_o2src_clin, 
+                                      vessel_o2src_crhs, 
+                                      state.vessels->Ld(), 
+                                      vessboxes[bbox.global_index], 
+                                      all_pt_params);
     }
   }
 
