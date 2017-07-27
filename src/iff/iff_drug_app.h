@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef IFF_DRUG_APP_H
 #define IFF_DRUG_APP_H
 
-#include "python_krebsutils/python-helpers.h"
+#include "python_krebsutils/python_helpers.h"
 
 #include "calc-ifflow.h"
 #include "calc-ifdrug.h"

@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "python-helpers.h"
+#include "python_helpers.h"
 #include <boost/python/object.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/str.hpp>

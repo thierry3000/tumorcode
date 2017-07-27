@@ -44,7 +44,40 @@ class ContinuumGrid;
 class DomainDecomposition;
 class Levelset;
 
+enum TissueId {
+  TCS = 0,
+  DEAD = 1,
+  TISSUE = 2,
+};
 
+struct TissuePhases
+{
+  TissuePhases() : count(0) {}
+  TissuePhases(int count_, const BBox3 &bbox_) : count(count_)
+  {
+    for (int i=0; i<count_; ++i)
+      phase_arrays[i].initFromBox(bbox_);
+  }
+
+  Float3 operator()(const Int3 &p) const
+  {
+    Float3 result(count>0 ? phase_arrays[0](p) : 0,
+                  count>1 ? phase_arrays[1](p) : 0,
+                  count>2 ? phase_arrays[2](p) : 0);
+    return result;
+  }
+  
+  int count;
+  Array3df phase_arrays[3];
+};
+void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, boost::optional<h5cpp::Group> tumorgroup);
+enum TumorTypes
+{
+  FAKE = 0,
+  BULKTISSUE = 1,
+  NONE = 3,
+};
+TumorTypes determineTumorType(h5cpp::Group *tumorgroup);
 /*-----------------------------------------------------------
 -----------------------------------------------------------*/
 

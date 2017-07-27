@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
    distributed over blood vessel networks, e.g. blood pressure.
 **/
 
-#include "python-helpers.h"
+#include "python_helpers.h"
 #include "numpy.hpp"
 #include "shared-objects.h"
 #include "lattice-data-polymorphic.h"

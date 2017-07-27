@@ -33,7 +33,7 @@ namespace O2Model
 SimpleO2Params::SimpleO2Params()
 {
   o2_rel_tumor_source_density = 0.2;
-  o2_level_normal = 0.8;
+  o2_level_normal = 0.6;
   for (int i=0; i<3; ++i)
   {
     o2_range[i] = 100.;
@@ -41,6 +41,12 @@ SimpleO2Params::SimpleO2Params()
   }
   test_obstacle = 0;
   use_o2_source_decay = false;
+  #define DOPT(name, value) name = value
+  DOPT(hematocrit_init, 0.45);
+  DOPT(reference_intercapillary_distance, 80);
+  capillary_wall_permeability = O2Model::CalcHomogeneousCoeffOxy(o2_cons_coeff[0], o2_level_normal, 4., reference_intercapillary_distance);
+  
+  #undef DOPT
 }
 
 #define PT_ASSIGN(name) boost::property_tree::get(name, #name, pt)
@@ -69,6 +75,15 @@ void SimpleO2Params::assign(const ptree &pt)
       throw std::invalid_argument("either o2_cons_coeff_<tissue type> or o2_range_<tissue type> must be provided");
   }
   DOPT(o2_level_normal);
+  DOPT(hematocrit_init);
+  DOPT(reference_intercapillary_distance);
+    for (int i=0; i<3; ++i) {
+      boost::property_tree::get(o2_cons_coeff[i], "o2_cons_coeff_"+tissue_name[i], pt);
+      boost::property_tree::get(o2_range[i], "o2_range_"+tissue_name[i], pt);
+    }
+  DOPT(capillary_wall_permeability);
+  DOPT(o2_level_normal);
+  
   PT_ASSIGN(o2_rel_tumor_source_density);
   PT_ASSIGN(test_obstacle);
   PT_ASSIGN(use_o2_source_decay);
@@ -99,12 +114,23 @@ ptree SimpleO2Params::as_ptree() const
   #define DOPT(name) pt.put(#name, name)
   #define DOPT2(name, i) pt.put(#name"_"+tissue_name[i], name[i])
 
+  DOPT(hematocrit_init);
+  DOPT(reference_intercapillary_distance);
   DOPT(o2_level_normal);
+  DOPT(capillary_wall_permeability);
+  //#define DOPT2(name, i) pt.put(#name"_"+tissue_name[i], name[i])
   for (int i=0; i<3; ++i)
   {
     DOPT2(o2_range, i);
     DOPT2(o2_cons_coeff, i);
   }
+  
+//   DOPT(o2_level_normal);
+//   for (int i=0; i<3; ++i)
+//   {
+//     DOPT2(o2_range, i);
+//     DOPT2(o2_cons_coeff, i);
+//   }
   
   AS_PTREE(o2_rel_tumor_source_density);
   AS_PTREE(test_obstacle);

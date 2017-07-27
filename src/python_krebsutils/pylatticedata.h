@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef PYTHON_LATTICE_DATA_H
 #define PYTHON_LATTICE_DATA_H
 
-#include "python-helpers.h"
+#include "python_helpers.h"
 
 namespace mw_py_impl
 {

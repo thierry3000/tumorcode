@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _OXYGEN_MODEL2_H_
 #define _OXYGEN_MODEL2_H_
 
-#include "../python_krebsutils/python-helpers.h"
+#include "../python_krebsutils/python_helpers.h"
 #include "hdf_wrapper.h"
 
 #include "common/shared-objects.h"
@@ -31,34 +31,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace DetailedPO2
 {
   
-enum TissueIDs
-{
-  NORMAL = 0,
-  TUMOR  = 1,
-  NECRO  = 2
-};
-enum TumorTypes
-{
-  FAKE = 0,
-  BULKTISSUE = 1
-};
-TumorTypes determineTumorType(h5cpp::Group &tumorgroup);
+// enum TissueIDs
+// {
+//   NORMAL = 0,
+//   TUMOR  = 1,
+//   NECRO  = 2
+// };
+// enum TumorTypes
+// {
+//   FAKE = 0,
+//   BULKTISSUE = 1
+// };
+// TumorTypes determineTumorType(h5cpp::Group &tumorgroup);
 
 /* todo:
  * turn parameters into variables and make it so that parameters can be given from the calling routine
  * */
 class Parameters
 {
-  double ds2_zeros_[2];
-  double ds2_max_;
-  double conc_neglect_s;
-  //Parameters& operator=(const Parameters&);
-  int iteration_count;
-  
+
 public:
   int getIterationCount(){return iteration_count;};
   void increaseIterationCount(){iteration_count++;};
   Parameters();
+  
+  void assign(const ptree &pt);
+  ptree as_ptree() const;
+  
   void UpdateInternalValues();
 
   // Note: mlO2/ml = mlO2/cm^3 = um^3 O2 / um^3!
@@ -85,8 +84,14 @@ public:
  * corresponding codeded parameters. Otherwise, it uses a linear model, i.e. consumption is proportional to po2.
  */
   std::pair<double, double> ComputeUptake(double po2, float *tissue_phases, int phases_count) const; // (value, first derivative)
+  void SetTissueParamsByDiffusionRadius(double kdiff_, double alpha_, double rdiff_norm_, double rdiff_tum_, double rdiff_necro_);
 
   int max_iter;
+  double ds2_zeros_[2];
+  double ds2_max_;
+  double conc_neglect_s;
+  //Parameters& operator=(const Parameters&);
+  int iteration_count;
   double haemoglobin_binding_capacity;
   double plasma_solubility, tissue_solubility; /* mlO2/cm^3/mmHg = (mlO2 / ml tissue) / mmHg */
   double D_plasma;
@@ -107,43 +112,22 @@ public:
   double extra_tissue_source_const; // dito
   double conductivity_coeff1, conductivity_coeff2, conductivity_coeff3; // for transvascular transport
   int loglevel;
+  string detailedO2name;
   double convergence_tolerance; // field and vessel po2 differences from iteration to iteration must both be lower than this for the iteration to stop
   bool approximateInsignificantTransvascularFlux;
   int massTransferCoefficientModelNumber;
   
-  void SetTissueParamsByDiffusionRadius(double kdiff_, double alpha_, double rdiff_norm_, double rdiff_tum_, double rdiff_necro_);
 };
 
 
 // partial pressure in blood plasma at the endpoints of each segment
 typedef DynArray<Float2> VesselPO2Storage;
 
-struct TissuePhases
-{
-  TissuePhases() : count(0) {}
-  TissuePhases(int count_, const BBox3 &bbox_) : count(count_)
-  {
-    for (int i=0; i<count_; ++i)
-      phase_arrays[i].initFromBox(bbox_);
-  }
 
-  Float3 operator()(const Int3 &p) const
-  {
-    Float3 result(count>0 ? phase_arrays[0](p) : 0,
-                  count>1 ? phase_arrays[1](p) : 0,
-                  count>2 ? phase_arrays[2](p) : 0);
-    return result;
-  }
-  
-  int count;
-  Array3df phase_arrays[3];
-};
 
 
 //void ComputePO2(const Parameters &params, VesselList3d& vl, ContinuumGrid &grid, DomainDecomposition &mtboxes, Array3df &po2field, VesselPO2Storage &storage, const TissuePhases &phases, ptree &metadata, bool world);
 double ComputeCircumferentialMassTransferCoeff(const Parameters &params, double r);
-void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, boost::optional<h5cpp::Group> tumorgroup);
-TumorTypes determineTumorType(h5cpp::Group *tumorgroup);
 
 typedef Eigen::Matrix<float, 5, 1> VesselPO2SolutionRecord; //x, po2, ext_po2, conc_flux, dS/dx;
 
@@ -189,7 +173,7 @@ struct DetailedP02Sim : public boost::noncopyable
   // I.e. get volume fractions of each cell type.
   // after this call the 3D field phases is filled with
   // 3 vallues giving the portion of corresponding tissue type
-  DetailedPO2::TissuePhases phases;//Declaration
+  TissuePhases phases;//Declaration
   void init(Parameters &params,BloodFlowParameters &bfparams, VesselList3d &vl, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, boost::optional<h5cpp::Group> tumorgroup);
   int run(VesselList3d &vl);
   void PrepareNetworkInfo(const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots);
@@ -197,8 +181,8 @@ struct DetailedP02Sim : public boost::noncopyable
   DynArray<const Vessel*> sorted_vessels;
   DynArray<const VesselNode*> roots;
 };
-template<class T>
-static T checkedExtractFromDict(const py::dict &d, const char* name);
+// template<class T>
+// static T checkedExtractFromDict(const py::dict &d, const char* name);
 void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters);
 
 };//end namespace

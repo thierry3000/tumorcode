@@ -220,7 +220,9 @@ def writeFields_(graph, options):
   f = h5py.File(fn, 'r')
   fn, _ = myutils.splitH5PathsFromFilename(fn)
   #search_groups.append('po2/adaption/vessels_after_adaption')
-  search_groups = ['po2/adaption/vessels_after_adaption/po2field']
+  #search_groups = ['po2/adaption/vessels_after_adaption/po2field']
+  search_groups = []
+  search_groups.append(str(options.writeFields))
   e = extractVtkFields.Extractor(f, search_groups, recursive = True) 
   print 'found field datasets:'
   pprint.pprint(e.getDatasetPaths())
@@ -263,7 +265,7 @@ if __name__ == '__main__':
   parser.add_argument("--outFilename", dest="outfn", default= None, type=str)
   '''this option come from the tumor side'''
   parser.add_argument("--writeVessels", help="when doing the tumor, export vesesls", default=True, action="store_true")  
-  parser.add_argument("--writeFields", help="when doing the tumor, export Fields", default=True, action="store_true")  
+  parser.add_argument("--writeFields", help="when doing the tumor, export Fields", default=None)  
   goodArguments, otherArguments = parser.parse_known_args()
   #create filename due to former standards
   filenames=[]

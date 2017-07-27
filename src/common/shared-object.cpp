@@ -39,7 +39,141 @@ namespace h5 = h5cpp;
 
 /*-----------------------------------------------------
   -----------------------------------------------------*/
+/** 
+ * @brief Decides which tumor type is present
+ * myexception is thrown once no type is recognized
+ */
+class myexception: public std::exception
+{
+  virtual const char* what() const throw()
+  {
+    return "tumor type not implemented on cpp side";
+  }
+};
 
+TumorTypes determineTumorType(boost::optional<h5cpp::Group> tumorgroup)
+{
+// #ifdef DEBUG
+//     cout<<format("tumorgroup.attrs().exists(\"TYPE\"): %s\n") % (bool)(tumorgroup.attrs().exists("TYPE"));
+//     cout<<format("tumorgroup.attrs().get<string>(\"TYPE\"): %s\n") % tumorgroup.attrs().get<string>("TYPE");
+// #endif
+  
+  TumorTypes tumortype;
+  if(tumorgroup)//means it is initialized
+  {
+    //std::string detailedTumorDescription = tumorgroup.attrs().get<std::string>("TYPE");
+    if( tumorgroup->attrs().exists("TYPE") )
+    {
+      std::string detailedTumorDescription = tumorgroup->attrs().get<std::string>("TYPE");
+      if( detailedTumorDescription == "faketumor" )
+      {
+        tumortype = TumorTypes::FAKE;
+      }
+      else if ( detailedTumorDescription == "BulkTissueFormat1")
+      {
+        tumortype = TumorTypes::BULKTISSUE;
+      }
+    }
+  }
+  else
+  {
+    tumortype = TumorTypes::NONE;
+  }
+//   try
+//     {
+//       std::string detailedTumorDescription = tumorgroup.attrs().get<std::string>("TYPE");
+//       if( detailedTumorDescription == "faketumor" )
+//       {
+//         tumortype = TumorTypes::FAKE;
+//       }
+//       else if ( detailedTumorDescription == "BulkTissueFormat1")
+//       {
+//         tumortype = TumorTypes::BULKTISSUE;
+//       }
+//       else
+//       {
+// //         throw myexception();
+//         tumortype = TumorTypes::NONE;
+//       }
+//     }
+//     catch(std::exception& e)
+//     {
+//       cout << "reading tumor type from hdf failed because of: " << e.what() << '\n';
+//     }
+  return tumortype;
+//   tumortype = TumorTypes::FAKE;
+//   return TumorTypes::FAKE;
+}
+void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, boost::optional<h5cpp::Group> tumorgroup)
+{
+  //h5cpp::Group   tumorgroup      = PythonToCppGroup(py_tumorgroup);
+  //if (tumorgroup.attrs().exists("TYPE") && tumorgroup.attrs().get<string>("TYPE")=="faketumor")
+  TumorTypes tumortype = determineTumorType(tumorgroup);
+  if( tumortype == TumorTypes::NONE )
+  {
+    // if there is no tumorgroup provided, we fill everything with normal tissue
+    // 1 means singel tissue phase
+    phases = TissuePhases(1, grid.Box());
+    phases.phase_arrays[TISSUE].fill(1.);
+  }
+  else if( tumortype == TumorTypes::FAKE)
+  {
+    //there is a faketumor group provided
+    double tumor_radius = tumorgroup->attrs().get<double>("TUMOR_RADIUS");
+    phases = TissuePhases(3, grid.Box());//consistent labeling problems Tissue is 2 in enumeration
+    #pragma omp parallel
+    {
+      BOOST_FOREACH(const BBox3 &bbox, mtboxes.getCurrentThreadRange())
+      {
+        FOR_BBOX3(p, bbox)
+        {
+          Float3 wp =  grid.ld.LatticeToWorld(p);
+          double r = wp.norm();
+          double f = my::smooth_heaviside_sin(-r+tumor_radius, grid.Spacing()); // is = 1 within the tumor
+          phases.phase_arrays[TISSUE](p) = 1.f-f;
+          phases.phase_arrays[TCS](p) = f;
+        }
+      }
+    }
+  }
+  else if (tumortype == TumorTypes::BULKTISSUE)
+  {
+    //there is a bulktissue tumor group provided
+    h5cpp::Dataset cell_vol_fraction_ds = tumorgroup->open_dataset("conc");
+    h5cpp::Dataset tumor_fraction_ds = tumorgroup->open_dataset("ptc");
+    h5cpp::Dataset necro_fraction_ds = tumorgroup->open_dataset("necro");
+    h5cpp::Group   ldgroup        = tumor_fraction_ds.get_file().root().open_group(tumor_fraction_ds.attrs().get<string>("LATTICE_PATH"));
+
+    Array3df cell_vol_fraction;
+    Array3df tumor_fraction;
+    Array3df necro_fraction;
+    LatticeDataQuad3d fieldld;
+    ReadHdfLd(ldgroup, fieldld);
+    ReadArray3D(cell_vol_fraction_ds, cell_vol_fraction);
+    ReadArray3D(tumor_fraction_ds, tumor_fraction);
+    ReadArray3D(necro_fraction_ds, necro_fraction);
+
+    phases = TissuePhases(3, grid.Box());
+
+    #pragma omp parallel
+    {
+      BOOST_FOREACH(const BBox3 &bbox, mtboxes.getCurrentThreadRange())
+      {
+        FOR_BBOX3(p, bbox)
+        {
+          //interpolate fields to point p on the lattice
+          float this_cell_vol_fraction = FieldInterpolate::ValueAveraged(cell_vol_fraction, fieldld, FieldInterpolate::Const(0.f), grid.ld.LatticeToWorld(p));
+          float this_tumor_fraction = FieldInterpolate::ValueAveraged(tumor_fraction, fieldld, FieldInterpolate::Const(0.f), grid.ld.LatticeToWorld(p));
+          float this_necro_fraction = FieldInterpolate::ValueAveraged(necro_fraction, fieldld, FieldInterpolate::Const(0.f), grid.ld.LatticeToWorld(p));
+    
+          phases.phase_arrays[TISSUE](p) = (1.f-this_tumor_fraction)*this_cell_vol_fraction;
+          phases.phase_arrays[TCS](p) = this_tumor_fraction*this_cell_vol_fraction;
+          phases.phase_arrays[DEAD](p) = this_necro_fraction*this_cell_vol_fraction;
+        }
+      }
+    }
+  }
+}
 
 double EstimateTumorRadius(const ContinuumGrid& grid, const DomainDecomposition& mtboxes, const Levelset& ls)
 {

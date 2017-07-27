@@ -41,6 +41,77 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace DetailedPO2
 {
+// #define PT_ASSIGN(name) boost::property_tree::get(name, #name, pt)
+// #define AS_PTREE(name) pt.put(#name, name);
+void Parameters::assign(const ptree &pt)
+{
+  #define DOPT(name) boost::property_tree::get(name, #name, pt)
+  
+  DOPT(po2init_r0);
+  DOPT(po2init_dr);
+  DOPT(po2init_cutoff);
+  DOPT(plasma_solubility); 
+  ////DOPT(c0);
+  //DOPT(S_n);
+  DOPT(sat_curve_exponent);
+  //DOPT(S_p50);
+  DOPT(sat_curve_p50);
+  //DOPT(D_tissue);
+  //DOPT(kd);
+  DOPT(D_plasma);
+  DOPT(tissue_solubility);
+  //#dM = 0.05,
+  ////DOPT(rd_norm);
+  ////DOPT(rd_tum);
+  ////DOPT(rd_necro);
+  DOPT(max_iter);
+  DOPT(axial_integration_step_factor);
+  DOPT(debug_zero_o2field);
+  //DOPT(grid_lattice_const);
+  
+  DOPT(massTransferCoefficientModelNumber);
+  DOPT(conductivity_coeff1);
+  DOPT(conductivity_coeff2);
+  DOPT(conductivity_coeff3);
+  DOPT(detailedO2name); 
+  DetailedPO2::Parameters::UpdateInternalValues();
+  #undef DOPT
+}
+ptree Parameters::as_ptree() const
+{
+  boost::property_tree::ptree pt;
+  #define DOPT(name) pt.put(#name, name)
+  DOPT(po2init_r0);
+  DOPT(po2init_dr);
+  DOPT(po2init_cutoff);
+  DOPT(plasma_solubility); 
+  ////DOPT(c0);
+  //DOPT(S_n);
+  DOPT(sat_curve_exponent);
+  //DOPT(S_p50);
+  DOPT(sat_curve_p50);
+  //DOPT(D_tissue);
+  //DOPT(kd);
+  DOPT(D_plasma);
+  DOPT(tissue_solubility);
+  //#dM = 0.05,
+  ////DOPT(rd_norm);
+  ////DOPT(rd_tum);
+  ////DOPT(rd_necro);
+  DOPT(max_iter);
+  DOPT(axial_integration_step_factor);
+  DOPT(debug_zero_o2field);
+  //DOPT(grid_lattice_const);
+  
+  DOPT(massTransferCoefficientModelNumber);
+  DOPT(conductivity_coeff1);
+  DOPT(conductivity_coeff2);
+  DOPT(conductivity_coeff3);
+  DOPT(detailedO2name);
+  #undef DOPT
+  return pt;
+}
+  
 void WriteOutput(h5cpp::Group basegroup,
                  const VesselList3d &vl,
                  const Parameters &params,
@@ -67,47 +138,8 @@ double Parameters::Permeability(double r, double w) const
 }
 #endif
 
-/** 
- * @brief Decides which tumor type is present
- * myexception is thrown once no type is recognized
- */
-class myexception: public std::exception
-{
-  virtual const char* what() const throw()
-  {
-    return "tumor type not implemented on cpp side";
-  }
-};
-TumorTypes determineTumorType(h5cpp::Group &tumorgroup)
-{
-// #ifdef DEBUG
-//     cout<<format("tumorgroup.attrs().exists(\"TYPE\"): %s\n") % (bool)(tumorgroup.attrs().exists("TYPE"));
-//     cout<<format("tumorgroup.attrs().get<string>(\"TYPE\"): %s\n") % tumorgroup.attrs().get<string>("TYPE");
-// #endif
-  
-  TumorTypes tumortype;  
-  try
-    {
-      string detailedTumorDescription = tumorgroup.attrs().get<string>("TYPE");
-      if( detailedTumorDescription == "faketumor" )
-      {
-	tumortype = TumorTypes::FAKE;
-      }
-      else if ( detailedTumorDescription == "BulkTissueFormat1")
-      {
-	tumortype = TumorTypes::BULKTISSUE;
-      }
-      else
-      {
-	throw myexception();
-      }
-    }
-    catch(std::exception& e)
-    {
-      cout << "reading tumor type from hdf failed because of: " << e.what() << '\n';
-    }
-  return tumortype;
-}
+
+
 
 /**
  * @brief Saturation of dependent on pressure
@@ -167,12 +199,12 @@ Parameters::Parameters()
   transvascular_ring_size = 0.5;
   tissue_boundary_condition_flags = 0; // neumann bc
   tissue_boundary_value = 0.;
-  po2_mmcons_m0[NORMAL] = 4.5/6.e4;
-  po2_mmcons_k[NORMAL]  = 4.; // mmHg
-  po2_mmcons_m0[TUMOR] = 4.5/6.e4*2.;
-  po2_mmcons_k[TUMOR]  = 2.; // mmHg
-  po2_mmcons_m0[NECRO] = 0.;
-  po2_mmcons_k[NECRO]  = 2.; // mmHg
+  po2_mmcons_m0[TISSUE] = 4.5/6.e4;
+  po2_mmcons_k[TISSUE]  = 4.; // mmHg
+  po2_mmcons_m0[TCS] = 4.5/6.e4*2.;
+  po2_mmcons_k[TCS]  = 2.; // mmHg
+  po2_mmcons_m0[DEAD] = 0.;
+  po2_mmcons_k[DEAD]  = 2.; // mmHg
   michaelis_menten_uptake = false;
   plasma_solubility = 3.1e-5;
   tissue_solubility = 2.8e-5;
@@ -547,6 +579,7 @@ double ComputeCircumferentialMassTransferCoeff(const Parameters &params, double 
     const double p1 = params.conductivity_coeff2;
     const double p2 = params.conductivity_coeff3;
     const double p = p0 + std::exp(-r/p1)*p2;
+    cout << format("p0 %f, p1 %f, p2 %f, p %f\n") % p0 % p1 % p2 % p;
     return my::mconst::pi2()*r*p;
   }
 }
@@ -966,14 +999,10 @@ static void NumericallyIntegrateVesselPO2(const Parameters &params,
     while(true)
     {
       double weight = (i==0 || i==Nsteps) ? dx*0.5 : dx;
-      
       computeFlux.StartNewPosition(x);
       callback(i, Nsteps+1, x, weight, po2, computeFlux);
-
       if (i == Nsteps) break;
-      
       vascularPropagationModel->doStep(po2, x, dx);
-
       OUTPUT_PO2MEASURECOMP(printf("x = %lf, po2 = %lf, extpo2 = %f\n", x, po2, lookup_po2field(x));)
       i += 1;
     }
@@ -1001,7 +1030,7 @@ void IntegrateVesselPO2(const Parameters &params,
 {
   my::Time t_;
   DynArray<bool> nodal_o2ready(vl.GetNCount(), false);
-
+  
   BOOST_FOREACH(const VesselNode* nd, arterial_roots)
   {//loop over all arterial roots, we follow the blood stream starting here
     nodal_o2ready[nd->Index()] = true;
@@ -1013,10 +1042,9 @@ void IntegrateVesselPO2(const Parameters &params,
       vesselpo2[v->Index()][side_index] = params.PInit(v->r);
     }
   }
-
+  
   std::unique_ptr<VascularPO2PropagationModel> vascularPO2PropagationModel = VascularPO2PropagationModel::allocate(params);
   my::Averaged<double> stats;
-  
   BOOST_FOREACH(const Vessel* v, sorted_vessels)
   {
     if (!v->IsCirculated()) //setting not perufded vessels to zero.
@@ -1025,7 +1053,6 @@ void IntegrateVesselPO2(const Parameters &params,
       vesselpo2[v->Index()][1] = 0.;
       continue;
     }
-    
     const VesselNode* upstream_node = GetUpstreamNode(v);
     if (!nodal_o2ready[upstream_node->Index()])
     {
@@ -1035,25 +1062,24 @@ void IntegrateVesselPO2(const Parameters &params,
     const int side_idx = (upstream_node == v->NodeA()) ? 0 : 1;
     const double po2start = vesselpo2[v->Index()][side_idx];//read out starting point
     double po2end = NANd();
-
     auto sourceGenerationCallback = [&](int i, int numPoints, double x, double weight, double po2, ComputeRadialFluxes &computeFlux) -> void
     {
       computeFlux.AddSourceContributionsTo(matrix_builder, po2, weight);
     };
-    
 
     OUTPUT_PO2MEASURECOMP(printf("sim %i, start = %lf\n",v->Index(),po2start);)
-
+    
     NumericallyIntegrateVesselPO2(params, phases, grid, extpo2, vascularPO2PropagationModel.get(), vl, v, upstream_node, po2start, sourceGenerationCallback, po2end, world);
-
+    
     vesselpo2[v->Index()][side_idx  ] = po2start;
     vesselpo2[v->Index()][side_idx^1] = po2end;
 
     stats.Add(po2start);
     stats.Add(po2end);
+    
     OUTPUT_PO2INTEGRATION(fprintf(stderr, "v%i (%i,%i) -> (%f, %f)\n", v->Index(), v->NodeA()->Index(), v->NodeB()->Index(), po2start, po2);)
   }//for each vessel in sorted_vessels list
-
+  
   if (params.loglevel > 0)
     cout << format("IntegrateVesselPO2: %s in %f ms") % stats % (my::Time()-t_).to_ms() << endl;
 }
@@ -1327,7 +1353,6 @@ int DetailedP02Sim::run(VesselList3d &vl)
 #else
   tissue_diff_matrix_builder.Init27Point(grid.ld, grid.dim);
 #endif
-  
   //buffer within consecutive runs
   Array3df last_po2field(grid.Box());
   //maybe 0 or prams.po2init_cutoff
@@ -1368,7 +1393,6 @@ int DetailedP02Sim::run(VesselList3d &vl)
      */
     //IntegrateVesselPO2(params, vesselpo2, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
     IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
-
     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
     {
       h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
@@ -1380,7 +1404,6 @@ int DetailedP02Sim::run(VesselList3d &vl)
                   grid, po2field,
                   tissue_diff_matrix_builder);
     }
-    
     //bool keep_preconditioner = (iteration_num>2 && tissue_diff_solver.iteration_count<25);
     bool keep_preconditioner = true;
     
@@ -1754,75 +1777,6 @@ void TestSingleVesselPO2Integration()
   h5cpp::Group root = f.root();
   h5cpp::create_dataset(root, "data", h5cpp::Dataspace::simple_dims(N, 3), get_ptr(xyz));
 #endif
-}
-
-void SetupTissuePhases(DetailedPO2::TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, boost::optional<h5cpp::Group> tumorgroup)
-{
-  //h5cpp::Group   tumorgroup      = PythonToCppGroup(py_tumorgroup);
-  //if (tumorgroup.attrs().exists("TYPE") && tumorgroup.attrs().get<string>("TYPE")=="faketumor")
-  if( !tumorgroup )
-  {
-    // if there is no tumorgroup provided, we fill everything with normal tissue
-    phases = DetailedPO2::TissuePhases(1, grid.Box());
-    phases.phase_arrays[DetailedPO2::NORMAL].fill(1.);
-  }
-  else if( determineTumorType(*tumorgroup) == TumorTypes::FAKE)
-  {
-    //there is a faketumor group provided
-    double tumor_radius = tumorgroup->attrs().get<double>("TUMOR_RADIUS");
-    phases = DetailedPO2::TissuePhases(2, grid.Box());
-    #pragma omp parallel
-    {
-      BOOST_FOREACH(const BBox3 &bbox, mtboxes.getCurrentThreadRange())
-      {
-        FOR_BBOX3(p, bbox)
-        {
-          Float3 wp =  grid.ld.LatticeToWorld(p);
-          double r = wp.norm();
-          double f = my::smooth_heaviside_sin(-r+tumor_radius, grid.Spacing()); // is = 1 within the tumor
-          phases.phase_arrays[DetailedPO2::NORMAL](p) = 1.f-f;
-          phases.phase_arrays[DetailedPO2::TUMOR](p) = f;
-        }
-      }
-    }
-  }
-  else if (determineTumorType(*tumorgroup) == TumorTypes::BULKTISSUE)
-  {
-    //there is a bulktissue tumor group provided
-    h5cpp::Dataset cell_vol_fraction_ds = tumorgroup->open_dataset("conc");
-    h5cpp::Dataset tumor_fraction_ds = tumorgroup->open_dataset("ptc");
-    h5cpp::Dataset necro_fraction_ds = tumorgroup->open_dataset("necro");
-    h5cpp::Group   ldgroup        = tumor_fraction_ds.get_file().root().open_group(tumor_fraction_ds.attrs().get<string>("LATTICE_PATH"));
-
-    Array3df cell_vol_fraction;
-    Array3df tumor_fraction;
-    Array3df necro_fraction;
-    LatticeDataQuad3d fieldld;
-    ReadHdfLd(ldgroup, fieldld);
-    ReadArray3D(cell_vol_fraction_ds, cell_vol_fraction);
-    ReadArray3D(tumor_fraction_ds, tumor_fraction);
-    ReadArray3D(necro_fraction_ds, necro_fraction);
-
-    phases = DetailedPO2::TissuePhases(3, grid.Box());
-
-    #pragma omp parallel
-    {
-      BOOST_FOREACH(const BBox3 &bbox, mtboxes.getCurrentThreadRange())
-      {
-        FOR_BBOX3(p, bbox)
-        {
-          //interpolate fields to point p on the lattice
-          float this_cell_vol_fraction = FieldInterpolate::ValueAveraged(cell_vol_fraction, fieldld, FieldInterpolate::Const(0.f), grid.ld.LatticeToWorld(p));
-          float this_tumor_fraction = FieldInterpolate::ValueAveraged(tumor_fraction, fieldld, FieldInterpolate::Const(0.f), grid.ld.LatticeToWorld(p));
-          float this_necro_fraction = FieldInterpolate::ValueAveraged(necro_fraction, fieldld, FieldInterpolate::Const(0.f), grid.ld.LatticeToWorld(p));
-    
-          phases.phase_arrays[DetailedPO2::NORMAL](p) = (1.f-this_tumor_fraction)*this_cell_vol_fraction;
-          phases.phase_arrays[DetailedPO2::TUMOR](p) = this_tumor_fraction*this_cell_vol_fraction;
-          phases.phase_arrays[DetailedPO2::NECRO](p) = this_necro_fraction*this_cell_vol_fraction;
-        }
-      }
-    }
-  }
 }
 
 }//namespace DetailedPO2

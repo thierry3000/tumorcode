@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "../python_krebsutils/python-helpers.h"
+#include "../python_krebsutils/python_helpers.h"
 #include "vesselgen/vesselgen.h"
 #include "calcflow.h"
 #include <boost/property_tree/info_parser.hpp>
@@ -39,7 +39,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef MILOTTI_MTS
   #include "faketum_mts.h"
-  #include "../detailedO2/oxygen_model2.h"
+  #ifdef USE_DETAILED_O2
+    #include "../detailedO2/oxygen_model2.h"
+  #endif
 #endif
 
 #ifdef USE_ADAPTION
@@ -48,24 +50,123 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace py = boost::python;
 
+
+
 namespace Tumors{
+  
+void InitSimpleO2ParametersFromPy(O2Model::SimpleO2Params &params, py::dict py_parameters)
+{
+//   #define GET_SimpleO2_PARAM_FROM_DICT(TYPE, NAME) checkedExtractFromDict<TYPE>(py_parameters, NAME);
+//   #define GET_SimpleO2_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters.get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
+//  params.hematocrit_init = GET_SimpleO2_PARAM_FROM_DICT(int, "hematocrit_init");
+  params.hematocrit_init = checkedExtractFromDict<double>(py_parameters,"hematocrit_init");
+  cout<<params.hematocrit_init<<endl;
+//   params.sat_curve_exponent = GET_PO2_PARAM_FROM_DICT(double, "S_n");
+//   params.sat_curve_p50 = GET_PO2_PARAM_FROM_DICT(double, "S_p50");
+//   GET_PO2_PARAM_IF_NONNONE(params.axial_integration_step_factor, double, "axial_integration_step_factor");
+//   GET_PO2_PARAM_IF_NONNONE(params.debug_zero_o2field, bool, "debug_zero_o2field");
+//   GET_PO2_PARAM_IF_NONNONE(params.debug_fn, string, "debug_fn");
+//   GET_PO2_PARAM_IF_NONNONE(params.transvascular_ring_size, double, "transvascular_ring_size");
+//   double kd, rd_norm = 100., rd_tum = 100., rd_necro = 100.;
+//   kd = GET_PO2_PARAM_FROM_DICT(double, "D_tissue");
+//   params.tissue_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_tissue");
+//   params.plasma_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_plasma");
+//   
+//   GET_PO2_PARAM_IF_NONNONE(rd_norm, double, "rd_norm");
+//   GET_PO2_PARAM_IF_NONNONE(rd_tum, double, "rd_tum");
+//   GET_PO2_PARAM_IF_NONNONE(rd_necro, double, "rd_necro");
+//   //rd_tum = GET_PO2_PARAM_FROM_DICT(double, "rd_tum");
+//   //rd_necro = GET_PO2_PARAM_FROM_DICT(double, "rd_necro");
+//   params.SetTissueParamsByDiffusionRadius(kd, params.tissue_solubility, rd_norm, rd_tum, rd_necro);
+//   params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
+//   params.po2init_dr = GET_PO2_PARAM_FROM_DICT(double, "po2init_dr");
+//   params.po2init_cutoff = GET_PO2_PARAM_FROM_DICT(double, "po2init_cutoff");
+//   GET_PO2_PARAM_IF_NONNONE(params.michaelis_menten_uptake, bool, "michaelis_menten_uptake");
+//   GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[DetailedPO2::NORMAL], double, "mmcons_k_norm");
+//   GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[DetailedPO2::TUMOR], double, "mmcons_k_tum");
+//   GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[DetailedPO2::NECRO], double, "mmcons_k_necro");
+//   GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[DetailedPO2::NORMAL], double, "mmcons_m0_norm");
+//   GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[DetailedPO2::TUMOR], double, "mmcons_m0_tum");
+//   GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[DetailedPO2::NECRO], double, "mmcons_m0_necro");
+//   GET_PO2_PARAM_IF_NONNONE(params.haemoglobin_binding_capacity, double, "haemoglobin_binding_capacity");
+//   string bc_type("neumann");
+//   GET_PO2_PARAM_IF_NONNONE(bc_type, string, "tissue_po2_boundary_condition");
+//   if (bc_type == "dirichlet_x") 
+//     params.tissue_boundary_condition_flags = 1; //FiniteVolumeMatrixBuilder;
+//   else if (bc_type == "dirichlet_yz") 
+//     params.tissue_boundary_condition_flags = 2;
+//   else if (bc_type == "dirichlet") 
+//     params.tissue_boundary_condition_flags = 3;
+//   else if (bc_type == "neumann") 
+//     params.tissue_boundary_condition_flags = 0;
+//   else 
+//     throw std::invalid_argument("tissue_po2_boundary_condition must be 'dirichlet','dirichlet_x', 'dirichlet_yz' or 'neumann'");
+//   GET_PO2_PARAM_IF_NONNONE(params.tissue_boundary_value, double, "tissue_boundary_value");
+//   GET_PO2_PARAM_IF_NONNONE(params.extra_tissue_source_linear, double, "extra_tissue_source_linear");
+//   GET_PO2_PARAM_IF_NONNONE(params.extra_tissue_source_const, double, "extra_tissue_source_const");
+//   // required parameters for transvascular transport
+//   params.conductivity_coeff1 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff1"); 
+//   params.conductivity_coeff2 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff2");
+//   params.conductivity_coeff3 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff3");
+//   GET_PO2_PARAM_IF_NONNONE(params.convergence_tolerance, double, "convergence_tolerance");
+//   GET_PO2_PARAM_IF_NONNONE(params.loglevel, int, "loglevel");
+//   GET_PO2_PARAM_IF_NONNONE(params.approximateInsignificantTransvascularFlux, bool, "approximateInsignificantTransvascularFlux");
+//   GET_PO2_PARAM_IF_NONNONE(params.D_plasma, double, "D_plasma");
+//   GET_PO2_PARAM_IF_NONNONE(params.massTransferCoefficientModelNumber, int, "massTransferCoefficientModelNumber");
+#undef GET_SimpleO2_PARAM_FROM_DICT
+#undef GET_SimpleO2_PARAM_IF_NONNONE
+//   params.UpdateInternalValues();
+}  
+  
+  
 #ifdef MILOTTI_MTS
 /** @brief fake tumor with multicellular tumor spheroids
  * here a growing sphere of tumor cells is assumed, no tumor model is used for
  * that. One needs a growing speed
  */
-void run_fakeTumor_mts(const py::str &param_info_str, py::dict py_oxy_parameters)
+void run_fakeTumor_mts(const py::str &param_info_str)
 {
+  ptree pt_params = convertInfoStr(param_info_str, ptree());
   std::cout << "run_fakeTumor_mts on c++ called" << std::endl;
+#ifdef DEBUG
+  std::cout << "with params: " << std::endl;
+  printPtree(pt_params);
+#endif
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   //construct default parameters
-  FakeTum::Parameters defaultParams;
-  printPtree(defaultParams.as_ptree());
-  ptree pt_params = convertInfoStr(param_info_str, defaultParams.as_ptree());
-  printPtree(pt_params);
+  //FakeTum::Parameters defaultParams;
+  //defaultParams.assign(pt_params);
+  //ptree all_pt_params;
+  //all_pt_params.put_child("tumor", defaultParams.as_ptree() );
+  //ptree all_pt_params = convertInfoStr(param_info_str, defaultParams.as_ptree());
+  //printPtree(all_pt_params);
   FakeTumMTS::FakeTumorSimMTS s;
-  DetailedPO2::InitParameters(s.o2_params, py_oxy_parameters);
-  int returnCode = s.run(pt_params);
+#ifdef USE_DETAILED_O2
+  //DetailedPO2::InitParameters(s.o2_params, py_oxy_parameters);
+  //create ptree with default settings!!!
+  ptree detailedO2Settings = s.o2_params.as_ptree();
+  #ifdef DEBUG
+  std::cout << "with detailed params: " << std::endl;
+  printPtree(detailedO2Settings);
+#endif
+  //update read default parameters with read in parameters
+  //boost::property_tree::update(destination, source);
+  boost::property_tree::update(detailedO2Settings, pt_params.get_child("detailedo2"));
+
+  //write the settings to the object!
+  s.o2_params.assign(detailedO2Settings);
+#else
+  //O2Model::SimpleO2Params simpleO2params;
+  //py::dict d = py::extract<py::dict>(py_parameters.attr("simple_o2"));
+  //py::dict d = py_parameters("simple_o2");
+  //InitSimpleO2ParametersFromPy(simpleO2params, d);
+  //all_pt_params.put_child("simple_o2", simpleO2params.as_ptree());
+#endif
+  { //ReleaseGIL unlock(); // allow the python interpreter to do things while this is running
+    int returnCode = s.run(pt_params);
+  }
+  
+  if (PyErr_Occurred() != NULL) return; // don't save stuff
   //return returnCode;
 }
 void export_faketum_mts()
@@ -114,7 +215,7 @@ void run_bulktissue_no_vessels(const py::str &param_info_str)
     all_pt_params.put_child("tumor", pparams.as_ptree());
     all_pt_params.put_child("calcflow", bfparams.as_ptree());
     all_pt_params.put_child("vessels", vessel_params.as_ptree());
-    all_pt_params.put_child("prez_o2", prezO2params.as_ptree());
+    all_pt_params.put_child("simple_o2", prezO2params.as_ptree());
     //all_pt_params.put_child("adaption", adaption_params.as_ptree());
     cout.rdbuf(my::log().rdbuf());
     {
@@ -171,6 +272,7 @@ void export_bulktissue_with_vessels()
 }
 
 }//end namespace Tumors
+
 #ifdef DEBUG
 BOOST_PYTHON_MODULE(libtumors_d)
 #else
@@ -194,3 +296,17 @@ BOOST_PYTHON_MODULE(libtumors_)
   Tumors::export_faketum_mts();
 #endif
 }
+
+
+
+
+template<class T>
+inline boost::optional<T> getOptional(const char* name, py::dict &d)
+{
+  py::object o = d.get(name);
+  if (!o.is_none())
+    return boost::optional<T>(py::extract<T>(o));
+  else
+    return boost::optional<T>();
+}
+

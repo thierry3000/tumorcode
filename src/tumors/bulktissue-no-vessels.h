@@ -51,11 +51,7 @@ struct State
  *    parameter handling
  * -----------------------------*/
 
-enum TissueId {
-  TCS = 0,
-  DEAD = 1,
-  TISSUE = 2,
-};
+
 
 /*
 parameters:

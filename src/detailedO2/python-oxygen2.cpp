@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-#include "../python_krebsutils/python-helpers.h"
+#include "../python_krebsutils/python_helpers.h"
 //#include "numpy.hpp"
 #include "oxygen_model2.h"
 #include "calcflow.h"
@@ -50,37 +50,51 @@ namespace h5 = h5cpp;
 namespace DetailedPO2
 {
 
-
-
-template<class T>
-static T checkedExtractFromDict(const py::dict &d, const char* name)
-{
-  try
-  {
-    return py::extract<T>(d.get(name));
-  }
-  catch (const py::error_already_set &e) 
-  {
-    std::cerr << format("unable to extract parameter '%s': ") % name;
-    throw e; // don't every try to handle this!
-  }
-}
-
 void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
 {
 #define GET_PO2_PARAM_FROM_DICT(TYPE, NAME) checkedExtractFromDict<TYPE>(py_parameters, NAME);
 #define GET_PO2_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters.get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
+  double kd, rd_norm = 100., rd_tum = 100., rd_necro = 100.;
+  kd = GET_PO2_PARAM_FROM_DICT(double, "D_tissue");
+  params.SetTissueParamsByDiffusionRadius(kd, params.tissue_solubility, rd_norm, rd_tum, rd_necro);
+  params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
+  params.po2init_dr = GET_PO2_PARAM_FROM_DICT(double, "po2init_dr");
+  params.po2init_cutoff = GET_PO2_PARAM_FROM_DICT(double, "po2init_cutoff");
+  
+  params.tissue_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_tissue");
+  params.plasma_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_plasma");
   params.max_iter = GET_PO2_PARAM_FROM_DICT(int, "max_iter");
-  params.sat_curve_exponent = GET_PO2_PARAM_FROM_DICT(double, "S_n");
+  //params.sat_curve_exponent = GET_PO2_PARAM_FROM_DICT(double, "S_n");
   params.sat_curve_p50 = GET_PO2_PARAM_FROM_DICT(double, "S_p50");
+  params.conductivity_coeff1 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff1"); 
+  params.conductivity_coeff2 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff2");
+  params.conductivity_coeff3 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff3");
+  
   GET_PO2_PARAM_IF_NONNONE(params.axial_integration_step_factor, double, "axial_integration_step_factor");
   GET_PO2_PARAM_IF_NONNONE(params.debug_zero_o2field, bool, "debug_zero_o2field");
   GET_PO2_PARAM_IF_NONNONE(params.debug_fn, string, "debug_fn");
   GET_PO2_PARAM_IF_NONNONE(params.transvascular_ring_size, double, "transvascular_ring_size");
-  double kd, rd_norm = 100., rd_tum = 100., rd_necro = 100.;
-  kd = GET_PO2_PARAM_FROM_DICT(double, "D_tissue");
-  params.tissue_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_tissue");
-  params.plasma_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_plasma");
+  GET_PO2_PARAM_IF_NONNONE(rd_norm, double, "rd_norm");
+  GET_PO2_PARAM_IF_NONNONE(rd_tum, double, "rd_tum");
+  GET_PO2_PARAM_IF_NONNONE(rd_necro, double, "rd_necro");
+  GET_PO2_PARAM_IF_NONNONE(params.michaelis_menten_uptake, bool, "michaelis_menten_uptake");
+  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[TISSUE], double, "mmcons_k_norm");
+  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[TCS], double, "mmcons_k_tum");
+  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[DEAD], double, "mmcons_k_necro");
+  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[TISSUE], double, "mmcons_m0_norm");
+  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[TCS], double, "mmcons_m0_tum");
+  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[DEAD], double, "mmcons_m0_necro");
+  GET_PO2_PARAM_IF_NONNONE(params.haemoglobin_binding_capacity, double, "haemoglobin_binding_capacity");
+  string bc_type("neumann");
+  GET_PO2_PARAM_IF_NONNONE(bc_type, string, "tissue_po2_boundary_condition");
+  GET_PO2_PARAM_IF_NONNONE(params.tissue_boundary_value, double, "tissue_boundary_value");
+  GET_PO2_PARAM_IF_NONNONE(params.extra_tissue_source_linear, double, "extra_tissue_source_linear");
+  GET_PO2_PARAM_IF_NONNONE(params.extra_tissue_source_const, double, "extra_tissue_source_const");
+  GET_PO2_PARAM_IF_NONNONE(params.convergence_tolerance, double, "convergence_tolerance");
+  GET_PO2_PARAM_IF_NONNONE(params.loglevel, int, "loglevel");
+  GET_PO2_PARAM_IF_NONNONE(params.approximateInsignificantTransvascularFlux, bool, "approximateInsignificantTransvascularFlux");
+  GET_PO2_PARAM_IF_NONNONE(params.D_plasma, double, "D_plasma");
+  GET_PO2_PARAM_IF_NONNONE(params.massTransferCoefficientModelNumber, int, "massTransferCoefficientModelNumber");
 //   try 
 //   {
 //     kd = GET_PO2_PARAM_FROM_DICT(double, "D_tissue");
@@ -109,25 +123,12 @@ void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
 //     params.plasma_solubility = GET_PO2_PARAM_FROM_DICT(double, "alpha_p");
 //   }
   
-  GET_PO2_PARAM_IF_NONNONE(rd_norm, double, "rd_norm");
-  GET_PO2_PARAM_IF_NONNONE(rd_tum, double, "rd_tum");
-  GET_PO2_PARAM_IF_NONNONE(rd_necro, double, "rd_necro");
+  
   //rd_tum = GET_PO2_PARAM_FROM_DICT(double, "rd_tum");
   //rd_necro = GET_PO2_PARAM_FROM_DICT(double, "rd_necro");
-  params.SetTissueParamsByDiffusionRadius(kd, params.tissue_solubility, rd_norm, rd_tum, rd_necro);
-  params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
-  params.po2init_dr = GET_PO2_PARAM_FROM_DICT(double, "po2init_dr");
-  params.po2init_cutoff = GET_PO2_PARAM_FROM_DICT(double, "po2init_cutoff");
-  GET_PO2_PARAM_IF_NONNONE(params.michaelis_menten_uptake, bool, "michaelis_menten_uptake");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[DetailedPO2::NORMAL], double, "mmcons_k_norm");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[DetailedPO2::TUMOR], double, "mmcons_k_tum");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[DetailedPO2::NECRO], double, "mmcons_k_necro");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[DetailedPO2::NORMAL], double, "mmcons_m0_norm");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[DetailedPO2::TUMOR], double, "mmcons_m0_tum");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[DetailedPO2::NECRO], double, "mmcons_m0_necro");
-  GET_PO2_PARAM_IF_NONNONE(params.haemoglobin_binding_capacity, double, "haemoglobin_binding_capacity");
-  string bc_type("neumann");
-  GET_PO2_PARAM_IF_NONNONE(bc_type, string, "tissue_po2_boundary_condition");
+  
+  
+  
   if (bc_type == "dirichlet_x") 
     params.tissue_boundary_condition_flags = 1; //FiniteVolumeMatrixBuilder;
   else if (bc_type == "dirichlet_yz") 
@@ -138,18 +139,10 @@ void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
     params.tissue_boundary_condition_flags = 0;
   else 
     throw std::invalid_argument("tissue_po2_boundary_condition must be 'dirichlet','dirichlet_x', 'dirichlet_yz' or 'neumann'");
-  GET_PO2_PARAM_IF_NONNONE(params.tissue_boundary_value, double, "tissue_boundary_value");
-  GET_PO2_PARAM_IF_NONNONE(params.extra_tissue_source_linear, double, "extra_tissue_source_linear");
-  GET_PO2_PARAM_IF_NONNONE(params.extra_tissue_source_const, double, "extra_tissue_source_const");
+  
   // required parameters for transvascular transport
-  params.conductivity_coeff1 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff1"); 
-  params.conductivity_coeff2 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff2");
-  params.conductivity_coeff3 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff3");
-  GET_PO2_PARAM_IF_NONNONE(params.convergence_tolerance, double, "convergence_tolerance");
-  GET_PO2_PARAM_IF_NONNONE(params.loglevel, int, "loglevel");
-  GET_PO2_PARAM_IF_NONNONE(params.approximateInsignificantTransvascularFlux, bool, "approximateInsignificantTransvascularFlux");
-  GET_PO2_PARAM_IF_NONNONE(params.D_plasma, double, "D_plasma");
-  GET_PO2_PARAM_IF_NONNONE(params.massTransferCoefficientModelNumber, int, "massTransferCoefficientModelNumber");
+  
+  
 #undef GET_PO2_PARAM_FROM_DICT
 #undef GET_PO2_PARAM_IF_NONNONE
   params.UpdateInternalValues();
@@ -210,16 +203,20 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
   //cout << format("in c++: %.20f %.20f %.20f\n") % params.conductivity_coeff1 % params.conductivity_coeff2 % params.conductivity_coeff_gamma;
   boost::optional<h5cpp::Group> tumorgroup;
   //h5cpp::Group   *tumorgroup = new h5cpp::Group();
+  DetailedP02Sim s;
   if (!py_tumorgroup.is_none())
   {
     tumorgroup = PythonToCppGroup(py_tumorgroup);
+    
   }
+  
+  s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup);
 //   else
 //   {
 //     tumorgroup = nullptr;
 //   }
-  DetailedP02Sim s;
-  s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup);
+  
+  
   
   { //ReleaseGIL unlock(); // allow the python interpreter to do things while this is running
   /**
@@ -342,9 +339,9 @@ static py::object PyComputeUptake(nm::array py_po2field, const LatticeDataQuad3d
   grid.init(field_ld, field_ld.Size()[2]<=1 ? 2 : 3);
   DomainDecomposition mtboxes;
   mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
-  DetailedPO2::TissuePhases phases;
+  TissuePhases phases;
   /* this needs to to properly done later*/
-  boost::optional<h5cpp::Group> tumorgroup;
+  h5cpp::Group tumorgroup;
   if (!py_tumorgroup.is_none())
   {
     tumorgroup = PythonToCppGroup(py_tumorgroup);
@@ -420,8 +417,8 @@ py::object PySampleVessels(py::object py_vesselgroup, py::object py_tumorgroup, 
   ContinuumGrid grid(field_ld);
   DomainDecomposition mtboxes(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
   
-  DetailedPO2::TissuePhases phases;//Declaration
-  boost::optional<h5cpp::Group> tumorgroup;
+  TissuePhases phases;//Declaration
+  h5cpp::Group tumorgroup;
   if (!py_tumorgroup.is_none())
   {
     tumorgroup = PythonToCppGroup(py_tumorgroup);
@@ -506,9 +503,9 @@ py::object PySampleVesselsWorld(py::object py_vesselgroup, py::object py_tumorgr
   ContinuumGrid grid(field_ld);
   DomainDecomposition mtboxes(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
   
-  DetailedPO2::TissuePhases phases;//Declaration
+  TissuePhases phases;//Declaration
   
-  boost::optional<h5cpp::Group> tumorgroup;
+  h5cpp::Group tumorgroup;
   if (!py_tumorgroup.is_none())
   {
     tumorgroup = PythonToCppGroup(py_tumorgroup);

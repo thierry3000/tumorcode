@@ -42,11 +42,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace BulkTissue
 {
-enum TissueId {
-  TCS = 0,
-  DEAD = 1,
-  TISSUE = 2,
-};
+// enum TissueId {
+//   TCS = 0,
+//   DEAD = 1,
+//   TISSUE = 2,
+// };
 
 static const string tissue_name[] = {
   "tumor",
@@ -69,13 +69,14 @@ struct Params
   Int3 lattice_size;
   bool vessel_volume_exclusion;
   BloodFlowParameters bfparams;
-  double
-         reference_intercapillary_distance,
-         o2_range[3],
-         o2_cons_coeff[3],
-         capillary_wall_permeability,
-         o2_level_normal,
-         hematocrit_init;
+  O2Model::SimpleO2Params o2Params;
+//   double
+//          reference_intercapillary_distance;
+//          o2_range[3],
+//          o2_cons_coeff[3]
+//          capillary_wall_permeability,
+//          o2_level_normal,
+//          hematocrit_init;
   
   Params();
   static void update_ptree(ptree &dst, const ptree &src);

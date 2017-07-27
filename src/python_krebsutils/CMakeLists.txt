@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8.8)
 include_directories(../common)
 
 add_library(krebs_ SHARED
-            mainboost.cpp pylatticedata.cpp python-helpers.cpp
+            mainboost.cpp pylatticedata.cpp python_helpers.cpp
             povray_export.cpp samplevessels.cpp python_tumormodel_tests.cpp
             python_numericaltools_tests.cpp python_vesselgen.cpp
             python_calcflow.cpp python_interpolate_between_vessels.cpp
@@ -22,7 +22,7 @@ if (False)
 else()
   target_link_libraries(krebs_ common vesselgenlib ${myLibs} )
 endif()
-set_target_properties(krebs_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+#set_target_properties(krebs_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 install(TARGETS krebs_
 	LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)

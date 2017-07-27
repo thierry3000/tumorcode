@@ -2,7 +2,7 @@
 This file is part of tumorcode project.
 (http://www.uni-saarland.de/fak7/rieger/homepage/research/tumor/tumor.html)
 
-Copyright (C) 2016  Michael Welter and Thierry Fredrich
+Copyright (C) 2016 Thierry Fredrich
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 FakeTumMTS::Parameters::Parameters()
 {
   rGf = 200;
+  gf_production_threshold = 0.1;
   out_intervall = 100;
   apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
   tend = 1000;
@@ -45,19 +46,23 @@ FakeTumMTS::Parameters::Parameters()
 void FakeTumMTS::Parameters::assign(const ptree &pt)
 {
   #define DOPT(name) boost::property_tree::get(name, #name, pt)
+  int lattice_size_per_single_dim;
   DOPT(paramset_name);
   DOPT(num_threads);
   DOPT(out_intervall);
-  DOPT(apply_adaption_intervall);
   DOPT(tend);
   DOPT(dt);
   DOPT(message);
   DOPT(fn_out);
   DOPT(fn_vessel);
   DOPT(rGf);
+  DOPT(gf_production_threshold);
   DOPT(tumor_radius);
   DOPT(tumor_speed);
   DOPT(stopping_radius_fraction);
+  DOPT(lattice_scale);
+  boost::property_tree::get(lattice_size_per_single_dim, "lattice_size", pt);
+  lattice_size = {lattice_size_per_single_dim,lattice_size_per_single_dim,lattice_size_per_single_dim};
   //DOPT(tissuePressureDistribution);
   string s = pt.get<string>("tissuePressureDistribution");
   if (s == "sphere") tissuePressureDistribution = TISSUE_PRESSURE_SPHERE;
@@ -65,13 +70,15 @@ void FakeTumMTS::Parameters::assign(const ptree &pt)
   else throw std::runtime_error("unknown tissuePressureDistribution "+s);
   DOPT(tissuePressureWidth);
   DOPT(tissuePressureCenterFraction);
-  #undef DOPT
+  
   const auto bfparamsPtree = pt.get_child_optional("calcflow");
   if (bfparamsPtree) bfparams.assign(*bfparamsPtree);
 #ifdef USE_ADAPTION
+  DOPT(apply_adaption_intervall);
   const auto adapt_paramsPtree = pt.get_child_optional("adaption");
   if (adapt_paramsPtree) adap_params.assign(*adapt_paramsPtree);
 #endif
+  #undef DOPT
 }
 
 ptree FakeTumMTS::Parameters::as_ptree() const
@@ -88,6 +95,7 @@ ptree FakeTumMTS::Parameters::as_ptree() const
   DOPT(fn_out);
   DOPT(fn_vessel);
   DOPT(rGf);
+  DOPT(gf_production_threshold);
   DOPT(tumor_radius);
   DOPT(tumor_speed);
   DOPT(stopping_radius_fraction);
@@ -149,15 +157,14 @@ int FakeTumMTS::FakeTumorSimMTS::run(const ptree &pt_params)
 {
   {
     FakeTumMTS::Parameters::update_ptree(all_pt_params, pt_params);
-    this->params.assign(all_pt_params);
+    cout<<"print inside"<<endl;
+    printPtree(pt_params);
+    this->params.assign(pt_params);
   }
   // direct cout through log
   cout.rdbuf(my::log().rdbuf());
   {
-#ifdef USE_ADAPTION
-    // BAD HACK
-    this->params.adap_params.radMin_for_kill = this->model.params.radMin;
-#endif
+
     my::SetNumThreads(params.num_threads);
     
     h5cpp::File file(params.fn_vessel, "r");
@@ -200,6 +207,7 @@ int FakeTumMTS::FakeTumorSimMTS::run(const ptree &pt_params)
   double next_adaption_time = 0.;
   
   /**   INIT Milotti   */
+#ifndef undo
   int run_type = 1; //command file
   bool terminal = false;
   string run_name;
@@ -225,6 +233,8 @@ int FakeTumMTS::FakeTumorSimMTS::run(const ptree &pt_params)
   currentCellsSystem.StepStat( true );			// reset delle statistiche (azzera anche il vettore convergence_fail)
 
   cout << "\nStartup milotti completed" << endl;
+#endif  
+
   
   //for the adaption it could be usefull to have the
   //vessel network after the adaption in the beginning   ---> done automatically since adaption is in tum-only-vessels
@@ -234,20 +244,54 @@ int FakeTumMTS::FakeTumorSimMTS::run(const ptree &pt_params)
 //     writeVesselsafter_initial_adaption = true;
 //   }
   
-//   boost::optional<h5cpp::Group> lastTumorGroupWrittenByFakeTum;
-  h5cpp::Group lastTumorGroupWrittenByFakeTum;
+  boost::optional<h5cpp::Group> lastTumorGroupWrittenByFakeTum;
+  std::string lastTumorGroupWrittenByFakeTumName;
+//   h5cpp::Group lastTumorGroupWrittenByFakeTum;
+  
+#ifdef USE_DETAILED_O2
+//   h5cpp::Group lastTumorGroupWrittenByFakeTum;
   //set up oxygen calculation
-  DetailedPO2::DetailedP02Sim o2_sim;
+  
   // this should be read from file later on
   //DetailedPO2::Parameters oxy_params;
   double grid_lattice_const = 40;
   double safety_layer_size = 120;
   boost::optional<Int3> grid_lattice_size;
+#endif
+  //init continum lattice stuff
+//     Int3 s = params.lattice_size;
+    Int3 s = params.lattice_size;
+    int dim = s[2]<=1 ? (s[1]<=1 ? 1 : 2) : 3;
+    LatticeDataQuad3d field_ld;
+    Bool3 centering = Bool3::mapIndex([=](int i) { return i<dim; });
+    field_ld.Init(params.lattice_size, params.lattice_scale);
+    field_ld.SetCellCentering(centering);
+    field_ld.SetOriginPosition(-field_ld.GetWorldBox().max.cwiseProduct(centering.cast<float>()) * 0.5); // set origin = lower left side
+    grid.init(field_ld, dim);
+    mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
+//     SetupTissuePhases(phases, grid, mtboxes, lastTumorGroupWrittenByFakeTum);//filling
+  
+//   gf_model.init(grid, mtboxes, all_pt_params);
+//   gf_model.initField(state.gffield);
+    
+  oxyops.init(mtboxes, grid.Box(), grid.dim, 2);
+  oxyops.init(state.o2field);
+  glucoseOps.init(mtboxes, grid.Box(), grid.dim, 2);
+  glucoseOps.init(state.glucoseField);
+// //   ptree aNewPtree = glucoseParams.as_ptree();
+//   boost::property_tree::ptree ptr2;
+//   glucoseParams.assigen(ptr2);
+//   ptr2.put("name", "d6");
+  all_pt_params.add_child("glucose" , glucoseParams.as_ptree());
+  last_chem_update = -1;
+  last_vessels_checksum = -1;
+  UpdateVesselVolumeFraction();
   
   while (true)
   {
     if (time >= next_adaption_time - params.dt * 0.1)
     {
+#ifdef USE_ADAPTION
       //do adaption if wanted
       if(model.params.badaption_on_off)
       {
@@ -267,14 +311,24 @@ int FakeTumMTS::FakeTumorSimMTS::run(const ptree &pt_params)
         }
       }
       next_adaption_time += params.apply_adaption_intervall;
+#endif
     }
+#pragma omp barrier
     if (time >= next_output_time - params.dt * 0.1)
     {
+      lastTumorGroupWrittenByFakeTumName = writeOutput();
+      h5::File f(params.fn_out + ".h5", "a");
+      lastTumorGroupWrittenByFakeTum = f.root().open_group(lastTumorGroupWrittenByFakeTumName+"/tumor");
+#ifdef USE_DETAILED_O2
+      {
+        o2_sim.init(o2_params, params.bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum);
+        o2_sim.run(*vl);
+      }
+#else
       
-      lastTumorGroupWrittenByFakeTum = writeOutput();
-      o2_sim.init(o2_params, params.bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum);
-      o2_sim.run(*vl);
       
+#endif 
+      SetupTissuePhases(phases, grid, mtboxes, lastTumorGroupWrittenByFakeTum);//filling
       next_output_time += params.out_intervall;
     }
 
@@ -288,13 +342,15 @@ int FakeTumMTS::FakeTumorSimMTS::run(const ptree &pt_params)
     doStep(params.dt);
     time += params.dt;
     cout << boost::format("advance milotti until: %f") % time;
+#ifndef undo
     //currentCellsSystem.Set_tmax(time);
     doMilottiStep();
+#endif
     ++num_iteration;
   }
-  
+#ifndef undo
   currentCellsSystem.CloseOutputFiles();						// Closing output files
-  
+#endif 
   return 0;
 }
 
@@ -311,9 +367,11 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
 //   //do be implemented
 // #endif
   model.DoStep(dt, &params.bfparams);
+  calcChemFields();
   tumor_radius += dt * params.tumor_speed;
 }
 
+#ifndef undo
 void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
 {
   cout << format("start mts at tumor time: %f\n" ) % time;
@@ -330,13 +388,15 @@ void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
   cout << format(" mts at tumor time: %f\n" ) % time;
 //   //end milotti
 }
+#endif
 
-h5::Group FakeTumMTS::FakeTumorSimMTS::writeOutput()
+std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   //if this is the first output, we have to create the file, otherwise we append
-  h5::File f(params.fn_out, output_num==0 ? "w" : "a");
+  h5::File f(params.fn_out + ".h5", output_num==0 ? "w" : "a");
   h5::Group g, root = f.root();
+  h5::Group g_o2;
 
   h5::Attributes a = root.attrs();
   
@@ -350,32 +410,249 @@ h5::Group FakeTumMTS::FakeTumorSimMTS::writeOutput()
     g = root.create_group("parameters");
     WriteHdfPtree(g.create_group("vessels"), model.params.as_ptree());
     WriteHdfPtree(g, params.as_ptree());
+    g_o2= g.create_group("o2_params");
+    WriteHdfPtree(g_o2, o2_params.as_ptree());
   }
-
-  h5::Group gout = root.create_group(str(format("out%04i") % output_num));
+  std::string tumOutName = str(format("out%04i") % output_num);
+  h5::Group gout = root.create_group(tumOutName);
   a = gout.attrs();
   a.set("time", time);
   a.set("OUTPUT_NUM",output_num);
   
   WriteVesselList3d(*vl, gout.create_group("vessels"));
   {
-    LatticeDataQuad3d ld;
-    SetupFieldLattice(vl->Ld().GetWorldBox(), 3, 100., 0.1 * vl->Ld().Scale(), ld);
-    Array3d<float> tum_field(ld.Box());
-    FOR_BBOX3(p, ld.Box())
+//     LatticeDataQuad3d ld;
+//     SetupFieldLattice(vl->Ld().GetWorldBox(), 3, 100., 0.1 * vl->Ld().Scale(), ld);
+//     Array3d<float> tum_field(ld.Box());
+    Array3d<float> tum_field(grid.ld.Box());
+    FOR_BBOX3(p, grid.ld.Box())
     {
-      float t = getTumorDens(ld.LatticeToWorld(p));
+      float t = getTumorDens(grid.ld.LatticeToWorld(p));
       tum_field(p) = t;
     }
 
     h5::Group field_ld_group = root.require_group("field_ld");
-    if (output_num==0) WriteHdfLd(field_ld_group, ld);
+    if (output_num==0) WriteHdfLd(field_ld_group, grid.ld);
 
     h5::Group gtum = gout.create_group("tumor");
     gtum.attrs().set("TYPE", "faketumor");
     gtum.attrs().set("TUMOR_RADIUS", tumor_radius);
-    WriteScalarField(gtum, "tc_density", tum_field, ld, field_ld_group);
+    WriteScalarField(gtum, "tc_density", tum_field, grid.ld, field_ld_group);
+//     WriteScalarField(gtum, "fieldGf", state.gffield, grid.ld, field_ld_group);
+#ifdef USE_DETAILED_O2
+    //something is different here, I do not know how to handle this 
+//      WriteScalarField(gtum, "fieldDetailedOxy", o2_sim.po2field, o2_sim.grid.ld, field_ld_group);
+#else
+    WriteScalarField(gtum, "fieldOxy", state.o2field, grid.ld, field_ld_group);
+#endif
+    WriteScalarField(gtum, "fieldGlucose", state.glucoseField, grid.ld, field_ld_group);
+//     WriteScalarField(gtum, "fieldOxy", state.o2field, ld, field_ld_group);
+    // vessel continuum
+    UpdateVesselVolumeFraction();
+    WriteScalarField(gtum, "vessel_volume_fraction", vessel_volume_fraction, grid.ld, field_ld_group);
+    WriteScalarField(gtum, "oxy_source_lin", vessel_o2src_clin, grid.ld, field_ld_group);
   }
   ++output_num;
-  return gout;
+  return tumOutName;
 }
+void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
+{
+  {
+    my::log().push("o2:");
+
+    ptree pt_params = make_ptree("preconditioner","multigrid")("output", 1)("max_iter", 100);
+#ifndef USE_DETAILED_O2
+    StationaryDiffusionSolve(grid, mtboxes, state.o2field, boost::bind(&FakeTumorSimMTS::insertO2Coefficients, this, _1, _2, boost::cref(state), _3) , pt_params);
+#endif
+    StationaryDiffusionSolve(grid, mtboxes, state.glucoseField, boost::bind(&FakeTumorSimMTS::insertGlucoseCoefficients, this, _1, _2, boost::cref(state), _3) , pt_params);
+    #pragma omp parallel
+    {
+      BOOST_FOREACH(const BBox3 &bbox, mtboxes.getCurrentThreadRange())
+      {
+        CopyBorder(state.o2field, bbox, grid.Box(), grid.dim, 2);
+      }
+    }
+#ifdef DEBUG
+    //cout << "stats: " << state.o2field.valueStatistics() << endl;
+#endif
+    my::log().pop();
+  }
+
+  {
+//     my::log().push("gf:");
+//     cout << "update" << endl;
+
+    Array3df src;
+    Array3dOps<float>(mtboxes, grid.Box(), grid.dim, 0).init(src, false);
+
+    #pragma omp parallel
+    {
+      BOOST_FOREACH(const BBox3 &bb, mtboxes.getCurrentThreadRange())
+      {
+        //Array3df phases[3];
+        float phases_tcs;
+        //tie(phases[TISSUE], phases[TCS], phases[DEAD]) = tumor_model.getTissuePhases(bb, state.tumor);
+        //phases[TCS] = getTumorDens();
+        FOR_BBOX3(p, bb)
+        {
+          float o2 = state.o2field(p);
+//           phases_tcs = phases.phase_arrays[TCS](p);
+          //phases_tcs = getTumorDens(grid.ld.LatticeToWorld(p));
+//           phases_tcs = getTumorDens(p);
+          src(p) = (o2 < params.gf_production_threshold) ? phases.phase_arrays[TCS](p) : 0;
+//           src(p) = (o2 < params.gf_production_threshold) ? phases_tcs : 0;
+        }
+      }
+    }
+//     gf_model.update(state.gffield, src);
+// #ifdef DEBUG
+//     cout << "stats: " << state.gffield.valueStatistics() << endl;
+// #endif
+//     my::log().pop();
+  }
+  state.chem_checksum++;
+}
+
+#ifndef USE_DETAILED_O2
+void FakeTumMTS::FakeTumorSimMTS::insertO2Coefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder &mb)
+{
+  Array3d<float> l_coeff(bbox),
+                 rhs(bbox);
+  l_coeff[bbox] += vessel_o2src_clin[bbox];
+  rhs[bbox] += vessel_o2src_crhs[bbox];
+
+//   Array3df phases[3];
+//   tie(phases[TISSUE], phases[TCS], phases[DEAD]) = tumor_model.getTissuePhases(bbox, state.tumor);
+// 
+  float hemostatic_cell_frac_norm[3];
+//   hemostatic_cell_frac_norm[TISSUE] = 1./tumor_model.params.ncells_norm;
+//   hemostatic_cell_frac_norm[TCS] = 1./tumor_model.params.ncells_tumor;
+//   hemostatic_cell_frac_norm[DEAD] = 1./tumor_model.params.ncells_tumor;
+  hemostatic_cell_frac_norm[TISSUE] = 1./0.4;
+  hemostatic_cell_frac_norm[TCS] = 1./0.6;
+  hemostatic_cell_frac_norm[DEAD] = 1./0.6;
+//   
+  mb.AddDiffusion(bbox, ConstValueFunctor<float>(1.), -1.);
+  
+  FOR_BBOX3(p, bbox)
+  {
+    const float loc_phases[3] = { phases.phase_arrays[0](p), phases.phase_arrays[1](p), phases.phase_arrays[2](p) };
+//     const float loc_phases = phases.phase_arrays[0](p);
+    //const float loc_phases[3] = { phases[0](p), phases[1](p), phases[2](p) };
+    // we must ensure that the resulting diffusion distance agrees with the parameters which define it
+    // by l = sqrt(c/D). So the effect that the cell volume fraction is about 0.5 must be canceled out.
+    float loc_l_coeff = 0.;
+    for (int i=0; i<3; ++i)
+    {
+      loc_l_coeff -= hemostatic_cell_frac_norm[i] * loc_phases[i] * o2_params.o2_cons_coeff[i];
+    }
+//     loc_l_coeff = hemostatic_cell_frac_norm[0] * loc_phases * o2_params.o2_cons_coeff[0];
+    mb.AddLocally(p, -loc_l_coeff - l_coeff(p), -rhs(p)); /// this was it before
+//     mb.AddLocally(p, - l_coeff(p), -rhs(p));
+  }
+}
+#endif
+
+void FakeTumMTS::FakeTumorSimMTS::UpdateVesselVolumeFraction()
+{
+  my::LogScope log_push_(my::log(), "ves:");
+  
+  // update only when the vessel system state has changed since last update 
+  if (!vessel_volume_fraction.empty() && last_vessels_checksum==state.vessels_checksum)
+    return;
+
+  cout << "volume fraction and o2 sources update!" << endl;
+  
+  VesselsInBoxes vessboxes;
+  SortVesselsIntoMtBoxGrid(grid.ld, *vl, 2, mtboxes, vessboxes);
+  
+  // reinit and fill the array
+  Array3dOps<float> ops(mtboxes, grid.Box(), grid.dim, 0);
+  ops.init(vessel_volume_fraction, true);
+  ops.init(vessel_o2src_clin);
+  ops.init(vessel_o2src_crhs);
+  ops.init(vessel_glucosesrc_clin);
+  ops.init(vessel_glucosesrc_crhs);
+
+#ifndef USE_DETAILED_O2
+  #pragma omp parallel
+  {
+    VesselVolumeGenerator volumegen(*vl, grid.ld, grid.dim, make_ptree("samples_per_cell", 100));
+    
+    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
+    {
+      int dummy_;
+      volumegen.Fill(bbox, vessel_volume_fraction, vessboxes[bbox.global_index], dummy_);
+      O2Model::AddSourceDistribution( bbox, grid.ld, 
+                                      grid.dim, 
+                                      vessel_o2src_clin, 
+                                      vessel_o2src_crhs, 
+                                      vl->Ld(), 
+                                      vessboxes[bbox.global_index], 
+                                      all_pt_params.get_child("simple_o2"));
+    }
+  }
+#endif
+  #pragma omp parallel
+  {
+    VesselVolumeGenerator volumegen(*vl, grid.ld, grid.dim, make_ptree("samples_per_cell", 100));
+    
+    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
+    {
+      int dummy_;
+      volumegen.Fill(bbox, vessel_volume_fraction, vessboxes[bbox.global_index], dummy_);
+      //ptree pt = make_ptree("seed", 123456);
+      GlucoseModel::AddSourceDistribution( bbox, grid.ld, 
+                                      grid.dim, 
+                                      vessel_glucosesrc_clin, 
+                                      vessel_glucosesrc_crhs, 
+                                      vl->Ld(), 
+                                      vessboxes[bbox.global_index], 
+                                      all_pt_params.get_child("glucose"));
+    }
+  }
+
+  last_vessels_checksum = state.vessels_checksum;
+}
+void FakeTumMTS::FakeTumorSimMTS::insertGlucoseCoefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder &mb)
+{
+  Array3d<float> l_coeff(bbox),
+                 rhs(bbox);
+  l_coeff[bbox] += vessel_glucosesrc_clin[bbox];
+  rhs[bbox] += vessel_glucosesrc_crhs[bbox];
+
+//   Array3df phases[3];
+//   tie(phases[TISSUE], phases[TCS], phases[DEAD]) = tumor_model.getTissuePhases(bbox, state.tumor);
+// 
+//   float hemostatic_cell_frac_norm[3];
+// //   hemostatic_cell_frac_norm[TISSUE] = 1./tumor_model.params.ncells_norm;
+// //   hemostatic_cell_frac_norm[TCS] = 1./tumor_model.params.ncells_tumor;
+// //   hemostatic_cell_frac_norm[DEAD] = 1./tumor_model.params.ncells_tumor;
+//   hemostatic_cell_frac_norm[TISSUE] = 1./0.4;
+//   hemostatic_cell_frac_norm[TCS] = 1./0.6;
+//   hemostatic_cell_frac_norm[DEAD] = 1./0.6;
+//   
+  //mb.AddDiffusion(bbox, ConstValueFunctor<float>(1.), -1.);
+  //mb.AddDiffusion<> (bbox, ConstValueFunctor<float>(1.), -params.po2_kdiff);
+  mb.AddDiffusion<> (bbox, ConstValueFunctor<float>(1.), -0.001);
+  
+  FOR_BBOX3(p, bbox)
+  {
+    const float loc_phases[3] = { phases.phase_arrays[0](p), phases.phase_arrays[1](p), phases.phase_arrays[2](p) };
+//     const float loc_phases = phases.phase_arrays[0](p);
+    //const float loc_phases[3] = { phases[0](p), phases[1](p), phases[2](p) };
+    // we must ensure that the resulting diffusion distance agrees with the parameters which define it
+    // by l = sqrt(c/D). So the effect that the cell volume fraction is about 0.5 must be canceled out.
+    float loc_l_coeff = 0.;
+    //assume similar behaviour for all phases
+    for (int i=0; i<3; ++i)
+    {
+      //loc_l_coeff -= hemostatic_cell_frac_norm[i] * loc_phases[i] * o2_params.o2_cons_coeff[i];
+      loc_l_coeff -= 1 * loc_phases[i] * 1;
+    }
+//     loc_l_coeff = hemostatic_cell_frac_norm[0] * loc_phases * o2_params.o2_cons_coeff[0];
+    mb.AddLocally(p, -loc_l_coeff - l_coeff(p), -rhs(p)); /// this was it before
+//     mb.AddLocally(p, - l_coeff(p), -rhs(p));
+  }
+}
+

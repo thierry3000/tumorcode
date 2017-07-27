@@ -38,6 +38,24 @@ namespace nm = boost::python::numeric;
 using boost::format;
 using boost::str;
 
+// template<class T>
+// // int checkedExtractFromDict(const py::dict &d, const char* name);
+// // double checkedExtractFromDict(const py::dict &d, const char* name);
+// static T checkedExtractFromDict(const py::dict &d, const char* name);
+
+template<class T>
+static T checkedExtractFromDict(const py::dict &d, const char* name)
+{
+  try
+  {
+    return py::extract<T>(d.get(name));
+  }
+  catch (const py::error_already_set &e) 
+  {
+    std::cerr << format("unable to extract parameter '%s': ") % name;
+    throw e; // don't every try to handle this!
+  }
+}
 
 
 template<class T, int dim>

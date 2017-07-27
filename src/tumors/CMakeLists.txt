@@ -45,9 +45,10 @@ set(myLibs "${myLibs};krebs_")
 if(USE_ADAPTION)
   set(myLibs "${myLibs};adaption_")
 endif()
-if(USE_MILOTTI_MTS)
-  set(myLibs "${myLibs};detailedo2_")
-endif()
+# if(USE_MILOTTI_MTS)
+#   set(myLibs "${myLibs};detailedo2_")
+# endif()
+
 # if(USE_ADAPTION)
 #   set(link_tumor_to_this 
 #   krebs_
@@ -61,7 +62,12 @@ endif()
 #   )
 # endif()
 message("link_tumor_to_this: ${myLibs} ")
-target_link_libraries(tumors_ ${myLibs})
+# target_link_libraries(tumors_ ${myLibs})
+target_link_libraries(tumors_ krebs_)
+target_link_libraries(tumors_ detailedo2_)
+target_link_libraries(tumors_ milotti_mts)
+target_link_libraries(tumors_ gmp)
+target_link_libraries(tumors_ CGAL)
 
 #set_target_properties(tumors_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
