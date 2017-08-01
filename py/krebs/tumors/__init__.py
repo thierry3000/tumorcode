@@ -138,10 +138,12 @@ def run_faketum_mts(configstring_file):
     configstring = f.read()
   return tumor_cpp.run_faketum_mts_(configstring)
 
-def run_faketum(configstr):
+def run_faketum(configstring_file):
   if qsub.is_client:
     qsub.printClientInfo()
-  return tumor_cpp.run_faketum_(configstr)
+  with open(configstring_file, 'r') as f:
+    configstring = f.read()
+  return tumor_cpp.run_faketum_(configstring)
 
 def run_bulktissue_no_vessels(configstr):
   if qsub.is_client:

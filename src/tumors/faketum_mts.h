@@ -165,6 +165,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
 #ifndef undo
   CellsSystem currentCellsSystem;
   void doMilottiStep();
+  void WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group vesselgroup);
 #endif
 };
 }//end FakeTum

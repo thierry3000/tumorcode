@@ -377,6 +377,7 @@ class Graph(object):
     if self.roots is not None:
       self.roots = np.take(toNewNode, self.roots)
     g = Graph(edgelist = new_el)
+    g.from_fn = self.from_fn
     g.nodes = dict(zip(nnames,new_nprop))
     g.edges = dict(zip(enames,new_eprop))
     return g

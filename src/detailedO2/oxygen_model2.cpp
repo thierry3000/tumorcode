@@ -556,31 +556,37 @@ void AddSourceContributionsTo(const Parameters &params, const LatticeDataQuad3d 
 // MTC = D alpha /2 r * nu
 double ComputeCircumferentialMassTransferCoeff(const Parameters &params, double r)
 {
-  if (params.massTransferCoefficientModelNumber == 1)
+  const double p1 = params.conductivity_coeff1;
+  const double p2 = params.conductivity_coeff2;
+  const double p3 = params.conductivity_coeff3;
+  
+  if( !p1==0 and !p2==0 and !p3==0)
   {
-    const double p1 = params.conductivity_coeff1;
-    const double p2 = params.conductivity_coeff2;
-    const double p3 = params.conductivity_coeff3;
-    const double nusseltNumber = p2*(1.0 - std::exp(-r/p1)) + p3 * r;
-    const double kd = params.plasma_solubility*params.D_plasma;
-    const double intravascularConductivity = my::mconst::pi()*nusseltNumber*kd;
-    //printf("p1=%f, p2=%f, p3=%f, nu=%f, c=%f\n", p1, p2, p3, nusseltNumber, intravascularConductivity);
-    return intravascularConductivity;
-    
-    // with extravascular conductivity
-    //const double t1 = my::mconst::pi2()/std::log((r+ld.Scale())/r);
-    //const double t1 = my::mconst::pi2()*r / (ld.Scale()*0.5);
-    //const double extravascularConductivity = (params.po2_kdiff*params.tissue_solubility)*t1; // mlO2 / ml / mmHg * um^2/s
-    //return 1.0/(1.0/intravascularConductivity + 1.0/extravascularConductivity);
+    if (params.massTransferCoefficientModelNumber == 1)
+    {
+      const double nusseltNumber = p2*(1.0 - std::exp(-r/p1)) + p3 * r;
+      const double kd = params.plasma_solubility*params.D_plasma;
+      const double intravascularConductivity = my::mconst::pi()*nusseltNumber*kd;
+      //printf("p1=%f, p2=%f, p3=%f, nu=%f, c=%f\n", p1, p2, p3, nusseltNumber, intravascularConductivity);
+      return intravascularConductivity;
+      
+      // with extravascular conductivity
+      //const double t1 = my::mconst::pi2()/std::log((r+ld.Scale())/r);
+      //const double t1 = my::mconst::pi2()*r / (ld.Scale()*0.5);
+      //const double extravascularConductivity = (params.po2_kdiff*params.tissue_solubility)*t1; // mlO2 / ml / mmHg * um^2/s
+      //return 1.0/(1.0/intravascularConductivity + 1.0/extravascularConductivity);
+    }
+    else
+    {
+//       const double p = p0 + std::exp(-r/p1)*p2;
+      const double p = p1 + std::exp(-r/p2)*p3;
+      return my::mconst::pi2()*r*p;
+    }
   }
   else
   {
-    const double p0 = params.conductivity_coeff1;
-    const double p1 = params.conductivity_coeff2;
-    const double p2 = params.conductivity_coeff3;
-    const double p = p0 + std::exp(-r/p1)*p2;
-    cout << format("p0 %f, p1 %f, p2 %f, p %f\n") % p0 % p1 % p2 % p;
-    return my::mconst::pi2()*r*p;
+    cout << "probably bad mass Transfer parameters" << endl;
+    cout << format("p1 %f, p2 %f, p3 %f,\n") % p1 % p2 % p3;
   }
 }
 
@@ -984,10 +990,8 @@ static void NumericallyIntegrateVesselPO2(const Parameters &params,
 {
     Float3 p, dp; float len;
     boost::tie(p, dp, len) = GetSegmentLineParameters(vl, v, upstream_node,world);
-
     ComputeRadialFluxes computeFlux(params, grid.ld, v->r, extpo2, phases, p, dp);
     vascularPropagationModel->reset(v->q, v->hematocrit, computeFlux);
-
     const int Nsteps = std::max<int>(1, 0.5+len/(params.axial_integration_step_factor*grid.ld.Scale()));
     const double dx = len/Nsteps;
     double x = 0.;
@@ -1030,7 +1034,6 @@ void IntegrateVesselPO2(const Parameters &params,
 {
   my::Time t_;
   DynArray<bool> nodal_o2ready(vl.GetNCount(), false);
-  
   BOOST_FOREACH(const VesselNode* nd, arterial_roots)
   {//loop over all arterial roots, we follow the blood stream starting here
     nodal_o2ready[nd->Index()] = true;
@@ -1341,7 +1344,6 @@ void DetailedP02Sim::init(Parameters &params_, BloodFlowParameters &bfparams_,Ve
 //                )
 int DetailedP02Sim::run(VesselList3d &vl)
 {
-
   //sets up the linear trilionos matrix system, builder is implemented as struct
   //could use for example different stencils
   FiniteVolumeMatrixBuilder tissue_diff_matrix_builder;
@@ -1359,12 +1361,10 @@ int DetailedP02Sim::run(VesselList3d &vl)
   last_po2field.fill(po2field);
   // an other buffer
   DynArray<Float2> last_vessel_po2(vl.GetECount(), Float2(0.));//begining and end 0.
-
   metadata.add_child("iterations", ptree());
   
   ConvergenceCriteriumAccumulator2Norm<double> delta_field2, delta_vess2;
   ConvergenceCriteriumAccumulatorMaxNorm<double> delta_fieldM, delta_vessM;
-  
   /*
    * ****** MAIN LOOP **********
    */
@@ -1406,7 +1406,6 @@ int DetailedP02Sim::run(VesselList3d &vl)
     }
     //bool keep_preconditioner = (iteration_num>2 && tissue_diff_solver.iteration_count<25);
     bool keep_preconditioner = true;
-    
     /*
      * 2) propagate the oxygen from the blood stream to the tissue
      */

@@ -142,20 +142,34 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   //printPtree(all_pt_params);
   FakeTumMTS::FakeTumorSimMTS s;
 #ifdef USE_DETAILED_O2
+  /* 
+   * detailedO2 case
+   */
   //DetailedPO2::InitParameters(s.o2_params, py_oxy_parameters);
   //create ptree with default settings!!!
   ptree detailedO2Settings = s.o2_params.as_ptree();
-  #ifdef DEBUG
+#ifdef DEBUG
   std::cout << "with detailed params: " << std::endl;
   printPtree(detailedO2Settings);
 #endif
-  //update read default parameters with read in parameters
-  //boost::property_tree::update(destination, source);
   boost::property_tree::update(detailedO2Settings, pt_params.get_child("detailedo2"));
-
-  //write the settings to the object!
+#ifdef DEBUG
+  printPtree(detailedO2Settings);
+#endif
+  //s.o2_params = DetailedPO2::Parameters();
   s.o2_params.assign(detailedO2Settings);
 #else
+  /*
+   * simple o2 case
+   */
+  //update read default parameters with read in parameters
+  //boost::property_tree::update(destination, source);
+  //O2Model::SimpleO2Params simpleO2params;
+  ptree simpleO2Settings = s.o2_params.as_ptree();
+  boost::property_tree::update(simpleO2Settings, pt_params.get_child("simple_o2"));
+  s.o2_params.assign(simpleO2Settings);
+  //write the settings to the object!
+  
   //O2Model::SimpleO2Params simpleO2params;
   //py::dict d = py::extract<py::dict>(py_parameters.attr("simple_o2"));
   //py::dict d = py_parameters("simple_o2");
@@ -181,14 +195,24 @@ void export_faketum_mts()
  */
 void run_fakeTumor(const py::str &param_info_str)
 {
-  feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
-  //construct default parameters
-  FakeTum::Parameters defaultParams;
-  printPtree(defaultParams.as_ptree());
-  ptree pt_params = convertInfoStr(param_info_str, defaultParams.as_ptree());
+  ptree pt_params = convertInfoStr(param_info_str, ptree());
+  std::cout << "run_fakeTumor on c++ called" << std::endl;
+#ifdef DEBUG
+  std::cout << "with params: " << std::endl;
   printPtree(pt_params);
+#endif
+  feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+  
   FakeTum::FakeTumorSim s;
-  int returnCode = s.run(pt_params);
+  //construct default parameters
+  FakeTum::Parameters defaultParams;  /// default parameters
+  ptree faketumSettings = defaultParams.as_ptree();
+  boost::property_tree::update(faketumSettings,pt_params);
+  //printPtree(defaultParams.as_ptree());
+  
+  printPtree(faketumSettings);
+  
+  int returnCode = s.run(faketumSettings);
   //return returnCode;
 }
 void export_faketum()

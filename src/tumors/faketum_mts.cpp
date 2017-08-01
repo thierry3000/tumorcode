@@ -316,18 +316,21 @@ int FakeTumMTS::FakeTumorSimMTS::run(const ptree &pt_params)
 #pragma omp barrier
     if (time >= next_output_time - params.dt * 0.1)
     {
-      lastTumorGroupWrittenByFakeTumName = writeOutput();
-      h5::File f(params.fn_out + ".h5", "a");
-      lastTumorGroupWrittenByFakeTum = f.root().open_group(lastTumorGroupWrittenByFakeTumName+"/tumor");
 #ifdef USE_DETAILED_O2
       {
         o2_sim.init(o2_params, params.bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum);
+        cout << "\nInit O2 completed" << endl;
         o2_sim.run(*vl);
+        cout << "\nDetailed O2 completed" << endl;
       }
 #else
       
       
-#endif 
+#endif
+      lastTumorGroupWrittenByFakeTumName = writeOutput();
+      h5::File f(params.fn_out + ".h5", "a");
+      lastTumorGroupWrittenByFakeTum = f.root().open_group(lastTumorGroupWrittenByFakeTumName+"/tumor");
+      
       SetupTissuePhases(phases, grid, mtboxes, lastTumorGroupWrittenByFakeTum);//filling
       next_output_time += params.out_intervall;
     }
@@ -419,6 +422,8 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   a.set("time", time);
   a.set("OUTPUT_NUM",output_num);
   
+  WriteCellsSystemHDF(currentCellsSystem, gout.create_group("cells"));
+  
   WriteVesselList3d(*vl, gout.create_group("vessels"));
   {
 //     LatticeDataQuad3d ld;
@@ -442,6 +447,19 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
 #ifdef USE_DETAILED_O2
     //something is different here, I do not know how to handle this 
 //      WriteScalarField(gtum, "fieldDetailedOxy", o2_sim.po2field, o2_sim.grid.ld, field_ld_group);
+    int ecnt = vl->GetECount();
+    DynArray<float> po2(2*ecnt);
+    for (int i=0; i<ecnt; ++i)
+    {
+      po2[i] = o2_sim.po2vessels[i][0];
+      po2[i+1] = o2_sim.po2vessels[i][1];
+      
+//       +(*o2_sim.po2vessels)[i][1])*0.5;
+//       float po2 = ((*vesselpo2)[i][0]+(*vesselpo2)[i][1])*0.5;
+//       avg_po2[i] = isFinite(po2) ? po2 : -1.f;
+    }
+    h5cpp::Dataset ds = h5cpp::create_dataset<float>(gout.create_group("detailedPo2"), "po2_vessels", h5cpp::Dataspace::simple_dims(ecnt,2), &po2[0]);
+    //h5cpp::create_dataset(gout.create_group("o2_detailed"), "po2_vessels", po2);
 #else
     WriteScalarField(gtum, "fieldOxy", state.o2field, grid.ld, field_ld_group);
 #endif
@@ -453,6 +471,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
     WriteScalarField(gtum, "oxy_source_lin", vessel_o2src_clin, grid.ld, field_ld_group);
   }
   ++output_num;
+  f.flush();
   return tumOutName;
 }
 void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
@@ -653,6 +672,42 @@ void FakeTumMTS::FakeTumorSimMTS::insertGlucoseCoefficients(int box_index, const
 //     loc_l_coeff = hemostatic_cell_frac_norm[0] * loc_phases * o2_params.o2_cons_coeff[0];
     mb.AddLocally(p, -loc_l_coeff - l_coeff(p), -rhs(p)); /// this was it before
 //     mb.AddLocally(p, - l_coeff(p), -rhs(p));
+  }
+}
+
+void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group vesselgroup)
+{
+  cout<< "going to write a hdf file" << endl;
+  int numberOfCells = currentCellsSystem.Get_ncells();
+  std::vector<double> x = currentCellsSystem.Get_x();
+  std::vector<double> y = currentCellsSystem.Get_y();
+  std::vector<double> z = currentCellsSystem.Get_z();
+  std::vector<double> r = currentCellsSystem.Get_r();
+  DynArray<float> a(3*numberOfCells);
+  for( int i = 0; i<numberOfCells ;++i)
+  {
+//     a[3*i+0]= vl.GetNode(i)->worldpos[0]; /// from world part
+//     a[i] = x[i];
+//     a[i+1] = y[i];
+//     a[i+2] = z[i];
+    a[3*i+0] = x[i];
+    a[3*i+1] = y[i];
+    a[3*i+2] = z[i];
+  }
+  if(!vesselgroup.exists("cell_center_pos"))
+  {
+//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_center_pos", h5cpp::Dataspace::simple_dims(a.size()/3,3), &a[0]);
+    h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_center_pos", h5cpp::Dataspace::simple_dims(numberOfCells,3), &a[0]);
+  }
+  DynArray<float> b(numberOfCells);
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    b[i] = r[i];
+  }
+  if(!vesselgroup.exists("cell_radii"))
+  {
+//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_center_pos", h5cpp::Dataspace::simple_dims(a.size()/3,3), &a[0]);
+    h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_radii", h5cpp::Dataspace::simple_dims(numberOfCells,1), &b[0]);
   }
 }
 

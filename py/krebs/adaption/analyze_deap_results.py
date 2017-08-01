@@ -19,9 +19,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-
+import os, sys
+from os.path import join, basename, dirname, splitext
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 import h5py
 import matplotlib
+import mpl_utils
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
@@ -97,7 +101,7 @@ def redo_adaption_for_convergent_sets(f):
         k_c = bests[0],
         k_m = bests[1],
         k_s = bests[2],
-        outputFileName = 'redoAdaption_value_list_%i.h5' % paramSetIndex ,
+        outputFileName = 'redoAdaption_set_%s_%i.h5' % (setName,paramSetIndex) ,
         )
     _adap.do_simple_adaption(inputFileName,vessel_grp, factory)
 if __name__ == '__main__':

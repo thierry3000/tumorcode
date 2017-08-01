@@ -39,6 +39,8 @@ from copy import deepcopy
 from dicttoinfo import dicttoinfo, Vec
 from myutils import f2s
 
+import krebsjobs
+
 #exe = krebsutils.get_full_tumor_executable_path('tum-only-vessels')
 dstdir = os.getcwd()
 
@@ -58,49 +60,49 @@ def getDomainSizeFromVesselFile(fn):
   return size
 
 
-def MakeVesselFilenamePart(fn):
-  with h5files.open(fn, mode='a') as f:
-    if 'parameters' in f:
-      if 'MESSAGE' in f['parameters'].attrs:
-        msg = f['parameters'].attrs['MESSAGE']
-        ensemble_index = f['parameters'].attrs['ENSEMBLE_INDEX']
-        if msg.startswith('vessels-'): msg=msg[len('vessels-'):]
-    if 'msg' not in locals():
-      msg = "hm"
-      ensemble_index = 1
-      f['parameters'].attrs['MESSAGE'] = msg 
-      f['parameters'].attrs['ENSEMBLE_INDEX'] = ensemble_index
-    
-  name = '%s-sample%02i' % (msg, ensemble_index)
-  return name
+#def MakeVesselFilenamePart(fn):
+#  with h5files.open(fn, mode='a') as f:
+#    if 'parameters' in f:
+#      if 'MESSAGE' in f['parameters'].attrs:
+#        msg = f['parameters'].attrs['MESSAGE']
+#        ensemble_index = f['parameters'].attrs['ENSEMBLE_INDEX']
+#        if msg.startswith('vessels-'): msg=msg[len('vessels-'):]
+#    if 'msg' not in locals():
+#      msg = "hm"
+#      ensemble_index = 1
+#      f['parameters'].attrs['MESSAGE'] = msg 
+#      f['parameters'].attrs['ENSEMBLE_INDEX'] = ensemble_index
+#    
+#  name = '%s-sample%02i' % (msg, ensemble_index)
+#  return name
 
 
-def PrepareConfigurationForSubmission(vessel_fn, name, prepend, config_):
-  if vessel_fn is not None: 
-    dstdir = os.getcwd()  
-    c = deepcopy(config_)
-    vessel_fn_part = MakeVesselFilenamePart(vessel_fn)
-    out_fn = join(dstdir, '%s-%s-%s.h5' % (prepend,vessel_fn_part, name))
-    print 'generating tumor run with'
-    print '  vessel:', vessel_fn
-    print '  output:', out_fn
-    print ' paramset:', name
-    c['fn_out'] = out_fn
-    c['fn_vessel'] = vessel_fn
-    c['paramset_name'] = name
-    name = splitext(basename(out_fn))[0]
-  else:
-    dstdir = os.getcwd()  
-    c = deepcopy(config_)
-    #vessel_fn_part = MakeVesselFilenamePart(vessel_fn)
-    out_fn = join(dstdir, '%s-%s.h5' % (prepend,name))
-    print 'generating tumor run no vessels'
-    print '  output:', out_fn
-    print ' paramset:', name
-    c['fn_out'] = out_fn
-    c['paramset_name'] = name
-    name = splitext(basename(out_fn))[0]
-  return name, c
+#def PrepareConfigurationForSubmission(vessel_fn, name, prepend, config_):
+#  if vessel_fn is not None: 
+#    dstdir = os.getcwd()  
+#    c = deepcopy(config_)
+#    vessel_fn_part = MakeVesselFilenamePart(vessel_fn)
+#    out_fn = join(dstdir, '%s-%s-%s.h5' % (prepend,vessel_fn_part, name))
+#    print 'generating tumor run with'
+#    print '  vessel:', vessel_fn
+#    print '  output:', out_fn
+#    print ' paramset:', name
+#    c['fn_out'] = out_fn
+#    c['fn_vessel'] = vessel_fn
+#    c['paramset_name'] = name
+#    name = splitext(basename(out_fn))[0]
+#  else:
+#    dstdir = os.getcwd()  
+#    c = deepcopy(config_)
+#    #vessel_fn_part = MakeVesselFilenamePart(vessel_fn)
+#    out_fn = join(dstdir, '%s-%s.h5' % (prepend,name))
+#    print 'generating tumor run no vessels'
+#    print '  output:', out_fn
+#    print ' paramset:', name
+#    c['fn_out'] = out_fn
+#    c['paramset_name'] = name
+#    name = splitext(basename(out_fn))[0]
+#  return name, c
   
 #def worker_on_client(fn, grp_pattern, tumParams, num_threads):
 #  print('Fake tum on %s / %s / param: %s' % (fn, grp_pattern, tumParams['name']))
@@ -112,10 +114,13 @@ def PrepareConfigurationForSubmission(vessel_fn, name, prepend, config_):
 #  
 #  h5files.closeall() # just to be sure
 
-def run(vessel_fn, name, config_, mem, days):
-  name, c = PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTum', config_)
+def run(vessel_fn, name, paramSet, mem, days):
+  name, c = krebsjobs.PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTum', paramSet)
   configstr = dicttoinfo(c)
-  qsub.submit(qsub.func(krebs.tumors.run_faketum, configstr),
+  config_file_name = '%s.info' % c['fn_out']
+  with open(config_file_name, 'w') as f:
+    f.write(configstr)
+  qsub.submit(qsub.func(krebs.tumors.run_faketum, config_file_name),
                             name = 'job_'+name,
                             mem = mem,
                             days = days,
@@ -148,27 +153,27 @@ if __name__ == '__main__':
     print e.message
     sys.exit(-1)
 
-  if not 'auto' in tumorParameterName:
-    factory = getattr(parameterSets, tumorParameterName)
-    if type(factory).__name__ == 'function':
-      configs = factory(len(filenames))
-      for fn, cfg in zip(filenames, configs):
-        run(fn, factory.name, cfg, '4GB', 2.)
-    else:
-      for fn in filenames:
-        #run(fn, tumorParameterName, factory, '4GB', 2.)
-        run(fn, tumorParameterName, factory, '2GB', 5.)
+#  if not 'auto' in tumorParameterName:
+  factory = getattr(parameterSets, tumorParameterName)
+  if type(factory).__name__ == 'function':
+    configs = factory(len(filenames))
+    for fn, cfg in zip(filenames, configs):
+      run(fn, factory.name, cfg, '4GB', 2.)
   else:
     for fn in filenames:
-      for t in typelist:
-        if t in fn:
-          print(tumorParameterName)
-          tumorParameterName = tumorParameterName[5:]#removes auto_
-          type_to_paramset = create_auto_dicts(tumorParameterName+'_')
-          tumorParameterName = type_to_paramset[t]
-          factory = getattr(parameterSets, tumorParameterName)
-          #use fixed timestep for tumor simulations
-          factory['adaption']['delta_t'] = 0.10
-        #run(fn, tumorParameterName, factory, '4GB', 2.)
-          run(fn, tumorParameterName, factory, '2GB', 5.)
+      #run(fn, tumorParameterName, factory, '4GB', 2.)
+      run(fn, tumorParameterName, factory, '2GB', 5.)
+#  else:
+#    for fn in filenames:
+#      for t in typelist:
+#        if t in fn:
+#          print(tumorParameterName)
+#          tumorParameterName = tumorParameterName[5:]#removes auto_
+#          type_to_paramset = create_auto_dicts(tumorParameterName+'_')
+#          tumorParameterName = type_to_paramset[t]
+#          factory = getattr(parameterSets, tumorParameterName)
+#          #use fixed timestep for tumor simulations
+#          factory['adaption']['delta_t'] = 0.10
+#        #run(fn, tumorParameterName, factory, '4GB', 2.)
+#          run(fn, tumorParameterName, factory, '2GB', 5.)
         

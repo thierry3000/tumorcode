@@ -39,6 +39,7 @@ FakeTum::Parameters::Parameters()
   tissuePressureCenterFraction = 0.;
   stopping_radius_fraction = 0.6;
   paramset_name = "aname";
+  message = "";
 #ifdef USE_ADAPTION
   apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
 #endif
@@ -47,29 +48,42 @@ FakeTum::Parameters::Parameters()
 void FakeTum::Parameters::assign(const ptree &pt)
 {
   #define DOPT(name) boost::property_tree::get(name, #name, pt);
-  std::vector<string> myOptions = {"message", 
-    "paramset_name", 
-    "num_threads",
-    "out_intervall",
-    "tend",
-    "dt",
-    "fn_out",
-    "fn_vessel",
-    "rGf",
-    "tumor_radius",
-    "tumor_speed",
-    "stopping_radius_fraction",
-    "tissuePressureWidth",
-    "tissuePressureCenterFraction",
-  };
-  for( auto aOption: myOptions)
-  {
-    ptree::const_assoc_iterator it = pt.find(aOption);
-    if( it == pt.not_found())
-      std::cout<<"warning: message not found" <<std::endl;
+  DOPT(message);
+  DOPT(num_threads);
+  DOPT(out_intervall);
+  DOPT(tend);
+  DOPT(dt);
+  DOPT(fn_out);
+  DOPT(fn_vessel);
+  DOPT(rGf);
+  DOPT(tumor_radius);
+  DOPT(tumor_speed);
+  DOPT(stopping_radius_fraction);
+  DOPT(tissuePressureWidth);
+  DOPT(tissuePressureCenterFraction);
+//   std::vector<string> myOptions = {"message", 
+//     "paramset_name", 
+//     "num_threads",
+//     "out_intervall",
+//     "tend",
+//     "dt",
+//     "fn_out",
+//     "fn_vessel",
+//     "rGf",
+//     "tumor_radius",
+//     "tumor_speed",
+//     "stopping_radius_fraction",
+//     "tissuePressureWidth",
+//     "tissuePressureCenterFraction",
+//   };
+//   for( auto aOption: myOptions)
+//   {
+//     ptree::const_assoc_iterator it = pt.find(aOption);
+//     if( it == pt.not_found())
+//       std::cout<< format("warning: %s not found") % aOption <<std::endl;
 //     else
-//       boost::property_tree::get(aOption, pt);
-  }
+//       boost::property_tree::get(aOption, #aOption, pt);
+//   }
 
   //DOPT(tissuePressureDistribution);
   string s = pt.get<string>("tissuePressureDistribution");
@@ -91,6 +105,7 @@ ptree FakeTum::Parameters::as_ptree() const
   boost::property_tree::ptree pt;
   #define DOPT(name) pt.put(#name, name)
   DOPT(paramset_name);
+  DOPT(message);
   DOPT(num_threads);
   DOPT(out_intervall);
   DOPT(tend);
@@ -163,6 +178,18 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
     FakeTum::Parameters::update_ptree(all_pt_params, pt_params);
     this->params.assign(all_pt_params);
   }
+  /***** vessels ******/
+  {
+    ptree vesselSettings = vessel_model.params.as_ptree();
+    boost::property_tree::update(vesselSettings,pt_params.get_child("vessels"));
+    vessel_model.params.assign(vesselSettings);
+  }
+  /****** blood flow ****/
+  {
+    ptree bfSettings = params.bfparams.as_ptree();
+    boost::property_tree::update(bfSettings,pt_params.get_child("calcflow"));
+    params.bfparams.assign(bfSettings);
+  }
   // direct cout through log
   cout.rdbuf(my::log().rdbuf());
   {
@@ -200,7 +227,7 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
      * Shear force is used e.g. in model.Init to initialize
      * f_initial. */
     CalcFlow(*vl, params.bfparams); 
-    model.Init(vl.get(), this->model.params, callbacks);
+    vessel_model.Init(vl.get(), this->vessel_model.params, callbacks);
   }
 
   tumor_radius = params.tumor_radius;
@@ -279,10 +306,10 @@ void FakeTum::FakeTumorSim::doStep(double dt)
   cout << format("step %i, t=%f") % num_iteration % time << endl;
   CalcFlow(*vl, params.bfparams);
 #ifdef USE_ADAPTION
-  model.DoStep(dt, &params.adap_params,&params.bfparams);
+  vessel_model.DoStep(dt, &params.adap_params,&params.bfparams);
 #else
 //   //do be implemented
-  model.DoStep(dt, &params.bfparams);
+  vessel_model.DoStep(dt, &params.bfparams);
 #endif
   tumor_radius += dt * params.tumor_speed;
 }
@@ -305,7 +332,7 @@ void FakeTum::FakeTumorSim::writeOutput()
     a.set("VESSELFILE_MESSAGE", params.vesselfile_message);
     a.set("VESSELFILE_ENSEMBLE_INDEX", params.vesselfile_ensemble_index);
     g = root.create_group("parameters");
-    WriteHdfPtree(g.create_group("vessels"), model.params.as_ptree());
+    WriteHdfPtree(g.create_group("vessels"),vessel_model.params.as_ptree());
     WriteHdfPtree(g, params.as_ptree());
   }
 
