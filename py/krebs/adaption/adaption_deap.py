@@ -48,8 +48,8 @@ import h5py
 creator.create("FitnessMax", base.Fitness, weights=(-1.0,))
 creator.create("Particle", list, fitness=creator.FitnessMax, speed=list, 
     smin=None, smax=None, pmin=None, pmax= None, best=None, adaptionParameters=None)
-n = 376
-GEN = 5
+n = 50
+GEN = 2
 
 def generate(size, pmin, pmax, smin, smax):
     part = creator.Particle(random.uniform(pmin, pmax) for _ in range(size)) 
@@ -165,17 +165,24 @@ if __name__ == "__main__":
   #group
   shared.setConst(vessel_grp=vessel_grp)
   best = main()
-  print(os.getcwd())
-  f=h5py.File('deap_results.h5')
-  currentTime = str(datetime.datetime.now().time())
-  myGroup = f.create_group(currentTime)
-  myGroup.create_dataset('best' , data=best)
-  myGroup.create_dataset('fitness values', data=best.fitness.values)
-  myGroup.attrs.create("GEN", data=GEN)
-  myGroup.attrs.create("n", data=n)
-  myGroup.attrs.create("vfile", data=vfile_name)
-  myGroup.attrs.create("vessel_grp", data=vessel_grp)
-  myGroup.attrs.create("params", data=goodArguments.AdaptionParamSet)
-  myGroup.attrs.create("paramListIndex", data = goodArguments.listindex)
-  myGroup.attrs.create("type", data="variance opt")
-  f.close()
+  #print(os.getcwd())
+  if (goodArguments.outputFileFolder):
+    outfile_name = str(goodArguments.outputFileFolder) + '/deap_results_%s.h5' % str(goodArguments.AdaptionParamSet)
+  else:
+    outfile_name = 'deap_results_%s.h5' % str(goodArguments.AdaptionParamSet)
+  print('outfile: %s will be stored at: %s' % (outfile_name, os.getcwd()))
+  with h5py.File(outfile_name) as f:
+#f=h5py.File('deap_results_%s.h5' % str(goodArguments.AdaptionParamSet))
+    currentTime = str(datetime.datetime.now().time())
+    myGroup = f.create_group(str(goodArguments.listindex))
+    myGroup.attrs.create("time", data=currentTime)
+    myGroup.create_dataset('best' , data=best)
+    myGroup.create_dataset('fitness values', data=best.fitness.values)
+    myGroup.attrs.create("GEN", data=GEN)
+    myGroup.attrs.create("n", data=n)
+    myGroup.attrs.create("vfile", data=vfile_name)
+    myGroup.attrs.create("vessel_grp", data=vessel_grp)
+    myGroup.attrs.create("params", data=goodArguments.AdaptionParamSet)
+    myGroup.attrs.create("paramListIndex", data = goodArguments.listindex)
+    myGroup.attrs.create("type", data="variance opt")
+  #f.close()

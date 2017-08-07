@@ -110,7 +110,7 @@ def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
     for name in ['radius', 'node_a_index', 'node_b_index']:
       gv['edges'].copy(name, gvedst)
   # then we recompute blood flow because the alorithm has changed and we may or may not want hematocrit
-  pressure, flow, shearforce, hematocrit, flags = krebsutils.calc_vessel_hydrodynamics(gv, return_flags = True, bloodflowparams = bloodflowparams)
+  pressure, flow, shearforce, hematocrit, flags = krebsutils.calc_vessel_hydrodynamics(gv, calc_hematocrit=True, return_flags = True, bloodflowparams = bloodflowparams)
   # then we save the new data to complete the network copy
   gvedst.create_dataset('flow'      , data = flow       , compression = 9)
   gvedst.create_dataset('shearforce', data = shearforce , compression = 9)
@@ -136,12 +136,13 @@ def computePO2_(gdst, vesselgroup, tumorgroup, parameters):
 
 def readParameters(po2group):
   p = myutils.hdf_read_dict_hierarchy(po2group['parameters'])
-  for oldName, newName in [("kD_tissue", 'D_tissue'),
-                           ("alpha_t", "solubility_tissue"),
-                           ("alpha_p", "solubility_plasma")]:
-    if not newName in p:
-      p[newName] = p[oldName]
-      del p[oldName]
+  ''' hopefully not needed anymore consistent parameter choice'''
+#  for oldName, newName in [("kD_tissue", 'D_tissue'),
+#                           ("alpha_t", "solubility_tissue"),
+#                           ("alpha_p", "solubility_plasma")]:
+#    if not newName in p:
+#      p[newName] = p[oldName]
+#      del p[oldName]
   return p
   
 

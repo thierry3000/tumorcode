@@ -19,16 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "iff_drug_app.h"
 
-#include "../python_krebsutils/python-helpers.h"
+#include "../python_krebsutils/python_helpers.h"
 #include "numpy.hpp"
 #include "../common/calcflow.h"
 #include <algorithm>
 
 #define BOOST_RESULT_OF_USE_DECLTYPE 1
 
-namespace py = boost::python;
-namespace nm = boost::python::numeric;
-namespace h5 = h5cpp;
+// namespace py = boost::python;
+// namespace nm = boost::python::numeric;
+// namespace h5 = h5cpp;
 
 /**
  * @brief Calculates Interstistial pressure, flow and drug stuff

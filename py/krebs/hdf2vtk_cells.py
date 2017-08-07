@@ -182,6 +182,12 @@ def ConvertMyHdfVesselsToVTKPolydata(graph, newflag_for_backward_compatibility, 
       print("len(S_tot)")
       print(len(S_tot))
       polydata.GetCellData().AddArray(asVtkArray(S_tot, "S_tot", vtkFloatArray))
+  if 'po2_node' in graph.keys():
+    po2_node = graph['po2_node']    
+    polydata.GetPointData().AddArray(asVtkArray(po2_node, "point_vessel_po2", vtkFloatArray))
+  if 'po2_vessel' in graph.keys():
+    po2_vessels = graph['po2_vessel']
+    polydata.GetCellData().AddArray(asVtkArray(po2_vessels, "po2_vessel", vtkFloatArray))
   if 0:
     #vesselgroup = h5file[posixpath.join(grpname, 'vessels')]
     vesselgroup = h5file['/vessels']
@@ -205,12 +211,6 @@ def ConvertMyHdfVesselsToVTKPolydata(graph, newflag_for_backward_compatibility, 
         polydata.GetCellData().AddArray(asVtkArray(np.asarray(item), short_name))
       else:
         print 'ignoring item %s because array size does not match' % (item.name)
-  if 'po2_node' in graph.keys():
-    po2_node = graph['po2_node']    
-    polydata.GetPointData().AddArray(asVtkArray(po2_node, "point_vessel_po2", vtkFloatArray))
-  if 'po2_vessel' in graph.keys():
-    po2_vessels = graph['po2_vessel']
-    polydata.GetCellData().AddArray(asVtkArray(po2_vessels, "po2_vessel", vtkFloatArray))
   return polydata
 
 
@@ -247,8 +247,61 @@ def writeVessels_(graph, options):
   writer.SetFileName(options.outfn % 'vessels')  
   writer.Write()
 
+def writeCells_(graph, options):
+  fn = str(graph.from_fn)
+  f = h5py.File(fn, 'r')
+  #fn, _ = myutils.splitH5PathsFromFilename(fn)
+  #search_groups.append('po2/adaption/vessels_after_adaption')
+  #search_groups = ['po2/adaption/vessels_after_adaption/po2field']
+  #search_groups = []
+  #search_groups.append(str(options.writeFields))
+  #search_groups.append("out0005")
+  pos = np.asarray(f[str(options.grp_pattern)+'/cells/cell_center_pos'])
+  
+  pts = vtkPoints()
+  pts.SetNumberOfPoints(len(pos))
+  for i,(x,y,z) in enumerate(pos):
+    pts.SetPoint(i, (float(x), float(y), float(z)))
+    
+  polydata = vtkPolyData()
+  polydata.SetPoints(pts)
+  #pointData = polydata.GetPointData()
+  #polydata.GetCellData().AddArray(asVtkArray(rad, "radius", vtkFloatArray))
+  rad = np.asarray(f[str(options.grp_pattern)+'/cells/cell_radii'])
+  polydata.GetPointData().AddArray(asVtkArray(rad, "cell_radius", vtkFloatArray))
+  
+  o2 = np.asarray(f[str(options.grp_pattern)+'/cells/o2'])
+  polydata.GetPointData().AddArray(asVtkArray(o2, "cell_o2", vtkFloatArray))
+  
+  pH_ex = np.asarray(f[str(options.grp_pattern)+'/cells/pH_ex'])
+  polydata.GetPointData().AddArray(asVtkArray(pH_ex, "cell_pH_ex", vtkFloatArray))
+  
+  glucose_ex = np.asarray(f[str(options.grp_pattern)+'/cells/glucose_ex'])
+  polydata.GetPointData().AddArray(asVtkArray(glucose_ex, "cell_glucose_ex", vtkFloatArray))
+  
+  AcL_ex = np.asarray(f[str(options.grp_pattern)+'/cells/AcL_ex'])
+  polydata.GetPointData().AddArray(asVtkArray(AcL_ex, "cell_AcL_ex", vtkFloatArray))
+  
+  #polydata.GetCellData().AddArray(asVtkArray(rad, "cell_radius", vtkFloatArray))
+  #e = extractVtkFields.Extractor(f, search_groups, recursive = True) 
+  #print 'found field datasets:'
+  #pprint.pprint(e.getDatasetPaths())
+  #e.write(options.outfn % 'fields')
+  #del e
+  
+  writer = vtkPolyDataWriter()
+  print("use vtkVersion: %s" % vtkVersion.GetVTKVersion())
+  if(int(vtkVersion.GetVTKVersion()[0])>5):
+    writer.SetInputData(polydata)
+  else:
+    writer.SetInput(polydata)
+  
+  writer.SetFileName(options.outfn % 'cells')  
+  writer.Write()
 
 def hdftumor2vtk(graph, options ):
+  if True:# could be like write cells
+    writeCells_(graph, options)
   if options.writeFields:
     writeFields_(graph, options)
   if options.writeVessels:
@@ -258,9 +311,7 @@ def hdftumor2vtk(graph, options ):
 if __name__ == '__main__':
 
   import argparse
-  parser = argparse.ArgumentParser(description=
-                                   'Export hdf data to ParaView. \n'
-                                   'po2 --> use only po2 as group',formatter_class=argparse.RawTextHelpFormatter)  
+  parser = argparse.ArgumentParser(description='Export hdf data to ParaView.')  
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin)
   parser.add_argument('grp_pattern')
   parser.add_argument("-d","--data", dest="datalist", help="which data (pressure, flow, shearforce, hematocrit) as comma separated list", default='pressure', action="store")
@@ -326,7 +377,7 @@ if __name__ == '__main__':
         if new:
           graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
         else:
-          graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
+          graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['po2_node','position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
         if goodArguments.filteruncirculated:
           graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
         hdftumor2vtk(graph, goodArguments)
@@ -345,12 +396,12 @@ if __name__ == '__main__':
           hdftumor2vtk(graph, goodArguments)
           print('bla2')
         else:
-          vesselgroup = f['/recomputed_flow/vessels']
+          vesselgroup = f['/recomputed_flow']
           new = False
           if new:
             graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
           else:
-            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['po2_vessel','po2_node','position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
+            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
           if goodArguments.filteruncirculated:
             graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
           #amazing, out of the box this works for the o2 simulation as well.

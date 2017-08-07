@@ -29,15 +29,15 @@ BulkTissue::Params::Params()
   DOPT(message, string());
   DOPT(lattice_scale, 30);
   DOPT(gf_production_threshold, 0.1);
-  DOPT(hematocrit_init, 0.45);
-  DOPT(reference_intercapillary_distance, 80);
-  DOPT(o2_level_normal, 0.6);
-  for (int i=0; i<3; ++i)
-  {
-    o2_range[i] = 100.;
-    o2_cons_coeff[i] = 1./my::sqr(o2_range[i]);
-  }
-  capillary_wall_permeability = O2Model::CalcHomogeneousCoeffOxy(o2_cons_coeff[0], o2_level_normal, 4., reference_intercapillary_distance);
+//   DOPT(hematocrit_init, 0.45);
+//   DOPT(reference_intercapillary_distance, 80);
+//   DOPT(o2_level_normal, 0.6);
+//   for (int i=0; i<3; ++i)
+//   {
+//     o2_range[i] = 100.;
+//     o2_cons_coeff[i] = 1./my::sqr(o2_range[i]);
+//   }
+//   capillary_wall_permeability = O2Model::CalcHomogeneousCoeffOxy(o2_cons_coeff[0], o2_level_normal, 4., reference_intercapillary_distance);
   DOPT(create_single_output_file, true);
   DOPT(vessel_volume_exclusion, false);
   vesselfile_ensemble_index = 0;
@@ -50,7 +50,7 @@ void BulkTissue::Params::update_ptree(ptree& dst, const ptree& src)
   for (int i=0; i<3; ++i)
   {
     double range = 0., cons_coeff = 0.;
-    O2Model::assignRangeParam(range, cons_coeff, "_"+tissue_name[i], src.get_child("prez_o2"));
+    O2Model::assignRangeParam(range, cons_coeff, "_"+tissue_name[i], src.get_child("simple_o2"));
     dst.put("o2_range_"+tissue_name[i], range);
     dst.put("o2_cons_coeff_"+tissue_name[i], cons_coeff);
   }
@@ -61,7 +61,7 @@ void BulkTissue::Params::update_ptree(ptree& dst, const ptree& src)
 					      dst.get<double>("o2_cons_coeff_"+tissue_name[TISSUE]),
 					      dst.get<double>("reference_intercapillary_distance"),
 					      4.,
-					      src.get_child("prez_o2"));
+					      src.get_child("simple_o2"));
   dst.put("capillary_wall_permeability", capillary_wall_permeability);
   dst.put("o2_level_normal", o2_level_normal);
 }
@@ -77,16 +77,16 @@ void BulkTissue::Params::assign(const ptree& pt)
     DOPT(lattice_scale);
     DOPT(lattice_size);
     DOPT(gf_production_threshold);
-    DOPT(hematocrit_init);
-    DOPT(reference_intercapillary_distance);
-    for (int i=0; i<3; ++i) {
-      boost::property_tree::get(o2_cons_coeff[i], "o2_cons_coeff_"+tissue_name[i], pt);
-      boost::property_tree::get(o2_range[i], "o2_range_"+tissue_name[i], pt);
-    }
-    DOPT(capillary_wall_permeability);
+//     DOPT(hematocrit_init);
+//     DOPT(reference_intercapillary_distance);
+//     for (int i=0; i<3; ++i) {
+//       boost::property_tree::get(o2_cons_coeff[i], "o2_cons_coeff_"+tissue_name[i], pt);
+//       boost::property_tree::get(o2_range[i], "o2_range_"+tissue_name[i], pt);
+//     }
+//     DOPT(capillary_wall_permeability);
+//     DOPT(o2_level_normal);
     DOPT(create_single_output_file);
     DOPT(vessel_volume_exclusion);
-    DOPT(o2_level_normal);
     DOPT(fn_out);
     DOPT(fn_vessel);
     DOPT(paramset_name);
@@ -107,16 +107,16 @@ ptree BulkTissue::Params::as_ptree() const
     DOPT(lattice_scale);
     DOPT(lattice_size);
     DOPT(gf_production_threshold);
-    DOPT(hematocrit_init);
-    DOPT(reference_intercapillary_distance);
-    DOPT(o2_level_normal);
-    DOPT(capillary_wall_permeability);
-    #define DOPT2(name, i) pt.put(#name"_"+tissue_name[i], name[i])
-    for (int i=0; i<3; ++i)
-    {
-      DOPT2(o2_range, i);
-      DOPT2(o2_cons_coeff, i);
-    }
+//     DOPT(hematocrit_init);
+//     DOPT(reference_intercapillary_distance);
+//     DOPT(o2_level_normal);
+//     DOPT(capillary_wall_permeability);
+//     #define DOPT2(name, i) pt.put(#name"_"+tissue_name[i], name[i])
+//     for (int i=0; i<3; ++i)
+//     {
+//       DOPT2(o2_range, i);
+//       DOPT2(o2_cons_coeff, i);
+//     }
     DOPT(create_single_output_file);
     DOPT(vessel_volume_exclusion);
     DOPT(fn_out);
@@ -141,7 +141,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
   all_pt_params.put("fake_height_2d", 200.);
   all_pt_params.put_child("vessels", VesselModel1::Params().as_ptree());
   all_pt_params.put_child("tumor", NewBulkTissueModel::Params().as_ptree());
-  all_pt_params.put_child("prez_o2", O2Model::PrezO2Params().as_ptree() );
+  all_pt_params.put_child("simple_o2", O2Model::SimpleO2Params().as_ptree() );
 #ifdef USE_ADAPTION
   all_pt_params.put_child("adaption", Adaption::Parameters().as_ptree());
 #endif
@@ -162,6 +162,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     //factor by which lattice is subdivided for tumor growth
     pt.put("scale subdivide", 10.);
     pt.put("scale override", params.override_scale);
+    //pt.put("filter", true); // does not help, is also filtered in oxygen model
     std::auto_ptr<VesselList3d> vl = ReadVesselList3d(file.root().open_group("vessels"),pt);
     // adjust vessel list ld
     const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
@@ -274,6 +275,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     writeOutput(t);
   };
   
+  //this starts the simulation
   NewSteppers::run(doStep, doObserve, all_pt_params);
 
   if (failFlag)
@@ -288,7 +290,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
 bool BulkTissue::NewTumorSim::doStep(NewSteppers::StepControl &ctrl)
 {
   ctrl.dt = std::min(1., ctrl.dt);
-
+  
   // advance the subsystem which is most back in time
   if (vessel_step_ctrl.t < tumor_step_ctrl.t)
   {
@@ -414,13 +416,19 @@ void BulkTissue::NewTumorSim::UpdateVesselVolumeFraction()
 
   #pragma omp parallel
   {
-    VesselVolumeGenerator volumegen(*state.vessels, grid.ld, grid.dim, make_ptree("samples_per_cell", 2));
+    VesselVolumeGenerator volumegen(*state.vessels, grid.ld, grid.dim, make_ptree("samples_per_cell", 20));
     
     BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
     {
       int dummy_;
       volumegen.Fill(bbox, vessel_volume_fraction, vessboxes[bbox.global_index], dummy_);
-      O2Model::AddSourceDistribution(bbox, grid.ld, grid.dim, vessel_o2src_clin, vessel_o2src_crhs, state.vessels->Ld(), vessboxes[bbox.global_index], all_pt_params);
+      O2Model::AddSourceDistribution( bbox, grid.ld, 
+                                      grid.dim, 
+                                      vessel_o2src_clin, 
+                                      vessel_o2src_crhs, 
+                                      state.vessels->Ld(), 
+                                      vessboxes[bbox.global_index], 
+                                      all_pt_params);
     }
   }
 
@@ -456,7 +464,7 @@ void BulkTissue::NewTumorSim::insertO2Coefficients(int box_index, const BBox3& b
     float loc_l_coeff = 0.;
     for (int i=0; i<3; ++i)
     {
-      loc_l_coeff -= hemostatic_cell_frac_norm[i] * loc_phases[i] * params.o2_cons_coeff[i];
+      loc_l_coeff -= hemostatic_cell_frac_norm[i] * loc_phases[i] * params.o2Params.o2_cons_coeff[i];
       
     }
     mb.AddLocally(p, -loc_l_coeff - l_coeff(p), -rhs(p));

@@ -113,9 +113,13 @@ struct ContinuumGrid
 //-----------------------------------
 //-----------------------------------
 /**
- * @brief Collect three arrays that represent function values on the faces of grid cells into a single structure.
+ * @brief Collect three arrays that represent function values 
+ * on the faces of grid cells into a single structure.
  * 
- * Note: Face index 0 corresponds to the left/bottom face of the first grid cell. Index 1 corresponds to the face between the first and the second cell. And so on. See info on staggered grids.
+ * Note: 
+ * Face index 0 corresponds to the left/bottom face of the first grid cell.
+ * Face index 1 corresponds to the face between the first and the second cell. 
+ * And so on. See info on staggered grids.
  */
 class FaceVarArrays : public boost::array<Array3d<float>, 3>
 {
@@ -143,9 +147,11 @@ enum MakeArraySetBoxStyle {
   MAKE_ARRAY3D_BOX_OUTER
 };
 
-// Allocate a Array3d for a bounding box but actually allocate more space which
-// comprises a ghost boundary around bb of width border. If set_box_style is
-// MAKE_ARRAY3D_BOX_OUTER then the arrays box is set to include the boundary.
+/** @brief
+ * Allocate a Array3d for a bounding box but actually allocate more space which
+ * comprises a ghost boundary around bb of width border. If set_box_style is
+ * MAKE_ARRAY3D_BOX_OUTER then the arrays box is set to include the boundary.
+ */
 template<class T>
 inline Array3d<T> MakeArray3dWithBorder(const BBox3 &bb, int dim, int border, MakeArraySetBoxStyle set_box_style = MAKE_ARRAY3D_BOX_INNER)
 {
@@ -160,7 +166,7 @@ inline Array3d<T> MakeArray3dWithBorder(const BBox3 &bb, int dim, int border, Ma
 //-----------------------------------
 
 
-/*
+/** @brief
  * multithreaded linear combination function
  * a = afactor * a + bfactor * b
  */
@@ -171,7 +177,7 @@ void AddScaled(double afactor, Array3d<T> a, double bfactor, ConstArray3d<T> b);
 /*------------------------------------------------------
 ------------------------------------------------------*/
 
-/*
+/** @brief 
  * Rules:
  *  + boxindex may indicate the threads sub-box, otherwise it is -1 and indicates the full domain
  *  + bbox corresponds to the boxindex and the indexrange of the thread box is a subset of box,

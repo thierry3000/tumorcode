@@ -58,6 +58,27 @@ default_o2 = dict(
   conductivity_coeff3 = c3_,
   name = 'default_o2',
 )
+milotti_o2 = deepcopy(default_o2)
+milotti_o2.update(
+    name = 'milotti_o2',
+    axial_integration_step_factor = 0.5,
+    grid_lattice_const = 50.,
+    max_iter = 150,
+    )
+milotti_o2_simple = deepcopy(milotti_o2)
+milotti_o2_simple['calcflow'].update(
+    includePhaseSeparationEffect = 0,
+    )
+exp = deepcopy(default_o2)
+exp.update(
+    name = 'exp',
+    axial_integration_step_factor = 0.25,
+    grid_lattice_const = 100.,
+    max_iter = 150,
+    po2init_r0 = 55., #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
+    po2init_dr = 1., #  mmHg / um, these values are from yaseen 2011 for rat brain
+    po2init_cutoff = 200., # mmHg; maximal attained value
+    )
 lowo2 = dict(
   po2init_r0 = 55., #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
   po2init_dr = 1., #  mmHg / um, these values are from yaseen 2011 for rat brain

@@ -244,9 +244,9 @@ def doit(parameters):
     #cachelocation = (outfn_no_ext+'.h5', group_path+'_'+parameters_name)
     #cachelocation = (fnbase+'_adption_p_'+ parameters['name'] +'.h5', group_path)
     #ref = adaption_cpp.computeAdaption(f, group_path, parameters['adaption'],parameters['calcflow'], cachelocation)
-  returnState, mean = adaption_cpp.computeAdaption(parameters['adaption'],parameters['calcflow'], True)
+  returnState, mean, varOfMean = adaption_cpp.computeAdaption(parameters['adaption'],parameters['calcflow'], True)
   if returnState == 0:
-    print("adaption succesful with mean: %f" % mean)
+    print("adaption succesful! mean: %f,  var: %f" % (mean,varOfMean))
   if not returnState == 0:
     warnings.warn("adation broken", RuntimeWarning)
 #    print 'computed Adaption stored in:', ref

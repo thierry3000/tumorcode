@@ -29,19 +29,17 @@ import os,sys
 ''' import of this must come in front of import of detailedo2 libs because some required initialization stuff on the c++ side (see mainboost.cpp)
     e.g. mulithreading initializer,...
     '''
-import krebsutils 
-sys.path.append(os.path.join(os.path.dirname(__file__),'../../../lib'))
 import qsub
 import h5files
 import numpy as np
 from copy import deepcopy
 from dicttoinfo import Vec
 
-
+import krebsutils 
 if sys.flags.debug:
-  tumor_cpp = __import__('libtumor_d', globals(), locals())
+  tumor_cpp = __import__('libtumors_d', globals(), locals())
 else:
-  tumor_cpp = __import__('libtumor_', globals(), locals())
+  tumor_cpp = __import__('libtumors_', globals(), locals())
   
 def vess_size_to_tum_size(fn, tum_lattice_const):
   vesselgroup = h5files.open(fn, 'r')['/vessels']
@@ -132,11 +130,20 @@ def set_lattice_size(c, vesselfilename):
     c['tumor']['init_shape'] = 'sphere'
   c['lattice_size'] = Vec((sx,sy,sz))
   return c
-  
-def run_faketum(configstr):
+
+def run_faketum_mts(configstring_file):
   if qsub.is_client:
     qsub.printClientInfo()
-  return tumor_cpp.run_faketum_(configstr)
+  with open(configstring_file, 'r') as f:
+    configstring = f.read()
+  return tumor_cpp.run_faketum_mts_(configstring)
+
+def run_faketum(configstring_file):
+  if qsub.is_client:
+    qsub.printClientInfo()
+  with open(configstring_file, 'r') as f:
+    configstring = f.read()
+  return tumor_cpp.run_faketum_(configstring)
 
 def run_bulktissue_no_vessels(configstr):
   if qsub.is_client:

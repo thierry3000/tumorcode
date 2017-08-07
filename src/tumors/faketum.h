@@ -38,7 +38,7 @@ struct Parameters
 {
   double out_intervall, tend;
   double dt;
-  double apply_adaption_intervall;
+  
   string message;
   string fn_out, fn_vessel, vesselfile_message;
   string paramset_name;
@@ -53,6 +53,7 @@ struct Parameters
   BloodFlowParameters bfparams;
 #ifdef USE_ADAPTION
   Adaption::Parameters adap_params;
+  double apply_adaption_intervall;
 #endif
   
   Parameters();
@@ -63,7 +64,7 @@ struct Parameters
 struct FakeTumorSim : public boost::noncopyable
 {
   std::auto_ptr<VesselList3d> vl;
-  VesselModel1::Model model;
+  VesselModel1::Model vessel_model;
 
   Parameters params;
   ptree all_pt_params;

@@ -101,11 +101,19 @@ class ContinuumVesselExavasationModel : public VirtualGridFunctions<double, 2>
 #endif
 
 /**
- * \brief drug stuff
- * Here comes everything we need to know about the drug.
- * Stored in 2 scalar fields.
+ * @brief drug stuff
+ * Here comes the information about the drug.
+ * At the moment we consider two fields, the concentration of drugs in the 
+ * extracellular space and inside the cell.
+ * 
+ * ID_CONC_EXTRACELLULAR
+ * ID_CONC_CELL
  */
-
+enum {
+  ID_CONC_EXTRACELLULAR = 0,
+  ID_CONC_CELL = 1,
+  NUM_FIELDS
+};
 struct State : boost::noncopyable
 {
   int id;
@@ -155,13 +163,9 @@ struct State : boost::noncopyable
   }
 };
 
-enum {
-  ID_CONC_EXTRACELLULAR = 0,
-  ID_CONC_CELL = 1,
-  NUM_FIELDS
-};
 /**
- * To calculte the drug transport.
+ * @brief calculte the drug transport.
+ * executed by the assigned callback.
  */
 class Calculator
 {
@@ -192,7 +196,7 @@ class Calculator
       FLAG_ALL = ~0
     };
 
-    T GetInflowVesselConc() const;  // time dependent vessel drug conc.
+    T GetInflowVesselConc() const;  /// time dependent vessel drug conc.
     
   private:
     friend struct ThreadLocal;
@@ -206,7 +210,7 @@ class Calculator
     double time, euler_dt_interact, max_rate_interact;
     double max_kdiff, max_src_expl, max_src_impl, max_vel, euler_dt_kdiff, euler_dt_srcexpl, euler_dt_srcimpl, euler_dt_vel;
     
-    // interaction with intra-cellular compartment; callback functions for time steppers
+    /// interaction with intra-cellular compartment; callback functions for time steppers
     void calcSlopeEc(const State &state,
                   State &slope,
                   Steppers::StepControl &ctrl);
@@ -214,6 +218,7 @@ class Calculator
                         State &slope_expl,
                         State &slope_impl,
                         Steppers::StepControl &ctrl);
+    /// for the IMEX method we need two slopes
     void invertImplicitOperatorEc(State &lhs,
                                 const State &rhs,
                                 double identity_coeff,

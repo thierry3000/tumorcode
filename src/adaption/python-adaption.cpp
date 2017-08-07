@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "../python_krebsutils/python-helpers.h"
+#include "../../src/python_krebsutils/python_helpers.h"
 #include "numpy.hpp"
 #include "adaption_model2.h"
 
@@ -205,35 +205,13 @@ static py::object PyComputeAdaption(const py::dict py_parameters, const py::dict
   InitBFParameters(&bfparams, &py_bfparams);
   Adaption::Parameters params;
   InitParameters(&params, &py_parameters);
-  
-  //PyPrepareForAdaptation(vl, vesselgroup, vessels_after_adaption, bfparams, params);
-
-  
-  //gain some topological info for adaptive parameters
-//   int no_of_roots = 0;
-//   for(int i=0;i<vl->GetNCount();++i)
-//   {
-//     VesselNode *nd = vl->GetNode(i);
-//     if(nd->IsBoundary())no_of_roots++;
-//   }
-//   params.no_of_roots = no_of_roots;
 
   
 
   std::tuple<uint,FlReal,FlReal> return_state;
-  //uint return_state;
-  using namespace boost::accumulators;
+  
   return_state = runAdaption_Loop(params, bfparams, doOutput);
   
-//   if(std::get<0>(return_state) == 0)
-//   {
-//     //write vessel list to file
-//     h5cpp::File f= h5cpp::File("adaption_output.h5","w");
-//     h5cpp::Group out_ = f.root();
-//     h5cpp::Group grp_temp = out_.create_group("vessels_after_adaption");
-//     ptree getEverytingPossible = make_ptree("w_adaption", true);
-//     WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
-//   }
   
   return py::make_tuple(std::get<0>(return_state), std::get<1>(return_state), std::get<2>(return_state));
 

@@ -159,7 +159,7 @@ void VesselDrugExavasationModel::Init(const VesselList3d& vl_, const ContinuumGr
 }
 
 /** @brief 
- * sets values for ceffa, ceffb,
+ * sets values for ceffa, ceffb --> concentration effective at lattice point a/b
  * currently vala, valb is not used
  * why did he implement it? -> copy past from FluidExavasationModel, there one needs this
  * calculates continously intermitant value for resistance between

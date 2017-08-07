@@ -28,7 +28,6 @@ FakeTum::Parameters::Parameters()
 {
   rGf = 200;
   out_intervall = 100;
-  apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
   tend = 1000;
   dt = 1;
   num_threads = 1;
@@ -40,38 +39,65 @@ FakeTum::Parameters::Parameters()
   tissuePressureCenterFraction = 0.;
   stopping_radius_fraction = 0.6;
   paramset_name = "aname";
+  message = "";
+#ifdef USE_ADAPTION
+  apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
+#endif
 }
 
 void FakeTum::Parameters::assign(const ptree &pt)
 {
-  #define DOPT(name) boost::property_tree::get(name, #name, pt)
-  DOPT(paramset_name);
+  #define DOPT(name) boost::property_tree::get(name, #name, pt);
+  DOPT(message);
   DOPT(num_threads);
   DOPT(out_intervall);
-  DOPT(apply_adaption_intervall);
   DOPT(tend);
   DOPT(dt);
-  DOPT(message);
   DOPT(fn_out);
   DOPT(fn_vessel);
   DOPT(rGf);
   DOPT(tumor_radius);
   DOPT(tumor_speed);
   DOPT(stopping_radius_fraction);
+  DOPT(tissuePressureWidth);
+  DOPT(tissuePressureCenterFraction);
+//   std::vector<string> myOptions = {"message", 
+//     "paramset_name", 
+//     "num_threads",
+//     "out_intervall",
+//     "tend",
+//     "dt",
+//     "fn_out",
+//     "fn_vessel",
+//     "rGf",
+//     "tumor_radius",
+//     "tumor_speed",
+//     "stopping_radius_fraction",
+//     "tissuePressureWidth",
+//     "tissuePressureCenterFraction",
+//   };
+//   for( auto aOption: myOptions)
+//   {
+//     ptree::const_assoc_iterator it = pt.find(aOption);
+//     if( it == pt.not_found())
+//       std::cout<< format("warning: %s not found") % aOption <<std::endl;
+//     else
+//       boost::property_tree::get(aOption, #aOption, pt);
+//   }
+
   //DOPT(tissuePressureDistribution);
   string s = pt.get<string>("tissuePressureDistribution");
   if (s == "sphere") tissuePressureDistribution = TISSUE_PRESSURE_SPHERE;
   else if (s == "shell") tissuePressureDistribution = TISSUE_PRESSURE_SHELL;
   else throw std::runtime_error("unknown tissuePressureDistribution "+s);
-  DOPT(tissuePressureWidth);
-  DOPT(tissuePressureCenterFraction);
-  #undef DOPT
   const auto bfparamsPtree = pt.get_child_optional("calcflow");
   if (bfparamsPtree) bfparams.assign(*bfparamsPtree);
 #ifdef USE_ADAPTION
   const auto adapt_paramsPtree = pt.get_child_optional("adaption");
   if (adapt_paramsPtree) adap_params.assign(*adapt_paramsPtree);
+  DOPT(apply_adaption_intervall);
 #endif
+  #undef DOPT
 }
 
 ptree FakeTum::Parameters::as_ptree() const
@@ -79,12 +105,12 @@ ptree FakeTum::Parameters::as_ptree() const
   boost::property_tree::ptree pt;
   #define DOPT(name) pt.put(#name, name)
   DOPT(paramset_name);
+  DOPT(message);
   DOPT(num_threads);
   DOPT(out_intervall);
-  DOPT(apply_adaption_intervall);
   DOPT(tend);
   DOPT(dt);
-  DOPT(message);
+//   DOPT(message);
   DOPT(fn_out);
   DOPT(fn_vessel);
   DOPT(rGf);
@@ -96,11 +122,12 @@ ptree FakeTum::Parameters::as_ptree() const
   //DOPT(tissuePressureDistribution);
   DOPT(tissuePressureWidth);
   DOPT(tissuePressureCenterFraction);
-  #undef DOPT
   pt.put_child("calcflow", bfparams.as_ptree());
 #if USE_ADAPTION
   pt.put_child("adaption", adap_params.as_ptree());
+  DOPT(apply_adaption_intervall);
 #endif
+  #undef DOPT
   return pt;
 }
 
@@ -151,12 +178,25 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
     FakeTum::Parameters::update_ptree(all_pt_params, pt_params);
     this->params.assign(all_pt_params);
   }
+  /***** vessels ******/
+  {
+    ptree vesselSettings = vessel_model.params.as_ptree();
+    boost::property_tree::update(vesselSettings,pt_params.get_child("vessels"));
+    vessel_model.params.assign(vesselSettings);
+  }
+  /****** blood flow ****/
+  {
+    ptree bfSettings = params.bfparams.as_ptree();
+    boost::property_tree::update(bfSettings,pt_params.get_child("calcflow"));
+    params.bfparams.assign(bfSettings);
+  }
   // direct cout through log
   cout.rdbuf(my::log().rdbuf());
   {
 #ifdef USE_ADAPTION
     // BAD HACK
-    this->params.adap_params.radMin_for_kill = this->model.params.radMin;
+    // do be done
+    //this->params.adap_params.radMin_for_kill = this->model.params.radMin;
 #endif
     my::SetNumThreads(params.num_threads);
     
@@ -188,7 +228,7 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
      * Shear force is used e.g. in model.Init to initialize
      * f_initial. */
     CalcFlow(*vl, params.bfparams); 
-    model.Init(vl.get(), this->model.params, callbacks);
+    vessel_model.Init(vl.get(), this->vessel_model.params, callbacks);
   }
 
   tumor_radius = params.tumor_radius;
@@ -208,6 +248,8 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
 //   }
   while (true)
   {
+#ifdef USE_ADAPTION
+#if 0
     if (time >= next_adaption_time - params.dt * 0.1)
     {
       //do adaption if wanted
@@ -230,6 +272,8 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
       }
       next_adaption_time += params.apply_adaption_intervall;
     }
+#endif
+#endif
     if (time >= next_output_time - params.dt * 0.1)
     {
       
@@ -265,9 +309,10 @@ void FakeTum::FakeTumorSim::doStep(double dt)
   cout << format("step %i, t=%f") % num_iteration % time << endl;
   CalcFlow(*vl, params.bfparams);
 #ifdef USE_ADAPTION
-  model.DoStep(dt, &params.adap_params,&params.bfparams);
+  vessel_model.DoStep(dt, &params.adap_params,&params.bfparams);
 #else
-  //do be implemented
+//   //do be implemented
+  vessel_model.DoStep(dt, &params.bfparams);
 #endif
   tumor_radius += dt * params.tumor_speed;
 }
@@ -290,7 +335,7 @@ void FakeTum::FakeTumorSim::writeOutput()
     a.set("VESSELFILE_MESSAGE", params.vesselfile_message);
     a.set("VESSELFILE_ENSEMBLE_INDEX", params.vesselfile_ensemble_index);
     g = root.create_group("parameters");
-    WriteHdfPtree(g.create_group("vessels"), model.params.as_ptree());
+    WriteHdfPtree(g.create_group("vessels"),vessel_model.params.as_ptree());
     WriteHdfPtree(g, params.as_ptree());
   }
 

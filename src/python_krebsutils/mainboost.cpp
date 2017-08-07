@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "python-helpers.h"
+#include "python_helpers.h"
 #include <boost/python/object.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/str.hpp>
@@ -38,13 +38,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "distancemap.h"
 //#include "continuum-flow.h"
 
-#include "numpy.hpp"
+// #include "numpy.hpp"
 #include "pylatticedata.h"
 #include "vessels3d.h"
 
 
-namespace py = boost::python;
-namespace np = boost::python::numpy;
+// namespace py = boost::python;
+// namespace np = boost::python::numpy;
 
 enum Mode {
   DATA_PER_NODE = 1,

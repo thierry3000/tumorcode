@@ -17,7 +17,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma once // include this file only once per compilation unit (see https://en.wikipedia.org/wiki/Pragma_once)
+
+#ifndef _BULKTISSUEWITHVESSELS_H_
+#define _BULKTISSUEWITHVESSELS_H_
+
+//#pragma once // include this file only once per compilation unit (see https://en.wikipedia.org/wiki/Pragma_once)
 
 #include <fenv.h>
 #include <algorithm>
@@ -26,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "vesselmodel1.h"
 #include "bulktissuemodel1_new.h"
 #include "growthfactor_model.h"
-#include "oxygen_model.h"
+#include "simple_oxygen_model.h"
 #include "mwlib/log.h"
 
 #include "shared-objects.h"
@@ -38,11 +42,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace BulkTissue
 {
-enum TissueId {
-  TCS = 0,
-  DEAD = 1,
-  TISSUE = 2,
-};
+// enum TissueId {
+//   TCS = 0,
+//   DEAD = 1,
+//   TISSUE = 2,
+// };
 
 static const string tissue_name[] = {
   "tumor",
@@ -65,13 +69,14 @@ struct Params
   Int3 lattice_size;
   bool vessel_volume_exclusion;
   BloodFlowParameters bfparams;
-  double
-         reference_intercapillary_distance,
-         o2_range[3],
-         o2_cons_coeff[3],
-         capillary_wall_permeability,
-         o2_level_normal,
-         hematocrit_init;
+  O2Model::SimpleO2Params o2Params;
+//   double
+//          reference_intercapillary_distance;
+//          o2_range[3],
+//          o2_cons_coeff[3]
+//          capillary_wall_permeability,
+//          o2_level_normal,
+//          hematocrit_init;
   
   Params();
   static void update_ptree(ptree &dst, const ptree &src);
@@ -100,8 +105,8 @@ struct NewTumorSim : public  boost::noncopyable
   State state;
   
   // vessel system
-  VesselModel1::Model vessel_model; // dynamics   
-  Array3d<float> vessel_volume_fraction, vessel_o2src_clin, vessel_o2src_crhs; // cached data, could also be read from hdf
+  VesselModel1::Model vessel_model; /// dynamics   
+  Array3d<float> vessel_volume_fraction, vessel_o2src_clin, vessel_o2src_crhs; /// cached data, could also be read from hdf
   int last_vessels_checksum;
   NewSteppers::StepControl vessel_step_ctrl;
 
@@ -153,3 +158,4 @@ struct NewTumorSim : public  boost::noncopyable
 };
 }//end namespace BulkTissue
 
+#endif //#ifndef _BULKTISSUEWITHVESSELS_H_

@@ -20,9 +20,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-if __name__ == '__main__':
-  import os.path, sys
-  sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+import os, sys
+from os.path import join, basename, dirname, splitext
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
   
 
 from os.path import join, dirname
@@ -31,7 +31,7 @@ from dicttoinfo import dicttoinfo, Vec
 from copy import deepcopy
 import numpy as np
 import myutils
-#import krebsutils #---> creates multiprocessor environment,also in __init__ tumor
+import krebsutils #---> creates multiprocessor environment,also in __init__ tumor
 import krebs
 import krebs.tumors
 

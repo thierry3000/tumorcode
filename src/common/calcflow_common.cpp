@@ -46,6 +46,7 @@ void BloodFlowParameters::assign(const ptree &pt)
   rheology        = pt.get<Rheology>("rheology", RheologyForRats);
   inletHematocrit = pt.get<double>("inletHematocrit", 0.45);
   includePhaseSeparationEffect = pt.get<bool>("includePhaseSeparationEffect", false);
+  //includePhaseSeparationEffect = true;
 }
 
 ptree BloodFlowParameters::as_ptree() const
@@ -473,9 +474,12 @@ void SetFlowValues( VesselList3d* vl,
       int a = fl.org2new_vertex[v->NodeA()->Index()];
       int b = fl.org2new_vertex[v->NodeB()->Index()];
       myAssert(a != IntegerMap::unused() && b != IntegerMap::unused());
-
-      v->hematocrit = hema[k];
-
+      if(hema[k]>0)
+        v->hematocrit = hema[k];
+#ifdef DEBUG
+      else
+        cout<< "bad hema at " << k << "... " << hema[k] <<endl;
+#endif
       double wl;
       if( !vl->HasLattice() )
       {

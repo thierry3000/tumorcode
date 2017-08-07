@@ -45,6 +45,11 @@ message("TrilinosDIR: ${TrilinosDIR}")
 
 include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)
 
+option(USE_MILOTTI_MTS "decide to use libmilotti_mts.so" ON)
+if(USE_MILOTTI_MTS)
+  message("MILOTTI_MTS preprocessor defined")
+  add_definitions(-DMILOTTI_MTS)
+endif()
 option(USE_ADAPTION "decide to build the adaption library" OFF)
 CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" OFF "USE_ADAPTION" ON)
 CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" OFF

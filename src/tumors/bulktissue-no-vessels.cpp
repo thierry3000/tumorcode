@@ -73,12 +73,12 @@ public:
       BOOST_FOREACH(const BBox3 bbox, mtboxes->getCurrentThreadRange())
       {
         Array3df phases[3];
-        tie(phases[BulkTissueWithoutVessels::TISSUE], phases[BulkTissueWithoutVessels::TCS], phases[BulkTissueWithoutVessels::DEAD]) = obtain_tumor_fraction(bbox);
+        tie(phases[TISSUE], phases[TCS], phases[DEAD]) = obtain_tumor_fraction(bbox);
         
         FOR_BBOX3(p, bbox)
         {
           const float loc_phases[3] = { phases[0](p), phases[1](p), phases[2](p) };
-          float f = (loc_phases[BulkTissueWithoutVessels::TCS]+loc_phases[BulkTissueWithoutVessels::DEAD])/(loc_phases[0]+loc_phases[1]+loc_phases[2]);
+          float f = (loc_phases[TCS]+loc_phases[DEAD])/(loc_phases[0]+loc_phases[1]+loc_phases[2]);
           slope(p) = -decay_rate * f * o2sources(p);
         }
       }
@@ -101,7 +101,7 @@ struct Model : public boost::noncopyable
 {
   void init(const Int3 &size, double scale, int ndims_, BulkTissueWithoutVessels::State &state, const ptree &pt_params_)
   {
-    pt_params = O2Model::PrezO2Params().as_ptree();
+    pt_params = O2Model::SimpleO2Params().as_ptree();
     boost::property_tree::update(pt_params, pt_params_);
     params.assign(pt_params);
     
@@ -221,7 +221,7 @@ struct Model : public boost::noncopyable
       Array3df phases[3], other_volume;
       BOOST_FOREACH(const BBox3 bbox, mtboxes.getCurrentThreadRange())
       {
-        tie(phases[BulkTissueWithoutVessels::TISSUE], phases[BulkTissueWithoutVessels::TCS], phases[BulkTissueWithoutVessels::DEAD]) = bulktissue_model.getTissuePhases(bbox, state.tumor_state);
+        tie(phases[TISSUE], phases[TCS], phases[DEAD]) = bulktissue_model.getTissuePhases(bbox, state.tumor_state);
         other_volume = bulktissue_model.getObstructionPhase(bbox, state.tumor_state);
 
         FOR_BBOX3(p, bbox)
@@ -233,7 +233,7 @@ struct Model : public boost::noncopyable
             if (reason.empty())
             {
               reason = str(format("at point %s: TISSUE: %f TCS: %f DEAD: %f OBST %f, sum: %f") %
-                p % phases[BulkTissueWithoutVessels::TISSUE](p) % phases[BulkTissueWithoutVessels::TCS](p) % phases[BulkTissueWithoutVessels::DEAD](p) % other_volume(p) % total);
+                p % phases[TISSUE](p) % phases[TCS](p) % phases[DEAD](p) % other_volume(p) % total);
             }
           }
         }
@@ -321,11 +321,11 @@ struct Model : public boost::noncopyable
   void insertO2Coefficients(int box_index, const BBox3& bbox, const BulkTissueWithoutVessels::State &state, FiniteVolumeMatrixBuilder &mb)
   {
     //float kcons = params.o2_cons_coeff_normal/bulktissue_model.params.ncells_norm;
-    float kvess_norm = params.o2_level_normal * (params.o2_cons_coeff[BulkTissueWithoutVessels::TISSUE]*0.5) / (1 - params.o2_level_normal);
+    float kvess_norm = params.o2_level_normal * (params.o2_cons_coeff[TISSUE]*0.5) / (1 - params.o2_level_normal);
     float kvess_tum = params.o2_rel_tumor_source_density * kvess_norm;
 
     Array3df phases[3];
-    tie(phases[BulkTissueWithoutVessels::TISSUE], phases[BulkTissueWithoutVessels::TCS], phases[BulkTissueWithoutVessels::DEAD]) = bulktissue_model.getTissuePhases(bbox, state.tumor_state);
+    tie(phases[TISSUE], phases[TCS], phases[DEAD]) = bulktissue_model.getTissuePhases(bbox, state.tumor_state);
     
     mb.AddDiffusion(bbox, ConstValueFunctor<float>(1.), -1.);
     
@@ -341,7 +341,7 @@ struct Model : public boost::noncopyable
       }
       else
       {
-        float rel_tum_fraction = (loc_phases[BulkTissueWithoutVessels::TCS]+loc_phases[BulkTissueWithoutVessels::DEAD])/(loc_phases[0]+loc_phases[1]+loc_phases[2]);
+        float rel_tum_fraction = (loc_phases[TCS]+loc_phases[DEAD])/(loc_phases[0]+loc_phases[1]+loc_phases[2]);
         q = rel_tum_fraction * kvess_tum + (1.-rel_tum_fraction) * kvess_norm;
       }
 
@@ -394,7 +394,7 @@ struct Model : public boost::noncopyable
   int iteration_num;
   double tumor_radius_estimate; // last known estimate, mean distance from origin taken over tumor interface.
   // parameters
-  O2Model::PrezO2Params params;
+  O2Model::SimpleO2Params params;
   ptree pt_params;
   // models
   NewBulkTissueModel::Model bulktissue_model; // continuum mechanics model, responsible for propagating State::tumor_state in time + utility functions like determining source strength of cell density

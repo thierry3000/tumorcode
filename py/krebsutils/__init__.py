@@ -83,6 +83,17 @@ imports_ = [ f.strip() for f in 'testCalcOxy, testCalcOxy2, testCalcOxy3, testCa
 imports_ = [ f for f in imports_ if hasattr(libkrebs, f) ]
 locals().update( (f,getattr(libkrebs, f)) for f in imports_)
 
+''' arguments are: 
+      vesselgroup
+      return_flags          --- decide if  vessel flags are returned
+      bloodflowparams       --- need for calcflow
+      simple                --- if simple, no hematocrit is returned
+      storeCalculationInHDF --- add a "recomputed" subfolder to the vesselfile
+    return values:
+      a python list object with elements:
+    (pressure, flow, force, **hematocrit**, **flags**)
+      ** values are optional
+'''
 calc_vessel_hydrodynamics_Ccode = libkrebs.calc_vessel_hydrodynamics
 read_vessel_positions_from_hdf_ = libkrebs.read_vessel_positions_from_hdf
 read_vessel_positions_from_hdf_edges_ = libkrebs.read_vessel_positions_from_hdf_edges
@@ -366,6 +377,7 @@ class Graph(object):
     if self.roots is not None:
       self.roots = np.take(toNewNode, self.roots)
     g = Graph(edgelist = new_el)
+    g.from_fn = self.from_fn
     g.nodes = dict(zip(nnames,new_nprop))
     g.edges = dict(zip(enames,new_eprop))
     return g
@@ -476,6 +488,38 @@ def vessels_require_(vesselgroup, g, name):
     g.edges['length'] = l
   elif 'flags' == name:
     vessels_require_(vesselgroup, g, 'flags')
+  elif 'po2_node' == name:
+    #find detailed o2 group
+    if 'recomputed' in vesselgroup.name:
+      ''' usualy the case for deatailed o2 calculation '''
+      ''' vesselgroup.parent.parent is po2 group'''
+      po2_vessels = np.asarray(vesselgroup.parent.parent['po2/vessels/po2vessels'])
+    else:
+      po2_vessels = np.asarray(vesselgroup.parent['detailedPo2/po2_vessels'])
+    num_verts = len(g['position'])
+    node_po2 = np.zeros(num_verts)
+    ''' counts the vertices, they might apear several time
+        so we take the average
+    '''
+    node_n = np.zeros(num_verts)
+    for ((a,b),(po2_a,po2_b)) in zip(e, po2_vessels):
+      node_po2[a] += po2_a
+      node_po2[b] += po2_b
+      node_n[a] += 1.
+      node_n[b] += 1.
+    node_po2 /= np.maximum(1, node_n)
+    g.nodes['po2_node'] = node_po2
+  
+  elif 'po2_vessel' == name:
+    #find detailed o2 group  -- works
+    if 'recomputed' in vesselgroup.name:
+      ''' usualy the case for deatailed o2 calculation '''
+      ''' vesselgroup.parent.parent is po2 group'''
+      po2_vessels = np.asarray(vesselgroup.parent.parent['po2/vessels/po2vessels'])
+    else:
+      po2_vessels = np.asarray(vesselgroup.parent['detailedPo2/po2_vessels'])
+    po2AtVessel = np.average(po2_vessels,1)
+    g.edges['po2_vessel'] = po2AtVessel 
   else:
     raise CannotComputeException('do not know how to compute %s' % name)
 
@@ -532,17 +576,21 @@ def calc_vessel_hydrodynamics_(vesselgroup, calc_hematocrit, return_flags, overr
   """
   # this is very messy now due to the new bloodflowparameters
   simple = True # keep hematocrit that is already set in teh vesselgraph
-  if override_hematocrit is not None:
-    bloodflowparams['inletHematocrit'] = float(override_hematocrit)
   if calc_hematocrit:
-    bloodflowparams['includePhaseSeparationEffect'] = True
-  if ('inletHematocrit' in bloodflowparams) or ('includePhaseSeparationEffect' in bloodflowparams):
-    simple = False # assign new hematocrit
+    simple = False
+  ''' do not use the override_hematorit flag anymore'''
+#  if override_hematocrit is not None:
+#    bloodflowparams['inletHematocrit'] = float(override_hematocrit)
+#  if calc_hematocrit:
+#    bloodflowparams['includePhaseSeparationEffect'] = True
+#  if ('inletHematocrit' in bloodflowparams) or ('includePhaseSeparationEffect' in bloodflowparams):
+#    simple = False # assign new hematocrit
   if not bool(bloodflowparams):
     print('Warning: bloodflowparams are empty!!!')
     print('Using c++ default falue')
   #usage:
   #const py::object &vess_grp_obj ,bool return_flags, const BloodFlowParameters &bfparams, bool simple
+  
   return calc_vessel_hydrodynamics_Ccode(vesselgroup, return_flags, bloodflowparams, simple, storeCalculationInHDF)
 
 

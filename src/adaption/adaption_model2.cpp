@@ -236,7 +236,7 @@ void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &para
             }
             break;
           
-    case VALUE: // this should become the default case
+    case VALUE: // this should become the default case, one pressure one flow
 #ifdef DEBUG
       std::printf("case VALUE found\n");
 #endif
@@ -258,6 +258,32 @@ void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &para
           cout<< format("changing %i to flow: %f\n") % vc->Index() % params.a_flow <<endl;
 #endif
           FlowBC aCondition = FlowBC(FlowBC::Type::CURRENT, params.a_flow );
+          vl.SetBC(vc,aCondition);
+        }
+      }
+      break;
+    case BOTH_PRESSURE: // note, a_flow is venous pressure here!!!!!
+#ifdef DEBUG
+      std::printf("case BOTH_PRESSURE found\n");
+#endif
+      for(int i=0; i<ncnt; ++i)
+      {
+        const VesselNode* vc= vl.GetNode(i);
+        // insert boundary nodes into the bcs array
+        if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
+        {
+#ifdef DEBUG
+          cout<< format("changing %i to pressure: %f\n") % vc->Index() % params.a_pressure <<endl;
+#endif
+          FlowBC aCondition = FlowBC(FlowBC::Type::PIN, params.a_flow );
+          vl.SetBC(vc,aCondition);
+        }
+        if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
+        {
+#ifdef DEBUG
+          cout<< format("changing %i to flow: %f\n") % vc->Index() % params.a_flow <<endl;
+#endif
+          FlowBC aCondition = FlowBC(FlowBC::Type::PIN, params.a_pressure );
           vl.SetBC(vc,aCondition);
         }
       }
@@ -400,15 +426,16 @@ class ConductiveTransport
   FlReal            GetHema(int i) const		{ return nw.hema[i]; }
   my::eqpair<int>   GetEdge(int i) const                { return nw.edges[i]; }
   bool              IsBoundary(int i) const             { return nw.bcs.find(i) != nw.bcs.end(); }
-  FlReal	    GetCondSignal(int i) const		{ return nw.condSignal[i]; }
-  FlReal	    GetRadius(int i) const		{ return nw.rad[i];}
+  FlReal	          GetCondSignal(int i) const		{ return nw.condSignal[i]; }
+  FlReal	          GetRadius(int i) const		{ return nw.rad[i];}
   void              SetConductive(int i,FlReal x) const;
-  void		    SetCondSignal(int i,FlReal x) const;
-  void		    SetFlow(int i,FlReal x) const;
-  void		    SetHema(int i,FlReal x) const;
-  void		    SetMetabolic(int i,FlReal x) const;
-  void		    SetS_tot(int i,FlReal x) const;
-  void		    set_S_tot_sq(FlReal x) const;
+  void		          SetCondSignal(int i,FlReal x) const;
+  void		          SetFlow(int i,FlReal x) const;
+  void		          SetHema(int i,FlReal x) const;
+  void		          SetMetabolic(int i,FlReal x) const;
+  void		          SetS_tot(int i,FlReal x) const;
+  void		          set_S_tot_sq(FlReal x) const;
+  
   // not trivial getter an setters
   FlReal GetConductive(int i) const{
     //if( nw.inTumor[i] and adaptionParams.tum_manitulate_s4)
@@ -528,15 +555,19 @@ void ConductiveTransport::SetFlow(int i, FlReal x) const
 }
 void ConductiveTransport::SetHema(int i, FlReal x) const
 {
-  if( x < 0.1 )
+  if( x < 0.01 )
   {
-    //printf("Warning: Low hema segment at %i\n", i);
+    #ifndef TOTAL_SILENCE
+    printf("Warning: Low hema segment at %i\n", i);
+    #endif
     //myAssert(x > 0.001);
-    x = 0.1;
+    x = 0.01;
   }
-  if( x > 0.9 )
+  if( x > 0.99 )
   {
-    //printf("Warning: High hema segment at %i\n", i);
+    #ifndef TOTAL_SILENCE
+    printf("Warning: High hema segment at %i\n", i);
+    #endif
     //myAssert(x > 0.001);
     x = 0.9;
   }
@@ -1058,51 +1089,51 @@ void SetAdaptionValues(VesselList3d &vl, CompressedAdaptionNetwork& fl, double d
 #endif
       {
 #ifdef DEBUG
-	if(kk<0)
-	  printf("kk: %i\n", kk);
+        if(kk<0)
+          printf("kk: %i\n", kk);
 #endif
-	//node map
-	int a = fl.org2new_vertex[v->NodeA()->Index()];
-	int b = fl.org2new_vertex[v->NodeB()->Index()];
-	myAssert(a != IntegerMap::unused() && b != IntegerMap::unused());
-	myAssert(kk<fl.num_edges());
-	v->S_total = fl.S_tot_array[kk];
-	double aconductiveSignal = fl.condSignal[kk];
-	myAssert( std::isfinite(aconductiveSignal));
-	v->conductivitySignal = aconductiveSignal;
-	v->metabolicSignal = fl.metabolic[kk];
-  #if 1 //activate this in order to leafe out the change in radii
-	double buff = v->r * fl.S_tot_array[kk];
-	v->r = v->r + buff*delta_t;
-	delta_r_square = delta_r_square + buff*buff;
-	{
-	  //if we change here, we store the amount
-	  if(fabs(buff)>max_delta_r_again)
-	  {
-	    //max_delta_r_again = fabs(v->r * fl.S_tot_array[kk]);
-	    max_delta_r_again = fabs(buff);
-	  }
-	  if(fabs(fl.S_tot_array[kk])>max_stot_again)
-	  {
-	    max_stot_again = fabs(fl.S_tot_array[kk]);
-	  }
-	}
-	if( v->r <=rad_min )//minimal value
-	{
-	  tooSmallRadiusSuggested++;
-	  if( v->r <=0 )
-	  {
-	    negativeRadiusSuggested++;
-	  }
-	  v->r = rad_min;
-	  //uncomment this for not killing
-	  //bKill = true;
-	}
-	if( v->r>142.)//maximun value
-	{
-	  v->r=142.;
-	  tooBigRadiusSuggested++;
-	}
+        //node map
+        int a = fl.org2new_vertex[v->NodeA()->Index()];
+        int b = fl.org2new_vertex[v->NodeB()->Index()];
+        myAssert(a != IntegerMap::unused() && b != IntegerMap::unused());
+        myAssert(kk<fl.num_edges());
+        v->S_total = fl.S_tot_array[kk];
+        double aconductiveSignal = fl.condSignal[kk];
+        myAssert( std::isfinite(aconductiveSignal));
+        v->conductivitySignal = aconductiveSignal;
+        v->metabolicSignal = fl.metabolic[kk];
+        #if 1 //activate this in order to leafe out the change in radii
+        double buff = v->r * fl.S_tot_array[kk];
+        v->r = v->r + buff*delta_t;
+        delta_r_square = delta_r_square + buff*buff;
+        {
+          //if we change here, we store the amount
+          if(fabs(buff)>max_delta_r_again)
+          {
+            //max_delta_r_again = fabs(v->r * fl.S_tot_array[kk]);
+            max_delta_r_again = fabs(buff);
+          }
+          if(fabs(fl.S_tot_array[kk])>max_stot_again)
+          {
+            max_stot_again = fabs(fl.S_tot_array[kk]);
+          }
+        }
+        if( v->r <=rad_min )//minimal value
+        {
+          tooSmallRadiusSuggested++;
+          if( v->r <=0 )
+          {
+            negativeRadiusSuggested++;
+          }
+          v->r = rad_min;
+          //uncomment this for not killing
+          //bKill = true;
+        }
+        if( v->r>142.)//maximun value
+        {
+          v->r=142.;
+          tooBigRadiusSuggested++;
+        }
 
   #endif
       }//end if circulated
@@ -1323,21 +1354,17 @@ bool check_while_break( int no_vessels, double min_error, double nqdev, double m
 }
 
 
-//std::tuple<uint,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, VesselList3d &vl,bool doDebugOutput)
 std::tuple<uint,FlReal,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, bool doDebugOutput)
 {
-//   for( auto it: params.as_ptree())
-//   {
-//     printf("first: %s, second: %f\n", it.first,it.second);
-//   }
-  
   h5cpp::File *readInFile = new h5cpp::File(params.vesselFileName,"r");
   h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group(params.vesselGroupName));
-  //h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group("adaption/recomputed"));
+
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(vl_grp, make_ptree("filter", false));
 #ifndef TOTAL_SILENCE
   printf("runAdaption_Loop with: k_c:%f k_m: %f k_s: %f\n", params.k_c, params.k_m, params.k_s);
 #endif
+  
+  /***********************   MPI ***********************/
   int rank,size;
   int flag;// = Is_initialized();
   int tid, nthreads;
@@ -1368,6 +1395,8 @@ std::tuple<uint,FlReal,FlReal> runAdaption_Loop( Parameters params, BloodFlowPar
     printf("on thread %i of %i\n", omp_get_num_threads(), omp_get_max_threads());
 #endif
   }
+  /***********************  END MPI ***********************/
+  
   
   //starting with equal radii with parameters starting value is greate than 0.
   //otherwise we use the radii from the input file vary them a little bit

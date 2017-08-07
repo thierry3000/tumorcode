@@ -82,7 +82,7 @@ struct MPPrivate
     tbbinit.terminate();
     tbbinit.initialize(num_threads);
 #if defined( _OPENMP )
-#if DEBUG
+#ifdef DEBUG
     printf("omp num threads <- %i\n", num_threads);
 #endif
     omp_set_num_threads(num_threads);

@@ -107,29 +107,29 @@ bool IffDrugApp3d::InitNewState()
   
 
   std::auto_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(root.open_group(h5_path_lattice));
-  vesselList.reset(new VesselList3d(ldp));
-  vesselList->Init(*ldp);
+  vl.reset(new VesselList3d(ldp));
+  vl->Init(*ldp);
   h5::Group vesselgroup = root.open_group(h5_path_vessel);
   //ReadHdfGraph(vesselgroup, *vesselList);
-  ReadHdfGraph(vesselgroup, vesselList.get());
+  ReadHdfGraph(vesselgroup, vl.get());
   { // read node pressure values
   DynArray<float> press;
   h5::read_dataset(vesselgroup.open_dataset("nodes/pressure"), press);
-  int ncnt = vesselList->GetNCount();
+  int ncnt = vl->GetNCount();
   for(int i=0; i<ncnt; ++i)
   {
-    vesselList->GetNode(i)->press = press[i];
+    vl->GetNode(i)->press = press[i];
   }
   // read edge flow values
   DynArray<double> a;
   h5::read_dataset(vesselgroup.open_dataset("edges/flow"), a);
-  int ecnt = vesselList->GetECount();
+  int ecnt = vl->GetECount();
   for(int i=0; i<ecnt; ++i)
   {
-    vesselList->GetEdge(i)->q = a[i];
+    vl->GetEdge(i)->q = a[i];
   }
   h5::read_dataset(vesselgroup.open_dataset("edges/maturation"), a);
-  for(int i=0; i<ecnt; ++i) vesselList->GetEdge(i)->maturation = a[i];
+  for(int i=0; i<ecnt; ++i) vl->GetEdge(i)->maturation = a[i];
   }
 
 #if 0
@@ -162,7 +162,7 @@ bool IffDrugApp3d::InitNewState()
     double radius = tum_grp.attrs().get<double>("TUMOR_RADIUS");
     { 
       LatticeDataQuad3d ld;
-      SetupFieldLattice(vesselList->Ld().GetWorldBox(), 3, 30., -30, ld);
+      SetupFieldLattice(vl->Ld().GetWorldBox(), 3, 30., -30, ld);
       grid = ContinuumGrid(ld, dim); 
     }
     phi_water = MakeArray3dWithBorder<float>(grid.ld.Box(), dim, 3);
@@ -221,31 +221,33 @@ bool IffDrugApp3d::InitNewState()
   else
     throw std::runtime_error("unkown tumor type");
 
+  //T.F. why is this 64 here?
   mtboxes = MakeMtBoxGrid(grid.ld.Box(), Int3(64, 32, 32));
-  SortVesselsIntoMtBoxGrid(grid.ld, *vesselList, 1, mtboxes, vesselsInBoxes);
+  SortVesselsIntoMtBoxGrid(grid.ld, *vl, 1, mtboxes, vesselsInBoxes);
   VesselFluidExavasationModel *tmp = new VesselFluidExavasationModel();
-  tmp->Init(*vesselList, grid, vesselsInBoxes, iff_params);
+  tmp->Init(*vl, grid, vesselsInBoxes, iff_params);
   vessel_sources_f.reset(tmp);
   }
 
 #ifdef ANALYZE_FLOW_CHANGE
-  { // compute pressure and flow without IF coupling
-    CalcFlow(vesselList.get(), 0, 0);
-    int ecnt = vesselList->GetECount();
-    int ncnt = vesselList->GetNCount();
+// compute pressure and flow without IF coupling
+  { 
+    CalcFlow(vl.get(), 0, 0);
+    int ecnt = vl->GetECount();
+    int ncnt = vl->GetNCount();
     org_press.resize(ncnt);
     org_flow.resize(ecnt);
     for (int i=0; i<ecnt; ++i)
-      org_flow[i] = vesselList->GetEdge(i)->q;
+      org_flow[i] = vl->GetEdge(i)->q;
     for (int i=0; i<ncnt; ++i) {
-      org_press[i] = vesselList->GetNode(i)->press;
+      org_press[i] = vl->GetNode(i)->press;
       //cout << org_press[i] << endl;
     }
   }
 #endif
   cout << "read complete" << endl;
 
-  cout << "vessel ld: " << vesselList->Ld() << endl;
+  cout << "vessel ld: " << vl->Ld() << endl;
   cout << "field ld: " << grid.ld << endl;
 
   iffstate.reset( new IfFlowState() );
@@ -336,28 +338,30 @@ void IffDrugApp3d::MeasureIfFlowState(h5::Group g)
   }
 
   h5::Group vessel_group = g.create_group("vessels");
-  WriteHdfGraph(vessel_group, *vesselList);
-  vesselList->Ld().WriteHdf(g.create_group("lattice"));
+  WriteHdfGraph(vessel_group, *vl);
+  vl->Ld().WriteHdf(g.create_group("lattice"));
 
 
-  { int ecnt = vesselList->GetECount();
-  DynArray<float> tmp1(ecnt);
-  for (int i=0; i<ecnt; ++i)
-  {
-    double coeffa, coeffb, vala, valb;
-    vessel_sources_f->GetVesselInfo(vesselList->GetEdge(i), coeffa, coeffb, vala, valb);
-    tmp1[i] = 0.5*(coeffa+coeffb);
+  { 
+    int ecnt = vl->GetECount();
+    DynArray<float> tmp1(ecnt);
+    for (int i=0; i<ecnt; ++i)
+    {
+      double coeffa, coeffb, vala, valb;
+      vessel_sources_f->GetVesselInfo(vl->GetEdge(i), coeffa, coeffb, vala, valb);
+      tmp1[i] = 0.5*(coeffa+coeffb);
+    }
+    h5::create_dataset(vessel_group, "edges/wall_conductivity", tmp1); 
   }
-  h5::create_dataset(vessel_group, "edges/wall_conductivity", tmp1); }
 
 #ifdef ANALYZE_FLOW_CHANGE
   {
-    int ecnt = vesselList->GetECount();
-    int ncnt = vesselList->GetNCount();
+    int ecnt = vl->GetECount();
+    int ncnt = vl->GetNCount();
     for (int i=0; i<ecnt; ++i)
-      org_flow[i] = vesselList->GetEdge(i)->q - org_flow[i];
+      org_flow[i] = vl->GetEdge(i)->q - org_flow[i];
     for (int i=0; i<ncnt; ++i)
-      org_press[i] = vesselList->GetNode(i)->press - org_press[i];
+      org_press[i] = vl->GetNode(i)->press - org_press[i];
     h5::create_dataset_range(vessel_group,"edges/flow_if_delta", org_flow);
     h5::create_dataset_range(vessel_group,"nodes/pressure_if_delta", org_press);
     org_flow.clear();
@@ -518,7 +522,7 @@ int  IffDrugApp3d::Main(const ptree &read_params, const string &outfilename, py:
   if (out_times.size() > 0)
   {
     IfDrug::VesselDrugExavasationModel drugexavasationmodel;
-    drugexavasationmodel.Init(*vesselList, grid, vesselsInBoxes, ift_params);
+    drugexavasationmodel.Init(*vl, grid, vesselsInBoxes, ift_params);
 
     IfDrug::Calculator drugcalc;
     drugcalc.Init(grid, mtboxes, *iffstate, tissueCompositionCallback, drugexavasationmodel, ift_params);

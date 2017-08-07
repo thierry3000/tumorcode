@@ -17,15 +17,18 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "python-helpers.h"
+#include "python_helpers.h"
 #include <boost/property_tree/info_parser.hpp>
 
 h5cpp::Group PythonToCppGroup(const py::object &op_)
 {
-  py::object id_obj1 = py::getattr(op_, "id");
-  py::object id_obj2 = py::getattr(id_obj1, "id");
-  ssize_t id = py::extract<ssize_t>(id_obj2);
-  return h5cpp::Group(id);
+  if( !op_.is_none() )
+  {
+    py::object id_obj1 = py::getattr(op_, "id");
+    py::object id_obj2 = py::getattr(id_obj1, "id");
+    ssize_t id = py::extract<ssize_t>(id_obj2);
+    return h5cpp::Group(id);
+  }
 }
 
 h5cpp::Dataset PythonToCppDataset(const py::object &op_)
@@ -210,8 +213,22 @@ void exportVectorClassConverters()
   mw_py_impl::VecToPy<bool, 3>::Register();
 }
 
-}
+//template<class T>
+// double checkedExtractFromDict(const py::dict &d, const char* name)
+// {
+//   try
+//   {
+//     return py::extract<double>(d.get(name));
+//   }
+//   catch (const py::error_already_set &e) 
+//   {
+//     std::cerr << format("unable to extract parameter '%s': ") % name;
+//     throw e; // don't every try to handle this!
+//   }
+// }
 
+
+}//namespace mw_py_impl
 
 bool PyCheckAbort()
 {

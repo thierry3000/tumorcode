@@ -17,23 +17,23 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "oxygen_model.h"
+#include "simple_oxygen_model.h"
 #include "shared-objects.h"
 #include "continuum-flow.h"
 #include <boost/property_tree/info_parser.hpp>
 namespace O2Model
 {
-
+  /**************************************PARAMETERS ***************************/
   static const string tissue_name[] = {
   "tumor",
   "necro",
   "normal"
   };
   
-PrezO2Params::PrezO2Params()
+SimpleO2Params::SimpleO2Params()
 {
   o2_rel_tumor_source_density = 0.2;
-  o2_level_normal = 0.8;
+  o2_level_normal = 0.6;
   for (int i=0; i<3; ++i)
   {
     o2_range[i] = 100.;
@@ -41,11 +41,17 @@ PrezO2Params::PrezO2Params()
   }
   test_obstacle = 0;
   use_o2_source_decay = false;
+  #define DOPT(name, value) name = value
+  DOPT(hematocrit_init, 0.45);
+  DOPT(reference_intercapillary_distance, 80);
+  capillary_wall_permeability = O2Model::CalcHomogeneousCoeffOxy(o2_cons_coeff[0], o2_level_normal, 4., reference_intercapillary_distance);
+  
+  #undef DOPT
 }
 
 #define PT_ASSIGN(name) boost::property_tree::get(name, #name, pt)
 #define AS_PTREE(name) pt.put(#name, name);
-void PrezO2Params::assign(const ptree &pt)
+void SimpleO2Params::assign(const ptree &pt)
 {
   #define DOPT(name) boost::property_tree::get(name, #name, pt)
   for (int i=0; i<3; ++i) 
@@ -69,6 +75,15 @@ void PrezO2Params::assign(const ptree &pt)
       throw std::invalid_argument("either o2_cons_coeff_<tissue type> or o2_range_<tissue type> must be provided");
   }
   DOPT(o2_level_normal);
+  DOPT(hematocrit_init);
+  DOPT(reference_intercapillary_distance);
+    for (int i=0; i<3; ++i) {
+      boost::property_tree::get(o2_cons_coeff[i], "o2_cons_coeff_"+tissue_name[i], pt);
+      boost::property_tree::get(o2_range[i], "o2_range_"+tissue_name[i], pt);
+    }
+  DOPT(capillary_wall_permeability);
+  DOPT(o2_level_normal);
+  
   PT_ASSIGN(o2_rel_tumor_source_density);
   PT_ASSIGN(test_obstacle);
   PT_ASSIGN(use_o2_source_decay);
@@ -76,7 +91,7 @@ void PrezO2Params::assign(const ptree &pt)
 }
 
 
-void PrezO2Params::update_ptree(ptree &dst, const ptree &src)
+void SimpleO2Params::update_ptree(ptree &dst, const ptree &src)
 {
   boost::property_tree::update(dst, src);
   for (int i=0; i<3; ++i)
@@ -93,18 +108,29 @@ void PrezO2Params::update_ptree(ptree &dst, const ptree &src)
 }
 
 
-ptree PrezO2Params::as_ptree() const
+ptree SimpleO2Params::as_ptree() const
 {
   ptree pt;
   #define DOPT(name) pt.put(#name, name)
   #define DOPT2(name, i) pt.put(#name"_"+tissue_name[i], name[i])
 
+  DOPT(hematocrit_init);
+  DOPT(reference_intercapillary_distance);
   DOPT(o2_level_normal);
+  DOPT(capillary_wall_permeability);
+  //#define DOPT2(name, i) pt.put(#name"_"+tissue_name[i], name[i])
   for (int i=0; i<3; ++i)
   {
     DOPT2(o2_range, i);
     DOPT2(o2_cons_coeff, i);
   }
+  
+//   DOPT(o2_level_normal);
+//   for (int i=0; i<3; ++i)
+//   {
+//     DOPT2(o2_range, i);
+//     DOPT2(o2_cons_coeff, i);
+//   }
   
   AS_PTREE(o2_rel_tumor_source_density);
   AS_PTREE(test_obstacle);
@@ -114,8 +140,28 @@ ptree PrezO2Params::as_ptree() const
   #undef DOPT2
   return pt;
 }
-  
-void AddSourceDistribution(const BBox3 &bbox, const LatticeDataQuad3d &field_ld, int dim, Array3d<float> l_coeff, Array3d<float> rhs, const VesselList3d::LatticeData &vessld, const DynArray<const Vessel*> &vessels, const ptree &params)
+
+/************************************** END OF PARAMETERS ***************************/
+
+
+/** @note this function wokrks with an array of vessel pointer as
+ *        opposed to the other one which works with the vessel list structure
+ *        because of multithread issues we have to deepcopy them!
+ *        --> delete unused vl version
+ * 
+ * l_coeff could be e.g vessel_o2src_clin
+ *  rhs     could be e.g vessel_o2src_crhs
+ * 
+ * as in bulktissue-with-vessels.cpp
+ */
+void AddSourceDistribution( const BBox3 &bbox, 
+                            const LatticeDataQuad3d &field_ld, 
+                            int dim, 
+                            Array3d<float> l_coeff, 
+                            Array3d<float> rhs, 
+                            const VesselList3d::LatticeData &vessld, 
+                            const DynArray<const Vessel*> &vessels, 
+                            const ptree &params)
 {
   const double capillary_wall_permeability = params.get<double>("capillary_wall_permeability");
   const double coeffBloodOxy   = 1.0f;
@@ -123,11 +169,16 @@ void AddSourceDistribution(const BBox3 &bbox, const LatticeDataQuad3d &field_ld,
   const double maturation_at_r5 = GetInitialThickness(5.0f);
   //const double maturation_at_r20= GetInitialThickness(20.0f);
   const double hematocrit_init = params.get<double>("hematocrit_init");
-/* In 2d, the samples are projected on the xy plane.
-   It is assumed that a 2d slice is 200 micron in height. Hence the scaling factor. */
+/** 
+ * In 2d, the samples are projected on the xy plane.
+ * It is assumed that a 2d slice is 200 micron in height. Hence the scaling factor. 
+ * 
+ * 3D case this is just 1.
+ */
   const double dim_coeff = dim==2 ? (field_ld.Scale()/params.get<double>("fake_height_2d",200.)) : 1.;
   
   CylinderNetworkSampler sampler; sampler.Init(field_ld.Scale(), params);
+  //each thread could execute its own loop independently
   for (int i=0; i<vessels.size(); ++i)
   {
     const Vessel* v = vessels[i];
@@ -156,15 +207,20 @@ void AddSourceDistribution(const BBox3 &bbox, const LatticeDataQuad3d &field_ld,
   }
 }
 
-void AddSourceDistribution(Array3d<float> clinear_field, Array3d<float> rhs_field, int dim, const LatticeDataQuad3d &field_ld,
-                                 const VesselList3d &vl,
-                                 const boost::property_tree::ptree &params)
-{
-  DynArray<const Vessel*> vessels(vl.GetECount());
-  for (int i=0; i<vl.GetECount(); ++i)
-    vessels[i] = vl.GetEdge(i);
-  AddSourceDistribution(field_ld.Box(), field_ld, dim, clinear_field, rhs_field, vl.Ld(), vessels, params);
-}
+// void AddSourceDistribution( Array3d<float> clinear_field, 
+//                             Array3d<float> rhs_field, 
+//                             int dim, 
+//                             const LatticeDataQuad3d &field_ld,
+//                             const VesselList3d &vl,
+//                             const boost::property_tree::ptree &params)
+// {
+//   DynArray<const Vessel*> vessels(vl.GetECount());
+//   for (int i=0; i<vl.GetECount(); ++i)
+//   {
+//     vessels[i] = vl.GetEdge(i);
+//   }
+//   AddSourceDistribution(field_ld.Box(), field_ld, dim, clinear_field, rhs_field, vl.Ld(), vessels, params);
+// }
 
 
 void assignRangeParam(double &range, double &cons_coeff, const string &parameter_postfix, const ptree &pt)

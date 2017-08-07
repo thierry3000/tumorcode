@@ -17,8 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef OXYGEN_MODEL_H
-#define OXYGEN_MODEL_H
+#ifndef GLUCOSE_MODEL_H
+#define GLUCOSE_MODEL_H
 
 //#include "mwlib/field.h"
 //#include "mwlib/math_ext.h"
@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //#include "mwlib/ptree_ext.h"
 #include "common.h"
 
-namespace O2Model
+namespace GlucoseModel
 {
 
 /*
@@ -42,27 +42,32 @@ namespace O2Model
  *   hematocrit_init
  * the blood o2 level is computed as v->hematocrit/hematocrit_init
  */
-struct PrezO2Params
+struct GlucoseParams
 {
-  PrezO2Params();
+  GlucoseParams();
   void assign(const ptree &pt);
   ptree as_ptree() const;
   static void update_ptree(ptree &dst, const ptree &src);
   
-  double
-         o2_range[3],
-         o2_cons_coeff[3],
-         o2_rel_tumor_source_density,
-         o2_level_normal;
-  int test_obstacle;
-  bool use_o2_source_decay;
+  double glucose_range = 20;
+  
+//   double
+//          o2_range[3],
+//          o2_cons_coeff[3],
+//          o2_rel_tumor_source_density,
+//          o2_level_normal,
+//          hematocrit_init,
+//          reference_intercapillary_distance,
+//          capillary_wall_permeability;
+//   int test_obstacle;
+//   bool use_o2_source_decay;
 };
 
-void AddSourceDistribution(Array3d<float> clinear_field, Array3d<float> rhs_field,
-                                 const LatticeDataQuad3d &field_ld,
-                                 int dim,
-                                 const VesselList3d &vl,
-                                 const boost::property_tree::ptree &params);
+// void AddSourceDistribution(Array3d<float> clinear_field, Array3d<float> rhs_field,
+//                                  const LatticeDataQuad3d &field_ld,
+//                                  int dim,
+//                                  const VesselList3d &vl,
+//                                  const boost::property_tree::ptree &params);
 void AddSourceDistribution(const BBox3 &bbox,
                            const LatticeDataQuad3d &field_ld,
                            int dim,
@@ -81,9 +86,8 @@ void assignWallPermeabilityCoefficient(double &capillary_wall_permeability, doub
   vess_rad = radius
   vess_spacing = intercapillary distance
 */
-double CalcHomogeneousMaxOxy(double c, double q, double vess_rad, double vess_spacing);
-double CalcHomogeneousCoeffOxy(double c, double o2_level_normal, double vess_rad, double vess_spacing);
+// double CalcHomogeneousMaxOxy(double c, double q, double vess_rad, double vess_spacing);
+// double CalcHomogeneousCoeffOxy(double c, double o2_level_normal, double vess_rad, double vess_spacing);
 
-}
-
+}//end namespace
 #endif
