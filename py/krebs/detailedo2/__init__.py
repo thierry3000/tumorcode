@@ -136,12 +136,13 @@ def computePO2_(gdst, vesselgroup, tumorgroup, parameters):
 
 def readParameters(po2group):
   p = myutils.hdf_read_dict_hierarchy(po2group['parameters'])
-  for oldName, newName in [("kD_tissue", 'D_tissue'),
-                           ("alpha_t", "solubility_tissue"),
-                           ("alpha_p", "solubility_plasma")]:
-    if not newName in p:
-      p[newName] = p[oldName]
-      del p[oldName]
+  ''' hopefully not needed anymore consistent parameter choice'''
+#  for oldName, newName in [("kD_tissue", 'D_tissue'),
+#                           ("alpha_t", "solubility_tissue"),
+#                           ("alpha_p", "solubility_plasma")]:
+#    if not newName in p:
+#      p[newName] = p[oldName]
+#      del p[oldName]
   return p
   
 

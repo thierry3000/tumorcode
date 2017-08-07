@@ -48,6 +48,85 @@ void wrap_vessels(VesselList3d &vl, std::vector<BloodVessel> &bloodVesselVector)
 {
   int ecnt = vl.GetECount();
   
+  
+  /* copy from milotti 
+   * 
+   * // lettura del file dei vasi
+    
+    ifstream BloodVesselFile( "BloodVessels.txt" );
+    cout << BloodVesselFile.is_open() << endl;
+    cout << "\nMain: blood vessels from BloodVessels.txt" << endl;
+    int nbv;
+    BloodVesselFile >> nbv;
+    cout << nbv << " vaso(i) nel file" << endl;
+    for(int k=0; k<nbv; k++)
+    {
+        cout << k;
+        BloodVessel NewBV;
+        double dbv;
+        BloodVesselFile >> dbv;
+        NewBV.SetBloodVesselR( dbv );
+        cout << "\t R: " << dbv;
+        BloodVesselFile >> dbv;
+        NewBV.SetBloodVesselvR( dbv );
+        cout << "vR: " << dbv << " ( x1 y1 z1 ) = ( ";
+        for(int j=0; j<3; j++)
+        {
+            BloodVesselFile >> dbv;
+            NewBV.SetBloodVesselak( dbv, j );
+            cout << dbv << " ";
+            // cout << "k: " << k << " a[k]: " << dbv << endl;
+        }
+        cout << "); ( x2 y2 z2 ) = ( ";
+        for(int j=0; j<3; j++)
+        {
+            BloodVesselFile >> dbv;
+            NewBV.SetBloodVesselbk( dbv, j );
+            cout << dbv << " ";
+            // cout << "k: " << k << " b[k]: " << dbv << endl;
+        }
+        cout << "); ( vx1 vy1 vz1 ) = ( ";
+        for(int j=0; j<3; j++)
+        {
+            BloodVesselFile >> dbv;
+            NewBV.SetBloodVesselvak( dbv, j );
+            cout << dbv << " ";
+        }
+        cout << "); ( vx2 vy2 vz2 ) = ( ";
+        for(int j=0; j<3; j++)
+        {
+            BloodVesselFile >> dbv;
+            NewBV.SetBloodVesselvbk( dbv, j );
+            cout << dbv << " ";
+        }
+        cout << ")" << endl;
+        
+        // chemical blood vessel variables are set equal to environmental values
+        
+        cout << "Main: chemical blood vessel variables " << endl; 
+        
+        double envO2 = O2_BV;
+        NewBV.SetBloodVesselO2start( envO2 );
+        NewBV.SetBloodVesselO2end( envO2 );
+        
+        NewBV.SetBloodVesselCO2start( 0. );
+        NewBV.SetBloodVesselCO2end( 0. );
+        
+        double envG = G_BV;
+        NewBV.SetBloodVesselG( envG );
+        
+        double envA = A_BV;
+        NewBV.SetBloodVesselA( envA );
+
+        NewBV.SetBloodVesselAcL( 0. );
+        
+        cout << endl;
+        
+        
+        CellsSystem.Add_BloodVessel( NewBV );  // qui si copia il vettore dei vasi nel vettore di CellsSystem
+
+    }
+    */
   //create new entry
   BloodVessel suggestion;
   Float3 buffer;

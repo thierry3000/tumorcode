@@ -126,62 +126,83 @@ void InitSimpleO2ParametersFromPy(O2Model::SimpleO2Params &params, py::dict py_p
  */
 void run_fakeTumor_mts(const py::str &param_info_str)
 {
+  /* reading parameter string from info file */
   ptree pt_params = convertInfoStr(param_info_str, ptree());
   std::cout << "run_fakeTumor_mts on c++ called" << std::endl;
 #ifdef DEBUG
   std::cout << "with params: " << std::endl;
   printPtree(pt_params);
 #endif
+  // enable standard exception handling
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
-  //construct default parameters
-  //FakeTum::Parameters defaultParams;
-  //defaultParams.assign(pt_params);
-  //ptree all_pt_params;
-  //all_pt_params.put_child("tumor", defaultParams.as_ptree() );
-  //ptree all_pt_params = convertInfoStr(param_info_str, defaultParams.as_ptree());
-  //printPtree(all_pt_params);
+  
+  /* construct default simulation */
   FakeTumMTS::FakeTumorSimMTS s;
+  
 #ifdef USE_DETAILED_O2
   /* 
    * detailedO2 case
    */
-  //DetailedPO2::InitParameters(s.o2_params, py_oxy_parameters);
   //create ptree with default settings!!!
   ptree detailedO2Settings = s.o2_params.as_ptree();
-#ifdef DEBUG
+  ptree bfSettings = s.o2_sim.bfparams.as_ptree();
+  ptree fakeTumMTSSettings = s.params.as_ptree();
+  #ifdef DEBUG
   std::cout << "with detailed params: " << std::endl;
   printPtree(detailedO2Settings);
-#endif
+  std::cout << "with calcflow params: " << std::endl;
+  printPtree(bfSettings);
+  #endif
+  // update settings with the read in data
   boost::property_tree::update(detailedO2Settings, pt_params.get_child("detailedo2"));
-#ifdef DEBUG
+  boost::property_tree::update(bfSettings, detailedO2Settings.get_child("calcflow"));
+  boost::property_tree::update(fakeTumMTSSettings, pt_params);
+  #ifdef DEBUG
+  std::cout << "detailed params after update: " << std::endl;
   printPtree(detailedO2Settings);
-#endif
-  //s.o2_params = DetailedPO2::Parameters();
+  std::cout << "calcflow params after update: " << std::endl;
+  printPtree(bfSettings);
+  #endif
+  
+  // assign o2 parameters to the simulation
   s.o2_params.assign(detailedO2Settings);
+  // assign bfparams parameters to the simulation
+  s.o2_sim.bfparams.assign(bfSettings);
+  s.bfparams.assign(bfSettings);
+  s.params.assign(fakeTumMTSSettings);
 #else
   /*
-   * simple o2 case
+   * simple or no o2 case
+   * 
    */
+  //get default params
+  ptree detailedO2Settings = s.o2_params.as_ptree();
+  ptree bfSettings = s.bfparams.as_ptree();
+  ptree fakeTumMTSSettings = s.params.as_ptree();
+  //update with read in params
+  boost::property_tree::update(detailedO2Settings, pt_params.get_child("detailedo2"));
+  boost::property_tree::update(bfSettings, pt_params.get_child("calcflow"));
+  boost::property_tree::update(fakeTumMTSSettings, pt_params);
   //update read default parameters with read in parameters
   //boost::property_tree::update(destination, source);
   //O2Model::SimpleO2Params simpleO2params;
   ptree simpleO2Settings = s.o2_params.as_ptree();
-  boost::property_tree::update(simpleO2Settings, pt_params.get_child("simple_o2"));
+  //boost::property_tree::update(simpleO2Settings, pt_params.get_child("simple_o2"));
+  // assign params
   s.o2_params.assign(simpleO2Settings);
-  //write the settings to the object!
+  s.bfparams.assign(bfSettings);
+  s.params.assign(fakeTumMTSSettings);
   
-  //O2Model::SimpleO2Params simpleO2params;
-  //py::dict d = py::extract<py::dict>(py_parameters.attr("simple_o2"));
-  //py::dict d = py_parameters("simple_o2");
-  //InitSimpleO2ParametersFromPy(simpleO2params, d);
-  //all_pt_params.put_child("simple_o2", simpleO2params.as_ptree());
 #endif
-  { //ReleaseGIL unlock(); // allow the python interpreter to do things while this is running
-    int returnCode = s.run(pt_params);
+  { 
+    //ReleaseGIL unlock(); // allow the python interpreter to do things while this is running
+    /*
+     * run major simulation, hopefully all parameters are set correct at this stage
+     */
+    int returnCode = s.run();
   }
   
   if (PyErr_Occurred() != NULL) return; // don't save stuff
-  //return returnCode;
 }
 void export_faketum_mts()
 {

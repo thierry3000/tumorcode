@@ -61,6 +61,7 @@ namespace Adaption
     LARGE_2D_3 = 4,
     LARGE_2D_like_paper = 5,
     VALUE = 42,
+    BOTH_PRESSURE = 43,
   };
   
 

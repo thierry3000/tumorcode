@@ -236,7 +236,7 @@ void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &para
             }
             break;
           
-    case VALUE: // this should become the default case
+    case VALUE: // this should become the default case, one pressure one flow
 #ifdef DEBUG
       std::printf("case VALUE found\n");
 #endif
@@ -258,6 +258,32 @@ void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &para
           cout<< format("changing %i to flow: %f\n") % vc->Index() % params.a_flow <<endl;
 #endif
           FlowBC aCondition = FlowBC(FlowBC::Type::CURRENT, params.a_flow );
+          vl.SetBC(vc,aCondition);
+        }
+      }
+      break;
+    case BOTH_PRESSURE: // note, a_flow is venous pressure here!!!!!
+#ifdef DEBUG
+      std::printf("case BOTH_PRESSURE found\n");
+#endif
+      for(int i=0; i<ncnt; ++i)
+      {
+        const VesselNode* vc= vl.GetNode(i);
+        // insert boundary nodes into the bcs array
+        if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
+        {
+#ifdef DEBUG
+          cout<< format("changing %i to pressure: %f\n") % vc->Index() % params.a_pressure <<endl;
+#endif
+          FlowBC aCondition = FlowBC(FlowBC::Type::PIN, params.a_flow );
+          vl.SetBC(vc,aCondition);
+        }
+        if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
+        {
+#ifdef DEBUG
+          cout<< format("changing %i to flow: %f\n") % vc->Index() % params.a_flow <<endl;
+#endif
+          FlowBC aCondition = FlowBC(FlowBC::Type::PIN, params.a_pressure );
           vl.SetBC(vc,aCondition);
         }
       }

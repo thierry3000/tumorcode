@@ -195,7 +195,8 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
   {
 #ifdef USE_ADAPTION
     // BAD HACK
-    this->params.adap_params.radMin_for_kill = this->model.params.radMin;
+    // do be done
+    //this->params.adap_params.radMin_for_kill = this->model.params.radMin;
 #endif
     my::SetNumThreads(params.num_threads);
     
@@ -248,6 +249,7 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
   while (true)
   {
 #ifdef USE_ADAPTION
+#if 0
     if (time >= next_adaption_time - params.dt * 0.1)
     {
       //do adaption if wanted
@@ -270,6 +272,7 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
       }
       next_adaption_time += params.apply_adaption_intervall;
     }
+#endif
 #endif
     if (time >= next_output_time - params.dt * 0.1)
     {

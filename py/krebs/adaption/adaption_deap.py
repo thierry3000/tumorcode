@@ -48,8 +48,8 @@ import h5py
 creator.create("FitnessMax", base.Fitness, weights=(-1.0,))
 creator.create("Particle", list, fitness=creator.FitnessMax, speed=list, 
     smin=None, smax=None, pmin=None, pmax= None, best=None, adaptionParameters=None)
-n = 400
-GEN = 10
+n = 50
+GEN = 2
 
 def generate(size, pmin, pmax, smin, smax):
     part = creator.Particle(random.uniform(pmin, pmax) for _ in range(size)) 
@@ -165,9 +165,14 @@ if __name__ == "__main__":
   #group
   shared.setConst(vessel_grp=vessel_grp)
   best = main()
-  print(os.getcwd())
-  with h5py.File('deap_results_%s.h5' % str(goodArguments.AdaptionParamSet)) as f:
-  #f=h5py.File('deap_results_%s.h5' % str(goodArguments.AdaptionParamSet))
+  #print(os.getcwd())
+  if (goodArguments.outputFileFolder):
+    outfile_name = str(goodArguments.outputFileFolder) + '/deap_results_%s.h5' % str(goodArguments.AdaptionParamSet)
+  else:
+    outfile_name = 'deap_results_%s.h5' % str(goodArguments.AdaptionParamSet)
+  print('outfile: %s will be stored at: %s' % (outfile_name, os.getcwd()))
+  with h5py.File(outfile_name) as f:
+#f=h5py.File('deap_results_%s.h5' % str(goodArguments.AdaptionParamSet))
     currentTime = str(datetime.datetime.now().time())
     myGroup = f.create_group(str(goodArguments.listindex))
     myGroup.attrs.create("time", data=currentTime)

@@ -55,7 +55,7 @@ void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
 #define GET_PO2_PARAM_FROM_DICT(TYPE, NAME) checkedExtractFromDict<TYPE>(py_parameters, NAME);
 #define GET_PO2_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters.get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
   double kd, rd_norm = 100., rd_tum = 100., rd_necro = 100.;
-  kd = GET_PO2_PARAM_FROM_DICT(double, "D_tissue");
+  //kd = GET_PO2_PARAM_FROM_DICT(double, "D_tissue");
   params.SetTissueParamsByDiffusionRadius(kd, params.tissue_solubility, rd_norm, rd_tum, rd_necro);
   params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
   params.po2init_dr = GET_PO2_PARAM_FROM_DICT(double, "po2init_dr");
@@ -64,8 +64,8 @@ void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
   params.tissue_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_tissue");
   params.plasma_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_plasma");
   params.max_iter = GET_PO2_PARAM_FROM_DICT(int, "max_iter");
-  //params.sat_curve_exponent = GET_PO2_PARAM_FROM_DICT(double, "S_n");
-  params.sat_curve_p50 = GET_PO2_PARAM_FROM_DICT(double, "S_p50");
+  params.sat_curve_exponent = GET_PO2_PARAM_FROM_DICT(double, "sat_curve_exponent");
+  params.sat_curve_p50 = GET_PO2_PARAM_FROM_DICT(double, "sat_curve_p50");
   params.conductivity_coeff1 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff1"); 
   params.conductivity_coeff2 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff2");
   params.conductivity_coeff3 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff3");

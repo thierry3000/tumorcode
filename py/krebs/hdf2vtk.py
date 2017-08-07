@@ -205,6 +205,12 @@ def ConvertMyHdfVesselsToVTKPolydata(graph, newflag_for_backward_compatibility, 
         polydata.GetCellData().AddArray(asVtkArray(np.asarray(item), short_name))
       else:
         print 'ignoring item %s because array size does not match' % (item.name)
+  if 'po2_node' in graph.keys():
+    po2_node = graph['po2_node']    
+    polydata.GetPointData().AddArray(asVtkArray(po2_node, "point_vessel_po2", vtkFloatArray))
+  if 'po2_vessel' in graph.keys():
+    po2_vessels = graph['po2_vessel']
+    polydata.GetCellData().AddArray(asVtkArray(po2_vessels, "po2_vessel", vtkFloatArray))
   return polydata
 
 
@@ -252,7 +258,9 @@ def hdftumor2vtk(graph, options ):
 if __name__ == '__main__':
 
   import argparse
-  parser = argparse.ArgumentParser(description='Export hdf data to ParaView.')  
+  parser = argparse.ArgumentParser(description=
+                                   'Export hdf data to ParaView. \n'
+                                   'po2 --> use only po2 as group',formatter_class=argparse.RawTextHelpFormatter)  
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin)
   parser.add_argument('grp_pattern')
   parser.add_argument("-d","--data", dest="datalist", help="which data (pressure, flow, shearforce, hematocrit) as comma separated list", default='pressure', action="store")
@@ -337,12 +345,12 @@ if __name__ == '__main__':
           hdftumor2vtk(graph, goodArguments)
           print('bla2')
         else:
-          vesselgroup = f['/recomputed_flow']
+          vesselgroup = f['/recomputed_flow/vessels']
           new = False
           if new:
             graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
           else:
-            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
+            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['po2_vessel','po2_node','position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
           if goodArguments.filteruncirculated:
             graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
           #amazing, out of the box this works for the o2 simulation as well.

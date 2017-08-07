@@ -488,6 +488,38 @@ def vessels_require_(vesselgroup, g, name):
     g.edges['length'] = l
   elif 'flags' == name:
     vessels_require_(vesselgroup, g, 'flags')
+  elif 'po2_node' == name:
+    #find detailed o2 group
+    if 'recomputed' in vesselgroup.name:
+      ''' usualy the case for deatailed o2 calculation '''
+      ''' vesselgroup.parent.parent is po2 group'''
+      po2_vessels = np.asarray(vesselgroup.parent.parent['po2/vessels/po2vessels'])
+    else:
+      po2_vessels = np.asarray(vesselgroup.parent['detailedPo2/po2_vessels'])
+    num_verts = len(g['position'])
+    node_po2 = np.zeros(num_verts)
+    ''' counts the vertices, they might apear several time
+        so we take the average
+    '''
+    node_n = np.zeros(num_verts)
+    for ((a,b),(po2_a,po2_b)) in zip(e, po2_vessels):
+      node_po2[a] += po2_a
+      node_po2[b] += po2_b
+      node_n[a] += 1.
+      node_n[b] += 1.
+    node_po2 /= np.maximum(1, node_n)
+    g.nodes['po2_node'] = node_po2
+  
+  elif 'po2_vessel' == name:
+    #find detailed o2 group  -- works
+    if 'recomputed' in vesselgroup.name:
+      ''' usualy the case for deatailed o2 calculation '''
+      ''' vesselgroup.parent.parent is po2 group'''
+      po2_vessels = np.asarray(vesselgroup.parent.parent['po2/vessels/po2vessels'])
+    else:
+      po2_vessels = np.asarray(vesselgroup.parent['detailedPo2/po2_vessels'])
+    po2AtVessel = np.average(po2_vessels,1)
+    g.edges['po2_vessel'] = po2AtVessel 
   else:
     raise CannotComputeException('do not know how to compute %s' % name)
 

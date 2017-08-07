@@ -80,6 +80,7 @@ void Parameters::assign(const ptree &pt)
 ptree Parameters::as_ptree() const
 {
   boost::property_tree::ptree pt;
+  
   #define DOPT(name) pt.put(#name, name)
   DOPT(po2init_r0);
   DOPT(po2init_dr);

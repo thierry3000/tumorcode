@@ -158,13 +158,15 @@ struct DetailedP02Sim : public boost::noncopyable
   bool world;
   //std::auto_ptr<VesselList3d> vl;
   Parameters params;
+  BloodFlowParameters bfparams;
+  
   ContinuumGrid grid;
   DomainDecomposition mtboxes;
   LatticeDataQuad3d ld;
   FloatBBox3 wbox;
   Float3 worldCenter;
   Float3 gridCenter;
-  BloodFlowParameters bfparams;
+  
   
   Array3df po2field;
   DetailedPO2::VesselPO2Storage po2vessels;

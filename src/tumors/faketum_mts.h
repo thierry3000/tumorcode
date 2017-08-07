@@ -28,8 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/growthfactor_model.h"
 
 #include "mwlib/log.h"
-#include "../detailedO2/oxygen_model2.h"
-#include "../common/simple_oxygen_model.h"
+
+
 #include "../common/glucose_model.h"
 
 #include "trilinos_linsys_construction.h"
@@ -50,7 +50,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 #endif
 
-#define USE_DETAILED_O2
+//#define USE_DETAILED_O2
+
+#ifdef USE_DETAILED_O2
+  #include "../detailedO2/oxygen_model2.h"
+#else
+  #include "../common/simple_oxygen_model.h"
+#endif
 
 namespace h5 = h5cpp;
 
@@ -92,7 +98,7 @@ struct Parameters
   int tissuePressureDistribution;
   double tissuePressureWidth;
   double tissuePressureCenterFraction;
-  BloodFlowParameters bfparams;
+  
 #ifdef USE_ADAPTION
   Adaption::Parameters adap_params;
 #endif
@@ -137,6 +143,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
   
   FakeTumMTS::Parameters params;
   GlucoseModel::GlucoseParams glucoseParams;
+  BloodFlowParameters bfparams;
 #ifdef USE_DETAILED_O2
   DetailedPO2::Parameters o2_params;
 #else
@@ -157,7 +164,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
 
   // main functions
   //int run(int argc, char **argv);
-  int run(const ptree &params);
+  int run();
   void doStep(double dt);
   std::string writeOutput();
   
@@ -165,7 +172,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
 #ifndef undo
   CellsSystem currentCellsSystem;
   void doMilottiStep();
-  void WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group vesselgroup);
+  void WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group &vesselgroup);
 #endif
 };
 }//end FakeTum

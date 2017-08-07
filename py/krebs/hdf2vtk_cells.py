@@ -182,6 +182,12 @@ def ConvertMyHdfVesselsToVTKPolydata(graph, newflag_for_backward_compatibility, 
       print("len(S_tot)")
       print(len(S_tot))
       polydata.GetCellData().AddArray(asVtkArray(S_tot, "S_tot", vtkFloatArray))
+  if 'po2_node' in graph.keys():
+    po2_node = graph['po2_node']    
+    polydata.GetPointData().AddArray(asVtkArray(po2_node, "point_vessel_po2", vtkFloatArray))
+  if 'po2_vessel' in graph.keys():
+    po2_vessels = graph['po2_vessel']
+    polydata.GetCellData().AddArray(asVtkArray(po2_vessels, "po2_vessel", vtkFloatArray))
   if 0:
     #vesselgroup = h5file[posixpath.join(grpname, 'vessels')]
     vesselgroup = h5file['/vessels']
@@ -251,7 +257,7 @@ def writeCells_(graph, options):
   #search_groups.append(str(options.writeFields))
   #search_groups.append("out0005")
   pos = np.asarray(f[str(options.grp_pattern)+'/cells/cell_center_pos'])
-  rad = np.asarray(f[str(options.grp_pattern)+'/cells/cell_radii'])
+  
   pts = vtkPoints()
   pts.SetNumberOfPoints(len(pos))
   for i,(x,y,z) in enumerate(pos):
@@ -261,7 +267,20 @@ def writeCells_(graph, options):
   polydata.SetPoints(pts)
   #pointData = polydata.GetPointData()
   #polydata.GetCellData().AddArray(asVtkArray(rad, "radius", vtkFloatArray))
+  rad = np.asarray(f[str(options.grp_pattern)+'/cells/cell_radii'])
   polydata.GetPointData().AddArray(asVtkArray(rad, "cell_radius", vtkFloatArray))
+  
+  o2 = np.asarray(f[str(options.grp_pattern)+'/cells/o2'])
+  polydata.GetPointData().AddArray(asVtkArray(o2, "cell_o2", vtkFloatArray))
+  
+  pH_ex = np.asarray(f[str(options.grp_pattern)+'/cells/pH_ex'])
+  polydata.GetPointData().AddArray(asVtkArray(pH_ex, "cell_pH_ex", vtkFloatArray))
+  
+  glucose_ex = np.asarray(f[str(options.grp_pattern)+'/cells/glucose_ex'])
+  polydata.GetPointData().AddArray(asVtkArray(glucose_ex, "cell_glucose_ex", vtkFloatArray))
+  
+  AcL_ex = np.asarray(f[str(options.grp_pattern)+'/cells/AcL_ex'])
+  polydata.GetPointData().AddArray(asVtkArray(AcL_ex, "cell_AcL_ex", vtkFloatArray))
   
   #polydata.GetCellData().AddArray(asVtkArray(rad, "cell_radius", vtkFloatArray))
   #e = extractVtkFields.Extractor(f, search_groups, recursive = True) 
@@ -358,7 +377,7 @@ if __name__ == '__main__':
         if new:
           graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
         else:
-          graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
+          graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['po2_node','position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
         if goodArguments.filteruncirculated:
           graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
         hdftumor2vtk(graph, goodArguments)
