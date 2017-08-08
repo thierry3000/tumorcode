@@ -81,7 +81,7 @@ message("TrilinosDIR: ${TrilinosDIR}")
 
 include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)
 
-option(USE_MILOTTI_MTS "decide to use libmilotti_mts.so" ON)
+option(USE_MILOTTI_MTS "decide to use libvbl.so" ON)
 if(USE_MILOTTI_MTS)
   message("MILOTTI_MTS preprocessor defined")
   add_definitions(-DMILOTTI_MTS)
