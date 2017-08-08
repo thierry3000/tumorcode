@@ -7,7 +7,7 @@
 #include "../src/common/vessels3d.h"
 #include "../src/common/shared-objects.h"
 #include "hdf_wrapper.h"
-#include <BloodVessel.h>
+#include <vbl/BloodVessel.h>
 
 namespace po = boost::program_options;
 using namespace std;

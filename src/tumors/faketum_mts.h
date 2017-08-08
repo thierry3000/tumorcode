@@ -44,13 +44,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     #include <ANN/ANN.h>
   #endif
 #ifndef undo
-  #include "sim.h"
-  #include "InputFromFile.h"
-  #include "CellType.h"
-  #include "Environment.h"
-  #include "EnvironmentalSignals.h"
-  #include "geom-2.h"
-  #include "CellsSystem.h"
+  #include "vbl/sim.h"
+  #include "vbl/InputFromFile.h"
+  #include "vbl/CellType.h"
+  #include "vbl/Environment.h"
+  #include "vbl/EnvironmentalSignals.h"
+  #include "vbl/geom-2.h"
+  #include "vbl/CellsSystem.h"
 #endif
 #endif
 
