@@ -354,8 +354,10 @@ void HematocritCalculator::SetHematocrit(int i,FlReal x) const
   myAssert(std::isfinite(x));
   if (!check_hematocrit_range) x = my::cut(x, 0., 0.9999999);
   else if (x<0. || x>1.01) 
-  { 
-    printf("warning hematocrit %f out of bounds at vessel %i\n", x, i); 
+  {
+#ifndef TOTAL_SILENCE
+    printf("warning hematocrit %f out of bounds at vessel %i\n", x, i);
+#endif
     myAssert(x<0. || x>1.01); 
   }
   nw.hema[i]=x;

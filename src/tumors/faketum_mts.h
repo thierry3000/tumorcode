@@ -39,6 +39,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //#define undo
 
 #ifdef MILOTTI_MTS
+  #define ANN
+  #ifdef ANN
+    #include <ANN/ANN.h>
+  #endif
 #ifndef undo
   #include "sim.h"
   #include "InputFromFile.h"

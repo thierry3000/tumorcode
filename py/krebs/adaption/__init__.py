@@ -220,9 +220,11 @@ def doit_optimize_deap(individual):
   
   if sys.flags.debug:
     print('mean: %f' % mean)
+    
 #  return (mean-individual.adaptionParameters['optimization']['desired_cap_flow'])**2,
   
-  return varOfMean,
+  return (mean-20000)**2,
+  #return varOfMean,
 
 
 def doit(parameters):

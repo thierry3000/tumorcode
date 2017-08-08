@@ -30,7 +30,7 @@ import Queue
 import krebsjobs.parameters.parameterSetsAdaption as parameterSetsAdaption
 
 if __name__ == '__main__':
-  paramsetNameToConsider = 'value_list_pressure_1'
+  paramsetNameToConsider = 'value_list_pressure_2'
   vesselFileNameToConsider = '/home/usersHR/thierry/mychosen/vessels-default-typeE-11x15L130-sample00.h5'
   factory = getattr(parameterSetsAdaption, paramsetNameToConsider)
   num_of_sets = len(factory)
@@ -70,8 +70,14 @@ if __name__ == '__main__':
       #subprocess.check_call(['python2', '-m', 'scoop', '--hostfile', '/home/usersHR/thierry/hostsIchthys.txt', '/localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py', '--fileName', '%s'%vesselFileNameToConsider ,'%s' % paramsetNameToConsider, '--listindex=%i'% i])
       subprocess.check_call(['python2', '-m', 'scoop', '--hostfile', '/home/usersHR/thierry/armsDeapDurga.txt', '/localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py', '--fileName', '%s'%vesselFileNameToConsider ,'%s' % paramsetNameToConsider, '--listindex=%i'% i])
     ''' ichthys '''
-    if 1: 
-      subprocess.check_call(['python2', '-m', 'scoop', '--hostfile', '/home/usersHR/thierry/hostsIchthys.txt', '/localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py', '--fileName', '%s'%vesselFileNameToConsider ,'%s' % paramsetNameToConsider, '--listindex=%i'% i, '--outputFileFolder', '%s' % '/home/userHR/thierry/output_ichthys'])
+    if 1:
+      process = subprocess.check_call(['python2', '-m', 'scoop', '--hostfile', '/home/usersHR/thierry/hostsIchthys.txt', '/localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py', '--fileName', '%s'%vesselFileNameToConsider ,'%s' % paramsetNameToConsider, '--listindex=%i'% i,])
+      #process = subprocess.Popen(['python2', '-m', 'scoop', '--hostfile', '/home/usersHR/thierry/hostsIchthys.txt', '/localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py', '--fileName', '%s'%vesselFileNameToConsider ,'%s' % paramsetNameToConsider, '--listindex=%i'% i],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+      #returncode = process.wait()
+      #print('returncode : %i' % returncode)
+      #print('std.out from subprocess %s' % process.stdout.read())
+      
+      #subprocess.check_call(['python2', '-m', 'scoop', '--hostfile', '/home/usersHR/thierry/hostsIchthys.txt', '/localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py', '--fileName', '%s'%vesselFileNameToConsider ,'%s' % paramsetNameToConsider, '--listindex=%i'% i, '--outputFileFolder', '%s' % '/home/userHR/thierry/output_ichthys'])
     
     #subprocess.call(['python2', '-m', 'scoop', '--nice', '19', '--hostfile', '/home/usersHR/thierry/oldHostsDeap.txt', '/localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py', '--fileName', '%s'%vesselFileNameToConsider ,'%s' % paramsetNameToConsider, '--listindex=%i'% i],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
     #subprocess.check_call(['/localdisk/thierry/tc_install/utils/bash_wrapper.sh %i'%i ],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
