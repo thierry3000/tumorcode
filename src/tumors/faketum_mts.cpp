@@ -19,9 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "faketum_mts.h"
 
-#include "../common/calcflow.h"
 
-#include "../common/shared-objects.h"
 
 #ifdef USE_DETAILED_O2
 void update_milotti_vessels(CellsSystem &currentCellSys, VesselList3d &vl, DetailedPO2::VesselPO2Storage &po2Store)
@@ -299,11 +297,25 @@ void initMilotti(CellsSystem &currentCellsSystem)
   int run_type = 1; //command file
   bool terminal = false;
   string run_name;
-  //CellsSystem CellsSystem;	// Standard allocation of the CellsSystem (in this case, the initial dynamic reserve is 2000000)
-  currentCellsSystem.Set_Commands( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/commands.txt" );
-  currentCellsSystem.Set_CellTypeFile( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/CellType.txt" );
-  currentCellsSystem.Set_CellTypeFileAlt( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/CellType.txt" );
-  currentCellsSystem.Set_EnvironmentFile( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/Environment.txt" );
+  bool all_parameter_files_there= true;
+  std::vector<std::string> possibleFiles = {"commands.txt", "CellType.txt", "Environment.txt"};
+  for( auto afileName:possibleFiles)
+  {
+    all_parameter_files_there = boost::filesystem::exists(afileName) && all_parameter_files_there;
+  }
+  if( not all_parameter_files_there )
+  {
+    std::cout<<"not all parameter files found"<< std::endl;
+    exit(EXIT_FAILURE);
+  }
+//   currentCellsSystem.Set_Commands( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/commands.txt" );
+//   currentCellsSystem.Set_CellTypeFile( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/CellType.txt" );
+//   currentCellsSystem.Set_CellTypeFileAlt( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/CellType.txt" );
+//   currentCellsSystem.Set_EnvironmentFile( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/Environment.txt" );
+  currentCellsSystem.Set_Commands( "commands.txt" );
+  currentCellsSystem.Set_CellTypeFile( "CellType.txt" );
+  currentCellsSystem.Set_CellTypeFileAlt( "CellType.txt" );
+  currentCellsSystem.Set_EnvironmentFile( "Environment.txt" );
   currentCellsSystem.InitializeCellsSystem( terminal );
   cout << "Initialization milotti completed" << endl;
   currentCellsSystem.RunDefinition( );// Run number and output directory output directory & output file opening for metabolism

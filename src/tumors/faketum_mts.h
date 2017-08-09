@@ -21,6 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define _FAKETUMMTS_H_
 
 #include "common/common.h"
+#include "../common/calcflow.h"
+#include "../common/shared-objects.h"
+// to check if parameter files are present
+#include <boost/filesystem.hpp>
+
 #ifdef USE_ADAPTION
   #include "adaption/adaption_model2.h"
 #endif
