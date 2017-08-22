@@ -206,14 +206,17 @@ static py::object PyComputeAdaption(const py::dict py_parameters, const py::dict
   Adaption::Parameters params;
   InitParameters(&params, &py_parameters);
 
+#ifndef TOTAL_SILENCE
+  cout<<" Parameters initialized "<<endl;
+#endif
   
 
-  std::tuple<uint,FlReal,FlReal> return_state;
+  std::tuple<uint,FlReal,FlReal, FlReal> return_state;
   
   return_state = runAdaption_Loop(params, bfparams, doOutput);
   
   
-  return py::make_tuple(std::get<0>(return_state), std::get<1>(return_state), std::get<2>(return_state));
+  return py::make_tuple(std::get<0>(return_state), std::get<1>(return_state), std::get<2>(return_state),std::get<3>(return_state));
 
 #endif
 } 

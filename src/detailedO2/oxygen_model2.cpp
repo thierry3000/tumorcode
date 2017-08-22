@@ -65,10 +65,13 @@ void Parameters::assign(const ptree &pt)
   ////DOPT(rd_tum);
   ////DOPT(rd_necro);
   DOPT(max_iter);
+  DOPT(num_threads);
+  DOPT(convergence_tolerance);
   DOPT(axial_integration_step_factor);
   DOPT(debug_zero_o2field);
   //DOPT(grid_lattice_const);
   
+  DOPT(michaelis_menten_uptake);
   DOPT(massTransferCoefficientModelNumber);
   DOPT(conductivity_coeff1);
   DOPT(conductivity_coeff2);
@@ -91,6 +94,9 @@ ptree Parameters::as_ptree() const
   DOPT(sat_curve_exponent);
   //DOPT(S_p50);
   DOPT(sat_curve_p50);
+  DOPT(po2_mmcons_k[TISSUE]);
+  DOPT(po2_mmcons_k[TCS]);
+  DOPT(po2_mmcons_k[DEAD]);
   //DOPT(D_tissue);
   //DOPT(kd);
   DOPT(D_plasma);
@@ -100,10 +106,13 @@ ptree Parameters::as_ptree() const
   ////DOPT(rd_tum);
   ////DOPT(rd_necro);
   DOPT(max_iter);
+  DOPT(num_threads);
+  DOPT(convergence_tolerance);
   DOPT(axial_integration_step_factor);
   DOPT(debug_zero_o2field);
   //DOPT(grid_lattice_const);
   
+  DOPT(michaelis_menten_uptake);
   DOPT(massTransferCoefficientModelNumber);
   DOPT(conductivity_coeff1);
   DOPT(conductivity_coeff2);
@@ -151,11 +160,21 @@ double Parameters::Permeability(double r, double w) const
  **/
 double Parameters::Saturation( double p )  const //calculates saturation dependent on the partial pressure,
 {
-  if (p<=0.) return 0.;
+  if (p<=0.) 
+    return 0.;
   const double n = sat_curve_exponent;
   const double mu = p/sat_curve_p50;
+#ifdef DEBUG
+  std::cout << "p: " << p << std::endl;
+  std::cout << "mu: " << mu << std::endl;
+  std::cout << "sat_curve_exponent: " << sat_curve_exponent << std::endl;
+  std::cout << "sat_curve_p50: " << sat_curve_p50 << std::endl;
+#endif
   const double mun = std::pow(mu, n);
   double S = mun/(mun+1.);
+#ifdef DEBUG
+  std::cout << "S: " << S << std::endl;
+#endif
   return S;
 }
 
@@ -200,8 +219,8 @@ Parameters::Parameters()
   transvascular_ring_size = 0.5;
   tissue_boundary_condition_flags = 0; // neumann bc
   tissue_boundary_value = 0.;
-  po2_mmcons_m0[TISSUE] = 4.5/6.e4;
-  po2_mmcons_k[TISSUE]  = 4.; // mmHg
+  po2_mmcons_m0[TISSUE] = 4.5/6.e4;    // corresponds to M_0 in oxygen paper
+  po2_mmcons_k[TISSUE]  = 4.; // mmHg  // corresponds to P_{M50} in oxygen paper
   po2_mmcons_m0[TCS] = 4.5/6.e4*2.;
   po2_mmcons_k[TCS]  = 2.; // mmHg
   po2_mmcons_m0[DEAD] = 0.;
@@ -213,10 +232,13 @@ Parameters::Parameters()
   extra_tissue_source_linear = 0.;
   extra_tissue_source_const = 0.;
   loglevel = 1;
+  num_threads = 4;
   convergence_tolerance = 1.e-3;
   approximateInsignificantTransvascularFlux = false;
   
-  SetTissueParamsByDiffusionRadius(2000., 2.8e-5, 200., 100., 500.);
+  rd_norm = 200.;
+  rd_tum = 100.;
+  rd_necro = 500.;
   D_plasma = 2000.;
   massTransferCoefficientModelNumber = 0;
   conductivity_coeff1 = 0; // must set this as parameter, no default
@@ -250,6 +272,7 @@ void Parameters::UpdateInternalValues()
     p *= 0.5;
   }
   conc_neglect_s  = BloodPO2ToConc(p, 1.);
+  SetTissueParamsByDiffusionRadius(D_plasma, tissue_solubility, rd_norm, rd_tum, rd_necro);
 }
 
 
@@ -561,33 +584,24 @@ double ComputeCircumferentialMassTransferCoeff(const Parameters &params, double 
   const double p2 = params.conductivity_coeff2;
   const double p3 = params.conductivity_coeff3;
   
-  if( !p1==0 and !p2==0 and !p3==0)
+  if (params.massTransferCoefficientModelNumber == 1)
   {
-    if (params.massTransferCoefficientModelNumber == 1)
-    {
-      const double nusseltNumber = p2*(1.0 - std::exp(-r/p1)) + p3 * r;
-      const double kd = params.plasma_solubility*params.D_plasma;
-      const double intravascularConductivity = my::mconst::pi()*nusseltNumber*kd;
-      //printf("p1=%f, p2=%f, p3=%f, nu=%f, c=%f\n", p1, p2, p3, nusseltNumber, intravascularConductivity);
-      return intravascularConductivity;
-      
-      // with extravascular conductivity
-      //const double t1 = my::mconst::pi2()/std::log((r+ld.Scale())/r);
-      //const double t1 = my::mconst::pi2()*r / (ld.Scale()*0.5);
-      //const double extravascularConductivity = (params.po2_kdiff*params.tissue_solubility)*t1; // mlO2 / ml / mmHg * um^2/s
-      //return 1.0/(1.0/intravascularConductivity + 1.0/extravascularConductivity);
-    }
-    else
-    {
-//       const double p = p0 + std::exp(-r/p1)*p2;
-      const double p = p1 + std::exp(-r/p2)*p3;
-      return my::mconst::pi2()*r*p;
-    }
+    const double nusseltNumber = p2*(1.0 - std::exp(-r/p1)) + p3 * r;
+    const double kd = params.plasma_solubility*params.D_plasma;
+    const double intravascularConductivity = my::mconst::pi()*nusseltNumber*kd;
+    //printf("p1=%f, p2=%f, p3=%f, nu=%f, c=%f\n", p1, p2, p3, nusseltNumber, intravascularConductivity);
+    return intravascularConductivity;
+    
+    // with extravascular conductivity
+    //const double t1 = my::mconst::pi2()/std::log((r+ld.Scale())/r);
+    //const double t1 = my::mconst::pi2()*r / (ld.Scale()*0.5);
+    //const double extravascularConductivity = (params.po2_kdiff*params.tissue_solubility)*t1; // mlO2 / ml / mmHg * um^2/s
+    //return 1.0/(1.0/intravascularConductivity + 1.0/extravascularConductivity);
   }
   else
   {
-    cout << "probably bad mass Transfer parameters" << endl;
-    cout << format("p1 %f, p2 %f, p3 %f,\n") % p1 % p2 % p3;
+    const double p = p1 + std::exp(-r/p2)*p3;
+    return my::mconst::pi2()*r*p;
   }
 }
 
@@ -1206,7 +1220,6 @@ void ComputePo2Field(const Parameters &params,
       FOR_BBOX3(p, bbox)
       {
         (*lhs)[grid.ld.LatticeToSite(p)] = po2field(p);
-//         lhs->[grid.ld.LatticeToSite(p)] = po2field(p);
       }
     }
   }
@@ -1214,9 +1227,6 @@ void ComputePo2Field(const Parameters &params,
   ptree solver_params = make_ptree("preconditioner","multigrid")("verbosity", (params.loglevel>0 ? (params.loglevel>1 ? "full" : "normal") : "silent"))("use_smoothed_aggregation", false)("max_iter", 500)("conv","rhs")("max_resid",1.e-8)("keep_preconditioner", keep_preconditioner);
 
   try {
-    //EllipticEquationSolver solver;
-    //solver.init(mb.m, mb.rhs, solver_params);
-    //EllipticEquationSolver *solver = new EllipticEquationSolver(mb.m, mb.rhs, solver_params);
     EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
     solver.solve(lhs);
   }
@@ -1227,8 +1237,6 @@ void ComputePo2Field(const Parameters &params,
         solver_params.put("keep_preconditioner", false);
         EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
         solver.solve(lhs);
-        /*solver.init(mb.m, mb.rhs, solver_params);
-        solver.solve(lhs);  */      
       }
       else throw e;
   }
@@ -1240,7 +1248,6 @@ void ComputePo2Field(const Parameters &params,
       FOR_BBOX3(p, bbox)
       {
         po2field(p) = (*lhs)[grid.ld.LatticeToSite(p)];
-        //po2field(p) = lhs[grid.ld.LatticeToSite(p)];
       }
     }
   }
@@ -1257,6 +1264,9 @@ void DetailedP02Sim::init(Parameters &params_, BloodFlowParameters &bfparams_,Ve
   CalcFlow(vl, bfparams);
   params = params_;
   world = !vl.HasLattice();
+  
+  //multithreading
+  my::SetNumThreads(params.num_threads);
   {
     //this worked only for lattices
     //int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
@@ -1298,6 +1308,8 @@ void DetailedP02Sim::init(Parameters &params_, BloodFlowParameters &bfparams_,Ve
       cout << "continuum grid:" << endl;
       grid.ld.print(cout);
       cout << endl;
+      cout << "multithreading:" << endl;
+      cout << my::GetNumThreads()<<endl;
     }
     if (params.loglevel > 0)
     {
@@ -1320,7 +1332,6 @@ void DetailedP02Sim::init(Parameters &params_, BloodFlowParameters &bfparams_,Ve
     po2field = Array3df(grid.Box(), Cons::DONT);
     po2field.fill(params.debug_zero_o2field ? 0.f : params.po2init_cutoff);
     
-    //vesselpo2.resize(vl.GetECount(), Float2(NANf()));
     po2vessels.resize(vl.GetECount(), Float2(NANf()));
     
     //executes topological ordering
@@ -1332,24 +1343,11 @@ void DetailedP02Sim::init(Parameters &params_, BloodFlowParameters &bfparams_,Ve
 /**
  * @brief Head function called by python interface
  */
-// void ComputePO2(
-//     const Parameters &params, 
-// 		VesselList3d& vl, 
-// 		ContinuumGrid &grid, 
-// 		DomainDecomposition &mtboxes, 
-// 		Array3df &po2field, 
-// 		VesselPO2Storage &vesselpo2, 
-// 		const TissuePhases &phases,
-// 		ptree &metadata,
-// 		bool world
-//                )
 int DetailedP02Sim::run(VesselList3d &vl)
 {
   //sets up the linear trilionos matrix system, builder is implemented as struct
   //could use for example different stencils
   FiniteVolumeMatrixBuilder tissue_diff_matrix_builder;
-  //eqation solver is also implemented as struct
-  //EllipticEquationSolver tissue_diff_solver;
 
 #if APPROXIMATE_FEM_TRANSVASCULAR_EXCHANGE_TERMS
   tissue_diff_matrix_builder.Init7Point(grid.ld, grid.dim);
@@ -1392,14 +1390,12 @@ int DetailedP02Sim::run(VesselList3d &vl)
     /*
      * 1) propagate the oxygen along the blood stream
      */
-    //IntegrateVesselPO2(params, vesselpo2, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
     IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
     {
       h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
       WriteOutput(f.root().create_group(str(format("out%04i-b") % iteration_num)),
                   vl, params,
-                  //vesselpo2,
                   po2vessels,
                   sorted_vessels,
                   grid, po2field,
@@ -1422,15 +1418,6 @@ int DetailedP02Sim::run(VesselList3d &vl)
       delta_fieldM = delta_vessM = ConvergenceCriteriumAccumulatorMaxNorm<double>();
       delta_field2 = delta_vess2 = ConvergenceCriteriumAccumulator2Norm<double>();
       //save the changes to prior run
-//       for (int i=0; i<vesselpo2.size(); ++i)
-//       {
-//         delta_vessM.Add(vesselpo2[i][0]-last_vessel_po2[i][0]);
-//         delta_vessM.Add(vesselpo2[i][1]-last_vessel_po2[i][1]);
-//         delta_vess2.Add(vesselpo2[i][0]-last_vessel_po2[i][0]);
-//         delta_vess2.Add(vesselpo2[i][1]-last_vessel_po2[i][1]);
-//         vesselpo2[i] = vesselpo2[i]*(1.-f)+f*last_vessel_po2[i];
-//         last_vessel_po2[i] = vesselpo2[i];
-//       }
       for (int i=0; i<po2vessels.size(); ++i)
       {
         delta_vessM.Add(po2vessels[i][0]-last_vessel_po2[i][0]);
@@ -1481,10 +1468,8 @@ int DetailedP02Sim::run(VesselList3d &vl)
     cout << "computing final results" << endl;
   
   tissue_diff_matrix_builder.ZeroOut();
-  //IntegrateVesselPO2(params, vesselpo2, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
   IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
   
-  //ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, tissue_diff_solver, true);
   ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, true);
   return 0;
 }

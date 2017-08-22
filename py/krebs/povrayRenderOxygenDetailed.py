@@ -76,9 +76,16 @@ def InsertGraphColors(vesselgraph, po2field, data_name):
       pass
     if po2field is not None:
       p1 = max(p1, np.amax(po2field))
-    p1 = math.ceil(p1/10.0)*10.0  # round to powers of something
+    try:
+      p0 = np.amin(data)
+    except ValueError:
+      print("p0 not found")
+      pass
+    if po2field is not None:
+      p0 = min(p0, np.amin(po2field))
+    #p1 = math.ceil(p1/10.0)*10.0  # round to powers of something
     #p1 = 100.0
-    value_range = (0., p1)
+    value_range = (p0, p1)
     cm = matplotlib.cm.ScalarMappable(cmap = cm_po2)
   elif data_name == 'saturation':
     cm = matplotlib.cm.ScalarMappable(cmap = matplotlib.cm.spectral)

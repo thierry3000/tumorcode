@@ -33,6 +33,9 @@ if(USE_MILOTTI_MTS)
 
   ### GMP
   set(myLibs "${myLibs};gmp")
+  
+  ### ANN
+  set(myLibs "${myLibs};ANN")
 
   #message("set comiler flags: ${CMAKE_CXX_FLAGS}")
 else()
@@ -62,13 +65,14 @@ endif()
 #   )
 # endif()
 message("link_tumor_to_this: ${myLibs} ")
-# target_link_libraries(tumors_ ${myLibs})
+target_link_libraries(tumors_ ${myLibs})
 target_link_libraries(tumors_ krebs_)
 target_link_libraries(tumors_ detailedo2_)
 if(USE_MILOTTI_MTS)
   target_link_libraries(tumors_ vbl)
-  target_link_libraries(tumors_ gmp)
-  target_link_libraries(tumors_ CGAL)
+  #target_link_libraries(tumors_ gmp)
+  #target_link_libraries(tumors_ CGAL)
+  #target_link_libraries(tumors_ ANN)
 endif()
 
 #set_target_properties(tumors_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)

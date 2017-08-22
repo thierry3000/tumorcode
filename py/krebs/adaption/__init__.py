@@ -207,7 +207,7 @@ def doit_optimize_deap(individual):
       k_m = individual[1],
       k_s = individual[2],
       )
-  returnState, mean, varOfMean = adaption_cpp.computeAdaption(individual.adaptionParameters['adaption'],individual.adaptionParameters['calcflow'], False)
+  returnState, mean, varOfMean, total_surface = adaption_cpp.computeAdaption(individual.adaptionParameters['adaption'],individual.adaptionParameters['calcflow'], False)
   if 0: #hardcore debugging  
     print('mean: %f' % mean)
     print('param: %f' % individual.adaptionParameters['optimization']['desired_cap_flow'])
@@ -223,8 +223,11 @@ def doit_optimize_deap(individual):
     
 #  return (mean-individual.adaptionParameters['optimization']['desired_cap_flow'])**2,
   
-  return (mean-20000)**2,
-  #return varOfMean,
+  #return (mean-20000)**2,
+  return varOfMean,
+  #print("total_surface is:")
+  #print(total_surface)
+  #return total_surface, # komma!!!!
 
 
 def doit(parameters):
@@ -246,7 +249,7 @@ def doit(parameters):
     #cachelocation = (outfn_no_ext+'.h5', group_path+'_'+parameters_name)
     #cachelocation = (fnbase+'_adption_p_'+ parameters['name'] +'.h5', group_path)
     #ref = adaption_cpp.computeAdaption(f, group_path, parameters['adaption'],parameters['calcflow'], cachelocation)
-  returnState, mean, varOfMean = adaption_cpp.computeAdaption(parameters['adaption'],parameters['calcflow'], True)
+  returnState, mean, varOfMean, total_surface = adaption_cpp.computeAdaption(parameters['adaption'],parameters['calcflow'], True)
   if returnState == 0:
     print("adaption succesful! mean: %f,  var: %f" % (mean,varOfMean))
   if not returnState == 0:

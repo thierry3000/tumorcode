@@ -33,7 +33,8 @@ if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
 #from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 #from mpl_toolkits.axes_grid.anchored_artists import AnchoredText
-#from mpl_toolkits.axes_grid1 import make_axes_locatable
+''' needed to plot iff and drug stuff '''
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.gridspec as gridspec
 from matplotlib.offsetbox import AnchoredOffsetbox, AuxTransformBox, VPacker,\
      TextArea, DrawingArea

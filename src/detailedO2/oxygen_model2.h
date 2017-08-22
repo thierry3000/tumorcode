@@ -95,6 +95,9 @@ public:
   double haemoglobin_binding_capacity;
   double plasma_solubility, tissue_solubility; /* mlO2/cm^3/mmHg = (mlO2 / ml tissue) / mmHg */
   double D_plasma;
+  double rd_norm;
+  double rd_tum;
+  double rd_necro;
   double po2init_r0, po2init_dr, po2init_cutoff;
   double po2_cons_coeff[3];
   double po2_kdiff;
@@ -111,12 +114,13 @@ public:
   double extra_tissue_source_linear; // this is for comparison with moschandreou (2011), where a "background" of supplying capillaries must be around
   double extra_tissue_source_const; // dito
   double conductivity_coeff1, conductivity_coeff2, conductivity_coeff3; // for transvascular transport
-  int loglevel;
-  string detailedO2name;
-  double convergence_tolerance; // field and vessel po2 differences from iteration to iteration must both be lower than this for the iteration to stop
   bool approximateInsignificantTransvascularFlux;
   int massTransferCoefficientModelNumber;
-  
+  //general simulation parameters
+  int loglevel;
+  int num_threads;
+  string detailedO2name;
+  double convergence_tolerance; // field and vessel po2 differences from iteration to iteration must both be lower than this for the iteration to stop
 };
 
 

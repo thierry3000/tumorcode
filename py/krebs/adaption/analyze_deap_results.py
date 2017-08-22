@@ -46,13 +46,19 @@ def convergenz_plot(f,pdf):
   group_fitnesses = []
   param_id_label = []
   param_id = []
+  doLogPlot = True
   for group in f.keys():
     print(group)
     group_labels.append(group)
     print( f[group + '/best'] )
     group_bests.append(f[group + '/best'])
     print( f[group + '/fitness values'] )
-    group_fitnesses.append(np.asarray(f[group + '/fitness values'])[0])
+    fitness_value = np.asarray(f[group + '/fitness values'])[0]
+    if fitness_value<0:
+      group_fitnesses.append(-1*fitness_value)
+      doLogPlot = False
+    else:
+      group_fitnesses.append(fitness_value)
     print(f[group].attrs.get('paramListIndex'))
     param_id.append(int(f[group].attrs.get('paramListIndex')))
     param_id_label.append('%i %s' % (f[group].attrs.get('paramListIndex') , group[0:5]) )
@@ -66,7 +72,8 @@ def convergenz_plot(f,pdf):
   plt.xticks(param_id, param_id_label, rotation='vertical')
   plt.tight_layout()
   ax = plt.gca()
-  ax.set_yscale('log')
+  if doLogPlot:
+    ax.set_yscale('log')
   pdf.savefig()
   print("finished convergenz plot")
   #plt.show()
@@ -78,7 +85,7 @@ def find_convergent_groups(f):
     if variance_stuff:
       convergent_groups.append(group)
     else:
-      if float(np.asarray(f[group + '/fitness values'])) < 1000:
+      if float(np.asarray(f[group + '/fitness values'])) < 1e15:
         convergent_groups.append(group)
   return convergent_groups
 
@@ -111,6 +118,7 @@ if __name__ == '__main__':
   #parser.add_argument('--listindex', type=int, help="index of value list" )
   #parser.add_argument('--outputFileFolder', type=str, help="where to store the output, default is working directory")
   parser.add_argument('--fileName', type=str,help="deap output")
+  parser.add_argument('--redo', default=False,help="create the optimized network",action="store_true")
   goodArguments, otherArguments = parser.parse_known_args()
   #print("running with %s" % goodArguments.AdaptionParamSet)
   
@@ -123,5 +131,5 @@ if __name__ == '__main__':
     rc('axes', titlesize = 10., labelsize = 8.)
     if 1:
       convergenz_plot(f,pdf)
-  if 1:
+  if goodArguments.redo:
     redo_adaption_for_convergent_sets(f)

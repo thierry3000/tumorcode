@@ -26,6 +26,10 @@ However it is intended to be a modern interface
 to the older IFF data published by
 1.Welter, M. & Rieger, H. Interstitial Fluid Flow and Drug Delivery in Vascularized Tumors: A Computational Model. PLoS ONE 8, e70395 (2013).
 '''
+import os, sys
+from os.path import join, basename, dirname, splitext
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 import myutils
 import h5py
 import numpy as np

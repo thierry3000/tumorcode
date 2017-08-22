@@ -44,7 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //#define undo
 
 #ifdef MILOTTI_MTS
-  #define ANN
+#define ANN
   #ifdef ANN
     #include <ANN/ANN.h>
   #endif
@@ -123,6 +123,18 @@ struct Parameters
 struct FakeTumorSimMTS : public boost::noncopyable
 {
   std::auto_ptr<VesselList3d> vl;
+  // ANN stuff
+  ANNkd_tree* kd_tree_of_vl;        // ann kd tree structurs
+  const int ANN_dim = 3;            // space dimension
+  const int ANN_maxPts = 5000;      // maximum number of data points --> to limit memory allocation
+  const double ANN_eps = 0.0;       // error bound
+  ANNpointArray    dataPts;         // data points
+	ANNpoint         queryPt;         // query point
+	ANNidxArray      ANN_nnIdx;       // near neighbor indices   --> will be filled during search
+	ANNdistArray     ANN_dists;       // near neighbor distances --> will be filled during search
+	int				       ANN_k= 3;        // number of nearest neighbors
+	
+	
   VesselModel1::Model model;
 #ifdef USE_DETAILED_O2
   DetailedPO2::DetailedP02Sim o2_sim;
@@ -182,7 +194,9 @@ struct FakeTumorSimMTS : public boost::noncopyable
   CellsSystem currentCellsSystem;
   void doMilottiStep();
   void WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group &vesselgroup);
+  void fillKdTreeFromVl();
 #endif
 };
 }//end FakeTum
+
 #endif //_FAKETUM_H_

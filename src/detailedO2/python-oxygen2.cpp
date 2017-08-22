@@ -52,14 +52,15 @@ namespace DetailedPO2
 
 void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
 {
+  cout << "begin init params" << endl;
 #define GET_PO2_PARAM_FROM_DICT(TYPE, NAME) checkedExtractFromDict<TYPE>(py_parameters, NAME);
 #define GET_PO2_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters.get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
-  double kd, rd_norm = 100., rd_tum = 100., rd_necro = 100.;
-  //kd = GET_PO2_PARAM_FROM_DICT(double, "D_tissue");
-  params.SetTissueParamsByDiffusionRadius(kd, params.tissue_solubility, rd_norm, rd_tum, rd_necro);
+  
+  
   params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
   params.po2init_dr = GET_PO2_PARAM_FROM_DICT(double, "po2init_dr");
   params.po2init_cutoff = GET_PO2_PARAM_FROM_DICT(double, "po2init_cutoff");
+  //params.num_threads = GET_PO2_PARAM_FROM_DICT(int, "num_threads");
   
   params.tissue_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_tissue");
   params.plasma_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_plasma");
@@ -74,9 +75,9 @@ void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
   GET_PO2_PARAM_IF_NONNONE(params.debug_zero_o2field, bool, "debug_zero_o2field");
   GET_PO2_PARAM_IF_NONNONE(params.debug_fn, string, "debug_fn");
   GET_PO2_PARAM_IF_NONNONE(params.transvascular_ring_size, double, "transvascular_ring_size");
-  GET_PO2_PARAM_IF_NONNONE(rd_norm, double, "rd_norm");
-  GET_PO2_PARAM_IF_NONNONE(rd_tum, double, "rd_tum");
-  GET_PO2_PARAM_IF_NONNONE(rd_necro, double, "rd_necro");
+  GET_PO2_PARAM_IF_NONNONE(params.rd_norm, double, "rd_norm");
+  GET_PO2_PARAM_IF_NONNONE(params.rd_tum, double, "rd_tum");
+  GET_PO2_PARAM_IF_NONNONE(params.rd_necro, double, "rd_necro");
   GET_PO2_PARAM_IF_NONNONE(params.michaelis_menten_uptake, bool, "michaelis_menten_uptake");
   GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[TISSUE], double, "mmcons_k_norm");
   GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[TCS], double, "mmcons_k_tum");
@@ -145,6 +146,7 @@ void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
   
 #undef GET_PO2_PARAM_FROM_DICT
 #undef GET_PO2_PARAM_IF_NONNONE
+  //calculate stuff parameters dependent on the given parameters
   params.UpdateInternalValues();
 }
 
@@ -169,7 +171,7 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
 {
   Parameters params;
   InitParameters(params, py_parameters);
-  
+  cout << "parameters initialized" << std::endl;
   //h5cpp::Group group = PythonToCppGroup(py_group);
   //h5cpp::Group vesselgroup = group.open_group(path_vessels);
   h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
@@ -655,6 +657,14 @@ BOOST_PYTHON_MODULE(libdetailedo2_)
 #endif
 {
   PyEval_InitThreads();
+  if (my::MultiprocessingInitializer_exists())
+  {
+  }
+  else
+  {
+    my::initMultithreading(0, NULL, 1);
+  }
+  my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   DetailedPO2::export_oxygen_computation();
   //bla
 }

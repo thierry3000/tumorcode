@@ -19,6 +19,11 @@ add_executable(test_stepper test_stepper.cpp)
 target_link_libraries(test_stepper ${myLibs})
 install(TARGETS test_stepper RUNTIME DESTINATION bin)
 
+if(USE_MILOTTI_MTS)
+  add_executable(test_ann test_ann.cpp)
+  target_link_libraries(test_ann ANN)
+  install(TARGETS test_ann RUNTIME DESTINATION bin)
+endif()
 # add_executable(test_level_set test_level_set.cpp)
 # target_link_libraries(test_level_set ${myLibs})
 

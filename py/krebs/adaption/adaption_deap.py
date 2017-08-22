@@ -45,11 +45,14 @@ from deap import tools
 
 import h5py
 
+#this means minimize
 creator.create("FitnessMax", base.Fitness, weights=(-1.0,))
+#this means maximize
+#creator.create("FitnessMax", base.Fitness, weights=(1.0,))
 creator.create("Particle", list, fitness=creator.FitnessMax, speed=list, 
     smin=None, smax=None, pmin=None, pmax= None, best=None, adaptionParameters=None)
-n = 190
-GEN = 12
+n = 320
+GEN = 10
 
 def generate(size, pmin, pmax, smin, smax):
     part = creator.Particle(random.uniform(pmin, pmax) for _ in range(size)) 

@@ -383,7 +383,7 @@ def render_different_data_types( vesselgroup, options):
     'flow' : '$log_{10}$ Flow Rate',
     'shearforce': '$log_{10}$ Shear Force',
     'hematocrit' : 'Hematocrit',
-    'pressure' : 'Blood Pressure $mmHg$',
+    'pressure' : 'Blood Pressure $kPa$',
     'S_tot' : 'Adaption Signal',
     'conductivitySignal' : 'Conductivity Signal',
     'metabolicSignal' : 'Metabolic Signal',

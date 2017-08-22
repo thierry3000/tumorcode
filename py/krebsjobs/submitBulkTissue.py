@@ -36,7 +36,7 @@ import krebs
 import krebs.tumors
 
 import krebsjobs.parameters.parameterSetsBulkTissueTumor as parameterSets
-from krebsjobs.submitFakeTum import PrepareConfigurationForSubmission
+from krebsjobs import PrepareConfigurationForSubmission
 
 
 def f2s(x):

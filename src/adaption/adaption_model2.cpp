@@ -1354,7 +1354,7 @@ bool check_while_break( int no_vessels, double min_error, double nqdev, double m
 }
 
 
-std::tuple<uint,FlReal,FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, bool doDebugOutput)
+std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, bool doDebugOutput)
 {
   h5cpp::File *readInFile = new h5cpp::File(params.vesselFileName,"r");
   h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group(params.vesselGroupName));
@@ -1690,7 +1690,10 @@ std::tuple<uint,FlReal,FlReal> runAdaption_Loop( Parameters params, BloodFlowPar
     cout<<"NOT Convergent!"<<endl;
 #endif
 #endif
-    return std::make_tuple(1, 4242424242424242424242., 4242424242424242424242. );
+    return std::make_tuple(1,
+                           42424242424242424242424242424242424.0,
+                           42424242424242424242424242424242424.0,
+                           42424242424242424242424242424242424.0);
   }
   else
   {
@@ -1733,9 +1736,21 @@ std::tuple<uint,FlReal,FlReal> runAdaption_Loop( Parameters params, BloodFlowPar
   mean_value = mean(acc);
   mean_std = sqrt(variance(acc));
 #pragma omp barrier
+
+  // surface
+  double total_surface=0.0;
+  // cout << "check scale bla " << vl->Ld().Scale() << endl;
+#pragma omp parallel for default(shared) reduction(+:total_surface)
+  for(int i =0;i<vl->GetECount();++i)
+  {
+    Vessel* v = vl->GetEdge(i);
+    total_surface += (2* 3.1415 * v->r * vl->Ld().Scale());
+  }
+#pragma omp barrier
     
   //return std::make_tuple(0, mean_value);
-  return std::make_tuple(0, mean_value, mean_std);
+  //we are minimizing on the python site, so return -total_surface ----> maximizes it
+  return std::make_tuple(0, mean_value, mean_std, -1.0*total_surface);
   }
 }
 

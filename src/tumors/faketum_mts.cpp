@@ -483,7 +483,36 @@ int FakeTumMTS::FakeTumorSimMTS::run()
      */
     vl = ReadVesselList3d(file.root().open_group("vessels"), pt);
     
+    //create kd-tree from vessellist
+    fillKdTreeFromVl();
     
+    //test kd tree
+    queryPt = annAllocPt(ANN_dim);
+    queryPt[0] = 100.0;
+    queryPt[1] = 150.0;
+    queryPt[2] = 200.0;
+    // execute search
+    kd_tree_of_vl->annkSearch(						// search
+				queryPt,						// query point
+				ANN_k,								// number of near neighbors
+				ANN_nnIdx,							// nearest neighbors (returned)
+				ANN_dists,							// distance (returned)
+				ANN_eps);							// error bound
+    //print search results
+#ifdef DEBUG
+    cout << "\tNN:\tIndex\tDistance\n";
+		for (int i = 0; i < ANN_k; i++) {			// print summary
+			ANN_dists[i] = sqrt(ANN_dists[i]);			// unsquare distance
+			cout << "\t" << i << "\t" << ANN_nnIdx[i] << "\t" << ANN_dists[i] << "\n";
+			cout << "Point: ";
+      cout << "(" << dataPts[ANN_nnIdx[i]][0];
+      for (int i = 1; i < 3; i++) {
+        cout << ", " << dataPts[ANN_nnIdx[i]][i];
+      }
+      cout << ")\n";
+#endif
+      
+		}
     // adjust vessel list ld
     const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
     vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
@@ -1067,4 +1096,39 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF(CellsSystem &currentCellsS
   }
   cout<< "finished writting cells to hdf" << endl;
 }
-
+/** @brief
+ * This will fill the kd-tree structure with the midpoint of the vessels 
+ * stored in the vessel list vl
+ */
+void FakeTumMTS::FakeTumorSimMTS::fillKdTreeFromVl()
+{
+  int              nPts       = vl->GetECount();					// actual number of data points
+  myAssert(nPts<ANN_maxPts);
+  
+	queryPt = annAllocPt(ANN_dim);                  // allocate query point
+	dataPts = annAllocPts(ANN_maxPts, ANN_dim);     // allocate data points
+	
+	// fill kd tree structur
+  #pragma omp_parallel_for
+  for(int i=0; i<nPts; ++i)
+  {
+    Vessel* v = vl->GetEdge(i);                       //get vessel per thread
+    Float3 p_a,p_b,a_b,vessel_center;                 //allocate in loop to make sure we are threadsafe
+    p_a = vl->Ld().LatticeToWorld(v->NodeA()->lpos);  //read position a
+    p_b = vl->Ld().LatticeToWorld(v->NodeB()->lpos);  //read position b
+    a_b = p_a-p_b;                                    // difference vector
+    vessel_center = p_b+0.5*a_b;                      // vessel center
+    ANNpoint p;
+    for(int k=0;k<ANN_dim;++k)
+    {
+      dataPts[i][k] = vessel_center[k];
+    }
+  }
+  kd_tree_of_vl = new ANNkd_tree(					// build search structure
+                                  dataPts,					// the data points
+                                  nPts,						// number of points
+                                  ANN_dim);						// dimension of space
+  //prepare search
+  ANN_nnIdx = new ANNidx[ANN_k];						// allocate near neigh indices
+  ANN_dists = new ANNdist[ANN_k];						// allocate near neighbor dists
+}
