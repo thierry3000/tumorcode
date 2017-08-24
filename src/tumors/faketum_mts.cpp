@@ -493,26 +493,27 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     queryPt[2] = 200.0;
     // execute search
     kd_tree_of_vl->annkSearch(						// search
-				queryPt,						// query point
-				ANN_k,								// number of near neighbors
-				ANN_nnIdx,							// nearest neighbors (returned)
-				ANN_dists,							// distance (returned)
-				ANN_eps);							// error bound
+                              queryPt,		// query point
+                              ANN_k,			// number of near neighbors
+                              ANN_nnIdx,	// nearest neighbors (returned)
+                              ANN_dists,	// distance (returned)
+                              ANN_eps);		// error bound
     //print search results
 #ifdef DEBUG
     cout << "\tNN:\tIndex\tDistance\n";
-		for (int i = 0; i < ANN_k; i++) {			// print summary
+		for (int i = 0; i < ANN_k; i++) 
+    {			// print summary
 			ANN_dists[i] = sqrt(ANN_dists[i]);			// unsquare distance
 			cout << "\t" << i << "\t" << ANN_nnIdx[i] << "\t" << ANN_dists[i] << "\n";
 			cout << "Point: ";
       cout << "(" << dataPts[ANN_nnIdx[i]][0];
-      for (int i = 1; i < 3; i++) {
+      for (int i = 1; i < 3; i++) 
+      {
         cout << ", " << dataPts[ANN_nnIdx[i]][i];
       }
       cout << ")\n";
+    }
 #endif
-      
-		}
     // adjust vessel list ld
     const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
     vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
