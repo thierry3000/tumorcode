@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.3)
+ 
+project(ANN NONE)
+ 
+include(ExternalProject)
+ExternalProject_Add(ANN
+  GIT_REPOSITORY    https://github.com/thierry3000/ANN.git
+  GIT_TAG           master
+  SOURCE_DIR        "${CMAKE_BINARY_DIR}/externalProjects/ANN-src"
+  BINARY_DIR        "${CMAKE_BINARY_DIR}/externalProjects/ANN-build"
+  CONFIGURE_COMMAND "BUILD_SHARED_LIBS=TRUE"
+  BUILD_COMMAND     ""
+  INSTALL_COMMAND   ""
+  TEST_COMMAND      ""
+)
