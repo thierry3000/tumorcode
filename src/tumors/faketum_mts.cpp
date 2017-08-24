@@ -486,6 +486,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     //create kd-tree from vessellist
     fillKdTreeFromVl();
     
+    /*
+     * this test worked, know we try to find the closest vessel for every cell in a similar fashion
     //test kd tree
     queryPt = annAllocPt(ANN_dim);
     queryPt[0] = 100.0;
@@ -498,6 +500,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
                               ANN_nnIdx,	// nearest neighbors (returned)
                               ANN_dists,	// distance (returned)
                               ANN_eps);		// error bound
+                              */
     //print search results
 #ifdef DEBUG
     cout << "\tNN:\tIndex\tDistance\n";
@@ -676,6 +679,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     /* do a vessel model remodeling step */
     cout << boost::format("start vessel remodel step! \n");
     doStep(params.dt);
+    fillKdTreeFromVl();
     cout << boost::format("finished vessel remodel step! \n");
     /* increment tumor time */
     time += params.dt;
@@ -766,7 +770,8 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   a.set("OUTPUT_NUM",output_num);
   h5::Group cells_out = gout.create_group("cells");
   /* writes the cell system stuff */
-  WriteCellsSystemHDF(currentCellsSystem, cells_out);
+  //WriteCellsSystemHDF(currentCellsSystem, cells_out);
+  WriteCellsSystemHDF_with_nearest_vessel_index(currentCellsSystem,kd_tree_of_vl, cells_out);
   /* writes the vessel list */
   WriteVesselList3d(*vl, gout.create_group("vessels"));
   {
@@ -1025,6 +1030,89 @@ void FakeTumMTS::FakeTumorSimMTS::insertGlucoseCoefficients(int box_index, const
     mb.AddLocally(p, -loc_l_coeff - l_coeff(p), -rhs(p)); /// this was it before
 //     mb.AddLocally(p, - l_coeff(p), -rhs(p));
   }
+}
+
+void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(CellsSystem &currentCellsSystem, ANNkd_tree *kd_tree_of_vl, h5cpp::Group &out_cell_group)
+{
+  cout<< "going to write cells to a hdf file" << endl;
+  int numberOfCells = currentCellsSystem.Get_ncells();
+  std::vector<double> x = currentCellsSystem.Get_x();
+  std::vector<double> y = currentCellsSystem.Get_y();
+  std::vector<double> z = currentCellsSystem.Get_z();
+  DynArray<float> a(3*numberOfCells);
+  DynArray<int> index_of_nearest_vessel(numberOfCells);
+  for( int i = 0; i<numberOfCells ;++i)
+  {
+    a[3*i+0] = x[i];
+    a[3*i+1] = y[i];
+    a[3*i+2] = z[i];
+    queryPt[0] = x[i];
+    queryPt[1] = y[i];
+    queryPt[2] = z[i];
+    kd_tree_of_vl->annkSearch(						// search
+                              queryPt,		// query point
+                              ANN_k,			// number of near neighbors
+                              ANN_nnIdx,	// nearest neighbors (returned)
+                              ANN_dists,	// distance (returned)
+                              ANN_eps);		// error bound
+    index_of_nearest_vessel[i] = ANN_nnIdx[0];
+  }
+  if(!out_cell_group.exists("index_of_nearest_vessel"))
+  {
+//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_center_pos", h5cpp::Dataspace::simple_dims(a.size()/3,3), &a[0]);
+    h5cpp::Dataset ds = h5cpp::create_dataset<int>(out_cell_group, "index_of_nearest_vessel", h5cpp::Dataspace::simple_dims(numberOfCells,1), &index_of_nearest_vessel[0]);
+  }
+  if(!out_cell_group.exists("cell_center_pos"))
+  {
+//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_center_pos", h5cpp::Dataspace::simple_dims(a.size()/3,3), &a[0]);
+    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "cell_center_pos", h5cpp::Dataspace::simple_dims(numberOfCells,3), &a[0]);
+  }
+  DynArray<float> buffer(numberOfCells);
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    buffer[i] = currentCellsSystem.Get_r()[i];
+  }
+  if(!out_cell_group.exists("cell_radii"))
+  {
+    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "cell_radii", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
+  }
+  // glucose extracellular Get_G_extra()
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    buffer[i] = currentCellsSystem.Get_G_extra()[i];
+  }
+  if(!out_cell_group.exists("glucose_ex"))
+  {
+    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "glucose_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
+  }
+  // ph Get_pH
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    buffer[i] = currentCellsSystem.Get_pH()[i];
+  }
+  if(!out_cell_group.exists("pH_ex"))
+  {
+    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "pH_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
+  }
+  // oxygen Get_O2
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    buffer[i] = currentCellsSystem.Get_O2()[i];
+  }
+  if(!out_cell_group.exists("o2"))
+  {
+    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "o2", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
+  }
+  // lactate Get_AcL_extra
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    buffer[i] = currentCellsSystem.Get_AcL_extra()[i];
+  }
+  if(!out_cell_group.exists("AcL_ex"))
+  {
+    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "AcL_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
+  }
+  cout<< "finished writting cells to hdf" << endl;
 }
 
 void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group)

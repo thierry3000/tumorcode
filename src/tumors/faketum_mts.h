@@ -193,7 +193,8 @@ struct FakeTumorSimMTS : public boost::noncopyable
 #ifndef undo
   CellsSystem currentCellsSystem;
   void doMilottiStep();
-  void WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group &vesselgroup);
+  void WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group);
+  void WriteCellsSystemHDF_with_nearest_vessel_index(CellsSystem &currentCellsSystem, ANNkd_tree *kd_tree_of_vl, h5cpp::Group &out_cell_group);
   void fillKdTreeFromVl();
 #endif
 };

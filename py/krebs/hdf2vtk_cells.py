@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
-  
+  sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'.'))
   
 import os, sys
 from os.path import join, basename, dirname, splitext
@@ -282,6 +282,9 @@ def writeCells_(graph, options):
   AcL_ex = np.asarray(f[str(options.grp_pattern)+'/cells/AcL_ex'])
   polydata.GetPointData().AddArray(asVtkArray(AcL_ex, "cell_AcL_ex", vtkFloatArray))
   
+  index_of_nearest_vessel = np.asarray(f[str(options.grp_pattern)+'/cells/index_of_nearest_vessel'])
+  polydata.GetPointData().AddArray(asVtkArray(index_of_nearest_vessel, "index_of_nearest_vessel", vtkFloatArray))
+  
   #polydata.GetCellData().AddArray(asVtkArray(rad, "cell_radius", vtkFloatArray))
   #e = extractVtkFields.Extractor(f, search_groups, recursive = True) 
   #print 'found field datasets:'
@@ -355,10 +358,10 @@ if __name__ == '__main__':
     f = h5py.File(fn, 'r')
     dirs = myutils.walkh5(f['/'], pattern)
     if goodArguments.outfn:
-      print("you chose: %s as outfilename" % goodArguments.outfn)
       goodArguments.outfn = goodArguments.outfn + '_%s.vtk'
     else:
-      goodArguments.outfn = outfn = "%s-%%s.vtk" % (os.path.splitext(os.path.basename(fn))[0])
+      goodArguments.outfn = outfn = "%s-%%s.vtk" % (os.path.splitext(os.path.basename(fn))[0]+('_%s'%pattern))
+    print("you chose: %s as outfilename" % goodArguments.outfn)
     for d in dirs:
       if 'vessels' in d and 'po2' not in d:
         vesselgroup = f[join('/',d)]['.']
