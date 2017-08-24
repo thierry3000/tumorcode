@@ -33,3 +33,6 @@ execute_process(COMMAND cp -n ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/pa
 execute_process(COMMAND cp -n ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsIff_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsIff.py)
 execute_process(COMMAND cp -n ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsO2_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsO2.py)
 execute_process(COMMAND cp -n ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsVesselGen_generic.py ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/parameters/parameterSetsVesselGen.py)
+
+### same for povray
+execute_process(COMMAND cp -n ${CMAKE_INSTALL_PREFIX}/py/krebs/povrayRenderSettingsTemplate.py ${CMAKE_INSTALL_PREFIX}/py/krebs/povrayRenderSettings.py)
