@@ -396,6 +396,24 @@ defaultconfig_bulktissue = dict(
 
     surface_tension = -1.,
   ),
+  simple_o2 = dict(
+     o2_range_necro       = 100,
+     o2_range_normal      = 100,
+     o2_range_tumor       = 100,
+     o2_cons_coeff_necro  = 0.0001,
+     o2_cons_coeff_normal = 0.0001,
+     o2_cons_coeff_tumor  = 0.0001,
+     o2_rel_tumor_source_density = 0.2,
+     o2_level_normal = 100,
+     o2_source_decay_time = 8,
+     hematocrit_init = 0.45,
+     reference_intercapillary_distance = 80,
+     capillary_wall_permeability = 0.013,
+     test_obstacle = 0,
+     use_o2_source_decay = 0,#bool
+    ),
+  reference_intercapillary_distance = 80,
+  hematocrit_init = 0.45,
 )
 ''' neat parameters for desktop pc'''
 default = deepcopy(defaultconfig_bulktissue)
@@ -405,6 +423,16 @@ default.update(
     out_intervall = 60, #1 min
     tend = 600., #5 min
 )
+default['tumor'].update(
+    tumor_diameter = 250,
+    )
+merge = deepcopy(default)
+merge['calcflow'].update(
+    viscosityPlasma = 1.2e-6,
+    rheology = 'RheologySecomb2005',
+    inletHematocrit = 0.37,
+    includePhaseSeparationEffect = False,
+    )
 bulktissue_small_2d_snowden = dict(
   # this is the configuration which is used in submit-bulktissue-w-vessels
   lattice_size  = "set me to match the vessel domain",

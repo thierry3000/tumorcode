@@ -38,6 +38,10 @@ default = dict(
     includePhaseSeparationEffect = 1,
   )
 )
+no_phase = copy.deepcopy(default)
+no_phase['calcflow'].update(
+    includePhaseSeparationEffect = 0,
+    )
 large_2d = dict(
   tip_radius_arterial = 2.5,
   tip_radius_capi = 2.5,

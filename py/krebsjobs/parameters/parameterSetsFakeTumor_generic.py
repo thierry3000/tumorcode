@@ -69,7 +69,8 @@ default = dict(
   )
 )
 
-plos_One_2016 = dict(
+plos_One_2016_rmax = dict(
+    out_intervall = 100,
     tumor_speed = 2.,
     tumor_radius = 250.,
     rGF = 200.,
@@ -118,11 +119,46 @@ plos_One_2016 = dict(
     )
   
 newradiusdeflation = deepcopy(default)
-
-forCatSim = deepcopy(default)
+milotti_mts_1 = deepcopy(plos_One_2016_rmax)
+milotti_mts_1.update(
+    tumor_speed = 0.2,
+    out_intervall = 100,
+    tend=1400.,
+    )
+forCatSim = deepcopy(plos_One_2016_rmax)
 forCatSim.update(
   num_threads = cluster_threads,
   tumor_speed = 1.042,
   tumor_radius = 50.,
 )
 forCatSim['rheology'] = 'RheologySecomb2005'
+
+#this creates a nice tumor of size 5.3 mm
+#but in 1 month time --> experiments last 3 months
+gero_3month_to_5mmb = deepcopy(plos_One_2016_rmax)
+gero_3month_to_5mmb.update(
+    num_threads = cluster_threads,
+    out_intervall = 43200, # 3600*12 half a day
+    tumor_speed = 0.001,
+    tumor_radius = 20.,
+    tend=7000000.,
+    dt = 1000.,
+    )
+gero_3month_to_5mmc = deepcopy(plos_One_2016_rmax)
+gero_3month_to_5mmc.update(
+    num_threads = cluster_threads,
+    out_intervall = 43200, # 3600*12 half a day
+    tumor_speed = 0.003,
+    tumor_radius = 20.,
+    tend=7000000.,
+    dt = 3000.,
+    )
+gero_3month_to_5mmd = deepcopy(plos_One_2016_rmax)
+gero_3month_to_5mmd.update(
+    num_threads = cluster_threads,
+    out_intervall = 43200, # 3600*12 half a day
+    tumor_speed = 0.000333333333,
+    tumor_radius = 20.,
+    tend=7000000.,
+    dt = 3600.,
+    )

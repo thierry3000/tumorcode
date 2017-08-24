@@ -25,7 +25,12 @@ from copy import deepcopy
 import math
 import myutils
 cluster_threads = myutils.cluster_threads
-c1_, c2_, c3_ = (0.0052*1.1, 16, 0.0078/math.exp(-4./16)*1.6) # hand adjusted parameters based on secomb
+cluster_threads = 7
+#c1_, c2_, c3_ = (0.0052*1.1, 16, 0.0078/math.exp(-4./16)*1.6) # hand adjusted parameters based on secomb
+''' see S1 from 
+    https://doi.org/10.1371/journal.pone.0161267.s001
+'''
+c1_, c2_, c3_ = (8, 4.7, 0) 
 
 default_o2 = dict(
   num_threads = cluster_threads,
@@ -36,22 +41,25 @@ default_o2 = dict(
   c0 = 0.5,
   sat_curve_exponent = 2.7,
   sat_curve_p50 = 27.,
-  D_tissue = 2000.,
+  D_plasma = 2750.,
   solubility_tissue = 2.8e-5,
-  #dM = 0.05,
   rd_norm = 150.,
   rd_tum  = 50.,
   rd_necro = 150.,
   max_iter = 50,
-  axial_integration_step_factor = 0.25,
+  convergence_tolerance = 0.03,
+  axial_integration_step_factor = .1,
   debug_zero_o2field = False,
-  grid_lattice_const = 50.,
+  grid_lattice_const = 40.,
   calcflow = dict(
     viscosityPlasma = 1.2e-6,
     rheology = 'RheologySecomb2005',
     inletHematocrit = 0.45,
-    includePhaseSeparationEffect = True,
+    includePhaseSeparationEffect = 1,
   ),
+  michaelis_menten_uptake = 1,
+  mmcons_m0_norm = 6.2e-5, # = 3.7e-3 ml O2 / ml / min; # fairly low like estimates by rinneberg and beany
+  mmcons_m0_tum = 6.2e-5 * 4,
   massTransferCoefficientModelNumber = 1,
   conductivity_coeff1 = c1_,
   conductivity_coeff2 = c2_,
@@ -79,6 +87,7 @@ exp.update(
     po2init_dr = 1., #  mmHg / um, these values are from yaseen 2011 for rat brain
     po2init_cutoff = 200., # mmHg; maximal attained value
     )
+
 lowo2 = dict(
   po2init_r0 = 55., #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
   po2init_dr = 1., #  mmHg / um, these values are from yaseen 2011 for rat brain
@@ -236,6 +245,7 @@ breastv3.update(            #3.7e-3/60 = 6.2e-5 min to second!
   name = 'breastv3',
   convergence_tolerance = 0.03,
   max_iter = 400, # some need more
+  num_threads = cluster_threads,
 )
 
 breast_pso = deepcopy(breastv3)
@@ -489,7 +499,11 @@ breastv7.update(
 # Sauerstoff-Verbrauchsrate im Tumor zu klein angesetzt wurde.
 
 # strange, i used 4x normal consumption which is about 24e-5 / s = 14.88 ul / ml / min
-
+colorectal = deepcopy(fixedv3)
+colorectal.update(
+    mmcons_m0_norm = 7.3e-4,  #43.7e-3/60
+    mmcons_mo_tum = 7.3e-4
+    )
 swine1 = dict(
   po2init_r0 = 55., #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
   po2init_dr = 1., #  mmHg / um, these values are from yaseen 2011 for rat brain

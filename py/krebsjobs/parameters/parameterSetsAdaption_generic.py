@@ -32,6 +32,7 @@ boundary_Condition_handling_map = dict(
   LARGE_2D_3 = 4,
   LARGE_2D_like_paper = 5,
   VALUE = 42,
+  BOTH_PRESSURE = 43,
 )
 
 default = dict(
@@ -56,13 +57,13 @@ default = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologyForRats',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  False,
+    includePhaseSeparationEffect = 0,
   ),
 )
 
 default_phase=deepcopy(default)
 default_phase['calcflow'].update(
-  includePhaseSeparationEffect =  True,
+  includePhaseSeparationEffect = 1,
   rheology = 'RheologySecomb2005',
 )
 adaption_default = dict(
@@ -85,7 +86,7 @@ adaption_default = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologyForRats',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  False,
+    includePhaseSeparationEffect = 0,
   ),
 )
 adaption_fix_r_10 = deepcopy(default_phase)
@@ -99,76 +100,6 @@ adaption_fix_r_5['adaption'].update(
   delta_t = 0.01,
 )
 
-adaption_typeE = dict(
-  adaption = dict(
-    k_c = 2.11,
-    k_m = 2.5,
-    k_s = 1.7,
-    Q_refdot = 40,
-    S_0 = 10,
-    cond_length = 2000.,
-    #if this is 0 we iterate until qdev is reached
-    max_nun_iterations = 3000,
-    qdev = 0.001,
-    #if starting_radii is 0. we use the values given in
-    #the input file
-    starting_radii = 0.,
-    delta_t = 0.01,
-    ),
-  calcflow = dict(
-    viscosityPlasma = 1.2e-6, #commented means using default for rats
-    rheology = 'RheologyForRats',
-    inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  False,
-  ),
-)
-
-size_v_typeE = dict(
-  adaption = dict(
-    k_c = 2.11,
-    k_m = 2.5,
-    k_s = 1.7,
-    Q_refdot = 40,
-    S_0 = 0.5, #guess log(no edges/no roots)
-    cond_length = 2000.,
-    #if this is 0 we iterate until qdev is reached
-    max_nun_iterations = 3,
-    qdev = 0.001,
-    #if starting_radii is 0. we use the values given in
-    #the input file
-    starting_radii = 0.,
-    delta_t = 0.01,
-    ),
-  calcflow = dict(
-    viscosityPlasma = 1.2e-6, #commented means using default for rats
-    rheology = 'RheologyForRats',
-    inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  False,
-  ),
-)
-size_v_typeEb = dict(
-  adaption = dict(
-    k_c = 1.5,
-    k_m = 1.2,
-    k_s = 1.7,
-    Q_refdot = 40,
-    S_0 = 0.5, #guess log(no edges/no roots)
-    cond_length = 200.,
-    #if this is 0 we iterate until qdev is reached
-    max_nun_iterations = 2000,
-    qdev = 0.02,
-    #if starting_radii is 0. we use the values given in
-    #the input file
-    starting_radii = 10.,
-    delta_t = 0.01,
-    ),
-  calcflow = dict(
-    viscosityPlasma = 1.2e-6, #commented means using default for rats
-    rheology = 'RheologySecomb2005',
-    inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
-  ),
-)
   
 adaption_PLOS_2009 = dict(
   adaption = dict(
@@ -190,56 +121,10 @@ adaption_PLOS_2009 = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologyForRats',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  False,
+    includePhaseSeparationEffect = 0,
   ),
 )
   
-adaption_typeB = dict(
-  adaption = dict(
-    k_c = 2.113,
-    k_m = 0.6444,
-    k_s = 1.69,
-    Q_refdot = .98,
-    S_0 = 20,
-    cond_length = 2000.,
-    #if this is 0 we iterate until qdev is reached
-    max_nun_iterations = 500,
-    qdev = 0.1,
-    #if starting_radii is 0. we use the values given in
-    #the input file
-    starting_radii = 0.,
-    delta_t = 0.01,
-    ),
-  calcflow = dict(
-    viscosityPlasma = 6.e-6, #commented means using default for rats
-    rheology = 'RheologyForRats',
-    inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  False,
-  ),
-)
-adaption_typeC = dict(
-  adaption = dict(
-    k_c = 2.113,
-    k_m = 0.6444,
-    k_s = .929,
-    Q_refdot = .098,
-    S_0 = 20,
-    cond_length = 1500.,
-    #if this is 0 we iterate until qdev is reached
-    max_nun_iterations = 500,
-    qdev = 0.1,
-    #if starting_radii is 0. we use the values given in
-    #the input file
-    starting_radii = 0.,
-    delta_t = 0.01,
-    ),
-  calcflow = dict(
-    viscosityPlasma = 6.e-6, #commented means using default for rats
-    rheology = 'RheologySecomb2005',
-    inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
-  ),
-)
 
 adaption_symetric_world = dict(
   adaption = dict(
@@ -258,7 +143,7 @@ adaption_symetric_world = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologyForRats',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
+    includePhaseSeparationEffect = 1,
   ),
 )
 
@@ -279,7 +164,7 @@ adaption_symetricA_world = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologyForRats',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
+    includePhaseSeparationEffect = 1,
   ),
 )
 adaption_symetricA_world_break = dict(
@@ -299,7 +184,7 @@ adaption_symetricA_world_break = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologyForRats',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
+    includePhaseSeparationEffect = 1,
   ),
 )
   
@@ -320,7 +205,7 @@ adaption_symetricB_world = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologyForRats',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
+    includePhaseSeparationEffect = 1,
   ),
 )
   
@@ -341,7 +226,7 @@ adaption_symetricIrregular_world = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologySecomb2005',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
+    includePhaseSeparationEffect = 1,
   ),
 )
 adaption_symetricIrregular_world_bak = dict(
@@ -361,7 +246,7 @@ adaption_symetricIrregular_world_bak = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologySecomb2005',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
+    includePhaseSeparationEffect = 1,
   ),
 )
 
@@ -383,7 +268,7 @@ adaption_asymetric_world = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologyForRats',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
+    includePhaseSeparationEffect = 1,
   ),
 )
 adaption_asymetric_world_bak = dict(
@@ -403,7 +288,7 @@ adaption_asymetric_world_bak = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologyForRats',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
+    includePhaseSeparationEffect = 1,
   ),
 )
 
@@ -424,7 +309,7 @@ mesentry_paper = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologyForRats',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
+    includePhaseSeparationEffect = 1,
   ),
 )
 
@@ -457,15 +342,16 @@ mesentry = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologyForRats',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  False,
+    includePhaseSeparationEffect = 0,
   ),
 )
 mesentry_new_h = deepcopy(mesentry)
 mesentry_new_h['calcflow'].update(
-  includePhaseSeparationEffect =  True,
+  includePhaseSeparationEffect = 1,
 )
-large_2d = dict(
-  num_threads = 4,
+
+deap_test = dict(
+  num_threads = 1,
   adaption = dict(
     k_c = 2.74,
     k_m = 0.83,
@@ -474,106 +360,99 @@ large_2d = dict(
     S_0 = 20,
     cond_length = 1500.,
     #if this is 0 we iterate until qdev is reached
-    max_nun_iterations = 1000,
+    max_nun_iterations = 500,
     #qdev = 0, means local conditions!
-    qdev = .0,
+    qdev = 0.10,
     #if starting_radii is 0. we use the values given in
     #the input file
-    starting_radii = 10.,
-    delta_t = 0.05,
-    addAverageConductivity = False,
-    radMin_for_kill = 1.5,
-    boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D'],
-    ),
-  calcflow = dict(
-    viscosityPlasma = 1.2e-6, #commented means using default for rats
-    rheology = 'RheologyForRats',
-    inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
-  ),
-)
-large_2d_2 = deepcopy(large_2d)
-large_2d_2['adaption'].update(
-  boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D_2'],
-)
-human_guess = dict(
-  num_threads = 4,
-  adaption = dict(
-    k_c = 2.74,
-    k_m = 0.83,
-    k_s = 1.79,
-    Q_refdot = 40.,
-    S_0 = 20,
-    cond_length = 1500.,
-    #if this is 0 we iterate until qdev is reached
-    max_nun_iterations = 1000,
-    #qdev = 0, means local conditions!
-    qdev = .0,
-    #if starting_radii is 0. we use the values given in
-    #the input file
-    starting_radii = 20.,
+    starting_radii = 0.,
     delta_t = 0.05,
     addAverageConductivity = False,
     radMin_for_kill = 3.5,
-    boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D_2'],
+    boundary_Condition_handling = boundary_Condition_handling_map['KEEP'],
+    a_pressure = 2.,
+    a_flow = 20000.,
+    pop = 3,
+    individuals = 9,
+    opt_iter = 10,
     ),
   calcflow = dict(
     viscosityPlasma = 1.2e-6, #commented means using default for rats
     rheology = 'RheologySecomb2005',
     inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
+    includePhaseSeparationEffect = 0,
   ),
+  optimization = dict(
+      desired_cap_flow = 20000,      
+      )
 )
-human_guess_2 = deepcopy(human_guess)
-human_guess_2['adaption'].update(
-  boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D_3'],
+deap_test_1_value= deepcopy(deap_test)
+deap_test_1_value['adaption'].update(
+    a_pressure = 1.8,
+    a_flow = -800000,
+    boundary_Condition_handling = boundary_Condition_handling_map['VALUE'],
+    )
+deap_test_2 = dict(
+  num_threads = 1,
+  adaption = dict(
+    k_c = 2.74,
+    k_m = 0.83,
+    k_s = 1.79,
+    Q_refdot = 40.,
+    S_0 = 20,
+    cond_length = 1500.,
+    #if this is 0 we iterate until qdev is reached
+    max_nun_iterations = 500,
+    #qdev = 0, means local conditions!
+    qdev = 0.10,
+    #if starting_radii is 0. we use the values given in
+    #the input file
+    starting_radii = 0.,
+    delta_t = 0.05,
+    addAverageConductivity = False,
+    radMin_for_kill = 3.5,
+    boundary_Condition_handling = boundary_Condition_handling_map['KEEP'],
+    a_pressure = 2.,
+    a_flow = 20000.,
+    pop = 3,
+    individuals = 9,
+    opt_iter = 10,
+    ),
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6, #commented means using default for rats
+    rheology = 'RheologySecomb2005',
+    inletHematocrit = 0.40,
+    includePhaseSeparationEffect = 1,
+  ),
+  optimization = dict(
+      desired_cap_flow = 20000,      
+      )
 )
-value_1 = deepcopy(human_guess)
-value_1['adaption'].update(
-  boundary_Condition_handling = boundary_Condition_handling_map['VALUE'],
-  a_pressure = 2.,
-  a_flow = 20000.,
-  pop = 50,
-  individuals = 300,
-)
-value_2 = deepcopy(human_guess)
-value_2['adaption'].update(
-  boundary_Condition_handling = boundary_Condition_handling_map['VALUE'],
-  a_pressure = 2.,
-  a_flow = 50000.,
-  pop = 5,
-  individuals = 50,
-  opt_iter = 10,
-  max_nun_iterations = 150,
-  delta_t = 0.1,
-)
-pagmo_test = deepcopy(value_1)
-pagmo_test['adaption'].update(
-  boundary_Condition_handling = boundary_Condition_handling_map['VALUE'],
-  a_pressure = 2.,
-  a_flow = 20000.,
-  pop = 3,
-  individuals = 9,
-  opt_iter = 10,
-  max_nun_iterations = 10,
-)
-pagmo_test['calcflow'].update(
-  includePhaseSeparationEffect =  False,
-)
-
-deal_test = deepcopy(pagmo_test)
-deal_test['optimization'] = dict(
-    desired_cap_flow = 20000,
+deap_test_3 = deepcopy(deap_test_2)
+deap_test_3['adaption'].update(
+    starting_radii=10.,
     )
 
-def _value():
+deap_test_4 = deepcopy(deap_test_3)
+deap_test_4['adaption'].update(
+    starting_radii = 0.,
+    boundary_Condition_handling = boundary_Condition_handling_map['VALUE'],
+    a_pressure = 1.8,
+    a_flow = -800000,
+    )
+
+
+# velocity in capillary about 1mm/s = 1000mu/s
+# typical diameter 5mu e.g r=2.5mu
+# 3.1415*2.5*2.5*1000 about 2e4 mu^3/s
+def _value1():
   #import random
-  pressures = [2.,2.5,3,3.5,4.]
-  flows = [1e5,1e6,1e7,1e8]
+  pressures = [1.8,2.3, 3.]
+  flows = [-1e5, -1e6, -1e7, ]
   import itertools
   combined = list(itertools.product(pressures,flows))
   def mk1(cnt):
-    p = deepcopy(value_1)
+    p = deepcopy(deap_test_4)
     p['name'] = 'value_%i' % cnt
     pressure = combined[cnt][0]
     flow = combined[cnt][1]
@@ -584,36 +463,273 @@ def _value():
     return p
   return list(mk1(i) for i in xrange(len(combined)))
 
-value_list = _value()
+value_list1 = _value1()
 
-LARGE_2D_like_paper = dict(
-  num_threads = 4,
-  adaption = dict(
-    k_c = 2.74,
-    k_m = 0.83,
-    k_s = 1.79,
-    Q_refdot = 40.,
-    S_0 = 20,
-    cond_length = 1500.,
-    #if this is 0 we iterate until qdev is reached
-    max_nun_iterations = 1000,
-    #qdev = 0, means local conditions!
-    qdev = .0,
-    #if starting_radii is 0. we use the values given in
-    #the input file
-    starting_radii = 10.,
-    delta_t = 0.05,
-    addAverageConductivity = False,
-    radMin_for_kill = 1.5,
-    boundary_Condition_handling = boundary_Condition_handling_map['LARGE_2D_like_paper'],
-    ),
-  calcflow = dict(
-    viscosityPlasma = 1.2e-6, #commented means using default for rats
-    rheology = 'RheologyForRats',
-    inletHematocrit = 0.40,
-    includePhaseSeparationEffect =  True,
-  ),
-)
+def _value2():
+  #import random
+  pressures = [1.5, 2, 3,]
+  flows = [-1e6, -1e8, -1e9, ]
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list2_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list2 = _value2()
+
+def _value3():
+  #import random
+  pressures = [2.3, 2.8, 3.3,]
+  flows = [-4.8e5, -4.8e6, -4.8e7,]
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list3_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list3 = _value3()
+
+def _value4():
+  #import random
+  pressures = [2.3, 2.8, 3.3,]
+  flows = [-4.8e5, -4.8e6, -4.8e7,]
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list4_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list4 = _value4()
+
+def _value5():
+  #import random
+  pressures = [2.3, 2.8, 3.3,]
+  flows = [-4.8e5, -4.8e6, -4.8e7,]
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list5_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      Q_refdot = 10.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list5 = _value5()
+
+def _value6():
+  #import random
+  pressures = [2.3, 2.8, 3.3,]
+  flows = [-4.8e5, -4.8e6, -4.8e7,]
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list6_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      #Q_refdot = 10.,
+      cond_length = 2500.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list6 = _value6()
+
+def _value7():
+  #import random
+  pressures = [2.3, 2.8, 3.3,]
+  flows = [-4.8e5, -4.8e6, -4.8e7,]
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list7_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      Q_refdot = 10.,
+      cond_length = 2500.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list7 = _value7()
+
+def _value8():
+  #import random
+  pressures = [3., 4, 5,]
+  flows = [-4.8e6, -4.8e7, -4.8e8,]
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list8_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      Q_refdot = 10.,
+      cond_length = 2500.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list8 = _value8()
+
+def _value9():
+  #import random
+  pressures = [3., 4, 5,]
+  flows = [-4.8e6, -4.8e7, -4.8e8,]
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list9_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      #Q_refdot = 10.,
+      #cond_length = 2500.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list9 = _value9()
+
+def _value10():
+  #import random
+  pressures = [6., 7, 8,]
+  flows = [-4.8e8, -4.8e9, -4.8e10,]
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list10_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      Q_refdot = 10.,
+      cond_length = 2500.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list10 = _value10()
+
+def _value11():
+  #import random
+  pressures = np.arange(3.5,4.5,0.1)
+  flows = np.arange(-9.0,-1, 0.5) * 1e7
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list11_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      #Q_refdot = 10.,
+      #cond_length = 2500.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list11 = _value11()
+''' the a_pressure variable is the arterial pressure
+    the a_flow variable is venous pressure
+''' 
+def _value_pressure_1():
+  #import random
+  pressures1 = [6., 7., 8.,] # arteries
+  pressures2 = [3., 4., 5.]  # veins
+  import itertools
+  combined = list(itertools.product(pressures1,pressures2))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['boundary_Condition_handling'] = boundary_Condition_handling_map['BOTH_PRESSURE'],
+    p['name'] = 'value_list_pressure_1_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      Q_refdot = 10.,
+      cond_length = 2500.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list_pressure_1 = _value_pressure_1()
+def _value_pressure_2():
+  #import random
+  pressures1 = [3., 3.5, 4.,] # arteries
+  pressures2 = [1.5, 2., 2.5]  # veins
+  import itertools
+  combined = list(itertools.product(pressures1,pressures2))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['boundary_Condition_handling'] = boundary_Condition_handling_map['BOTH_PRESSURE'],
+    p['name'] = 'value_list_pressure_2_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      Q_refdot = 40.,
+      cond_length = 1700.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list_pressure_2 = _value_pressure_2()
 if __name__ == '__main__':
-  abc = _value()
-  print abc
+  index = 4
+  print_c = deepcopy(value_list9)
+  print('starting radii: %f ' % print_c[index]['adaption']['starting_radii'])
+  print('a_pressure: %f ' % print_c[index]['adaption']['a_pressure'])
+  print('a_flow: %0.1g ' % print_c[index]['adaption']['a_flow'])
+  print('a_flow: %f ' % print_c[index]['adaption']['a_flow'])
+  print('handling: %s ' % print_c[index]['adaption']['boundary_Condition_handling'])
+  print(len(print_c))
