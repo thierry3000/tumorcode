@@ -64,7 +64,25 @@ execute_process(COMMAND "${CMAKE_COMMAND}" --build .
 include_directories("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src")
 # add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src"
 #                  "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-build")
-                 
+
+## ANN
+# to find nearest vessels for cells we contact the ANN add_library
+configure_file(externalProjects/ANN/CMakeLists.txt.in externalProjects/ANN/CMakeLists.txt)
+message("CMAKE_COMMAND:   ${CMAKE_COMMAND}")
+message("CMAKE_GENERATOR:   ${CMAKE_GENERATOR}")
+# numpycpp has its own modules
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_BINARY_DIR}/externalProjects/ANN-src/.cmake/modules;")
+message("CMAKE_MODULE_PATH at ANN build:   ${CMAKE_MODULE_PATH}")
+execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
+execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
+include_directories("${CMAKE_BINARY_DIR}/externalProjects/ANN-src")
+# Add numpycpp directly to our build. This adds
+# the following targets: numpycpp
+add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/ANN-src"
+                 "${CMAKE_BINARY_DIR}/externalProjects/ANN-build")
+
 project(allmystuff C CXX)
 list(APPEND CMAKE_CXX_SOURCE_FILE_EXTENSIONS c)
 add_definitions(-DSILENT)
