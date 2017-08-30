@@ -25,7 +25,6 @@ from copy import deepcopy
 import math
 import myutils
 cluster_threads = myutils.cluster_threads
-cluster_threads = 7
 #c1_, c2_, c3_ = (0.0052*1.1, 16, 0.0078/math.exp(-4./16)*1.6) # hand adjusted parameters based on secomb
 ''' see S1 from 
     https://doi.org/10.1371/journal.pone.0161267.s001
@@ -96,7 +95,7 @@ lowo2 = dict(
   c0 = 0.5,
   S_n = 2.7,
   S_p50 = 27.,
-  D_tissue = 2000.,
+  D_plasma = 2000.,
   solubility_tissue = 2.8e-5,
   #dM = 0.05,
   rd_norm = 200.,
@@ -119,7 +118,7 @@ medo2 = dict(
   c0 = 0.5,
   S_n = 2.7,
   S_p50 = 27.,
-  D_tissue = 2000.,
+  D_plasma = 2000.,
   solubility_tissue = 2.8e-5,
   #dM = 0.05,
   rd_norm = 200.,
@@ -147,9 +146,9 @@ michaelismenten_consumption = dict(
   po2init_cutoff = 100., # mmHg; maximal attained value; radius at cutoff is 45 um
   solubility_plasma = 3.1e-5,
   c0 = 0.5,
-  S_n = 2.7,
-  S_p50 = 27.,
-  D_tissue = 2000.,
+  sat_curve_exponent = 2.7,
+  sat_curve_p50 = 27.,
+  D_plasma = 2750.,
   solubility_tissue = 2.8e-5, # ml O2 / (ml tissue mmHg)
   #dM = 0.05,
   rd_norm = 150.,
@@ -262,7 +261,7 @@ thigh = dict(
   c0 = 0.5,
   S_n = 2.7,
   S_p50 = 27.,
-  D_tissue = 2000.,
+  D_plasma = 2000.,
   solubility_tissue = 2.8e-5, # ml O2 / (ml tissue mmHg)
   #dM = 0.05,
   rd_norm = 150.,
@@ -431,7 +430,7 @@ mesentry = dict(
   c0 = 0.5,
   S_n = 3.0,
   S_p50 = 38.,
-  D_tissue = 3000.,
+  D_plasma = 3000.,
   solubility_tissue = 2.0e-5, # ml O2 / (ml tissue mmHg)
   #dM = 0.05,
   rd_norm = 150.,

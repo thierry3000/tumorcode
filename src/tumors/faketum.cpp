@@ -355,13 +355,16 @@ void FakeTum::FakeTumorSim::writeOutput()
       tum_field(p) = t;
     }
 
-    h5::Group field_ld_group = root.require_group("field_ld");
-    if (output_num==0) WriteHdfLd(field_ld_group, ld);
-
     h5::Group gtum = gout.create_group("tumor");
     gtum.attrs().set("TYPE", "faketumor");
     gtum.attrs().set("TUMOR_RADIUS", tumor_radius);
-    WriteScalarField(gtum, "tc_density", tum_field, ld, field_ld_group);
+    /*contains also the critical call 
+      * somewhere down from here simple_dims, is called.
+      * I think by set_array
+      * on snowden I have the error 
+      * "nd dataspace with rank 0 not permitted, use create_scalar()"
+      */
+    //WriteScalarField(gtum, "tc_density", tum_field, ld, field_ld_group);
   }
   ++output_num;
 }

@@ -184,4 +184,4 @@ if not qsub.is_client and __name__=='__main__':
   else:
     print("WARNING: factory is not a dict")
 
-  krebs.adaption.do_simple_adaption(filenames[0],goodArguments.grp_pattern, factory)
+  returnState, mean, varOfMean, total_surface = krebs.adaption.do_simple_adaption(filenames[0],goodArguments.grp_pattern, factory)

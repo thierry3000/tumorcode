@@ -41,8 +41,9 @@ from krebs import detailedo2Analysis
 def worker_on_client(fn, pattern, o2params):
   print 'detailedo2 on %s / %s' % (fn, pattern)
   h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
-  num_threads = o2params.pop('num_threads')
-  krebsutils.set_num_threads(num_threads)
+  #no, this is not working!!!!, hand num_threads over to the cpp side
+  #num_threads = o2params.pop('num_threads')
+  #krebsutils.set_num_threads(num_threads)
   o2_refs = detailedo2.doit(fn, pattern, (o2params, o2params['name']))
   if 0: #this is for data analysis on the clusters
     for ref in o2_refs:

@@ -92,9 +92,9 @@ void WriteHdfGraph( h5cpp::Group g, const VesselList3d &vl )
     DynArray<float> a(3*ncnt);
     for(int i=0; i<ncnt; ++i) 
     {
-	a[3*i+0]= vl.GetNode(i)->worldpos[0];
-	a[3*i+1] = vl.GetNode(i)->worldpos[1];
-	a[3*i+2] = vl.GetNode(i)->worldpos[2];
+      a[3*i+0]= vl.GetNode(i)->worldpos[0];
+      a[3*i+1] = vl.GetNode(i)->worldpos[1];
+      a[3*i+2] = vl.GetNode(i)->worldpos[2];
     }
     // due to creation of h5 files with python this could already be pressent
     if(!gg.exists("world_pos"))

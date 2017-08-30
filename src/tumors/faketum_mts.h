@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/common.h"
 #include "../common/calcflow.h"
 #include "../common/shared-objects.h"
+#include <math.h> // calculte 3rd root
 // to check if parameter files are present
 #include <boost/filesystem.hpp>
 
@@ -165,6 +166,9 @@ struct FakeTumorSimMTS : public boost::noncopyable
   FakeTumMTS::Parameters params;
   GlucoseModel::GlucoseParams glucoseParams;
   BloodFlowParameters bfparams;
+#ifdef USE_ADAPTION
+  Adaption::Parameters adap_params;
+#endif
 #ifdef USE_DETAILED_O2
   DetailedPO2::Parameters o2_params;
 #else
@@ -178,11 +182,14 @@ struct FakeTumorSimMTS : public boost::noncopyable
   int output_num;
 
   // interface functions
-  float getGf(const Float3 &pos) const;
-  float getPress(const Float3 &pos) const;
-  float getTumorDens(const Float3 &pos) const;
+  //float getGf(const Float3 &pos) const;
+  float getGf(const Float3 &pos);
+  //float getPress(const Float3 &pos) const;
+  float getPress(const Float3 &pos) ;
+  //float getTumorDens(const Float3 &pos) const;
+  float getTumorDens(const Float3 &pos);
   Float3 getGfGrad(const Float3 &pos) const;
-
+  
   // main functions
   //int run(int argc, char **argv);
   int run();
@@ -196,6 +203,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
   void WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group);
   void WriteCellsSystemHDF_with_nearest_vessel_index(CellsSystem &currentCellsSystem, ANNkd_tree *kd_tree_of_vl, h5cpp::Group &out_cell_group);
   void fillKdTreeFromVl();
+  float estimateTumorRadiusFromCells();
 #endif
 };
 }//end FakeTum

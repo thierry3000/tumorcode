@@ -256,7 +256,7 @@ def doit(parameters):
     warnings.warn("adation broken", RuntimeWarning)
 #    print 'computed Adaption stored in:', ref
 #    output_links.append(ref)
-  return returnState, mean
+  return returnState, mean, varOfMean, total_surface
   
 def test():
     adaption_cpp.testAdaption()
@@ -327,4 +327,5 @@ def do_simple_adaption( vfile_name, grp_name, paramset):
       )
   if sys.flags.debug:
     print(paramset)
-  doit(paramset)
+  returnState, mean, varOfMean, total_surface = doit(paramset)
+  return returnState, mean, varOfMean, total_surface

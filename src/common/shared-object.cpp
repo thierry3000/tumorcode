@@ -875,15 +875,6 @@ ptree AddVesselVolumeFraction(const VesselList3d &vl, const LatticeDataQuad3d &f
 //-----------------------------------
 
 
-void WriteVesselList3dVolume(VesselList3d &vl, h5cpp::Group vesselgroup, h5cpp::Group ldgroup, const ContinuumGrid &grid, h5cpp::Group field_ldgroup)
-{
-  // write vessel volume fraction
-  Array3d<float> vessel_volume(grid.Box());
-  AddVesselVolumeFraction(vl, grid.ld, grid.dim, vessel_volume);
-  WriteScalarField(vesselgroup, "vesselVolume", vessel_volume, grid.ld, field_ldgroup);
-}
-
-
 
 static void CalcGoodSpacing(Float3 size, float &spacing, Int3 &num_cells)
 {

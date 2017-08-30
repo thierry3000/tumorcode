@@ -429,15 +429,54 @@ void FakeTumMTS::Parameters::update_ptree(ptree &dst, const ptree &src)
   boost::property_tree::update(dst, src);
 }
 
-
-float FakeTumMTS::FakeTumorSimMTS::getGf(const Float3 &pos) const
+float FakeTumMTS::FakeTumorSimMTS::estimateTumorRadiusFromCells()
 {
-  float r = pos.norm();
-  return std::max(tumor_radius + params.rGf - r, 0.);
+  /** for now, we keep it simple, simplifications implied:
+   * 1) neglect volume in between cells
+   * 2) assume spherical shape
+   */ 
+  std::vector<double> allCellVolumina = currentCellsSystem.Get_volume();
+  double sum = 0;
+#pragma omp parallel for reduction(+:sum)
+  for(std::size_t i = 0; i<allCellVolumina.size();i++)
+  {
+    sum+=allCellVolumina[i];
+  }
+  // estimate radius from Volume ((3*V)/(4*pi))^(1/3): 3/(4*pi) = 0.238732414637843
+  float estimated_tum_radius = pow(0.238732414637843 * sum, 0.3333333333333333333333);
+  return estimated_tum_radius;
 }
 
-float FakeTumMTS::FakeTumorSimMTS::getPress(const Float3 &pos) const
+//float FakeTumMTS::FakeTumorSimMTS::getGf(const Float3 &pos) const
+float FakeTumMTS::FakeTumorSimMTS::getGf(const Float3 &pos)
 {
+#define someInteraction
+#ifdef someInteraction // do the super cool new interaction stuff
+  float estimated_tum_radius = estimateTumorRadiusFromCells();
+  float currentShell = pos.norm();
+  return std::max(estimated_tum_radius + params.rGf - currentShell, 0.);
+#else // do it like fake tum has done it before
+  float r = pos.norm();
+  return std::max(tumor_radius + params.rGf - r, 0.);
+#endif
+}
+
+//float FakeTumMTS::FakeTumorSimMTS::getPress(const Float3 &pos) const
+float FakeTumMTS::FakeTumorSimMTS::getPress(const Float3 &pos)
+{
+#ifdef someInteraction
+  float estimated_tum_radius = estimateTumorRadiusFromCells();
+  float currentShell = pos.norm();
+  if (params.tissuePressureDistribution == TISSUE_PRESSURE_SPHERE)
+  {
+    return my::smooth_heaviside<float>(estimated_tum_radius - currentShell, params.tissuePressureWidth);
+  }
+  else
+  {
+    return 2.*params.tissuePressureWidth*my::smooth_delta_cos<float>(estimated_tum_radius - currentShell, params.tissuePressureWidth) +
+           params.tissuePressureCenterFraction * my::smooth_heaviside_sin<float>(estimated_tum_radius - currentShell, params.tissuePressureWidth);
+  }
+#else
   float r = pos.norm();
   if (params.tissuePressureDistribution == TISSUE_PRESSURE_SPHERE)
   {
@@ -448,12 +487,20 @@ float FakeTumMTS::FakeTumorSimMTS::getPress(const Float3 &pos) const
     return                                       2.*params.tissuePressureWidth*my::smooth_delta_cos<float>(tumor_radius - r, params.tissuePressureWidth) +
            params.tissuePressureCenterFraction * my::smooth_heaviside_sin<float>(tumor_radius - r, params.tissuePressureWidth);
   }
+#endif
 }
 
-float FakeTumMTS::FakeTumorSimMTS::getTumorDens(const Float3 &pos) const
+//float FakeTumMTS::FakeTumorSimMTS::getTumorDens(const Float3 &pos) const
+float FakeTumMTS::FakeTumorSimMTS::getTumorDens(const Float3 &pos)
 {
+#ifdef someInteraction
+  float estimated_tum_radius = estimateTumorRadiusFromCells();
+  float currentShell = pos.norm();
+  return my::smooth_heaviside<float>(estimated_tum_radius - currentShell, 30.);
+#else
   float r = pos.norm();
   return my::smooth_heaviside<float>(tumor_radius - r, 30.);
+#endif
 }
 
 Float3 FakeTumMTS::FakeTumorSimMTS::getGfGrad(const Float3 &pos) const
@@ -503,6 +550,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
                               */
     //print search results
 #ifdef DEBUG
+#if 0
     cout << "\tNN:\tIndex\tDistance\n";
 		for (int i = 0; i < ANN_k; i++) 
     {			// print summary
@@ -516,6 +564,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       }
       cout << ")\n";
     }
+#endif
 #endif
     // adjust vessel list ld
     const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
@@ -703,12 +752,12 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
   cout << format("step %i, t=%f") % num_iteration % time << endl;
   CalcFlow(*vl, bfparams);
   /* do not use adaptation stuff for mts*/
-// #ifdef USE_ADAPTION
-//   model.DoStep(dt, &params.adap_params,&params.bfparams);
-// #else
-//   //do be implemented
-// #endif
+#ifdef USE_ADAPTION
+  model.DoStep(dt, &adap_params, &bfparams);
+#else
   model.DoStep(dt, &bfparams);
+#endif
+  
   /* this calculates the simple diffusion of substances */
   //calcChemFields();
   tumor_radius += dt * params.tumor_speed;

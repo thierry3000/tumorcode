@@ -60,7 +60,7 @@ void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
   params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
   params.po2init_dr = GET_PO2_PARAM_FROM_DICT(double, "po2init_dr");
   params.po2init_cutoff = GET_PO2_PARAM_FROM_DICT(double, "po2init_cutoff");
-  //params.num_threads = GET_PO2_PARAM_FROM_DICT(int, "num_threads");
+  params.num_threads = GET_PO2_PARAM_FROM_DICT(int, "num_threads");
   
   params.tissue_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_tissue");
   params.plasma_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_plasma");

@@ -140,7 +140,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
  * this function writes nodes/, and edges/ subgroups and adds datasets into them
  */
 void WriteVesselList3d(const VesselList3d& vl, h5cpp::Group vesselgroup, const ptree& params = ptree());
-void WriteVesselList3dVolume(VesselList3d &vl, h5cpp::Group vesselgroup, h5cpp::Group ldgroup, const LatticeDataQuad3d &field_ld, h5cpp::Group field_ldgroup);
+
 void CenterVesselListAndSetupFieldLattice(VesselList3d &vl, int dim, float spacing, LatticeDataQuad3d &field_ld);
 void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float safety_spacing, LatticeDataQuad3d &ld);
 void printPtree(ptree const &pt);
