@@ -108,10 +108,21 @@ def get_network_from_file(vesselgrp, path):
             flow.append((np.pi*radii[i]**2)*velocity[i]*1000)
     #edge stuff
     N_edges= 546
-    #N_edges=2666
+    ''' there are double entries, which maybe spoil the computation '''
+#    matrix = np.asarray([node_a_index,node_b_index])
+#    #unique_matrix = np.unique(matrix, axis=1, return_counts=True)
+#    mt = matrix.transpose()
+#    how_often_present=(mt[:, np.newaxis] == mt).all(axis=2).sum(axis=1)
+#    repeated_edges=how_often_present>1;
+#    single_edges = np.logical_not(repeated_edges);
+#    N_edges=np.sum(single_edges)
+
+#    list_to_change = ['node_a_index','node_b_index','radii','hema', 'flow', 'mw_vessel_flag','label']
+#    for element in list_to_change:
+#      exec("%s=np.asarray(%s)[single_edges]" % (element,element))
     edgegrp = vesselgrp.create_group("edges")
     edgegrp.attrs.create('COUNT',N_edges)
-    ds_nodeA = edgegrp.create_dataset('node_a_index', data=node_a_index)
+    ds_nodeA = edgegrp.create_dataset('node_a_index', data= node_a_index)
     ds_nodeB = edgegrp.create_dataset('node_b_index', data= node_b_index)
     ds_radius = edgegrp.create_dataset('radius', data=radii)
     ds_hema = edgegrp.create_dataset('hematocrit', data=hema)
@@ -222,6 +233,46 @@ def correct_vessel_indeces(node_label2index, vesselgrp):
     
     print("done... renumbering")
 
+''' I found that there are some edges twice, 
+    delete them
+    '''
+def delete_double_edges(vesselgrp):
+  #176 deleted for convergenz issues
+  by_hand_identified_doubles = [279,283,284,294,312,325,328,176]
+  va = np.asarray(vesselgrp['edges/node_a_index'])
+  vb = np.asarray(vesselgrp['edges/node_b_index'])
+  flags = np.asarray(vesselgrp['edges/flags'])
+  radii = np.asarray(vesselgrp['edges/radius'])
+  hema = np.asarray(vesselgrp['edges/hematocrit'])
+  no_edges = len(va)
+  good_indeces = np.ones(no_edges)
+  for i in by_hand_identified_doubles:
+    good_indeces[i] = 0
+  good_indeces = good_indeces.astype(bool)
+  del vesselgrp['edges/node_a_index']
+  del vesselgrp['edges/node_b_index']
+  del vesselgrp['edges/flags']
+  del vesselgrp['edges/radius']
+  del vesselgrp['edges/hematocrit']
+#  matrix = np.asarray([va,vb])
+#  unique_matrix = np.unique(matrix, axis=1)
+#  va_new = unique_matrix[0,:]
+#  vb_new = unique_matrix[1,:]
+  va_new = va[good_indeces]
+  vb_new = vb[good_indeces]
+  vesselgrp.create_dataset('edges/node_a_index', data= va_new)
+  vesselgrp.create_dataset('edges/node_b_index', data= vb_new)
+  N_edges= len(va_new)
+  edgegrp = vesselgrp['edges']
+  edgegrp.attrs['COUNT']= N_edges
+  flags_new = flags[good_indeces]
+  vesselgrp.create_dataset('edges/flags', data= flags_new)
+  radii_new = radii[good_indeces]
+  vesselgrp.create_dataset('edges/radius', data= radii_new)
+  hema_new = hema[good_indeces]
+  vesselgrp.create_dataset('edges/hematocrit', data= hema_new)
+  
+  print("done... deleting double entries")
 
 if __name__ == '__main__':
     #write the data to a h5 file
@@ -236,13 +287,14 @@ if __name__ == '__main__':
     path_to_txt = '/home/usersHR/thierry/tumorcode/py/krebs/adaption'
     get_network_from_file(vesselgrp, path_to_txt)
     node_label2index = get_nodes_from_file(vesselgrp, path_to_txt)
+    delete_double_edges(vesselgrp)
     correct_vessel_indeces(node_label2index, vesselgrp)
     
     '''***** tumorcode stuff *****'''
     import krebsjobs.parameters.parameterSetsAdaption
-    adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, 'mesentry')
+    adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, 'apj')
     ##CALCULATE!!!!
-    pressure, flow, force, hema = ku.calc_vessel_hydrodynamics(f3['vessels'], False, False, None, adaptionParams['calcflow'],storeCalculationInHDF=True)
-    
+    #pressure, flow, force, hema, flags = ku.calc_vessel_hydrodynamics(f3['vessels'], False, False, None, adaptionParams['calcflow'],storeCalculationInHDF=True)
+    dd = ku.calc_vessel_hydrodynamics(f3['vessels'], return_flags = True, bloodflowparams = adaptionParams['calcflow'],storeCalculationInHDF=True)
     f3.close
 

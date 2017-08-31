@@ -269,7 +269,7 @@ if __name__ == '__main__':
   parser.add_argument("--no-overlay", dest="overlay", default = True, action="store_false")
   parser.add_argument("--dpi", dest="dpi", default=None, action="store")
   parser.add_argument("--format", dest="format", default=None, action="store")
-  parser.add_argument("-n", dest="out_nl", default = False, action="store") 
+  parser.add_argument("--nl", dest="out_nl", default = False, action="store_true") 
   parser.add_argument("--outFilename", dest="outfn", default= None, type=str)
   '''this option come from the tumor side'''
   parser.add_argument("--writeVessels", help="when doing the tumor, export vesesls", default=True, action="store_true")  

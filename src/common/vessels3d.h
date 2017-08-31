@@ -253,7 +253,6 @@ public:
   //const BCList& GetBCMap() const { return bclist; }
   void          SetBC(const VesselNode* node, FlowBC &bc);
   void          ClearBC(VesselNode* node);
-
   std::size_t estimateMemoryUsage() const;
   void        IntegrityCheck(int check_lookup = -1);
   

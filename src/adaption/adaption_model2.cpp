@@ -863,7 +863,8 @@ void ConductiveTransport::Calculate_S_tot()
     }
     // Attention: this is assuming that all pressures are positve >0
     const my::eqpair<int> ee = GetEdge(i);
-    double t2 = (nw.press[ee[0]]+nw.press[ee[1]])/2.;
+    double t2 = (nw.press[ee[0]]+nw.press[ee[1]])/2.;// changed 30.8.2017, not considered in deap studies
+    //double t2 = fmax(nw.press[ee[0]],nw.press[ee[1]]);
     t2 = t2 *7.50061683;// from kpa to mmhg
     myAssert(t2>=10.);
   #ifdef DEBUG
@@ -1739,12 +1740,22 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
 
   // surface
   double total_surface=0.0;
+  double scale;
+  if( vl->HasLattice())
+  {
+    scale = vl->Ld().Scale();
+  }
+  else
+  {
+    //world case to be implemented! need to deal with world point coordinates, or get length???
+    scale = 42.;
+  }
   // cout << "check scale bla " << vl->Ld().Scale() << endl;
 #pragma omp parallel for default(shared) reduction(+:total_surface)
   for(int i =0;i<vl->GetECount();++i)
   {
     Vessel* v = vl->GetEdge(i);
-    total_surface += (2* 3.1415 * v->r * vl->Ld().Scale());
+    total_surface += (2* 3.1415 * v->r * scale);
   }
 #pragma omp barrier
     
