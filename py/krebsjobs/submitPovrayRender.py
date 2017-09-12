@@ -224,4 +224,4 @@ if __name__ == '__main__':
       name='job_render_'+basename(job.imageFilename),
       num_cpus=job.params.threads,
       mem=('%iMB' % m),
-      days=t/24.)
+      days=0.001)

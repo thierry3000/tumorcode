@@ -45,7 +45,7 @@ default = dict(
     S_0 = 20,
     cond_length = 2500.,
     #if this is 0 we iterate until qdev is reached
-    max_nun_iterations = 10,
+    max_nun_iterations = 200,
     qdev = 0.01,
     #if starting_radii is 0. we use the values given in
     #the input file
@@ -66,6 +66,38 @@ default_phase['calcflow'].update(
   includePhaseSeparationEffect = 1,
   rheology = 'RheologySecomb2005',
 )
+apj = dict(
+  num_threads = 1,
+  #this is converging, note k_s changed from 1.79 to 1.99
+  adaption = dict(
+    k_c = 2.74,
+    k_m = 0.83,
+    k_s = 1.99,
+    Q_refdot = 40,
+    S_0 = 20,
+    cond_length = 1500.,
+    #if this is 0 we iterate until qdev is reached
+    max_nun_iterations = 250,
+    qdev = .001,
+    #if starting_radii is 0. we use the values given in
+    #the input file
+    starting_radii = 0.,
+    # 0.0 means the time step is dynamically chosen!
+    delta_t = .1, 
+    boundary_Condition_handling = boundary_Condition_handling_map['KEEP'],
+    ),
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6, #commented means using default for rats
+    rheology = 'RheologyForRats',
+    inletHematocrit = 0.42,
+    includePhaseSeparationEffect = 1,
+  ),
+)
+apj_initial = deepcopy(apj)
+apj_initial['adaption'].update(
+    qdev = 10000., # other adaption will break since it is not convergent in this case
+    max_mun_iterations = 2, # we need at least 2 iterations to get some data at all
+    )
 adaption_default = dict(
   adaption = dict(
     k_c = 2.11,
@@ -677,9 +709,82 @@ def _value11():
     return p
   return list(mk1(i) for i in xrange(len(combined)))
 value_list11 = _value11()
+def _value12():
+  #import random
+  pressures = np.arange(3.5,4.5,0.1)
+  flows = np.arange(-9.0,-1, 0.5) * 1e7
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list12_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      starting_radii = 15.,
+      #Q_refdot = 10.,
+      #cond_length = 2500.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list12 = _value12()
+def _value13():
+  #import random
+  pressures = np.arange(1.8,4.5,0.1)
+  flows = np.arange(-9.0,-1, 0.5) * 1e7
+  flows2 = np.arange(-9.0,-1, 0.5) * 1e6
+  flows = np.append(flows,flows2)
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list13_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      #Q_refdot = 10.,
+      #cond_length = 2500.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list13 = _value13()
+def _value14():
+  #import random
+  pressures = np.arange(.5,9.5,0.5)
+  flows = np.arange(-10.,-0.5, 0.5) * 1e7
+  import itertools
+  combined = list(itertools.product(pressures,flows))
+  def mk1(cnt):
+    p = deepcopy(deap_test_4)
+    p['name'] = 'value_list14_%i' % cnt
+    pressure = combined[cnt][0]
+    flow = combined[cnt][1]
+    p['adaption'].update(
+      a_pressure = pressure,
+      a_flow = flow,
+      max_nun_iterations = 150,
+      #Q_refdot = 10.,
+      #cond_length = 2500.,
+    )
+    return p
+  return list(mk1(i) for i in xrange(len(combined)))
+value_list14 = _value14()
 ''' the a_pressure variable is the arterial pressure
     the a_flow variable is venous pressure
-''' 
+'''
+default_pso = deepcopy(value_list11[142])
+#this is from the optimization
+default_pso['adaption'].update(
+    k_c=3.27,
+    k_m=1.31,
+    k_s=1.85,
+    )
 def _value_pressure_1():
   #import random
   pressures1 = [6., 7., 8.,] # arteries
@@ -725,8 +830,8 @@ def _value_pressure_2():
   return list(mk1(i) for i in xrange(len(combined)))
 value_list_pressure_2 = _value_pressure_2()
 if __name__ == '__main__':
-  index = 4
-  print_c = deepcopy(value_list9)
+  index = 142
+  print_c = deepcopy(value_list14)
   print('starting radii: %f ' % print_c[index]['adaption']['starting_radii'])
   print('a_pressure: %f ' % print_c[index]['adaption']['a_pressure'])
   print('a_flow: %0.1g ' % print_c[index]['adaption']['a_flow'])

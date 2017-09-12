@@ -47,7 +47,7 @@ if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
 #from plotBulkTissue import commonOutputName, OutputWriter, add_sizebar, colorbar, contour, imslice, imshow, ColorMaps, subplots_abs_mm, fig_numbering, calc_phi_vessels, calc_distmap
 import myutils
 
-from plotBulkTissue2d import DataTumorTissueSingle
+#from plotBulkTissue2d import DataTumorTissueSingle
 from analyzeBloodFlow import DataTumorBloodFlow, obtain_averaged_blood_flow
 from analyzeGeneral import RemoveArteriovenousFlagsFromCapillaries,totalLdVolume
 
@@ -128,9 +128,9 @@ def printBloodFlowSimple(filenames, group):
 
 
 if __name__ == '__main__':
-  group = sys.argv[1]
+  group = sys.argv[-1]
   dat = []
-  for fn in sys.argv[2:]:
+  for fn in sys.argv[:-1]:
     with h5py.File(fn, 'r') as f:
       rv, rv_a, rv_v, rv_c = cylinderCollectionVolumeDensity(f[group])
       mvd, mvd_a, mvd_v, mvd_c = cylinderCollectionLineDensity(f[group])

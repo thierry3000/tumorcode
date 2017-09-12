@@ -238,7 +238,7 @@ def correct_vessel_indeces(node_label2index, vesselgrp):
     '''
 def delete_double_edges(vesselgrp):
   #176 deleted for convergenz issues
-  by_hand_identified_doubles = [279,283,284,294,312,325,328,176]
+  by_hand_identified_doubles = [279,283,284,294,312,325,328]
   va = np.asarray(vesselgrp['edges/node_a_index'])
   vb = np.asarray(vesselgrp['edges/node_b_index'])
   flags = np.asarray(vesselgrp['edges/flags'])

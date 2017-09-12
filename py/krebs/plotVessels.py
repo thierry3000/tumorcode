@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+  sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'.'))
 
 import os,sys
 from os.path import basename, commonprefix
@@ -49,14 +50,6 @@ import analyzeGeneral
 import analyzeBloodFlow
 
 import krebsjobs.submitVesseltreeCalibration
-
-""" for bin ing the MVD experimental calculation """
-def suggest_bins_from_world(ld):
-    avg_size=np.average(ld.GetWorldSize())
-    center = avg_size/2.
-    half_center = center/2.
-    bins_spec   = analyzeGeneral.BinsSpecRange(half_center, center, 200.)
-    return bins_spec
 
 ##----------------------------------------------------------------------
 ## to plot the measuremnt data within the original vessel tree files
@@ -325,18 +318,18 @@ def FormatGeometricAndPerfusionData(geometric_data, perfusion_data):
      text.append('$%s$ = $%s \pm %s$ %s' % (sym, f2l(np.average(a)*mult, exponential=False), f2l(np.std(a)*mult, exponential=False), unit))
   text = []
   rbv, a, v, c = geometric_data[:4]
-  printstuff_('phi_vessels'  , rbv, 1.)
+  printstuff_('\phi_{vessels}'  , rbv, 1.)
   printstuff_('rBV_a', a, 1.)
   printstuff_('rBV_v', v, 1.)
   printstuff_('rBV_c', c, 1.)
   fv = v/(a+v)
   printstuff_('f_v', fv, 1.)
-  printstuff_('mvd'  , geometric_data[4], 1e6, '$1/mm^2$')
-  printstuff_('mvd_a', geometric_data[5], 1e6, '$1/mm^2$')
-  printstuff_('mvd_v', geometric_data[6], 1e6, '$1/mm^2$')
-  printstuff_('mvd_c', geometric_data[7], 1e6, '$1/mm^2$')
-  printstuff_('cap_distance', geometric_data[8], 1, '$\mu m$')
-  printstuff_('<r>', geometric_data[9], 1, '$\mu m$')
+  printstuff_('simple mvd'  , geometric_data[4], 1e6, '$1/mm^2$')
+  printstuff_('simple mvd_a', geometric_data[5], 1e6, '$1/mm^2$')
+  printstuff_('simple mvd_v', geometric_data[6], 1e6, '$1/mm^2$')
+  printstuff_('simple mvd_c', geometric_data[7], 1e6, '$1/mm^2$')
+  printstuff_('cap_{distance}', geometric_data[8], 1, '$\mu m$')
+  #printstuff_('<r>', geometric_data[9], 1, '$\mu m$')
   printstuff_('fBF', perfusion_data, 60., '$ml\,Blood\,ml^{-1} min^{-1}$')
   return text
 
@@ -525,8 +518,18 @@ def PrintGlobalData(pdfpages, vesselgroups, f_measure, dataman):
   #prop_list = ['rBV',  'rBF', ]  
   #prop_list = 'phi_a phi_v phi_c mvd_a mvd_v mvd_c mean_r'.split()
  
-  prop_list2 = ['radius','shearforce','velocity','flow','avg_cap_dist','mvd_linedensity','phi_vessels','total_perfusion']
- 
+  prop_list2 = ['radius',
+                'shearforce',
+                'velocity',
+                'flow',
+                'avg_cap_dist',
+                'mvd_linedensity',
+                'mvd_sphere_sampling',
+                'mvd','mvd_a','mvd_v','mvd_c',
+                'phi_vessels', 'phi_a','phi_v','phi_c', 
+                'total_perfusion']
+  #prop_list2 = ['radius','shearforce','velocity','flow','avg_cap_dist','mvd_linedensity','phi_vessels']
+  prop_data_vessel_global = ['mvd']
   try:
     os.remove('initialvesseldata.h5')
   except OSError:
@@ -546,16 +549,6 @@ def PrintGlobalData(pdfpages, vesselgroups, f_measure, dataman):
       bbox_vessels.append(ld_vessels.worldBox)
     result_string.append(r'$<%s>$ = $%s$%s' %
       (Prettyfier.get_sym(name), Format(name, data), Prettyfier.get_munit(name)))
-  mvd_exp=[]
-  for gvessels in vesselgroups:
-    ld = krebsutils.read_lattice_data_from_hdf(gvessels.parent['field_ld'])
-    mvd_sampling_results, mvd_bins = dataman.obtain_data('sphere_vessel_density',  gvessels, None, suggest_bins_from_world(ld), 'radial', ld, cachelocation(gvessels))
-    #print(mvd_sampling_results)    
-    mvd_exp.append(np.mean(np.asarray(mvd_sampling_results)*1e6))
-  #mvd_exp=np.asarray(mvd_exp)
-  #print(mvd_exp)
-  result_string.append(r'$<%s>$ = $%s$%s' %
-    (Prettyfier.get_sym('mvd_exp'), Format('mvd_exp', mvd_exp), Prettyfier.get_munit('mvd_exp')))
       
   ld = krebsutils.read_lattice_data_from_hdf(vesselgroups[0]['lattice'])
   bbox_vessels.append(ld.worldBox)
@@ -814,6 +807,9 @@ def DoIt(filenames, pattern, with_o2):
   fn_measure = basename(commonprefix(filenames))
   fn_measure = myutils.strip_from_end(fn_measure, '.h5')
   fn_measure = myutils.strip_from_end(fn_measure, '-type')
+  def cachelocation(g):
+    path = posixpath.join('FileCS_'+myutils.checksum(basename(g.file.filename)), g.name.strip(posixpath.sep))
+    return (f_measure, path)
   if with_o2:
     fn_measure = myutils.strip_from_end(fn_measure, '_detailedpo2')
 
@@ -876,47 +872,20 @@ def DoIt(filenames, pattern, with_o2):
       #dataman = myutils.DataManager(20, [ analyzeGeneral.DataBasicVessel(), analyzeGeneral.DataVesselSamples(), analyzeGeneral.DataVesselGlobal()])
       vesselgroups = groups
     
-      if 1:
+      if 0:
         res = getMultiScatter(300. * len(filenames), vesselgroups)
         plotMultiScatterBeauty(res, pdfpages)
-      if 1:
+      if 0:
         PlotRadiusHistogram2(dataman, vesselgroups, pdfpages)
             
-      if 0:
-        text = FormatGeometricAndPerfusionData()
-
-        prop_list2 = ['shearforce', 'velocity', 'avg_cap_dist',]
-        bbox_vessels = list()
-        bbox_field   = list()
-        
-        for name in prop_list2:
-          data = []
-          for gvessels in vesselgroups:
-            data.append(dataman.obtain_data('basic_vessel_global', name, gvessels, cachelocation(gvessels)))
-            ld = krebsutils.read_lattice_data_from_hdf(vesselgroups[0]['lattice'])
-            bbox_vessels.append(ld.worldBox)
-          text.append(r'$<%s>$ = $%s$%s' %
-            (Prettyfier.get_sym(name), Format(name, data), Prettyfier.get_munit(name)))
-        
-        
-        
-        #bbox_field = np.average(bbox_field, axis=0).reshape(3,2).transpose()
-        bbox_vessels = np.average(bbox_vessels, axis=0).reshape(3,2).transpose()        
-        text += ['Vessel System Bounding Box'] + list(fmt_(bbox_vessels)) + ['FD-Grid Bounding Box'] # + list(fmt_(bbox_field))
-        fig, _ = mpl_utils.MakeTextPage(text,figsize = (mpl_utils.a4size[0]*0.8, mpl_utils.a4size[0]*0.8))
-        pdfpages.savefig(fig, postfix='_vesselsglobal')
-
-        text = FormatParameters(vesselgroups[0].file)
-        fig, _ = mpl_utils.MakeTextPage(text,figsize = (mpl_utils.a4size[0]*0.8, mpl_utils.a4size[0]*0.8))
-        pdfpages.savefig(fig, postfix='_vesselsparams')
-      if 1 and all(map(lambda g: 'data' in g.parent, vesselgroups)):
+      if 0 and all(map(lambda g: 'data' in g.parent, vesselgroups)):
         data = VesselData()
         for g in vesselgroups:
           data.add(g.parent['data'])
         plot_topological_stats_avg(data, pdfpages)
       if 0: #reproduce swine
         plot_geometric_stuff_on_RC(dataman, f_measure, filenames, options, pdfpages)
-      if 0:
+      if 1:
         PrintGlobalData(pdfpages, vesselgroups, f_measure, dataman)
 
 

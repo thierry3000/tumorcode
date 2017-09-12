@@ -168,6 +168,7 @@ if not qsub.is_client and __name__=='__main__':
   factory = getattr(parameterSetsAdaption, goodArguments.AdaptionParamSet)
   if factory.__class__ == list:
     factory=factory[7]
+    print("warning: you are using several parameter sets")
   #single parameter set chosen  
   if factory.__class__ == dict:
     factory['name'] = goodArguments.AdaptionParamSet

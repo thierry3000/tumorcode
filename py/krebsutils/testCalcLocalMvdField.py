@@ -19,9 +19,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-# -*- coding: utf-8 -*-
+'''
+very nice code which calculates a local mvd field
+'''
 
-# -*- coding: utf-8 -*-
 import os, sys
 import numpy as np
 import h5py
@@ -46,8 +47,13 @@ if __name__ == '__main__':
     graph = graph.get_filtered(myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
 
   print 'vessel ld:'
-  print ldvessels    
-  fieldld = krebsutils.SetupFieldLattice(wbbox, 3, 200., 0.)
+  print ldvessels
+  ''' this splits splits space in lattices of 300.
+      the second 300 adds a 'safety layer of 100. mum
+      so we do not consider the outermost data for calculating the
+      actual mvd
+  '''
+  fieldld = krebsutils.SetupFieldLattice(wbbox, 3, 20., 100.)
   wbbox     = fieldld.worldBox
   print 'field ld:'
   print fieldld
@@ -66,6 +72,8 @@ if __name__ == '__main__':
   mvd, _ = np.histogramdd(positions, bins = ranges, weights = weights)
   mvd *= 1.e6/(fieldld.scale**3)
   print 'result shape:',mvd.shape
+  print('average mvd')
+  print(np.mean(mvd[1:-1,1:-1,1:-1]))
   
   fig, ax = pyplot.subplots(1)
   plt = ax.imshow(mvd[:,:,z], interpolation = 'none')

@@ -63,14 +63,34 @@ default_o2 = dict(
   conductivity_coeff1 = c1_,
   conductivity_coeff2 = c2_,
   conductivity_coeff3 = c3_,
-  name = 'default_o2',
+  detailedO2name = 'default_o2',
 )
+small_size = deepcopy(default_o2)
+small_size.update(
+    axial_integration_step_factor = 0.05,
+    grid_lattice_const = 10,
+    )
+small_size2 = deepcopy(default_o2)
+small_size2.update(
+    axial_integration_step_factor = 0.1,
+    grid_lattice_const = 30,
+    po2init_r0 = 25., #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
+    po2init_dr = .5, #  mmHg / um, these values are from yaseen 2011 for rat brain
+    po2init_cutoff = 75., # mmHg; maximal attained value
+    convergence_tolerance = 1e-3,
+)
+no_mm = deepcopy(default_o2)
+no_mm['michaelis_menten_uptake'] = 0
+no_mm['D_plasma'] = 2000.
+
 milotti_o2 = deepcopy(default_o2)
 milotti_o2.update(
-    name = 'milotti_o2',
-    axial_integration_step_factor = 0.5,
+    detailedO2name = 'milotti_o2',
+    axial_integration_step_factor = 0.25,
     grid_lattice_const = 50.,
     max_iter = 150,
+    convergence_tolerance = 1e-3,
+    loglevel=2,
     )
 milotti_o2_simple = deepcopy(milotti_o2)
 milotti_o2_simple['calcflow'].update(
@@ -78,7 +98,7 @@ milotti_o2_simple['calcflow'].update(
     )
 exp = deepcopy(default_o2)
 exp.update(
-    name = 'exp',
+    detailedO2name = 'exp',
     axial_integration_step_factor = 0.25,
     grid_lattice_const = 100.,
     max_iter = 150,
@@ -135,7 +155,7 @@ medo2 = dict(
   conductivity_coeff1 = c1_,
   conductivity_coeff2 = c2_,
   conductivity_coeff3 = c3_,
-  name = 'medo2',
+  detailedO2name = 'medo2',
 )
 
 
@@ -172,7 +192,7 @@ michaelismenten_consumption = dict(
   conductivity_coeff1 = c1_,
   conductivity_coeff2 = c2_,
   conductivity_coeff3 = c3_,
-  name = 'michaelismenten_consumption',
+  detailedO2name = 'michaelismenten_consumption',
 )
 pso = deepcopy(michaelismenten_consumption)
 pso.update(
@@ -187,7 +207,7 @@ breast.update(
     inletHematocrit = 0.45,
     includePhaseSeparationEffect = True,
   ),
-  name = 'breast',
+  detailedO2name = 'breast',
 )
 
 breastlow = deepcopy(michaelismenten_consumption)
@@ -211,7 +231,7 @@ breastfixed.update(
     includePhaseSeparationEffect = True,
   ),
   # new, now with hopefully better transvascular conductivity model
-  name = 'breastfixed',
+  detailedO2name = 'breastfixed',
 )
 
 
@@ -233,7 +253,7 @@ breastv2.update(
   axial_integration_step_factor = 0.1,
   convergence_tolerance = 0.01,
   max_iter = 200, # experience values
-  name = 'breastv2',
+  detailedO2name = 'breastv2',
 )
 
 
@@ -241,7 +261,7 @@ breastv3 = deepcopy(breastv2)
 breastv3.update(            #3.7e-3/60 = 6.2e-5 min to second!
   mmcons_m0_norm = 6.2e-5, # = 3.7e-3 ml O2 / ml / min; # fairly low like estimates by rinneberg and beany
   mmcons_m0_tum = 6.2e-5 * 4,
-  name = 'breastv3',
+  detailedO2name = 'breastv3',
   convergence_tolerance = 0.03,
   max_iter = 400, # some need more
   num_threads = cluster_threads,
@@ -329,7 +349,7 @@ thigh7.update(
 numtest = deepcopy(breastv3)
 numtest.update(
   max_iter = 2,
-  name = 'numtest',
+  detailedO2name = 'numtest',
 )
 
 
@@ -340,7 +360,7 @@ secombComparison.update(
   conductivity_coeff2 = 4.78847198,
   conductivity_coeff3 = 0.02647925,
   mmcons_m0_norm = 6.2e-6, # EEE to pow of ----6
-  name = 'secombComparison',
+  detailedO2name = 'secombComparison',
   safety_layer_size = 500.,
 )
 
@@ -350,7 +370,7 @@ secombComparison2.update(
   conductivity_coeff1 = 6.07978304,
   conductivity_coeff2 = 3.9202903,
   conductivity_coeff3 = 0.01977186,
-  name = 'secombComparison2',
+  detailedO2name = 'secombComparison2',
   mmcons_m0_norm = 13.2e-5,# with these parameters the tissue PO2 should decay over a lengthscale of 82 um!
   safety_layer_size = 400.,
 )
@@ -374,7 +394,7 @@ def breastv4(count):
     value = random.lognormvariate(mu = math.log(6.2e-5 * 4), sigma = 0.3)
     p.update(
       mmcons_m0_tum = value,
-      name = 'breastv4'
+      detailedO2name = 'breastv4'
     )
     return p
   return list(mk1() for i in xrange(count))
@@ -382,7 +402,7 @@ def breastv4(count):
 
 breastv3const = deepcopy(breastv3)
 breastv3const.update(
-  name = 'breastv3const',
+  detailedO2name = 'breastv3const',
   approximateInsignificantTransvascularFlux = True,
   po2init_r0 = 39.,
   po2init_dr = 0,
@@ -409,7 +429,7 @@ fixedv3.update(
     inletHematocrit = 0.45,
     includePhaseSeparationEffect = True,
   ),
-  name = 'fixedv3',
+  detailedO2name = 'fixedv3',
 )
 
 fixed_mtc3 = deepcopy(breastv3) 
@@ -418,11 +438,11 @@ fixed_mtc3.update(
   conductivity_coeff1 = 8.0,
   conductivity_coeff2 = 4.7,
   conductivity_coeff3 = 0.0,
-  name = 'fixed_mtc3',
+  detailedO2name = 'fixed_mtc3',
 )
 
 mesentry = dict(
-  name = 'mesentry',
+  detailedO2name = 'mesentry',
   po2init_r0 = 55., #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
   po2init_dr = 1., #  mmHg / um, these values are from yaseen 2011 for rat brain
   po2init_cutoff = 100., # mmHg; maximal attained value; radius at cutoff is 45 um
@@ -462,7 +482,7 @@ mesentry = dict(
 v3bigass = deepcopy(breastv3)
 v3bigass.update(
   grid_lattice_const = 20,
-  name = 'v3bigass',
+  detailedO2name = 'v3bigass',
   num_threads = 6,
 )
 
@@ -471,14 +491,14 @@ breastv6 = deepcopy(breastv3)
 breastv6.update(
   mmcons_m0_norm = 6.2e-5, # = 3.7e-3 ml O2 / ml / min; # fairly low like estimates by rinneberg and beany
   mmcons_m0_tum = 41.e-5, # ml O2 / ml / s   = 25 ul / ml / min
-  name = 'breastv6',
+  detailedO2name = 'breastv6',
 )
 
 breastv7 = deepcopy(breastv3)
 breastv7.update(
   mmcons_m0_norm = 6.2e-5, # = 3.7e-3 ml O2 / ml / min; # fairly low like estimates by rinneberg and beany
   mmcons_m0_tum = 82.e-5, # ml O2 / ml / s   = 50 ul / ml / min
-  name = 'breastv7',
+  detailedO2name = 'breastv7',
 )
 #Rinneberg:  Müssten die BASE Rechnungen nochmals mit einem deutlich höheren  
 # M _0 als 14.9 microliter O2/ml/min durchgeführt werden

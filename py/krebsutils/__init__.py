@@ -42,7 +42,15 @@ if sys.flags.debug:
 else:
   libkrebs = __import__('libkrebs_', globals(), locals())
 
+''' this call import often used cpp elements
 
+SetupFieldLattice: 
+  arguments: wbbox, dim, spacing, safety_spacing
+    wbbox:  the world box for the lattice
+    dim:    
+    spacing:lattice spacing
+    
+'''
 imports_ = [ f.strip() for f in
     '\
     LatticeData, \
@@ -652,7 +660,15 @@ FLOWBC_RESIST = 3
 #----------------------------------------------------------------------------------#
 #  here come functions to sample vessels and manipulate gridded data
 #----------------------------------------------------------------------------------#
-
+'''
+arguments:
+  pypos:      coordinate in 3D space, best the nodepoints
+  pyedges:    begining and endpoint
+  sample_len: distance to put sample points on the vessel
+  
+return:
+  returns an array with the weight 
+'''
 sample_edges_weights = libkrebs.sample_edges_weights
 
 class VesselSamplingFlags(object):
@@ -660,8 +676,19 @@ class VesselSamplingFlags(object):
   DATA_CONST = 2
   DATA_LINEAR = 4
 
-
+"""
+"""
 def sample_edges(pos, edges, data, sample_len, mode_flags):
+  """ creates sample points on edges
+arguments:
+  pos - world position of nodes
+  edges - n x 2 node indices
+  data - data associated with edges or nodes, depending on mode
+  sample_len - average distance between samples. The samples are taken in regular intervals if this value is smaller than the length of vessels. Otherwise the sampling becomes random.
+  mode - see Mode enum
+returns:
+  
+  """
   edges = np.asarray(edges, dtype=np.int32)
   pos = np.asarray(pos, dtype=np.float32)
   #print 'sample_edges', pos.shape, pos.dtype, edges.shape, edges.dtype, data.shape, data.dtype

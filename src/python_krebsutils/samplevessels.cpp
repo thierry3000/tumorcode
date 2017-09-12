@@ -135,20 +135,24 @@ py::object sample_edges_weights(nm::array pypos, nm::array pyedges, float sample
   DynArray<float> tmp(1024, ConsTags::RESERVE);
 
   CylinderNetworkSampler sampler;
+  //set sample length
   sampler.Init(sample_len, ptree());
 
   for(int i=0; i<cnt; ++i)
   {
+    //read start and end point of vessel segment in 3 dimensions
     Float3 p0, p1;
     for (int j=0; j<3; ++j)
     {
       p0[j] = pos(edges(i,0), j);
       p1[j] = pos(edges(i,1), j);
     }
-
+    //set start and end point on the sampler
     sampler.Set(p0, p1, 0.); // 3rd arg is the radius
+    //generate intermediate sample points
     int num_samples = sampler.GenerateLineSamples();
-
+    //for all sample points on the cylinder, 
+    //store the weight to tmp which will be writen back to python
     for (int j=0; j<num_samples; ++j)
     {
       tmp.push_back(sampler.weight);

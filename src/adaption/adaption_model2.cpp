@@ -662,6 +662,7 @@ void ConductiveTransport::UpdateConductiveAtNodeArterial(int downstream_node, in
   if( nbcnt==1 )
   {
     SetConductive(edge_id,0.0);
+    //SetConductive(edge_id, 1*GetRadius(edge_id));
   }
   else if(nbcnt<=3)
   {
@@ -763,7 +764,8 @@ void ConductiveTransport::UpdateConductiveAtNodeVenous(int upstream_node, int ed
   int nbcnt = GetNeighborCount(upstream_node);
   if( nbcnt==1 )// dead end
   {
-    SetConductive(edge_id,0.0);
+    //SetConductive(edge_id, 2* GetRadius(edge_id));
+    SetConductive(edge_id, 0.0);
   }
   else if(nbcnt<=16)
   {
@@ -1718,9 +1720,14 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
       f= h5cpp::File( "adaption_" + stripped +".h5","w");
     }
     h5cpp::Group out_ = f.root();
+    h5cpp::Group params_;
     h5cpp::Group grp_temp = out_.create_group("vessels_after_adaption");
     ptree getEverytingPossible = make_ptree("w_adaption", true);
     WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
+    params_ = grp_temp.create_group("parameters");
+    ptree outputPtree = params.as_ptree();
+    outputPtree.put("cwd", boost::filesystem::current_path().string());
+    WriteHdfPtree(params_, outputPtree);
   }
     //calculate mean and std
     using namespace boost::accumulators;

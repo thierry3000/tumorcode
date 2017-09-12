@@ -60,8 +60,9 @@ from quantities import Prettyfier
 from plotVessels import *
 from analyzeMurray import *
 from adaption import getVesselTypes
-from analyzeGeneral import getGeometricData,generate_adaption_data_average_rBV
+from analyzeGeneral import getGeometricData,getTotalPerfusion,generate_adaption_data_average_rBV
 
+import adaption 
 from scipy.optimize import fsolve
 from scipy.optimize import minimize_scalar
 
@@ -987,11 +988,17 @@ def DoIt(filenames, options):
 
   f_measure = h5files.open('adaption_common.h5', 'a', search = False)
   
-  files = [h5files.open(fn, 'r+') for fn in filenames]
-  groups_without_adaption = [f['/adaption/recomputed'] for f in files]
+  files = [h5files.open(fn, 'r') for fn in filenames]
   
-  groups_with_adaption = [f['/adaption/vessels_after_adaption'] for f in files]
-
+  groups_with_adaption = [f['/vessels_after_adaption'] for f in files]
+  #this data is stored with the adaption
+  files_without_adaption = []
+  for afile in files:
+    completeFilename=str(afile['/vessels_after_adaption/parameters'].attrs['cwd'])+'/'+str(afile['/vessels_after_adaption/parameters'].attrs['vesselFileName'])
+    files_without_adaption.append(
+        h5files.open(completeFilename))
+    
+  groups_without_adaption = [f['vessels'] for f in files_without_adaption]
 
   with mpl_utils.PdfWriter('adaption_' + fn_measure+'.pdf') as pdfpages:
     import analyzeGeneral
@@ -999,11 +1006,11 @@ def DoIt(filenames, options):
 #    vesselgroups_without = groups_without_adaption
 #    vesselgroups_with = groups_with_adaption
     
-#    geometric_data_before = getGeometricData(groups_without_adaption)
-#    perfusion_data_before = getTotalPerfusion(groups_without_adaption)*60
-#    
-#    geometric_data_after = getGeometricData(groups_with_adaption)
-#    perfusion_data_after = getTotalPerfusion(groups_with_adaption)*60
+    geometric_data_before = getGeometricData(groups_without_adaption)
+    perfusion_data_before = getTotalPerfusion(groups_without_adaption)*60
+    
+    geometric_data_after = getGeometricData(groups_with_adaption)
+    perfusion_data_after = getTotalPerfusion(groups_with_adaption)*60
     
     if 1:
       res_without = getMultiScatter(300. * len(filenames), groups_without_adaption)
@@ -1022,7 +1029,7 @@ def DoIt(filenames, options):
     if 0:  
       printBarPlot_rBF(dataman, f_measure, filenames, options, pdfpages)
     
-    if 1:
+    if 0:
       PlotRadiusHistogram_with_cache_by_RC(dataman, f_measure, filenames, options, pdfpages)
       #PlotRadiusHistogram_with_cache(dataman, f_measure, filenames, options, pdfpages)
     

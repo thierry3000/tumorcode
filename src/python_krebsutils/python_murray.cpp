@@ -416,9 +416,11 @@ static py::object get_Murray2_p(const py::object &vess_grp_obj)
   vl = ReadVesselList3d(vesselgroup, make_ptree("filter", true));
   int ncnt = vl.get()->GetNCount();
 
+  //venous
   std::vector<double> radius_mother_v;
   std::vector<double> radius_daughther1_v;
   std::vector<double> radius_daughther2_v;
+  //arterial
   std::vector<double> radius_mother_a;
   std::vector<double> radius_daughther1_a;
   std::vector<double> radius_daughther2_a;

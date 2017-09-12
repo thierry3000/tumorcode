@@ -265,7 +265,7 @@ def get_files_with_successful_adaption(filenames):
   good_files=[]
   for fn in filenames:
     with h5py.File(fn, 'r') as f:
-      e = 'adaption/vessels_after_adaption' in f
+      e = 'vessels_after_adaption' in f
       print e, 'in %s' % f.filename
       if e:
         good_files.append(fn)

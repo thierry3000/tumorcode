@@ -27,6 +27,8 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 
 import h5files
+import h5py
+import myutils
 import numpy as np
 import krebsutils as ku
 import os
@@ -49,6 +51,7 @@ def DoGetMurrayForSingleFileGENERAL(fn,pattern, pdfpages):
   fig1, (ax1, ax2) = plt.subplots(2,1)
   ### plot murrays law with exponent
   alphas = np.arange(2,6,0.5)
+  alphas = [3]
   max_ = np.max(result_venous[2,:])
   min_ = np.min(result_venous[0,:])
   x = np.arange(min_,max_, 0.1)
@@ -61,11 +64,12 @@ def DoGetMurrayForSingleFileGENERAL(fn,pattern, pdfpages):
         'horizontalalignment': 'left',
         }
   for alpha in alphas:
-    ax1.text(np.power(2 * x[-1]**alpha, 1/float(alpha)), x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
-    ax1.plot(np.power(2 * x**alpha, 1/float(alpha)) , x, c='k', linewidth=0.1)
+    ax1.text(x[-1], x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
+    ax1.plot(x , x, c='k', linewidth=0.1)
   
   ### plot data
-  ax1.set_title('Murray for file:\n%s\n%i venous points, %i arterial points' % (os.path.basename(afile.filename),result_venous.shape[1], result_a.shape[1]), size=6)
+  ax1.set_title('%i venous points, %i arterial points' % (result_venous.shape[1], result_a.shape[1]), size=6)
+# ax1.set_title('Murray for file:\n%s\n%i venous points, %i arterial points' % (os.path.basename(afile.filename),result_venous.shape[1], result_a.shape[1]), size=6)
   pointsize = 0.1
   venous = ax1.scatter(np.power(result_venous[0,:]**3+result_venous[1,:]**3,1/float(3)),result_venous[2,:],c='b', s=pointsize, label='bldk')
   arterial = ax1.scatter(np.power(result_a[0,:]**3+result_a[1,:]**3,1/float(3)),result_a[2,:],c='r',s=pointsize)
@@ -83,7 +87,71 @@ def DoGetMurrayForSingleFileGENERAL(fn,pattern, pdfpages):
   ax2.set_xlabel(r'$\|r_{daughter 1}- r_{daughter 2}\|$')
   ax2.set_ylabel(r'$p$')
   fig1.tight_layout()
+  pdfpages.savefig(fig1)
+
+def DoGetMurrayForSingleFileGENERALtwoSingleFigs(fn,pattern, pdfpages):
+  afile = h5files.open(fn, 'r')
+  vesselgrp = afile[pattern]
+  print(vesselgrp)
+  result_venous, result_a = ku.get_Murray(vesselgrp)
+  #result = ku.get_Murray(vesselgrp, alpha)
+  result_venous = removeZeros(result_venous)
+  result_a = removeZeros(result_a)
+ 
+  fig1, ax1 = plt.subplots(1,1)
+  ### plot murrays law with exponent
+  alphas = np.arange(2,6,0.5)
+  alphas = [3]
+  max_ = np.max(result_venous[2,:])
+  min_ = np.min(result_venous[0,:])
+  x = np.arange(min_,max_, 0.1)
+  font = {'family': 'serif',
+        'color':  'black',
+        'weight': 'normal',
+        'size': 4,
+        'rotation': 30,
+        'verticalalignment': 'bottom',
+        'horizontalalignment': 'left',
+        }
+  for alpha in alphas:
+    ax1.text(x[-1], x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
+    ax1.plot(x , x, c='k', linewidth=0.1)
+  
+  ### plot data
+  ax1.set_title('%i venous points, %i arterial points' % (result_venous.shape[1], result_a.shape[1]), size=6)
+# ax1.set_title('Murray for file:\n%s\n%i venous points, %i arterial points' % (os.path.basename(afile.filename),result_venous.shape[1], result_a.shape[1]), size=6)
+  pointsize = 0.1
+  venous = ax1.scatter(np.power(result_venous[0,:]**3+result_venous[1,:]**3,1/float(3)),result_venous[2,:],c='b', s=pointsize, label='bldk')
+  arterial = ax1.scatter(np.power(result_a[0,:]**3+result_a[1,:]**3,1/float(3)),result_a[2,:],c='r',s=pointsize)
+  ax1.set_xlabel(r'$\sqrt[3]{r_{daughter_1}^3 + r_{daughter_2}^3}$')
+  ax1.set_ylabel(r'$r_{mother}$')
+  ax1.legend((venous,arterial),('Venous', 'Arterial'),loc='lower right')
+  ax1.grid()
+  ### inset
+  insetXrange = 30
+  indicesX = x<insetXrange
+  indicesVenous = result_venous[2,:] < insetXrange
+  indicesArterial = result_a[2,:] < insetXrange
+  axInset = plt.axes([.2,.6,.2,.2])
+  x=x[indicesX]
+  for alpha in alphas:
+    #axInset.text(x[-1], x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
+    axInset.plot(x , x, c='k', linewidth=0.1)
+  venous = axInset.scatter(np.power(result_venous[0,indicesVenous]**3+result_venous[1,indicesVenous]**3,1/float(3)),result_venous[2,indicesVenous],c='b', s=pointsize, label='bldk')
+  arterial = axInset.scatter(np.power(result_a[0,indicesArterial]**3+result_a[1,indicesArterial]**3,1/float(3)),result_a[2,indicesArterial],c='r',s=pointsize)
+  
+  fig2, ax2 = plt.subplots(1,1)
+  ### histogramm deviation of daughters
+  hist, bin_edges = np.histogram(result_a[1,:]-result_a[0,:], bins=50) #note. they are sorted in on c++ side
+  width = 0.7*(bin_edges[1]-bin_edges[0])
+  centers = (bin_edges[:-1]+bin_edges[1:])/2
+  ax2.bar(centers,hist/float(len(result_a[0,:])), align='center', width=width, color='red')
+  ax2.set_xlabel(r'$\|r_{daughter 1}- r_{daughter 2}\|$')
+  ax2.set_ylabel(r'$p$')
+  #fig1.tight_layout()
   pdfpages.savefig(fig1) 
+  fig2.tight_layout()
+  pdfpages.savefig(fig2)
 
 def DoGetMurrayForSingleFile(fn,pattern):
     vesselgrp_before = fn['adaption/recomputed']
@@ -208,12 +276,39 @@ def DoGetMurray(filenames, pdfpages):
     #plt.show()
 
 if __name__ == "__main__":
-  import optparse
-  parser = optparse.OptionParser()
-  parser.add_option("-O","--with-o2", dest="with_o2", help="look at detailed o2 data", default=False, action="store_true")
-  options, args = parser.parse_args()
-  filenames = args[:]
+  import argparse
+  parser = argparse.ArgumentParser(description='Plot/ Analyze infos about murrays law in the network.')
+  parser.add_argument('vesselFileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
+  parser.add_argument('grp_pattern',help='Where to find the vessel group in the file')    
+  parser.add_argument("-O","--with_o2", help="look at detailed o2 data", default=False, action="store_true")
+  #parser.add_argument("-T","--only_two_root", dest="two", help="flag to change the considered types", default=False, action="store_true")  
+  #parser.add_argument("-a","--with_all_types", dest="all_types", help="take all types",default=False, action="store_true")  
+  #parser.add_argument("-s","--singel_type", dest="single", help="", default=False, action="store_true")    
+  goodArguments, otherArguments = parser.parse_known_args()
+  #import optparse
+  #parser = optparse.OptionParser()
+  #parser.add_option("-O","--with-o2", dest="with_o2", help="look at detailed o2 data", default=False, action="store_true")
+  #options, args = parser.parse_args()
+  try:
+    dirs = set()
+    for fn in goodArguments.vesselFileNames:
+      if not os.path.isfile(fn.name):
+        raise AssertionError('The file %s is not present!'%fn)
+      with h5py.File(fn.name, 'r') as f:
+        d = myutils.walkh5(f, goodArguments.grp_pattern)
+        if not len(d)>0:
+          raise AssertionError('pattern "%s" not found in "%s"!' % (grp_pattern, fn))
+        else:
+          dirs = set.union(dirs,d)
+  except Exception, e:
+    print e.message
+    sys.exit(-1)
   
+  print('Resolved groups: %s' % ','.join(dirs))
+  #create filename due to former standards
+  filenames=[]
+  for fn in goodArguments.vesselFileNames:
+    filenames.append(fn.name)
 #either specify group, like in tumor simuations or take all from the ensemble
   if 0:    
     for afilename in filenames:
@@ -223,9 +318,11 @@ if __name__ == "__main__":
     with mpl_utils.PdfWriter('murray' + '.pdf') as pdfpages:
       DoGetMurray(filenames,pdfpages)
   else:
-    pattern =  args[-1]
+    pattern =  goodArguments.grp_pattern
     print(pattern)
     print(filenames[0])
-    with mpl_utils.PdfWriter('murray' + '.pdf') as pdfpages:
+    outfilename='murray_for_file_%s' % basename(filenames[0])
+    with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:
       DoGetMurrayForSingleFileGENERAL(filenames[0],pattern, pdfpages)
+      DoGetMurrayForSingleFileGENERALtwoSingleFigs(filenames[0],pattern, pdfpages)
     

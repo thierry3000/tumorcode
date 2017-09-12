@@ -38,7 +38,34 @@ from krebsjobs import parameters
 from parameters import parameterSetsAdaption
 from krebs import adaption as _adap
 
-#f = h5py.File('deap_results.h5','r')
+def whiskers_plot_parameters(f,pdf):
+  print('do whiskers_plot')
+  all_bests = []
+  convergent_groups = find_convergent_groups(f)
+  for group in convergent_groups:
+    inputFileName = f[group].attrs.get('vfile')
+    vessel_grp = f[group].attrs.get('vessel_grp')
+    setName = f[group].attrs.get('params')
+    paramSetIndex = f[group].attrs.get('paramListIndex')
+    #print("redo:")
+    #print("file: %s,\t group: %s,\t set: %s,\t index: %i\n"% (inputFileName,vessel_grp,setName,paramSetIndex))
+    factory = getattr(parameterSetsAdaption, setName)
+    factory = factory[paramSetIndex]
+    all_bests.append(np.asarray(f[group + '/best']))
+  all_bests= np.asarray(all_bests)
+  average_k_c = np.mean(all_bests[:,0])
+  average_k_m = np.mean(all_bests[:,1])
+  average_k_s = np.mean(all_bests[:,2])
+  print("averge kc: %f, average k_m: %f, average k_s %f" % (average_k_c, average_k_m,average_k_s))
+  f['/'].attrs['average_kc'] = average_k_c
+  f['/'].attrs['average_km'] = average_k_m
+  f['/'].attrs['average_ks'] = average_k_s
+  ''' whiskers plot '''
+  plt.figure()
+  box1 = plt.boxplot(all_bests)
+  plt.xticks([1,2,3],[r'$k_c$', r'$k_m$', r'$S_5$'])
+  pdf.savefig()
+  
 def convergenz_phase_diagram(f,pdf):
   group_labels = []
   group_bests = []
@@ -70,7 +97,7 @@ def convergenz_phase_diagram(f,pdf):
     print(group)
     group_labels.append(group)
     print( f[group + '/best'] )
-    group_bests.append(f[group + '/best'])
+    group_bests.append(np.asarray(f[group + '/best']))
     print( f[group + '/fitness values'] )
     fitness_value = np.asarray(f[group + '/fitness values'])[0]
     if fitness_value<0:
@@ -91,6 +118,7 @@ def convergenz_phase_diagram(f,pdf):
     group_fitnesses_mapped[i] = group_fitnesses[i]
   #print(group_fitnesses_mapped)
   #print(param_id)
+  '''contour plot'''
   plt.figure()
   max_Z=np.max(Z)
   bad_indeces = Z==max_Z
@@ -98,13 +126,13 @@ def convergenz_phase_diagram(f,pdf):
   sorted_fitnesses_smaller_max = sorted_fitnesses[sorted_fitnesses<max_Z]
   largest_value_except_false = sorted_fitnesses_smaller_max[-1]
   Z[bad_indeces] = largest_value_except_false
-  CS = plt.contour(FLOW,PRESSURE,np.log10(np.transpose(Z)))
+  CS = plt.contour(np.log10(FLOW),PRESSURE,np.log10(np.transpose(Z)))
   plt.clabel(CS, inline=1, fontsize=5)
   plt.title('convergent area for adaption.')
   plt.xlabel(r'Flow through arterial inlet/ $\mu m^3/s$')
   plt.ylabel(r'Pressure at venous outlet/ $kPa$')
   pdf.savefig()
-  
+  ''' smothed image'''
   plt.figure()
   im = plt.imshow(np.log10(np.transpose(Z)),interpolation='bilinear')
   plt.colorbar()
@@ -211,9 +239,11 @@ if __name__ == '__main__':
     rc = matplotlib.rc
     rc('font', size = 8.)
     rc('axes', titlesize = 10., labelsize = 8.)
-    if 1:
+    if 0:
       convergenz_plot(f,pdf)
     if 1:
       convergenz_phase_diagram(f,pdf)
+    if 1:
+      whiskers_plot_parameters(f,pdf)
   if goodArguments.redo:
     redo_adaption_for_convergent_sets(f)

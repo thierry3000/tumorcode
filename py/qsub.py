@@ -50,7 +50,7 @@ def parse_args(argv):
   import argparse
   parserQueue = argparse.ArgumentParser(prog='qsub',description='Queing system parser.')
   memory_option = parserQueue.add_argument('-m', '--memory', help= 'Memory assigned by the queing system', type=str, default = None)
-  days_option = parserQueue.add_argument('-d', '--days', help= 'runtime for job in days', type=int, default = None)
+  days_option = parserQueue.add_argument('-d', '--days', help= 'runtime for job in days', type=float, default = None)
   threads_option = parserQueue.add_argument('-n', '--numThreads', help= 'num of threads for job', type=int, default = None)
 #  global defaultMemory
 #  defaultMemory = memory_option.default

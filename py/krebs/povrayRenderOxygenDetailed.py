@@ -89,7 +89,9 @@ def InsertGraphColors(vesselgraph, po2field, data_name):
     cm = matplotlib.cm.ScalarMappable(cmap = cm_po2)
   elif data_name == 'saturation':
     cm = matplotlib.cm.ScalarMappable(cmap = matplotlib.cm.spectral)
-    value_range = (0,1.)
+    vesselgraph.edges['saturation']
+    value_range = (np.min(vesselgraph.edges['saturation']),np.max(vesselgraph.edges['saturation']))
+    #value_range = (0,1.)
   elif data_name == 'hboconc':
     cm = matplotlib.cm.ScalarMappable(cmap = matplotlib.cm.gnuplot)
     p1 = math.ceil(np.amax(data))

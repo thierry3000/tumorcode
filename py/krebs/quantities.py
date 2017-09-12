@@ -87,7 +87,7 @@ class Prettyfier(object):
     ('pressure',        'Blood pressure',             'p',               'kPa'),
     ('mvd',             'Microvascular density',      'MVD', r'mm^{-2}'),
     ('mvd_linedensity', 'Linedensity or MVD',      'MVD_{line}', r'mm^{-2}'),
-    ('mvd_exp',         'Spherical sampled MVD',   'MVD_{exp}', r'mm^{-2}'),
+    ('mvd_sphere_sampling',         'Spherical sampled MVD',   'MVD_{sphere sampled}', r'mm^{-2}'),
     ('mvd_a',           'Arterial MVD', 'MVD_a', r'mm^{-2}'),
     ('mvd_v',           'Venous MVD', 'MVD_v', r'mm^{-2}'),
     ('mvd_c',           'Capillary MVD', 'MVD_c', r'mm^{-2}'),

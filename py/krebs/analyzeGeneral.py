@@ -34,6 +34,14 @@ import posixpath
 import math
 import collections
 
+""" for bin ing the MVD experimental calculation """
+def suggest_bins_from_world(ld):
+    avg_size=np.average(ld.GetWorldSize())
+    center = avg_size/2.
+    half_center = center/2.
+    bins_spec   = BinsSpecRange(half_center, center, 200.)
+    return bins_spec
+
 def RemoveArteriovenousFlagsFromCapillaries(flags):
   capil_mask = myutils.bbitwise_and(flags, krebsutils.CAPILLARY)
   flags[capil_mask] = np.bitwise_and(flags[capil_mask], np.asarray(~(krebsutils.ARTERY | krebsutils.VEIN), dtype=flags.dtype))
@@ -71,60 +79,64 @@ def totalLdVolume(vesselgrp):
     vol = delta_x*delta_y*delta_z
     return vol
 
-'''developed with adaption an move here for general usage'''
-def getGeometricData(vesselgroups):
-  '''returns mvd in 1/mm^2 and blood vessel volume fractions'''
-  from analyzeBloodVolumeSimple import cylinderCollectionVolumeDensity, cylinderCollectionLineDensity
-  #from analyzeBloodVolumeSimple import computeMeanCapillaryDistance
-  data = []
-  for g in vesselgroups:
-    #meanCapillaryDistance = dataman.obtain_data('basic_vessel_global', 'avg_cap_dist', g, cachelocation(g))
-    #meanCapillaryDistance = computeMeanCapillaryDistance(datamanager,dest_group,g)
-    rv, rv_a, rv_v, rv_c = cylinderCollectionVolumeDensity(g)
-    mvd, mvd_a, mvd_v, mvd_c = cylinderCollectionLineDensity(g)
-    radii = np.asarray(g['edges/radius'])
-    mean_r = np.mean(radii)
-    data.append((rv, rv_a, rv_v, rv_c, mvd, mvd_a, mvd_v, mvd_c, mean_r))
-  data = np.asarray(data).transpose() # first dimension gives quantity
-  return data
+'''developed with adaption an move here for general usage
+calculates MVD by summing all lenghts devided by volume
 
-def getTotalPerfusion(vesselgroups):
-  '''simply sums up the blood flow from arterial boundary nodes and divides by the system volume.
-     Returns list of perfusion values in units of blood volume per volume and sec'''
-  And = myutils.bbitwise_and
-  data = []
-  import analyzeBloodVolumeSimple as anaBloodV
-  if 'edges' in vesselgroups.keys():
-    g = vesselgroups # only a single group there
-    graph = read_vessels_data(g, ['flow', 'flags'])
-    #ld    = krebsutils.read_lattice_data_from_hdf(g['lattice'])
-    roots = set(g['nodes/roots'][...])
-    mask  = np.asarray(map(lambda (a,b): a in roots or b in roots, graph.edgelist), dtype = np.bool)
-    vol   = anaBloodV.totalLdVolume(g)
-    flow  = graph.edges['flow']
-    flags = graph.edges['flags']
-    mask  = mask & And(flags, krebsutils.ARTERY)
-    flow  = flow[mask]
-    perfusion = (np.sum(flow)/vol)
-    data.append(perfusion)
-  else:
-    for g in vesselgroups:
-      graph = read_vessels_data(g, ['flow', 'flags'])
-      #ld    = krebsutils.read_lattice_data_from_hdf(g['lattice'])
-      roots = set(g['nodes/roots'][...])
-      mask  = np.asarray(map(lambda (a,b): a in roots or b in roots, graph.edgelist), dtype = np.bool)
-      vol   = anaBloodV.totalLdVolume(g)
-      flow  = graph.edges['flow']
-      flags = graph.edges['flags']
-      mask  = mask & And(flags, krebsutils.ARTERY)
-      flow  = flow[mask]
-      perfusion = (np.sum(flow)/vol)
-      data.append(perfusion)
-  return np.asarray(data)
+T.F. moved to the chached data handling
+'''
+#def getGeometricData(vesselgroups):
+#  '''returns mvd in 1/mm^2 and blood vessel volume fractions'''
+#  from analyzeBloodVolumeSimple import cylinderCollectionVolumeDensity, cylinderCollectionLineDensity
+#  #from analyzeBloodVolumeSimple import computeMeanCapillaryDistance
+#  data = []
+#  for g in vesselgroups:
+#    #meanCapillaryDistance = dataman.obtain_data('basic_vessel_global', 'avg_cap_dist', g, cachelocation(g))
+#    #meanCapillaryDistance = computeMeanCapillaryDistance(datamanager,dest_group,g)
+#    rv, rv_a, rv_v, rv_c = cylinderCollectionVolumeDensity(g)
+#    mvd, mvd_a, mvd_v, mvd_c = cylinderCollectionLineDensity(g)
+#    radii = np.asarray(g['edges/radius'])
+#    mean_r = np.mean(radii)
+#    data.append((rv, rv_a, rv_v, rv_c, mvd, mvd_a, mvd_v, mvd_c, mean_r))
+#  data = np.asarray(data).transpose() # first dimension gives quantity
+#  return data
+#
+#def getTotalPerfusion(vesselgroups):
+#  '''simply sums up the blood flow from arterial boundary nodes and divides by the system volume.
+#     Returns list of perfusion values in units of blood volume per volume and sec'''
+#  And = myutils.bbitwise_and
+#  data = []
+#  import analyzeBloodVolumeSimple as anaBloodV
+##  if 'edges' in vesselgroups.keys():
+##    g = vesselgroups # only a single group there
+##    graph = read_vessels_data(g, ['flow', 'flags'])
+##    #ld    = krebsutils.read_lattice_data_from_hdf(g['lattice'])
+##    roots = set(g['nodes/roots'][...])
+##    mask  = np.asarray(map(lambda (a,b): a in roots or b in roots, graph.edgelist), dtype = np.bool)
+##    vol   = anaBloodV.totalLdVolume(g)
+##    flow  = graph.edges['flow']
+##    flags = graph.edges['flags']
+##    mask  = mask & And(flags, krebsutils.ARTERY)
+##    flow  = flow[mask]
+##    perfusion = (np.sum(flow)/vol)
+##    data.append(perfusion)
+##  else:
+#  for g in vesselgroups:
+#    graph = read_vessels_data(g, ['flow', 'flags'])
+#    #ld    = krebsutils.read_lattice_data_from_hdf(g['lattice'])
+#    roots = set(g['nodes/roots'][...])
+#    mask  = np.asarray(map(lambda (a,b): a in roots or b in roots, graph.edgelist), dtype = np.bool)
+#    vol   = anaBloodV.totalLdVolume(g)
+#    flow  = graph.edges['flow']
+#    flags = graph.edges['flags']
+#    mask  = mask & And(flags, krebsutils.ARTERY)
+#    flow  = flow[mask]
+#    perfusion = (np.sum(flow)/vol)
+#    data.append(perfusion)
+#  return np.asarray(data)
 
-def read_vessels_data(vesselgroup, datanames):
-  return krebsutils.read_vessels_from_hdf(vesselgroup, datanames, return_graph = True, return_not_found = False)
-  
+#def read_vessels_data(vesselgroup, datanames):
+#  return krebsutils.read_vessels_from_hdf(vesselgroup, datanames, return_graph = True, return_not_found = False)
+
 @myutils.UsesDataManager
 def generate_rBV_of_group(datamanager, destination_group, f):
   datanames = 'rbv'.split()
@@ -300,11 +312,11 @@ def try_find_tumor_group_from_vesselgroup(vesselgroup):
 
 
 def obtain_distmap_(dataman, tumorgroup, distance_distribution_name, ld = None):
-  if ld is None or distance_distribution_name != 'radial':
-    f = tumorgroup.file
-    tumor_ld = dataman.obtain_data('ld', f)
-  if ld is None:
-    ld = tumor_ld        
+#  if ld is None or distance_distribution_name != 'radial':
+#    f = tumorgroup.file
+#    tumor_ld = dataman.obtain_data('ld', f)
+#  if ld is None:
+#    ld = tumor_ld         
   if distance_distribution_name == 'radial':    
     return dataman.obtain_data('distance_from_center_distribution', ld), ld
   elif  distance_distribution_name == 'levelset':
@@ -508,16 +520,30 @@ radialAvgPerVessels = object()
 def GenerateRadialDistributions(dataman, vesselgroup, tumorgroup, sample_length, bins_spec, distance_distribution_name, ld, sample_iterator):
   weight_smpl = dataman.obtain_data('basic_vessel_samples', 'weight', vesselgroup, sample_length)
   flags       = dataman.obtain_data('basic_vessel_samples', 'flags', vesselgroup, sample_length)
-  # get teh radial distance function (either distance from tumor border or distance from center)
-  dist_smpl, distmap, mask, tumor_ld   = dataman.obtain_data('distancemap_samples', vesselgroup, tumorgroup, sample_length, distance_distribution_name, ld)
-  # note: tumor_ld might be another unrelated lattice
-
-   #filter uncirculated
-  mask = mask & myutils.bbitwise_and(flags, krebsutils.CIRCULATED)
-  dist_smpl   = dist_smpl[mask]
-  weight_smpl = weight_smpl[mask]
-
-  res = []
+  # get the radial distance function (either distance from tumor border or distance from center)
+  if distance_distribution_name =='levelset':
+    dist_smpl, distmap, mask, tumor_ld   = dataman.obtain_data('distancemap_samples', vesselgroup, tumorgroup, sample_length, distance_distribution_name, ld)
+    #filter uncirculated
+    mask = mask & myutils.bbitwise_and(flags, krebsutils.CIRCULATED)
+    dist_smpl   = dist_smpl[mask]
+    weight_smpl = weight_smpl[mask]
+#""" not yet ready!!!!    
+#  if distance_distribution_name =='radial':
+#    #ld = krebsutils.read_lattice_data_from_hdf(iff_file['field_ld'])
+##    distmap          = dataman.obtain_data('distance_from_center_distribution', ld)
+##    distmap          = distmap.ravel()
+##    mask             = distmap < tumor_center_distance
+##    ifp_field        = ifp_field[mask]
+##    ifp_histo        = myutils.MeanValueArray.fromHistogram1d(ifp_bins, ifp_field, np.ones_like(ifp_field))
+#    dist_smpl = dataman.obtain_data('distance_from_center_distribution', ld)
+#    dist_smpl = dist_smpl.ravel()
+#    mask = dist_smpl>0 #everything
+#    dist_smpl = dist_smpl[mask]
+#    weight_smpl = weight_smpl[mask]
+#    #dist_smpl, distmap, mask, tumor_ld   = dataman.obtain_data('distance_from_center_distribution', vesselgroup, tumorgroup, sample_length, distance_distribution_name, ld)
+#  # note: tumor_ld might be another unrelated lattice
+#"""
+  res=[]
   for (smpl, avg_mode) in sample_iterator:
     bins = bins_spec.arange()
     if avg_mode is radialAvgPerVolume:
@@ -560,7 +586,8 @@ def ComputeSampleHistogram(dataman, vesselgroup, binspec, samples, mask = None, 
   return myutils.fromHistogram1d(bins, smpl, 1, weight)
 
 def FixUnits_(name, data):
-  if name == 'mvd': return data*1.e6
+  if name in 'mvd mvd_a mvd_v mvd_c'.split():
+    return data*1.e6
   return data
 
 def MakeVersionId(inputData):
@@ -620,26 +647,26 @@ class DataVesselGlobal(object):
   ]
 
   def obtain_data(self, dataman, dataname, *args):
-    if dataname == 'geometric_data':
-      property_name, vesselgroup, cachelocation = args
-      
-      property_list='phi_a phi_v phi_c mvd_a mvd_v mvd_c mean_r'
-      def write_geometric(gmeasure, groupname):
-        '''returns mvd in 1/mm^2 and blood vessel volume fractions'''
-        from analyzeBloodVolumeSimple import cylinderCollectionVolumeDensity, cylinderCollectionLineDensity
-        phi, phi_a, phi_v, phi_c = cylinderCollectionVolumeDensity(vesselgroup)
-        mvd, mvd_a, mvd_v, mvd_c = cylinderCollectionLineDensity(vesselgroup)
-        radii = np.asarray(vesselgroup['edges/radius'])
-        mean_r = np.mean(radii)
-        gmeasure = gmeasure.create_group(groupname)
-        for name in property_list.split():
-          gmeasure.create_dataset(name, data = locals()[name])
-        #data.append((phi_a, rv_v, rv_c, mvd_a, mvd_v, mvd_c, mean_r))
-        #data = np.asarray(data).transpose() # first dimension gives quantity
-      def read_geometric(gmeasure, groupname):
-        gmeasure = gmeasure[groupname]
-        return [gmeasure[name][()] for name in property_list.split() ]
-      return myutils.hdf_data_caching(read_geometric, write_geometric, cachelocation[0], ('global', cachelocation[1], 'vessel', property_name), (1,1,MakeVersionId(vesselgroup),1))    
+#    if dataname == 'geometric_data':
+#      property_name, vesselgroup, cachelocation = args
+#      
+#      property_list='phi_a phi_v phi_c mvd_a mvd_v mvd_c mean_r'
+#      def write_geometric(gmeasure, groupname):
+#        '''returns mvd in 1/mm^2 and blood vessel volume fractions'''
+#        from analyzeBloodVolumeSimple import cylinderCollectionVolumeDensity, cylinderCollectionLineDensity
+#        phi, phi_a, phi_v, phi_c = cylinderCollectionVolumeDensity(vesselgroup)
+#        mvd, mvd_a, mvd_v, mvd_c = cylinderCollectionLineDensity(vesselgroup)
+#        radii = np.asarray(vesselgroup['edges/radius'])
+#        mean_r = np.mean(radii)
+#        gmeasure = gmeasure.create_group(groupname)
+#        for name in property_list.split():
+#          gmeasure.create_dataset(name, data = locals()[name])
+#        #data.append((phi_a, rv_v, rv_c, mvd_a, mvd_v, mvd_c, mean_r))
+#        #data = np.asarray(data).transpose() # first dimension gives quantity
+#      def read_geometric(gmeasure, groupname):
+#        gmeasure = gmeasure[groupname]
+#        return [gmeasure[name][()] for name in property_list.split() ]
+#      return myutils.hdf_data_caching(read_geometric, write_geometric, cachelocation[0], ('global', cachelocation[1], 'vessel', property_name), (1,1,MakeVersionId(vesselgroup),1))    
     
     if dataname == 'basic_vessel_global':
       property_name, vesselgroup, cachelocation = args
@@ -652,6 +679,34 @@ class DataVesselGlobal(object):
           l = np.asarray(graph['length'], dtype=np.float64)
           data  = (np.sum(l) / volume, 0.)
           data  = [d*1e6 for d in data] #from 1/mum^2 to 1/mm^2
+        elif property_name in 'phi_vessels phi_a phi_v phi_c'.split():
+          from analyzeBloodVolumeSimple import cylinderCollectionVolumeDensity
+          phi_vessels, phi_a, phi_v, phi_c = cylinderCollectionVolumeDensity(vesselgroup)
+          if property_name == 'phi_vessels':
+            data = [phi_vessels, 0.]
+          if property_name == 'phi_a':
+            data = [phi_a, 0.]
+          if property_name == 'phi_v':
+            data = [phi_v, 0.]
+          if property_name == 'phi_c':
+            data = [phi_c, 0.]
+        elif property_name in 'mvd mvd_a mvd_v mvd_c'.split():
+          from analyzeBloodVolumeSimple import cylinderCollectionLineDensity
+          mvd, mvd_a, mvd_v, mvd_c = cylinderCollectionLineDensity(vesselgroup)
+          if property_name == 'mvd':
+            data = [mvd, 0.]
+          if property_name == 'mvd_a':
+            data = [mvd_a, 0.]
+          if property_name == 'mvd_v':
+            data = [mvd_v, 0.]
+          if property_name == 'mvd_c':
+            data = [mvd_c, 0.]
+        elif property_name == 'mvd_sphere_sampling':
+          ld = krebsutils.read_lattice_data_from_hdf(vesselgroup.parent['field_ld'])
+          mvd_sampling_results, mvd_bins = dataman.obtain_data('sphere_vessel_density',  vesselgroup, None, suggest_bins_from_world(ld), 'radial', ld, cachelocation )
+            #print(mvd_sampling_results)    
+          data = [ np.mean(np.asarray(mvd_sampling_results)*1e6),
+                  np.std(np.asarray(mvd_sampling_results)*1e6)]
         elif property_name == 'avg_cap_dist':
           vessels = krebsutils.read_vesselgraph(vesselgroup, ['flags', 'length','radius'])
           flags   = RemoveArteriovenousFlagsFromCapillaries(vessels['flags'])
@@ -678,7 +733,7 @@ class DataVesselGlobal(object):
           data = l*np.square(r)*math.pi
           data = (np.sum(data) / volume, 0.)
         elif property_name == 'total_perfusion':
-          data = getTotalPerfusion(vesselgroup)*60 #to minutes
+          data = getTotalPerfusion([vesselgroup])*60 #to minutes
         else:
           data   = dataman.obtain_data('basic_vessel_samples', property_name, vesselgroup, 30.)
           weight = dataman.obtain_data('basic_vessel_samples', 'weight', vesselgroup, 30.)

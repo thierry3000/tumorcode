@@ -383,6 +383,12 @@ def hdf_read_dict_hierarchy_attr(o):
   for k, v in o.iteritems():
     if isinstance(v, h5py.Group):
       d[k] = hdf_read_dict_hierarchy_attr(v)
+  for k,v in d.items():
+    if v == 'true' or v == 'false':
+      d[k] = bool(v)
+    else:
+      d[k] = float(v)
+      
   return d
 
 

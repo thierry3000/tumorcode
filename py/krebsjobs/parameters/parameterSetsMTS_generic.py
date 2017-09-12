@@ -107,10 +107,19 @@ milotti_mts_test.update(
     )
 milotti_detailed = deepcopy(milotti_mts_test)
 milotti_detailed['detailedo2'] = parameterSetsO2.milotti_o2
+milotti_detailed.update(
+    rGf = 100.,
+    tend= 200, # usually starts to get lame over 200
+    )
 
 milotti_simple = deepcopy(milotti_detailed)
 milotti_simple['detailedo2'].update(
     parameterSetsO2.milotti_o2_simple
+    )
+milotti_feedback = deepcopy(milotti_simple)
+milotti_feedback.update(
+    rGf = 100.,
+    tend= 860000, # about 10 days
     )
 #milotti_detailed['detailedo2'] = parameterSetsO2.default_o2
 #factory = getattr(parameterSets, tumorParameterName)
