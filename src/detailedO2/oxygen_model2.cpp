@@ -61,9 +61,9 @@ void Parameters::assign(const ptree &pt)
   DOPT(D_plasma);
   DOPT(tissue_solubility);
   //#dM = 0.05,
-  ////DOPT(rd_norm);
-  ////DOPT(rd_tum);
-  ////DOPT(rd_necro);
+  DOPT(rd_norm);
+  DOPT(rd_tum);
+  DOPT(rd_necro);
   DOPT(max_iter);
   DOPT(num_threads);
   DOPT(convergence_tolerance);
@@ -76,7 +76,8 @@ void Parameters::assign(const ptree &pt)
   DOPT(conductivity_coeff1);
   DOPT(conductivity_coeff2);
   DOPT(conductivity_coeff3);
-  DOPT(detailedO2name); 
+  DOPT(detailedO2name);
+  DOPT(loglevel);
   DetailedPO2::Parameters::UpdateInternalValues();
   #undef DOPT
 }
@@ -102,9 +103,9 @@ ptree Parameters::as_ptree() const
   DOPT(D_plasma);
   DOPT(tissue_solubility);
   //#dM = 0.05,
-  ////DOPT(rd_norm);
-  ////DOPT(rd_tum);
-  ////DOPT(rd_necro);
+  DOPT(rd_norm);
+  DOPT(rd_tum);
+  DOPT(rd_necro);
   DOPT(max_iter);
   DOPT(num_threads);
   DOPT(convergence_tolerance);
@@ -118,6 +119,7 @@ ptree Parameters::as_ptree() const
   DOPT(conductivity_coeff2);
   DOPT(conductivity_coeff3);
   DOPT(detailedO2name);
+  DOPT(loglevel);
   #undef DOPT
   return pt;
 }
@@ -165,15 +167,15 @@ double Parameters::Saturation( double p )  const //calculates saturation depende
   const double n = sat_curve_exponent;
   const double mu = p/sat_curve_p50;
 #ifdef DEBUG
-  std::cout << "p: " << p << std::endl;
-  std::cout << "mu: " << mu << std::endl;
-  std::cout << "sat_curve_exponent: " << sat_curve_exponent << std::endl;
-  std::cout << "sat_curve_p50: " << sat_curve_p50 << std::endl;
+//   std::cout << "p: " << p << std::endl;
+//   std::cout << "mu: " << mu << std::endl;
+//   std::cout << "sat_curve_exponent: " << sat_curve_exponent << std::endl;
+//   std::cout << "sat_curve_p50: " << sat_curve_p50 << std::endl;
 #endif
   const double mun = std::pow(mu, n);
   double S = mun/(mun+1.);
 #ifdef DEBUG
-  std::cout << "S: " << S << std::endl;
+  //std::cout << "S: " << S << std::endl;
 #endif
   return S;
 }
@@ -244,6 +246,7 @@ Parameters::Parameters()
   conductivity_coeff1 = 0; // must set this as parameter, no default
   conductivity_coeff2 = 0;
   conductivity_coeff3 = 0;
+  detailedO2name = "none";
   
   UpdateInternalValues();
 }
@@ -1257,7 +1260,16 @@ void ComputePo2Field(const Parameters &params,
 }
 
 
-void DetailedP02Sim::init(Parameters &params_, BloodFlowParameters &bfparams_,VesselList3d &vl, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size,boost::optional<h5cpp::Group> tumorgroup)
+void DetailedP02Sim::init(Parameters &params_, 
+                          BloodFlowParameters &bfparams_,
+                          VesselList3d &vl, 
+                          double grid_lattice_const, 
+                          double safety_layer_size, 
+                          boost::optional<Int3> grid_lattice_size,
+                          boost::optional<h5cpp::Group> tumorgroup,
+                          boost::optional<Array3df> previous_po2field,
+                          boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels
+)
 {
   bfparams = bfparams_;
   
@@ -1325,14 +1337,71 @@ void DetailedP02Sim::init(Parameters &params_, BloodFlowParameters &bfparams_,Ve
       cout << endl;
     }
     isVesselListGood(vl);
-    SetupTissuePhases(phases, grid, mtboxes, tumorgroup);//filling
+    if(tumorgroup)
+    {
+      SetupTissuePhases(phases, grid, mtboxes, tumorgroup);//filling
+    }
     
     //set up field with same discrete points as in the given grid, leave data memory uninitialized
     //po2field is declared by mother function by not initialized, that happening here
     po2field = Array3df(grid.Box(), Cons::DONT);
-    po2field.fill(params.debug_zero_o2field ? 0.f : params.po2init_cutoff);
-    
     po2vessels.resize(vl.GetECount(), Float2(NANf()));
+    // I try this hardcoded before do it with variables: read in po2field from previous iteration 
+    if(previous_po2field and previous_po2vessels)
+    {
+      cout<<"works"<<endl;
+      po2field.fill(*previous_po2field);
+      if(vl.GetECount() < previous_po2vessels->size())
+      {
+        for(int i = 0;i<vl.GetECount();++i)
+        {
+          po2vessels[i] = previous_po2vessels->operator[](i);
+        }
+      }
+      //previous_po2vessels
+//       h5cpp::File f2("/localdisk/thierry/output_milotti/with_o2_sim/fakeTumMTS-default-typeI-sample00-milotti_detailed.h5", "r");
+//       h5cpp::Group po2Group = f2.root().open_group("out0000/po2");
+//       h5cpp::Dataset ds;
+//       
+//       ds = po2Group.open_dataset("po2field");
+// 
+//       // check reading the dataspace dimensions first
+//       h5cpp::Dataspace sp = ds.get_dataspace();
+//       hsize_t dims[H5S_MAX_RANK];
+//       int rank = sp.get_dims(dims);
+//       cout << "dataset rank = " << rank << ", dims = ";
+//       for (int i = 0; i < rank; ++i)
+//       {
+//         cout << dims[i] << " ";
+//       }
+//       cout << endl;
+// 
+//       { // check reading to memory block pointed to by a c-style pointer
+//         vector<float> data(sp.get_npoints());
+//         ds.read<float>(&data[0]);
+// 
+//         cout << "dataset = ";
+//         for (auto it = data.begin(); it != data.end(); ++it)
+//         {
+//           cout << *it << ", ";
+//         }
+//         cout << endl;
+//       }
+//       po2field.fill(ds);
+//     { // check reading to vector
+//       ds = root.open_dataset("dataset_from_list");
+//       vector<int> data; h5::read_dataset<int>(ds, data);
+//     }
+      
+      
+    }
+    else
+    {
+      po2field.fill(params.debug_zero_o2field ? 0.f : params.po2init_cutoff);
+    }
+    
+    
+    
     
     //executes topological ordering
     PrepareNetworkInfo(vl, sorted_vessels, roots);
@@ -1360,7 +1429,9 @@ int DetailedP02Sim::run(VesselList3d &vl)
   last_po2field.fill(po2field);
   // an other buffer
   DynArray<Float2> last_vessel_po2(vl.GetECount(), Float2(0.));//begining and end 0.
-  metadata.add_child("iterations", ptree());
+  //metadata.add_child("iterations", ptree());
+  /* when doing iterative calls, we need to override this */
+  metadata.put_child("iterations", ptree());
   
   ConvergenceCriteriumAccumulator2Norm<double> delta_field2, delta_vess2;
   ConvergenceCriteriumAccumulatorMaxNorm<double> delta_fieldM, delta_vessM;
@@ -1762,6 +1833,14 @@ void TestSingleVesselPO2Integration()
   h5cpp::Group root = f.root();
   h5cpp::create_dataset(root, "data", h5cpp::Dataspace::simple_dims(N, 3), get_ptr(xyz));
 #endif
+}
+Array3df DetailedP02Sim::getPo2field()
+{
+  return po2field;
+}
+DetailedPO2::VesselPO2Storage DetailedP02Sim::getVesselPO2Storrage()
+{
+  return po2vessels;
 }
 
 }//namespace DetailedPO2

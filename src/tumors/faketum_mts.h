@@ -60,7 +60,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 #endif
 
-//#define USE_DETAILED_O2
+#define USE_DETAILED_O2
 
 #ifdef USE_DETAILED_O2
   #include "../detailedO2/oxygen_model2.h"
@@ -82,6 +82,8 @@ struct State : boost::noncopyable
   int tumor_checksum;
   //boost::scoped_ptr<VesselList3d> vessels;
   int vessels_checksum;
+  boost::optional<Array3df> previous_po2field;
+  boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels;
   Array3d<float> o2field;
   Array3d<float> glucoseField;
   //Array3d<float> gffield;

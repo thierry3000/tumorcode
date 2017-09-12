@@ -116,7 +116,7 @@ void update_milotti_vessels(CellsSystem &currentCellSys, VesselList3d &vl, Detai
     
     if( not v->IsCirculated() )
     {
-      cout << "does not make sense to consider uncirculated vessels here! " << endl;
+      //cout << "does not make sense to consider uncirculated vessels here! " << endl;
     }
     else
     {
@@ -572,7 +572,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
 
     cout << "--------------------"<< endl;
     cout << "Vessel Lattice is: " << endl;
-    vl->Ld().print(cout); cout  << endl;
+    vl->Ld().print(cout); cout    << endl;
     cout << "--------------------"<< endl;
 
     params.vesselfile_message = file.root().open_group("parameters").attrs().get<string>("MESSAGE");
@@ -636,11 +636,11 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   field_ld.SetOriginPosition(-field_ld.GetWorldBox().max.cwiseProduct(centering.cast<float>()) * 0.5); // set origin = lower left side
   grid.init(field_ld, dim);
   mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
-//     SetupTissuePhases(phases, grid, mtboxes, lastTumorGroupWrittenByFakeTum);//filling
   
+  /* copied growthfactor (gf) and oxygen stuff to develop glucose accordingly */
+//     SetupTissuePhases(phases, grid, mtboxes, lastTumorGroupWrittenByFakeTum);//filling
 //   gf_model.init(grid, mtboxes, all_pt_params);
 //   gf_model.initField(state.gffield);
-    
   //oxyops.init(mtboxes, grid.Box(), grid.dim, 2);
   //oxyops.init(state.o2field);
   
@@ -689,17 +689,20 @@ int FakeTumMTS::FakeTumorSimMTS::run()
 #ifdef USE_DETAILED_O2
       /* right now, the o2 simulation is called at every output time */
       {
-        o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum);
+        o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels);
         cout << "\nInit O2 completed" << endl;
         o2_sim.run(*vl);
+        //we store the results, to achive quicker convergence in consecutive runs
+        state.previous_po2field = o2_sim.getPo2field();
+        state.previous_po2vessels = o2_sim.getVesselPO2Storrage();
         cout << "\nDetailed O2 completed" << endl;
       }
 #else
       /// no detailed o2 model
       
 #endif
-      /*    o2 data is created
-       *  and feed to the cells
+      /** @brief    
+       * o2 data is feed back to the cells, milotti part
        */
 #ifdef USE_DETAILED_O2
       // feed milotti structure with detailed o2 simulation result
@@ -708,13 +711,14 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       // simple version which set oxygen level of the vessels to a constant value
       update_milotti_vessels(currentCellsSystem, *vl);
 #endif
-      lastTumorGroupWrittenByFakeTumName = writeOutput();
+      lastTumorGroupWrittenByFakeTumName = writeOutput();//detailedO2 should be calculated prior to this call
       h5::File f(params.fn_out + ".h5", "a");
       lastTumorGroupWrittenByFakeTum = f.root().open_group(lastTumorGroupWrittenByFakeTumName+"/tumor");
       
       //provide addition information about the tissue phases to the diffusion solver
+      // this is where we need the information about the tissue state
       SetupTissuePhases(phases, grid, mtboxes, lastTumorGroupWrittenByFakeTum);//filling
-      f.close();
+      f.close();// close file to get proper handling
       next_output_time += params.out_intervall;
     }
 
@@ -849,16 +853,16 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   }
   {
 #ifdef USE_DETAILED_O2
-    //write the detailed o2 stuff necessary for the cells
-    int ecnt = o2_sim.po2vessels.size();
-    DynArray<float> po2(2*ecnt);
-    for (int i=0; i<ecnt; ++i)
-    {
-      // note: po2 values could be zero, if vessel is uncirculated, and even when circulated, angiogenesis + calcflow, ---> check that
-      po2[2*i+0] = o2_sim.po2vessels[i][0];
-      po2[2*i+1] = o2_sim.po2vessels[i][1];
-    }
-    h5cpp::Dataset ds = h5cpp::create_dataset<float>(gout.create_group("detailedPo2"), "po2_vessels", h5cpp::Dataspace::simple_dims(ecnt,2), &po2[0]);
+    // copied from python-oxygen2.cpp
+    // write the detailed o2 stuff necessary for the cells
+    h5cpp::Group po2outputGroup = gout.create_group("po2");
+    h5cpp::Group ldgroup = po2outputGroup.create_group("field_ld");
+    WriteHdfLd(ldgroup, o2_sim.grid.ld);
+    WriteScalarField<float>(po2outputGroup, "po2field", o2_sim.po2field, o2_sim.grid.ld, ldgroup);
+    h5cpp::create_dataset<float>(po2outputGroup, "po2vessels", h5cpp::Dataspace::simple_dims(o2_sim.po2vessels.size(), 2), (float*)o2_sim.po2vessels[0].data(), h5cpp::CREATE_DS_COMPRESSED); // FIX ME: transpose the array!
+    h5::Attributes ab = po2outputGroup.attrs();
+    ab.set("simType", "MTS");
+    WriteHdfPtree(po2outputGroup, o2_sim.metadata, HDF_WRITE_PTREE_AS_DATASETS);
 #else
     int ecnt = currentCellsSystem.Get_nbv();
     vector<BloodVessel> bfvessels = currentCellsSystem.Get_BloodVesselVector();

@@ -204,6 +204,8 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
   }
   //cout << format("in c++: %.20f %.20f %.20f\n") % params.conductivity_coeff1 % params.conductivity_coeff2 % params.conductivity_coeff_gamma;
   boost::optional<h5cpp::Group> tumorgroup;
+  boost::optional<Array3df> previous_po2field;
+  boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels;
   //h5cpp::Group   *tumorgroup = new h5cpp::Group();
   DetailedP02Sim s;
   if (!py_tumorgroup.is_none())
@@ -212,7 +214,7 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
     
   }
   
-  s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup);
+  s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels);
 //   else
 //   {
 //     tumorgroup = nullptr;

@@ -76,7 +76,7 @@ public:
   std::pair<double, double> BloodPO2ToHematocritAndPlasmaConc(double p, double h) const;
   double ConcToBloodPO2(double conc, double h)  const;
 
- /* *
+ /**
  * @brief Computes oxygen consumption in units of [ml O2/ ml Tisse /s]
  *
  * Arguments are the tissue partial pressure and the tissue composition.
@@ -180,17 +180,19 @@ struct DetailedP02Sim : public boost::noncopyable
   // after this call the 3D field phases is filled with
   // 3 vallues giving the portion of corresponding tissue type
   TissuePhases phases;//Declaration
-  void init(Parameters &params,BloodFlowParameters &bfparams, VesselList3d &vl, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, boost::optional<h5cpp::Group> tumorgroup);
+  void init(Parameters &params,BloodFlowParameters &bfparams, VesselList3d &vl, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, boost::optional<h5cpp::Group> tumorgroup,boost::optional<Array3df> previous_po2field, boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels);
   int run(VesselList3d &vl);
   void PrepareNetworkInfo(const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots);
   
   DynArray<const Vessel*> sorted_vessels;
   DynArray<const VesselNode*> roots;
+  
+  Array3df getPo2field();
+  DetailedPO2::VesselPO2Storage getVesselPO2Storrage();
 };
 // template<class T>
 // static T checkedExtractFromDict(const py::dict &d, const char* name);
 void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters);
-
 };//end namespace
 
 #endif
