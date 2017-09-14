@@ -53,17 +53,25 @@ def whiskers_plot_parameters(f,pdf):
     factory = factory[paramSetIndex]
     all_bests.append(np.asarray(f[group + '/best']))
   all_bests= np.asarray(all_bests)
-  average_k_c = np.mean(all_bests[:,0])
-  average_k_m = np.mean(all_bests[:,1])
-  average_k_s = np.mean(all_bests[:,2])
+  average_k_c = np.median(all_bests[:,0])
+  average_k_m = np.median(all_bests[:,1])
+  average_k_s = np.median(all_bests[:,2])
   print("averge kc: %f, average k_m: %f, average k_s %f" % (average_k_c, average_k_m,average_k_s))
   f['/'].attrs['average_kc'] = average_k_c
   f['/'].attrs['average_km'] = average_k_m
   f['/'].attrs['average_ks'] = average_k_s
   ''' whiskers plot '''
-  plt.figure()
-  box1 = plt.boxplot(all_bests)
-  plt.xticks([1,2,3],[r'$k_c$', r'$k_m$', r'$S_5$'])
+  fig = plt.figure()
+  ax = fig.add_subplot(111)
+  ax.boxplot(all_bests)
+  plt.setp(ax, xticklabels=[r'$k_c$', r'$k_m$', r'$S_5$'])
+  ax.text(1.,average_k_c, "%0.2f" % average_k_c,horizontalalignment='center',verticalalignment='bottom')
+  ax.text(2.,average_k_m, "%0.2f" % average_k_m,horizontalalignment='center',verticalalignment='bottom')
+  ax.text(3.,average_k_s, "%0.2f" % average_k_s,horizontalalignment='center',verticalalignment='bottom')
+  ax.text(1.5,3.8,'# %i convergent boundary conditions' % len(all_bests))
+  #ax.xaxis.set_ticks_([r'$k_c$', r'$k_m$', r'$S_5$'])
+  #box1 = plt.boxplot(all_bests)
+  #plt.xticks([1,2,3],[r'$k_c$', r'$k_m$', r'$S_5$'])
   pdf.savefig()
   
 def convergenz_phase_diagram(f,pdf):
@@ -129,7 +137,7 @@ def convergenz_phase_diagram(f,pdf):
   CS = plt.contour(np.log10(FLOW),PRESSURE,np.log10(np.transpose(Z)))
   plt.clabel(CS, inline=1, fontsize=5)
   plt.title('convergent area for adaption.')
-  plt.xlabel(r'Flow through arterial inlet/ $\mu m^3/s$')
+  plt.xlabel(r'$\log_{10}$ (Flow through arterial inlet) / $\mu m^3/s$')
   plt.ylabel(r'Pressure at venous outlet/ $kPa$')
   pdf.savefig()
   ''' smothed image'''

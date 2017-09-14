@@ -503,7 +503,8 @@ def vessels_require_(vesselgroup, g, name):
       ''' vesselgroup.parent.parent is po2 group'''
       po2_vessels = np.asarray(vesselgroup.parent.parent['po2/vessels/po2vessels'])
     else:
-      po2_vessels = np.asarray(vesselgroup.parent['detailedPo2/po2_vessels'])
+      ''' if we have the mts tumor things are slightly different'''
+      po2_vessels = np.asarray(vesselgroup.parent['po2/po2vessels'])
     num_verts = len(g['position'])
     node_po2 = np.zeros(num_verts)
     ''' counts the vertices, they might apear several time

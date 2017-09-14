@@ -100,27 +100,14 @@ T.F. moved to the chached data handling
 #  data = np.asarray(data).transpose() # first dimension gives quantity
 #  return data
 #
-#def getTotalPerfusion(vesselgroups):
-#  '''simply sums up the blood flow from arterial boundary nodes and divides by the system volume.
-#     Returns list of perfusion values in units of blood volume per volume and sec'''
-#  And = myutils.bbitwise_and
-#  data = []
-#  import analyzeBloodVolumeSimple as anaBloodV
-##  if 'edges' in vesselgroups.keys():
-##    g = vesselgroups # only a single group there
-##    graph = read_vessels_data(g, ['flow', 'flags'])
-##    #ld    = krebsutils.read_lattice_data_from_hdf(g['lattice'])
-##    roots = set(g['nodes/roots'][...])
-##    mask  = np.asarray(map(lambda (a,b): a in roots or b in roots, graph.edgelist), dtype = np.bool)
-##    vol   = anaBloodV.totalLdVolume(g)
-##    flow  = graph.edges['flow']
-##    flags = graph.edges['flags']
-##    mask  = mask & And(flags, krebsutils.ARTERY)
-##    flow  = flow[mask]
-##    perfusion = (np.sum(flow)/vol)
-##    data.append(perfusion)
-##  else:
-#  for g in vesselgroups:
+def getTotalPerfusion(vesselgroups):
+  '''simply sums up the blood flow from arterial boundary nodes and divides by the system volume.
+     Returns list of perfusion values in units of blood volume per volume and sec'''
+  And = myutils.bbitwise_and
+  data = []
+  import analyzeBloodVolumeSimple as anaBloodV
+#  if 'edges' in vesselgroups.keys():
+#    g = vesselgroups # only a single group there
 #    graph = read_vessels_data(g, ['flow', 'flags'])
 #    #ld    = krebsutils.read_lattice_data_from_hdf(g['lattice'])
 #    roots = set(g['nodes/roots'][...])
@@ -132,10 +119,23 @@ T.F. moved to the chached data handling
 #    flow  = flow[mask]
 #    perfusion = (np.sum(flow)/vol)
 #    data.append(perfusion)
-#  return np.asarray(data)
+#  else:
+  for g in vesselgroups:
+    graph = read_vessels_data(g, ['flow', 'flags'])
+    #ld    = krebsutils.read_lattice_data_from_hdf(g['lattice'])
+    roots = set(g['nodes/roots'][...])
+    mask  = np.asarray(map(lambda (a,b): a in roots or b in roots, graph.edgelist), dtype = np.bool)
+    vol   = anaBloodV.totalLdVolume(g)
+    flow  = graph.edges['flow']
+    flags = graph.edges['flags']
+    mask  = mask & And(flags, krebsutils.ARTERY)
+    flow  = flow[mask]
+    perfusion = (np.sum(flow)/vol)
+    data.append(perfusion)
+  return np.asarray(data)
 
-#def read_vessels_data(vesselgroup, datanames):
-#  return krebsutils.read_vessels_from_hdf(vesselgroup, datanames, return_graph = True, return_not_found = False)
+def read_vessels_data(vesselgroup, datanames):
+  return krebsutils.read_vessels_from_hdf(vesselgroup, datanames, return_graph = True, return_not_found = False)
 
 @myutils.UsesDataManager
 def generate_rBV_of_group(datamanager, destination_group, f):

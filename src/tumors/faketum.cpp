@@ -194,6 +194,9 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
   cout.rdbuf(my::log().rdbuf());
   {
 #ifdef USE_ADAPTION
+    ptree adaptionSettings = params.adap_params.as_ptree();
+    boost::property_tree::update(adaptionSettings,(pt_params.get_child("adaption")).get_child("adaption"));
+    params.adap_params.assign(adaptionSettings);
     // BAD HACK
     // do be done
     //this->params.adap_params.radMin_for_kill = this->model.params.radMin;
@@ -249,26 +252,34 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
   while (true)
   {
 #ifdef USE_ADAPTION
-#if 0
+#if 1
     if (time >= next_adaption_time - params.dt * 0.1)
     {
       //do adaption if wanted
-      if(model.params.badaption_on_off)
+      //GenerateSprouts();
+      //if (IS_DEBUG) vl->IntegrityCheck();
+      //VesselModel1::myprint(params.adap_params.as_ptree());
+      //note: not yet adaption ready
+      std::tuple<uint,FlReal,FlReal, FlReal> return_state;
+  
+      return_state = Adaption::runAdaption_Loop(*vl, params.adap_params, params.bfparams, false);
+      if(std::get<0>(return_state)>0)
       {
-	//GenerateSprouts();
-	//if (IS_DEBUG) vl->IntegrityCheck();
-	//VesselModel1::myprint(params.adap_params.as_ptree());
-	//note: not yet adaption ready
-	//Adaption::runAdaption_Loop(params.adap_params, params.bfparams, vl, false);
-	#pragma omp parallel
-	{
-    #pragma omp for
-	  for(int i=0;i<vl->GetECount();++i)
-	  {
-	    Vessel *v = vl->GetEdge(i);
-	    v->reference_r = v->r;
-	  }
-	}
+        cout<<"adaption not successfull --> bad"<<endl;
+      }
+      else
+      {
+        cout<< "adaption good" << endl;
+      }
+      
+      #pragma omp parallel
+      {
+        #pragma omp for
+        for(int i=0;i<vl->GetECount();++i)
+        {
+          Vessel *v = vl->GetEdge(i);
+          v->reference_r = v->r;
+        }
       }
       next_adaption_time += params.apply_adaption_intervall;
     }
@@ -287,8 +298,12 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
     //cout << format("size_limit = %f vs tumor_radius = %f\n") % size_limit % tumor_radius;
     
     if (tumor_radius >  size_limit) break;
-
+#ifdef USE_ADAPTION
+    //do no remodel the network i.e. no angiogenesis
+#else
+    //remodel the network according to the well known rules
     doStep(params.dt);
+#endif
     //depricated since adaption is now in tum-only-vessls
 //     if(writeVesselsafter_initial_adaption)
 //     {

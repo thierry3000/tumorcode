@@ -1356,13 +1356,21 @@ bool check_while_break( int no_vessels, double min_error, double nqdev, double m
   return true;
 }
 
-
 std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, bool doDebugOutput)
 {
   h5cpp::File *readInFile = new h5cpp::File(params.vesselFileName,"r");
   h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group(params.vesselGroupName));
 
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(vl_grp, make_ptree("filter", false));
+  return runAdaption_Loop( *vl, params, bfparams, doDebugOutput);
+}
+  
+std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Parameters params, BloodFlowParameters bfparams, bool doDebugOutput)
+{
+//   h5cpp::File *readInFile = new h5cpp::File(params.vesselFileName,"r");
+//   h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group(params.vesselGroupName));
+// 
+//   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(vl_grp, make_ptree("filter", false));
 #ifndef TOTAL_SILENCE
   printf("runAdaption_Loop with: k_c:%f k_m: %f k_s: %f\n", params.k_c, params.k_m, params.k_s);
 #endif
@@ -1405,9 +1413,9 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
   //otherwise we use the radii from the input file vary them a little bit
   if(params.starting_radii>0.)
   {
-    for(int i=0;i<vl->GetECount();++i)
+    for(int i=0;i<vl.GetECount();++i)
     {
-      vl->GetEdge(i)->r = params.starting_radii;
+      vl.GetEdge(i)->r = params.starting_radii;
     }
   }
   
@@ -1417,23 +1425,23 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
   // is this threadsafe when multiple instances of p_vl exist?
   #pragma omp single
   {
-    ChangeBoundaryConditions(*vl,params);  // if KEEP is chosen, nothing should happen here
+    ChangeBoundaryConditions(vl,params);  // if KEEP is chosen, nothing should happen here
   }
 #endif
   
 #ifdef DEBUG
-  for( auto it = vl->GetBCMap().begin(); it!= vl->GetBCMap().end(); ++it)
+  for( auto it = vl.GetBCMap().begin(); it!= vl.GetBCMap().end(); ++it)
   {
     cout << "index: " << it->first->Index() << "bcvalue: " << it->second.val <<endl;
   }
-  for(int i=0;i<vl->GetNCount();++i)
+  for(int i=0;i<vl.GetNCount();++i)
   {
-    VesselNode* nd = vl->GetNode(i);
+    VesselNode* nd = vl.GetNode(i);
     cout << "pressure: " << nd->press <<endl;
   }
-  for(int i=0;i<vl->GetECount();++i)
+  for(int i=0;i<vl.GetECount();++i)
   {
-    Vessel *v = vl->GetEdge(i);
+    Vessel *v = vl.GetEdge(i);
     cout << "flow: " << v->q<<endl;
   }
 #endif
@@ -1445,16 +1453,16 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
    * is good to have well definde pressures and flow, even if this may be redundant
    */
 #ifdef DEBUG
-  printf("vl.GetECount(): %d\n", vl->GetECount() );
+  printf("vl.GetECount(): %d\n", vl.GetECount() );
   printf("running first CalcFlow in adaptionLoop\n");
-  CalcFlow(*vl, bfparams);
+  CalcFlow(vl, bfparams);
   printf("done!\n");
-  printf("vl.GetECount() after: %d\n", vl->GetECount() );
+  printf("vl.GetECount() after: %d\n", vl.GetECount() );
 #endif
   
   
-  CalcFlow(*vl, bfparams);
-  int no_Vessels_before_adaption = vl->GetECount();
+  CalcFlow(vl, bfparams);
+  int no_Vessels_before_adaption = vl.GetECount();
   //adaption loop local variables
   FlReal qdev=std::numeric_limits<FlReal>::max();
   FlReal nqdev=std::numeric_limits<FlReal>::max();
@@ -1474,7 +1482,7 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
    * some data we can look at after convergence, container for local variables
    */
   int how_often=0;//counts iterations untils convergence and can cause failsafe stop
-  DynArray<FlReal> last_vessel_radii(vl->GetECount());
+  DynArray<FlReal> last_vessel_radii(vl.GetECount());
   std::vector<FlReal> qdevs;
   std::vector<FlReal> nqdevs;
   std::vector<FlReal> max_delta_r_s;
@@ -1561,27 +1569,27 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
     }
     
     // **************MAIN Routine ******************** for single iteration
-    std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(params, *vl,delta_t);
+    std::tie(qdev,max_stot,max_delta_r) = Adaption::CalcRadiiChange_mw(params, vl,delta_t);
 #if 1
     // am I serious? this would cause a never ending story.
     //UpdateBoundaryConditions(*vl);//new boundary flows, can show up after adaption
     /* 
      * segfault at trilinos? AZ_manage_memory?
      */
-    CalcFlow(*vl, bfparams);
+    CalcFlow(vl, bfparams);
     //flow infos will be passed as return values, so better use new ones
     //vice versa, network can expire different flows because of change in BC
     //an change in radii
 #endif
     qdev = sqrt(qdev);
-    nqdev = qdev/vl->GetECount();
+    nqdev = qdev/vl.GetECount();
     //qdev = Adaption::CalcRadiiChange_RK4(params,*vl);
     qdevs.push_back(qdev);
     nqdevs.push_back(nqdev);
     max_delta_r_s.push_back(max_delta_r);
     
     //update stopping condition
-    stopp = limit_error/sqrt(vl->GetECount());
+    stopp = limit_error/sqrt(vl.GetECount());
     
     //printf("hack delta t!");
     delta_t_s.push_back(delta_t);
@@ -1637,10 +1645,10 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
   //end main adaption loop, hopefully convergent here
   
   
-  KillSmallVessels(*vl,params.radMin_for_kill);
+  KillSmallVessels(vl,params.radMin_for_kill);
   
   
-  int no_Vessels_after_adaption = vl->GetECount();
+  int no_Vessels_after_adaption = vl.GetECount();
   int no_killed = no_Vessels_before_adaption-no_Vessels_after_adaption;
   if( no_killed >0)
     printf("Killed %i of %i Vessels below %f\n", no_Vessels_before_adaption-no_Vessels_after_adaption, no_Vessels_before_adaption,params.radMin_for_kill);
@@ -1667,9 +1675,9 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
   
  
   //write the input and output radii to console  
-  for(int w=0;w<vl->GetECount();++w)
+  for(int w=0;w<vl.GetECount();++w)
   {
-    const Vessel *v = vl->GetEdge(w);
+    const Vessel *v = vl.GetEdge(w);
 #if ADAPTION_OUTPUT
 #ifdef DEBUG
     printf("change at #%i: %f and %f \n",w, last_vessel_radii[w],v->r);
@@ -1723,7 +1731,7 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
     h5cpp::Group params_;
     h5cpp::Group grp_temp = out_.create_group("vessels_after_adaption");
     ptree getEverytingPossible = make_ptree("w_adaption", true);
-    WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
+    WriteVesselList3d(vl, grp_temp, getEverytingPossible);
     params_ = grp_temp.create_group("parameters");
     ptree outputPtree = params.as_ptree();
     outputPtree.put("cwd", boost::filesystem::current_path().string());
@@ -1733,9 +1741,9 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
     using namespace boost::accumulators;
     accumulator_set<double, features<tag::mean, tag::variance>> acc;
 #pragma omp parallel for
-  for(int i =0;i<vl->GetECount();++i)
+  for(int i =0;i<vl.GetECount();++i)
   {
-    Vessel* v = vl->GetEdge(i);
+    Vessel* v = vl.GetEdge(i);
     if( v->IsCapillary() )
     {
       acc(v->q);
@@ -1748,9 +1756,9 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
   // surface
   double total_surface=0.0;
   double scale;
-  if( vl->HasLattice())
+  if( vl.HasLattice())
   {
-    scale = vl->Ld().Scale();
+    scale = vl.Ld().Scale();
   }
   else
   {
@@ -1759,9 +1767,9 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, Bloo
   }
   // cout << "check scale bla " << vl->Ld().Scale() << endl;
 #pragma omp parallel for default(shared) reduction(+:total_surface)
-  for(int i =0;i<vl->GetECount();++i)
+  for(int i =0;i<vl.GetECount();++i)
   {
-    Vessel* v = vl->GetEdge(i);
+    Vessel* v = vl.GetEdge(i);
     total_surface += (2* 3.1415 * v->r * scale);
   }
 #pragma omp barrier
