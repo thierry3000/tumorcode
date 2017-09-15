@@ -530,18 +530,19 @@ def GenerateRadialDistributions(dataman, vesselgroup, tumorgroup, sample_length,
 #""" not yet ready!!!!    
 #  if distance_distribution_name =='radial':
 #    #ld = krebsutils.read_lattice_data_from_hdf(iff_file['field_ld'])
-##    distmap          = dataman.obtain_data('distance_from_center_distribution', ld)
-##    distmap          = distmap.ravel()
-##    mask             = distmap < tumor_center_distance
-##    ifp_field        = ifp_field[mask]
-##    ifp_histo        = myutils.MeanValueArray.fromHistogram1d(ifp_bins, ifp_field, np.ones_like(ifp_field))
+#    distmap          = dataman.obtain_data('distance_from_center_distribution', ld)
+#    distmap          = distmap.ravel()
+#    dist_smpl = distmap
+#    mask             = distmap < tumor_center_distance
+#    ifp_field        = ifp_field[mask]
+#    ifp_histo        = myutils.MeanValueArray.fromHistogram1d(ifp_bins, ifp_field, np.ones_like(ifp_field))
 #    dist_smpl = dataman.obtain_data('distance_from_center_distribution', ld)
 #    dist_smpl = dist_smpl.ravel()
 #    mask = dist_smpl>0 #everything
 #    dist_smpl = dist_smpl[mask]
 #    weight_smpl = weight_smpl[mask]
-#    #dist_smpl, distmap, mask, tumor_ld   = dataman.obtain_data('distance_from_center_distribution', vesselgroup, tumorgroup, sample_length, distance_distribution_name, ld)
-#  # note: tumor_ld might be another unrelated lattice
+    #dist_smpl, distmap, mask, tumor_ld   = dataman.obtain_data('distance_from_center_distribution', vesselgroup, tumorgroup, sample_length, distance_distribution_name, ld)
+  # note: tumor_ld might be another unrelated lattice
 #"""
   res=[]
   for (smpl, avg_mode) in sample_iterator:

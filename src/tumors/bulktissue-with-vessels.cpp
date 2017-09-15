@@ -376,11 +376,7 @@ void BulkTissue::NewTumorSim::advanceVesselState()
   cell_pressure = ost.pressure;  
   
   // do step
-#ifdef USE_ADAPTION
-  vessel_model.DoStep(1.,nullptr,nullptr);
-#else
   vessel_model.DoStep(1.,nullptr);
-#endif
   CalcFlow(*state.vessels, params.bfparams);
 
   // update data for interaction

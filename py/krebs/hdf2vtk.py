@@ -121,7 +121,12 @@ def ConvertMyHdfVesselsToVTKPolydata(graph, newflag_for_backward_compatibility, 
     #flags
     iscap = np.asarray(np.bitwise_and(flags,krebsutils.CAPILLARY) > 0, dtype=np.int32)
     polydata.GetCellData().AddArray(asVtkArray(iscap, "isCapillary", vtkIntArray))
-    
+
+  if 1:
+    #flags
+    inTumor = np.asarray(np.bitwise_and(flags,krebsutils.WITHIN_TUMOR) > 0, dtype=np.int32)
+    polydata.GetCellData().AddArray(asVtkArray(inTumor, "inTumor", vtkIntArray))
+  
   if 1 and newflag_for_backward_compatibility:
     #flags
     isnodeboundary = np.asarray(np.bitwise_and(nodeflags,krebsutils.BOUNDARY) > 0, dtype=np.int32)    

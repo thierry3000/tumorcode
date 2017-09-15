@@ -928,7 +928,8 @@ if __name__ == "__main__":
           krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'field_ld')
           krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, 'vessels/lattice')
           f.flush()
-          krebsjobs.submitVesseltreeCalibration.ObtainDataOfVesselFile(f)
+          """ data is not used anywhere?"""
+          #krebsjobs.submitVesseltreeCalibration.ObtainDataOfVesselFile(f)
       else:
         print('bla')
         krebsjobs.submitVesseltreeCalibration.CenterTheLattice(f, goodArguments.grp_pattern + '/field_ld')

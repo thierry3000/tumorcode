@@ -19,6 +19,26 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+
+"""
+T.F. in coorperation with Gero Wedemann, Bertin Hoffmann, Uni Stralsund
+
+this file estimates hypoxic volume for tumor calculations
+and plots this volume over time,
+for control purposes the size of the tumor is also plotted.
+
+*** Movie
+to create the corresponding growth movies I used the following steps:
+  1) rename
+  rename -n 's/-out0[0-1][0-9]0-/-/' *.png
+  2) create movie
+  -r rate             set frame rate (Hz value, fraction or abbreviation)
+      20 mean 20 frames per second
+  for the tumor)
+  ffmpeg -r 20 -f image2 -s 1920x1080 -i "fakeTum-gero_3d_8mm-typeI-sample00-gero_3month_to_5mmd-out0%03d.png_slice.png" -vcodec libx264 -crf 25 -pix_fmt yuv420p growth.mp4
+  for the oxygen, not every time point considered
+  ffmpeg -r 2 -f image2 -s 1920x1080 -pattern_type glob -i "*po2vessels.png" -vcodec libx264 -crf 25 -pix_fmt yuv420p o2.mp4
+"""
 if __name__ == '__main__':
   import os.path, sys
   #sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))

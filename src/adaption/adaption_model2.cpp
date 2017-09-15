@@ -319,7 +319,7 @@ Parameters::Parameters()
   avgRootNodeConductivity = 0;
   S_0=42;
   cond_length=4242;
-  tum_manitulate_s1=tum_manitulate_s2=tum_manitulate_s3=tum_manitulate_s4=tum_manitulate_s5=false;
+  tum_manitulate_s1=tum_manitulate_s2=tum_manitulate_s3=tum_manitulate_s4=tum_manitulate_s5=1.0;
   /*
    * important value!
    * if adaption without tumor this goes to this default value
@@ -353,11 +353,11 @@ void Parameters::assign(const ptree& pt)
   avgRootNodeConductivity = pt.get<double>("avgRootNodeConductivity", 42);
   S_0 = pt.get<double>("S_0", 42);
   cond_length = pt.get<double>("cond_length", 42);
-  tum_manitulate_s1 = pt.get<bool>("tum_manitulate_s1", false);
-  tum_manitulate_s2 = pt.get<bool>("tum_manitulate_s2", false);
-  tum_manitulate_s3 = pt.get<bool>("tum_manitulate_s3", false);
-  tum_manitulate_s4 = pt.get<bool>("tum_manitulate_s4", false);
-  tum_manitulate_s5 = pt.get<bool>("tum_manitulate_s5", false);
+  tum_manitulate_s1 = pt.get<double>("tum_manitulate_s1", 1.0);
+  tum_manitulate_s2 = pt.get<double>("tum_manitulate_s2", 1.0);
+  tum_manitulate_s3 = pt.get<double>("tum_manitulate_s3", 1.0);
+  tum_manitulate_s4 = pt.get<double>("tum_manitulate_s4", 1.0);
+  tum_manitulate_s5 = pt.get<double>("tum_manitulate_s5", 1.0);
   radMin_for_kill = pt.get<double>("radMin_for_kill", 2.5);
   boundary_Condition_handling = pt.get<uint>("boundary_Condition_handling", KEEP);
   a_pressure = pt.get<double>("a_pressure", 42.);
@@ -900,25 +900,25 @@ void ConductiveTransport::Calculate_S_tot()
     myAssert(!std::isinf(t4));myAssert(!std::isnan(t4));
     myAssert(!std::isinf(t5));myAssert(!std::isnan(t5));
     
-    if(adaptionParams.tum_manitulate_s1 and nw.inTumor[i])
+    if(not (adaptionParams.tum_manitulate_s1 == 1.0) and nw.inTumor[i])
     {
-      t1=1.3*t1;
+      t1 = adaptionParams.tum_manitulate_s1 * t1;
     }
-    if(adaptionParams.tum_manitulate_s2 and nw.inTumor[i])
+    if(not (adaptionParams.tum_manitulate_s2 ==1.0) and nw.inTumor[i])
     {
-      t2=t2;
+      t2 = adaptionParams.tum_manitulate_s2 * t2;
     }
-    if(adaptionParams.tum_manitulate_s3 and nw.inTumor[i])
+    if(not (adaptionParams.tum_manitulate_s3 == 1.0) and nw.inTumor[i])
     {
-      t3=0.7*t3;
+      t3 = adaptionParams.tum_manitulate_s3 * t3;
     }
-    if(adaptionParams.tum_manitulate_s4 and nw.inTumor[i])
+    if(not (adaptionParams.tum_manitulate_s4 == 1.0) and nw.inTumor[i])
     {
-      t4=0.;
+      t4 = adaptionParams.tum_manitulate_s4 * t4;
     }
-    if(adaptionParams.tum_manitulate_s5 and nw.inTumor[i])
+    if(not (adaptionParams.tum_manitulate_s5 == 1.0) and nw.inTumor[i])
     {
-      t5=t5*1.3;
+      t5 = adaptionParams.tum_manitulate_s5 * t5;
     }
     if( t1 > max_t1) max_t1 = t1;
     if( t1 < min_t1) min_t1 = t1;
@@ -1020,12 +1020,12 @@ void KillSmallVessels(VesselList3d &vl, double rad_min)
       if( v->timeSprout>=0 ) continue;
       if(v->r < rad_min || !v->IsCirculated())
       {
-	bKill = true;
+        bKill = true;
       }
       if(bKill) 
       {
-	th_toKill.push_back(v);//I think this is the crucial part, were threadsafety of boost is required!!!
-	//note wrong: each thread get his own vector and then they are added
+        //note wrong: each thread get his own vector and then they are added
+        th_toKill.push_back(v);
       }
     }
     mutex.lock();
@@ -1034,7 +1034,9 @@ void KillSmallVessels(VesselList3d &vl, double rad_min)
     th_toKill.remove_all();
   }//end omp parallel
   #pragma omp barrier
-
+#ifdef DEBUG
+  printf("going to kill %i vessels by adaption\n" , toKill.size());
+#endif
   for( int i=0; i<toKill.size(); ++i )
   {
     vl.DeleteVessel( toKill[i] );
@@ -1121,6 +1123,7 @@ void SetAdaptionValues(VesselList3d &vl, CompressedAdaptionNetwork& fl, double d
             max_stot_again = fabs(fl.S_tot_array[kk]);
           }
         }
+#if 0
         if( v->r <=rad_min )//minimal value
         {
           tooSmallRadiusSuggested++;
@@ -1132,6 +1135,7 @@ void SetAdaptionValues(VesselList3d &vl, CompressedAdaptionNetwork& fl, double d
           //uncomment this for not killing
           //bKill = true;
         }
+#endif
         if( v->r>142.)//maximun value
         {
           v->r=142.;

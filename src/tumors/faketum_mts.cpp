@@ -756,11 +756,8 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
   cout << format("step %i, t=%f") % num_iteration % time << endl;
   CalcFlow(*vl, bfparams);
   /* do not use adaptation stuff for mts*/
-#ifdef USE_ADAPTION
-  model.DoStep(dt, &adap_params, &bfparams);
-#else
+  // adaption switch inside this function
   model.DoStep(dt, &bfparams);
-#endif
   
   /* this calculates the simple diffusion of substances */
   //calcChemFields();

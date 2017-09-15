@@ -97,11 +97,7 @@ namespace Adaption
     double avg_flow;
     double avgRootNodeConductivity;
     double cond_length;
-    bool tum_manitulate_s1;
-    bool tum_manitulate_s2;
-    bool tum_manitulate_s3;
-    bool tum_manitulate_s4;
-    bool tum_manitulate_s5;
+    double tum_manitulate_s1,tum_manitulate_s2,tum_manitulate_s3,tum_manitulate_s4,tum_manitulate_s5;
     bool write2File;
     string outputFileName;
     

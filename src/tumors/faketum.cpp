@@ -298,12 +298,9 @@ int FakeTum::FakeTumorSim::run(const ptree &pt_params)
     //cout << format("size_limit = %f vs tumor_radius = %f\n") % size_limit % tumor_radius;
     
     if (tumor_radius >  size_limit) break;
-#ifdef USE_ADAPTION
-    //do no remodel the network i.e. no angiogenesis
-#else
-    //remodel the network according to the well known rules
+
     doStep(params.dt);
-#endif
+
     //depricated since adaption is now in tum-only-vessls
 //     if(writeVesselsafter_initial_adaption)
 //     {
@@ -323,12 +320,10 @@ void FakeTum::FakeTumorSim::doStep(double dt)
 {
   cout << format("step %i, t=%f") % num_iteration % time << endl;
   CalcFlow(*vl, params.bfparams);
-#ifdef USE_ADAPTION
-  vessel_model.DoStep(dt, &params.adap_params,&params.bfparams);
-#else
-//   //do be implemented
+
+  // adaption switch inside this function   
   vessel_model.DoStep(dt, &params.bfparams);
-#endif
+
   tumor_radius += dt * params.tumor_speed;
 }
 
