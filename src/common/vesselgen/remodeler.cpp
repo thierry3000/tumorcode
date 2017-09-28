@@ -218,7 +218,9 @@ Array3d<float> Grower::ComputeGfSources() const
 
 void Grower::UpdateGf()
 {
+  //create a data field from the current vessel network --> CylinderNetworkSampler
   Array3d<float> gfsource = ComputeGfSources();
+  //apply gf distribution e.g. simple diffusion
   gfmodel.update(fieldgf, gfsource);
 }
 
@@ -444,6 +446,7 @@ int Grower::GetDirection(const VesselNode* vc)
         return vc->GetEdge(1)->dir;
     }
     else
+      //something went wrong
       return -1;
   }
 }
@@ -463,7 +466,8 @@ void Grower::CalcFlow()
 static int GetTreeDownVessels( VesselNode* vc, Vessel* parent, Vessel* *down )
 {
   int cnt=0;
-  for( int i=0; i<vc->Count(); ++i ) {
+  for( int i=0; i<vc->Count(); ++i ) 
+  {
     Vessel* v = vc->GetEdge(i);
     if( v->flags.GetBits(CAPILLARY) || v==parent ) continue;
     //if (!v->IsCirculated()) continue;
@@ -475,7 +479,7 @@ static int GetTreeDownVessels( VesselNode* vc, Vessel* parent, Vessel* *down )
 
 void Grower::CalcRadi()
 {
-  int backup_capillariesUntilLevel = capillariesUntilLevel;
+  int backup_capillariesUntilLevel = capillariesUntilLevel;// default is 0
   capillariesUntilLevel = my::round(my::lerp(float(hierarchy_level)/max_hierarchy_level, 0, backup_capillariesUntilLevel));
   
   Vessel* rootvessels[32];
@@ -484,6 +488,7 @@ void Grower::CalcRadi()
     VesselNode* root = vl->GetNode(i);
     if( !root->flags.GetBits( BOUNDARY ) ) continue; // start from boundary nodes and work the way down/up-stream
     myAssert(root->Count() <= 1);
+    // get number of vessels to follow
     int n = GetTreeDownVessels(root, NULL, rootvessels);
     double radius = 0.;
     for( int k=0; k<n; ++k )
@@ -525,12 +530,14 @@ void Grower::CalcRadi( Vessel* vroot, VesselNode* nroot  )
   {
     int index            = stack.size()-1;
     TreeStackData &sd    = stack[index];
-    Vessel*            v = sd.v;
+    Vessel* v            = sd.v;
     VesselNode* vcparent = sd.vcparent;
     VesselNode* vcbranch = v->GetOther(vcparent);
     myAssert(!v->IsCapillary());
+    //vessel array daughters 
     Vessel* d[32]; d[0]=NULL; d[1]=NULL; // init only the first two elements, the rest of the reserved memory is there for safety
     int numChildren = GetTreeDownVessels( vcbranch, v, d );
+    //only Y-shape intersections are allowed so far
     myAssert(numChildren <= 2);
     if( visited[v->Index()]==0 ) // unvisited
     {
@@ -544,10 +551,12 @@ void Grower::CalcRadi( Vessel* vroot, VesselNode* nroot  )
       }
       else // if this is not a leaf, add its children onto the stack
       {
-        if( d[0] ) {
+        if( d[0] ) 
+        {
           stack.push_back( TreeStackData(d[0],vcbranch, index) );
         }
-        if( d[1] ) {
+        if( d[1] ) 
+        {
           stack.push_back( TreeStackData(d[1],vcbranch, index) );
         }
       }
@@ -948,7 +957,7 @@ inline VesselTipStuff getStuff(const VesselNode* vc)
     {
       f=v->f; //vc->residual;
       r=v->r;
-    x.is_circulated = v->IsCirculated();
+      x.is_circulated = v->IsCirculated();
     }
     else // just consider the second edge, because no change can happen to node with 3 adjacent vessels or more
     {
@@ -1310,7 +1319,8 @@ void Grower::HierarchicalGrowth()
   SplitSegmentsToOneLatticeBond(*vl);
 
   // obtain new terminal branches for random growth
-  { OpenEnds ends;
+  { 
+    OpenEnds ends;
     for (int i=0; i<vl->GetNCount(); ++i)
     {
       const VesselNode* vc = vl->GetNode(i);
@@ -1375,11 +1385,9 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
   Init(settings);
 
   { // placing root nodes
-  OpenEnds ends;
-  GenerateRootElements(settings, ends);
-  VESSGEN_MAXDBG(
-    vl->IntegrityCheck();
-  )
+    OpenEnds ends;
+    GenerateRootElements(settings, ends);
+    VESSGEN_MAXDBG(vl->IntegrityCheck();)
 	/**
 	 * adds elements until bounding box is reached
 	 * in case the simulation edge is reached the OpenEnd end won't transfere to ends_other 
@@ -1387,8 +1395,8 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
 	 * and size of ends will decreased after the next swap
 	 * clever
 	 */
-  RandomGrowth(ends, true);
-    }
+    RandomGrowth(ends, true);
+  }
 
   if (debug_output_every_configuration)
     DebugOutVessels(*this, "after_initial_growth");
