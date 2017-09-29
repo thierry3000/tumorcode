@@ -105,9 +105,12 @@ if(USE_MILOTTI_MTS)
   add_definitions(-DMILOTTI_MTS)
 endif()
 option(USE_ADAPTION "decide to build the adaption library" OFF)
-CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" OFF "USE_ADAPTION" ON)
-CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" OFF
-                       "USE_ADAPTION;USE_PAGMO" ON)
+option(USE_PAGMO "decide to use pagmo library" OFF)
+#this means USE_PAGMO is OFF only if one build adaption
+# skip this for now in the master branch!!!!
+#CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" OFF "USE_ADAPTION" ON)
+#CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" OFF
+#                       "USE_ADAPTION;USE_PAGMO" ON)
 option(TOTAL_SILENCE "suppress all output, good for running on cluster" OFF)
 if(TOTAL_SILENCE)
   message("TOTAL_SILENCE preprocessor defined")
@@ -316,6 +319,9 @@ if (USE_OPENMP)
   #add_definitions(-DENABLE_OMP)
 endif()
 
+find_package(Threads REQUIRED)
+message(STATUS "CMAKE_THREAD_LIBS_INIT = ${CMAKE_THREAD_LIBS_INIT}")
+message(STATUS "CMAKE_USE_PTHREADS_INIT = ${CMAKE_USE_PTHREADS_INIT}")
 
 GET_FILENAME_COMPONENT(compiler_name ${CMAKE_C_COMPILER} NAME)
 string(COMPARE EQUAL ${compiler_name} "icc" IS_INTEL_COMPILER)
@@ -323,7 +329,7 @@ if (NOT IS_INTEL_COMPILER)
   message("Set for gnu gxx")
   set(Warnings "-Wall -Wextra -Wno-sign-compare -Wno-reorder -Wno-deprecated -Wuninitialized -Wno-unused-parameter -Wno-unused-variable -Wno-unused-result -Wno-unused-function -Wno-unused-local-typedefs") # -Wno-unknown-pragmas   -Wpointer-arith -Wwrite-strings -Woverloaded-virtual -Wno-long-long  -Wuninitialized ")
   set(Warnings "${Warnings} -Wno-deprecated-declarations")  # -Wswitch -Wno-extra -Wsynth
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} -pthread -fPIC -ftemplate-depth-128")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings}")
 else()
   #1478 is a deprecation warning for auto_ptr
   #set(Warnings "-gcc -cxxlib -wd1478") #gnu++0x
