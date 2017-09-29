@@ -323,7 +323,9 @@ BOOST_PYTHON_MODULE(libtumors_d)
 #else
 BOOST_PYTHON_MODULE(libtumors_)
 #endif
-{
+{ 
+  Py_Initialize();
+  np::initialize();
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
   if (my::MultiprocessingInitializer_exists())
   {

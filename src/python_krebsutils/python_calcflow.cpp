@@ -30,7 +30,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace py = boost::python;
 namespace np = boost::python::numpy;
-namespace nm = boost::python::numeric;
 namespace h5 = h5cpp;
 
 py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_flags, const py::object &py_bfparams, bool simple, bool storeCalculationInHDF)
@@ -177,7 +176,7 @@ static FlReal PyCalcRelViscosity( FlReal r, FlReal h, string rheologyStr)
 
 
 
-static py::object PyCalcViscosities(nm::array pyRad, nm::array pyHema, const BloodFlowParameters &bloodFlowParameters)
+static py::object PyCalcViscosities(np::ndarray pyRad, np::ndarray pyHema, const BloodFlowParameters &bloodFlowParameters)
 {
   CheckArray1(FlReal, pyRad, 0); // do not check dimension 
   np::arrayt<FlReal> rad(pyRad);
@@ -199,7 +198,7 @@ static py::object PyCalcViscosities(nm::array pyRad, nm::array pyHema, const Blo
   return visc.getObject();
 }
 
-static py::object PyCalcConductivities(nm::array pyRad, nm::array pyLen, nm::array pyVisc)
+static py::object PyCalcConductivities(np::ndarray pyRad, np::ndarray pyLen, np::ndarray pyVisc)
 {
   CheckArray1(FlReal, pyRad, 0); // do not check dimension 
   np::arrayt<FlReal> rad(pyRad);

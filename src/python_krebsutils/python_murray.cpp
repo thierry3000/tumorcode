@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 namespace py = boost::python;
-namespace nm = boost::python::numeric;
+namespace np = boost::python::numpy;
 namespace h5 = h5cpp;
 
 namespace murray

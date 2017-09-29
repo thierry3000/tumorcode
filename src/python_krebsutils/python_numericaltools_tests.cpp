@@ -857,7 +857,7 @@ py::object calcCurvature(const py::object py_ld, np::arrayt<float> py_phi, bool 
 }
 
 
-void fill_with_smooth_delta(nm::array py_arr, float width)
+void fill_with_smooth_delta(np::ndarray py_arr, float width)
 {
   np::arrayt<float> arr(py_arr);
   for (int i=0; i<arr.shape()[0]; ++i)

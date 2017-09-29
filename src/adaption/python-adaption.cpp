@@ -36,7 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/accumulators/statistics.hpp>
 
 namespace py = boost::python;
-namespace nm = boost::python::numeric;
+namespace np = boost::python::numpy;
 
 /**
  * @brief Calculates radii due to metabolic and topological demand.

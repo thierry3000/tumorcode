@@ -74,5 +74,7 @@ BOOST_PYTHON_MODULE(libiff_d)
 BOOST_PYTHON_MODULE(libiff_)
 #endif
 {
+  Py_Initialize();
+  np::initialize();
   Iff::export_iffsim();
 }

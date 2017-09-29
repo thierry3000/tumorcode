@@ -57,7 +57,7 @@
 #include <boost/accumulators/statistics.hpp>
 
 namespace py = boost::python;
-namespace nm = boost::python::numeric;
+namespace np = boost::python::numpy;
 
 //-------------------------------------------------------------------------------
 // static data needed to test the non-default constructor in some of the problems.

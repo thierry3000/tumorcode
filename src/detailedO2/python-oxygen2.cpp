@@ -252,7 +252,7 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
 }
 
 
-static py::object PyComputeSaturation(nm::array py_po2, py::dict py_parameters)
+static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
@@ -270,7 +270,7 @@ static py::object PyComputeSaturation(nm::array py_po2, py::dict py_parameters)
 }
 
 
-static py::object PyComputeMassTransferCoefficient(nm::array py_radius, py::dict py_parameters)
+static py::object PyComputeMassTransferCoefficient(np::ndarray py_radius, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
@@ -293,7 +293,7 @@ static py::object PyComputeMassTransferCoefficient(nm::array py_radius, py::dict
 }
 
 
-static py::object PyComputeConcentration(nm::array py_po2, nm::array py_hematocrit, py::dict py_parameters)
+static py::object PyComputeConcentration(np::ndarray py_po2, np::ndarray py_hematocrit, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
@@ -314,7 +314,7 @@ static py::object PyComputeConcentration(nm::array py_po2, nm::array py_hematocr
 }
 
 
-static py::object PyComputePO2FromConc(nm::array py_conc, nm::array py_hematocrit, py::dict py_parameters)
+static py::object PyComputePO2FromConc(np::ndarray py_conc, np::ndarray py_hematocrit, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
@@ -335,7 +335,7 @@ static py::object PyComputePO2FromConc(nm::array py_conc, nm::array py_hematocri
 }
 
 
-static py::object PyComputeUptake(nm::array py_po2field, const LatticeDataQuad3d &field_ld, py::object py_tumorgroup,  py::dict py_parameters)
+static py::object PyComputeUptake(np::ndarray py_po2field, const LatticeDataQuad3d &field_ld, py::object py_tumorgroup,  py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
@@ -408,7 +408,7 @@ static Eigen::Matrix<float, rows, 1> LinearInterpolation(float xeval, const DynA
 
 
 // may be a measurement class can come back later when it makes more sense to store persistent data between analysis steps
-py::object PySampleVessels(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, nm::array py_vesselpo2, nm::array py_po2field, const LatticeDataQuad3d &field_ld, float sample_len)
+py::object PySampleVessels(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, np::ndarray py_vesselpo2, np::ndarray py_po2field, const LatticeDataQuad3d &field_ld, float sample_len)
 {
   bool world = false;
   h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);

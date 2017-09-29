@@ -42,18 +42,20 @@ include_directories($ENV{SPACK_TRANSITIVE_INCLUDE_PATH})
 configure_file(externalProjects/numpycpp/CMakeLists.txt.in externalProjects/numpycpp/CMakeLists.txt)
 message("CMAKE_COMMAND:   ${CMAKE_COMMAND}")
 message("CMAKE_GENERATOR:   ${CMAKE_GENERATOR}")
+
+# T.F. try to remove this since boost::python::numpy does now exist in boost 1.65.1
 # numpycpp has its own modules
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src/.cmake/modules;")
-message("CMAKE_MODULE_PATH at numpycpp build:   ${CMAKE_MODULE_PATH}")
-execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/numpycpp" )
-execute_process(COMMAND "${CMAKE_COMMAND}" --build .
-  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/numpycpp" )
-include_directories("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src")
-# Add numpycpp directly to our build. This adds
-# the following targets: numpycpp
-add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src"
-                 "${CMAKE_BINARY_DIR}/externalProjects/numpycpp-build")
+# set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src/.cmake/modules;")
+# message("CMAKE_MODULE_PATH at numpycpp build:   ${CMAKE_MODULE_PATH}")
+# execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+#   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/numpycpp" )
+# execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+#   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/numpycpp" )
+# include_directories("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src")
+# # Add numpycpp directly to our build. This adds
+# # the following targets: numpycpp
+# add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src"
+#                  "${CMAKE_BINARY_DIR}/externalProjects/numpycpp-build")
 
 ## HDF5-cpp-wrapper does not need compilation
 configure_file(externalProjects/HDF5-cpp-wrapper/CMakeLists.txt.in externalProjects/HDF5-cpp-wrapper/CMakeLists.txt)
@@ -152,6 +154,8 @@ find_package(Boost REQUIRED COMPONENTS "thread")
 set(myLibs "${myLibs};${Boost_THREAD_LIBRARY}")
 find_package(Boost REQUIRED COMPONENTS "filesystem")
 set(myLibs "${myLibs};${Boost_FILESYSTEM_LIBRARY}")
+find_package(Boost REQUIRED COMPONENTS "numpy")
+set(myLibs "${myLibs};${Boost_NUMPY_LIBRARY}")
 
 
 #note there are system without eigen, so let the configure fail here

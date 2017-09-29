@@ -126,7 +126,7 @@ np::arraytbase sample_edges(np::arrayt<float> pos, np::arrayt<int> edges, np::ar
 }
 
 
-py::object sample_edges_weights(nm::array pypos, nm::array pyedges, float sample_len)
+py::object sample_edges_weights(np::ndarray pypos, np::ndarray pyedges, float sample_len)
 {
   np::arrayt<float> pos(pypos);
   np::arrayt<int> edges(pyedges);
@@ -167,7 +167,7 @@ py::object sample_edges_weights(nm::array pypos, nm::array pyedges, float sample
 
 
 template<class T>
-np::arraytbase sample_field(const nm::array py_pos, const np::arrayt<T> field, const py::object &py_ld, bool linear_interpolation, bool use_extrapolation_value, const T extrapolation_value)
+np::arraytbase sample_field(const np::ndarray py_pos, const np::arrayt<T> field, const py::object &py_ld, bool linear_interpolation, bool use_extrapolation_value, const T extrapolation_value)
 {
   /*
    * sample values from a grid, where the sample locations are given by the py_pos n x 3 array
@@ -281,7 +281,7 @@ np::arraytbase compute_vessel_volume_fraction_field(np::arrayt<float> pos, np::a
 
 /**@brief Used to determine the Fractal Dimension of the network. (Or more correctly the box counting dimension.)
 */
-double compute_vessel_boxcounts(nm::array pypos, nm::array pyedges, nm::array pyradius, const py::object &py_ldfield, double volume_scaling, double volume_threshold)
+double compute_vessel_boxcounts(np::ndarray pypos, np::ndarray pyedges, np::ndarray pyradius, const py::object &py_ldfield, double volume_scaling, double volume_threshold)
 {
   LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldfield);
 

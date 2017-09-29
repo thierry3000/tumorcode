@@ -32,10 +32,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * where U = local volume average of pysource
  * and lambda = local volume fraction clipped at 1 times source_factor
  */
-np::arraytbase CalcIntervascularInterpolationField(nm::array pypos, 
-                                      nm::array pyedges, 
-                                      nm::array pyradius,
-                                      nm::array pysource,
+np::arraytbase CalcIntervascularInterpolationField(
+                                      np::ndarray pypos, 
+                                      np::ndarray pyedges, 
+                                      np::ndarray pyradius,
+                                      np::ndarray pysource,
                                       const py::object &py_ldfield,
                                       double source_factor,
                                       int samples_per_cell)

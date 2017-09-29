@@ -43,8 +43,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "vessels3d.h"
 
 
-// namespace py = boost::python;
-// namespace np = boost::python::numpy;
+namespace py = boost::python;
+namespace np = boost::python::numpy;
 
 enum Mode {
   DATA_PER_NODE = 1,
@@ -214,7 +214,7 @@ np::arraytbase edge_to_node_property_t(int num_nodes, const np::arrayt<int> &edg
 
 
 
-py::object flood_fill(const nm::array &py_field, const Int3 &startpos)
+py::object flood_fill(const np::ndarray &py_field, const Int3 &startpos)
 {
   np::arrayt<uchar> field(py_field);
   assert(field.rank() == 3);
@@ -247,7 +247,7 @@ py::object flood_fill(const nm::array &py_field, const Int3 &startpos)
 
 
 
-py::object distancemap(const nm::array &py_field)
+py::object distancemap(const np::ndarray &py_field)
 {
   np::arrayt<uchar> field(py_field);
 
@@ -319,7 +319,7 @@ py::object diff_field(np::arrayt<T> py_field, int axis, double prefactor)
 
 
 
-py::object SumIsoSurfaceIntersectionWithVessels(float level, nm::array py_edgelist, nm::array py_pressure, nm::array py_flags, nm::array py_nodalLevel, nm::array py_datavalue)
+py::object SumIsoSurfaceIntersectionWithVessels(float level, np::ndarray py_edgelist, np::ndarray py_pressure, np::ndarray py_flags, np::ndarray py_nodalLevel, np::ndarray py_datavalue)
 {
   np::arrayt<int> edges(py_edgelist);
   np::arrayt<float> pressure(py_pressure);
@@ -469,7 +469,7 @@ public:
 
 
 
-py::object test(nm::array arg)
+py::object test(np::ndarray arg)
 {
 #if 1
   np::arrayt<float> accarg(arg);
@@ -516,6 +516,8 @@ BOOST_PYTHON_MODULE(libkrebs_d)
 BOOST_PYTHON_MODULE(libkrebs_)
 #endif
 {
+  Py_Initialize();
+  np::initialize();
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
   // setup everything to work with threads.
   my::initMultithreading(0, NULL, 1);
@@ -529,7 +531,8 @@ BOOST_PYTHON_MODULE(libkrebs_)
   
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
 
-  py::numeric::array::set_module_and_type("numpy", "ndarray"); // use numpy
+  //py::numeric::array::set_module_and_type("numpy", "ndarray"); // use numpy
+  //py::array::set_module_and_type("numpy", "ndarray"); // use numpy
   
   // register some python wrapped functions
   py::def("test", test);
