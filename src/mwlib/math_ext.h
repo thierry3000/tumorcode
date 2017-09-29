@@ -95,6 +95,7 @@ inline T sqr(const T &x) { return x*x; }
 template<class T>
 inline T cubed(const T &x) { return x*x*x; }
 
+//linear interpolate from a to b
 template< class T, class U >
 inline T lerp( U x, const T &a, const T &b ) {  return T((U(1)-x)*a + x*b); }
 
