@@ -165,7 +165,6 @@ if (not qsub.is_client) and __name__=="__main__":
       else:
         factory = getattr(vParams, goodArguments.VesselParamSet)
         nums_points = int(goodArguments.width_cube / (2**goodArguments.iter_h * factory['scale']) + 1)
-        print("setting nums_points: %i" % nums_points)
       if nums_points<5:
         print('nums_points: %i'% nums_points)
         raise AssertionError('This width might be a little small!')

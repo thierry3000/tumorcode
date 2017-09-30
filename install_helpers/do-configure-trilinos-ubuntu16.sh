@@ -11,7 +11,6 @@ cmake \
       -D Trilinos_ENABLE_ML:BOOL=ON \
       -D Trilinos_ENABLE_Epetra:BOOL=ON \
       -D Trilinos_ENABLE_EpetraExt:BOOL=ON \
-      -D Trilinos_ENABLE_Belos:BOOL=ON \
       -D Trilinos_ENABLE_AztecOO:BOOL=ON \
       -D Trilinos_ENABLE_DEBUG_SYMBOLS:BOOL=ON \
       -D ML_ENABLE_Zoltan:BOOL=OFF \
