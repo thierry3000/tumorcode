@@ -77,7 +77,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
 execute_process(COMMAND "${CMAKE_COMMAND}" --build .
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
-include_directories("${CMAKE_BINARY_DIR}/externalProjects/ANN-src")
+include_directories("${CMAKE_BINARY_DIR}/externalProjects/ANN-src/include")
 # Add numpycpp directly to our build. This adds
 # the following targets: numpycpp
 add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/ANN-src"
