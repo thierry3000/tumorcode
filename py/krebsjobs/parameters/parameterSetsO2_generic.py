@@ -90,6 +90,15 @@ milotti_o2.update(
     grid_lattice_const = 50.,
     max_iter = 150,
     convergence_tolerance = 1e-3,
+    loglevel=1,
+    )
+milotti_o2_test = deepcopy(default_o2)
+milotti_o2_test.update(
+    detailedO2name = 'milotti_o2_test',
+    axial_integration_step_factor = 0.25,
+    grid_lattice_const = 50.,
+    max_iter = 3,
+    convergence_tolerance = 1e-3,
     loglevel=2,
     )
 milotti_o2_simple = deepcopy(milotti_o2)

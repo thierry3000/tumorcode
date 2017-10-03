@@ -129,7 +129,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
   // ANN stuff
   ANNkd_tree* kd_tree_of_vl;        // ann kd tree structurs
   const int ANN_dim = 3;            // space dimension
-  const int ANN_maxPts = 5000;      // maximum number of data points --> to limit memory allocation
+  const int ANN_maxPts = 25000;      // maximum number of data points --> to limit memory allocation
   const double ANN_eps = 0.0;       // error bound
   ANNpointArray    dataPts;         // data points
 	ANNpoint         queryPt;         // query point
