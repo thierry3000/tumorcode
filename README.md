@@ -45,34 +45,10 @@ their proper place within the `py` subdirectory. Note that you can set `CMAKE_IN
 to your source directory, which is useful for development.
 
 ## Details
-Here is a list of debian packages you will need:
-`
-sudo apt-get install
-cmake
-gfortran
-libblas-dev
-liblapack-dev
-python2.7-dev
-libboost-dev
-libboost-python-dev
-python-numpy
-python-matplotlib
-libboost-program-options-dev
-libpng16-dev
-libtbb-dev
-libeigen3-dev
-python-h5py
-python-scipy
-povray
-mpi-default-dev
-libmumps-dev
-libsuperlu-dev
-libhdf5-openmpi-dev
-libptscotch-dev
-binutils-dev
-libiberty-dev
-libtrilinos-*
-`
+For a detailed list of Ubuntu packages you will need, see the wiki.
+
+External projects needed:
+
 
 Our HDF5-cpp-wrapper is a lightweight c++ library around HDF5. Get it by
 `git clone https://github.com/DaWelter/HDF5-cpp-wrapper.git` As it is only a

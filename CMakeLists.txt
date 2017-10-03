@@ -143,14 +143,21 @@ set (ADDITIONAL_LIBRARY_DIRS CACHE PATH "Additional dirs to search for linked li
 find_package(Boost REQUIRED COMPONENTS "program_options")
 message("Boost_PROGRAM_OPTIONS_LIBRARY: ${Boost_PROGRAM_OPTIONS_LIBRARY}")
 set(myLibs "${myLibs};${Boost_PROGRAM_OPTIONS_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "system")
 message("Boost_SYSTEM_LIBRARY: ${Boost_SYSTEM_LIBRARY}")
 set(myLibs "${myLibs};${Boost_SYSTEM_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "serialization")
+message("Boost_SERIALIZATION_LIBRARY: ${Boost_SERIALIZATION_LIBRARY}")
 set(myLibs "${myLibs};${Boost_SERIALIZATION_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "thread")
+message("Boost_THREAD_LIBRARY: ${Boost_THREAD_LIBRARY}")
 set(myLibs "${myLibs};${Boost_THREAD_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "filesystem")
+message("Boost_FILESYSTEM_LIBRARY: ${Boost_FILESYSTEM_LIBRARY}")
 set(myLibs "${myLibs};${Boost_FILESYSTEM_LIBRARY}")
 
 
