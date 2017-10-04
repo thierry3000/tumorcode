@@ -52,6 +52,39 @@ enum Mode {
   DATA_LINEAR = 4,
 };
 
+py::object read_vessel_positions_from_hdf_by_filename(const string fn, const string groupname)
+{
+  //h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
+  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
+  h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname + "vessels"));
+  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
+
+  np::ssize_t ndims[] = { 3, vl->GetNCount() };
+
+  // create numpy array
+  np::arrayt<float> wp = np::zeros(2, ndims, np::getItemtype<float>());
+
+//   cout << ld << endl;
+  Float3 p;
+  for (int i=0; i<vl->GetNCount(); ++i)
+  {
+    VesselNode *nd = vl->GetNode(i);
+    if( !vl->HasLattice() )
+    {
+      p = nd->worldpos;
+    }
+    else
+    {
+      myAssert(vl->Ld().IsInsideLattice(nd->lpos));
+      p = vl->Ld().LatticeToWorld(nd->lpos);
+    }
+    for (int j=0; j<3; ++j)
+    {
+      wp(j, i) = p[j];
+    }
+  }
+  return wp.getObject();
+}
 py::object read_vessel_positions_from_hdf(const py::object &vess_grp_obj)
 {
   
@@ -534,6 +567,7 @@ BOOST_PYTHON_MODULE(libkrebs_)
   // register some python wrapped functions
   py::def("test", test);
   py::def("read_vessel_positions_from_hdf", read_vessel_positions_from_hdf);
+  py::def("read_vessel_positions_from_hdf_by_filename", read_vessel_positions_from_hdf_by_filename);
   py::def("read_vessel_positions_from_hdf_edges", read_vessel_positions_from_hdf_edges);
   py::def("flood_fill", flood_fill);
   py::def("distancemap", distancemap);

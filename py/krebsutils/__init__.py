@@ -55,6 +55,7 @@ imports_ = [ f.strip() for f in
     '\
     LatticeData, \
     read_lattice_data_from_hdf, \
+    read_lattice_data_from_hdf_by_filename, \
     write_lattice_data_to_hdf, \
     export_network_for_povray, \
     ClipShape, \
@@ -104,6 +105,7 @@ locals().update( (f,getattr(libkrebs, f)) for f in imports_)
 '''
 calc_vessel_hydrodynamics_Ccode = libkrebs.calc_vessel_hydrodynamics
 read_vessel_positions_from_hdf_ = libkrebs.read_vessel_positions_from_hdf
+read_vessel_positions_from_hdf_by_filename = libkrebs.read_vessel_positions_from_hdf_by_filename
 read_vessel_positions_from_hdf_edges_ = libkrebs.read_vessel_positions_from_hdf_edges
 #read_vessel_positions_from_hdf_world_ = libkrebs.read_vessel_positions_from_hdf_world
 flood_fill_ = libkrebs.flood_fill
@@ -426,7 +428,11 @@ def vessels_require_(vesselgroup, g, name):
     
     if "CLASS" in vesselgroup.attrs:
       # c++ site now manages this
-      pos = read_vessel_positions_from_hdf_(vesselgroup).transpose()
+      # I try to remove the this dependency, since h5py not always uses the same
+      # library as c++
+      #pos = read_vessel_positions_from_hdf_(vesselgroup).transpose()
+      fn=str(vesselgroup.file.filename)
+      pos = read_vessel_positions_from_hdf_by_filename(fn, "/").transpose()
       g.nodes['position'] = pos  
     else:
       print("WARNING")
@@ -874,7 +880,10 @@ def test():
 
 def GetWorldBox(vesselgroup):
     if( vesselgroup.attrs['CLASS'] == 'GRAPH' ):
-      ld = read_lattice_data_from_hdf(vesselgroup['lattice'])
+      #ld = read_lattice_data_from_hdf(vesselgroup['lattice'])
+      fn=str(vesselgroup.file.filename)
+      path=str(vesselgroup.name)
+      ld = read_lattice_data_from_hdf_by_filename(fn, path)
       worldbox = ld.worldBox
       #worldbox = read_lattice_data_from_hdf(vesselgroup['lattice']).GetWorldBox()
     if( vesselgroup.attrs['CLASS'] == 'REALWORLD'):

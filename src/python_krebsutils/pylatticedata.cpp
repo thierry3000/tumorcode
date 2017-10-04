@@ -113,7 +113,22 @@ public:
   }
 };
 
-
+PyLd* read_lattice_data_from_hdf_by_filename(const string fn, const string path)
+{
+  //h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
+  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
+  h5cpp::Group g_ld = h5cpp::Group(readInFile->root().open_group(path));
+  std::printf("if you read this, lattice data is in c++\n");
+  typedef polymorphic_latticedata::LatticeData LD;
+//  return new PyLd(new LD(ld));
+  std::auto_ptr<LD> ldp(LD::ReadHdf(g_ld));
+// 
+//   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD1;
+//   typedef polymorphic_latticedata::Derived<LatticeDataFCC> LD2;
+    return new PyLd(ldp.release()); //this is for std::auto_ptr
+//  return new PyLd(ldp.get());
+//  return new PyLd(ldp.get());
+}
 
 //pointer issue changed to boost::shared_ptr
 PyLd* read_lattice_data_from_hdf(const py::object &ld_grp_obj)
@@ -236,6 +251,8 @@ void exportLatticeData()
     ;
 
   py::def("read_lattice_data_from_hdf", read_lattice_data_from_hdf,
+          py::return_value_policy<py::manage_new_object>());
+  py::def("read_lattice_data_from_hdf_by_filename", read_lattice_data_from_hdf_by_filename,
           py::return_value_policy<py::manage_new_object>());
   py::def("write_lattice_data_to_hdf", write_lattice_data_to_hdf);
   py::def("SetupFieldLattice", PySetupFieldLattice, py::return_value_policy<py::manage_new_object>());
