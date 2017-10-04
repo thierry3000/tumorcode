@@ -1065,7 +1065,6 @@ void IntegrateVesselPO2(const Parameters &params,
   }
   BOOST_FOREACH(const VesselNode* nd, arterial_roots)
   {//loop over all arterial roots, we follow the blood stream starting here
-    cout<< nd->Index() << endl;//check THIS!!!!
     nodal_o2ready[nd->Index()] = true;
     for (int i=0; i<nd->Count(); ++i)
     {
