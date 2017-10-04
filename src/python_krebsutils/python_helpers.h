@@ -151,7 +151,6 @@ static void _CheckArray3(const py::object &obj, int dim1, int dim2, int dim3, co
  * this was due to extraction of 32bit int as type, now size_t is used
  */
 h5cpp::Group PythonToCppGroup(const py::object &op_);
-h5cpp::Dataset PythonToCppDataset(const py::object &op_);
 
 #include "mwlib/field.h"
 

@@ -606,9 +606,10 @@ def calc_vessel_hydrodynamics_(vesselgroup, calc_hematocrit, return_flags, overr
     print('Using c++ default falue')
   #usage:
   #const py::object &vess_grp_obj ,bool return_flags, const BloodFlowParameters &bfparams, bool simple
-  
-  return calc_vessel_hydrodynamics_Ccode(vesselgroup, return_flags, bloodflowparams, simple, storeCalculationInHDF)
-
+  #return calc_vessel_hydrodynamics_Ccode(vesselgroup, return_flags, bloodflowparams, simple, storeCalculationInHDF)
+  fn=str(vesselgroup.file.filename)
+  vessel_path=str(vesselgroup.name)
+  return calc_vessel_hydrodynamics_Ccode(fn, vessel_path, return_flags, bloodflowparams, simple, storeCalculationInHDF)
 
 def calc_vessel_conductivities(rad, length, hema, bloodflowparams = dict()):
   rad    = np.ascontiguousarray(rad, dtype = np.float64)

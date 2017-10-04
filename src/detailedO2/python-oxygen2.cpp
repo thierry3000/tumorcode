@@ -167,14 +167,16 @@ inline boost::optional<T> getOptional(const char* name, py::dict &d)
  * 
  * Calls the important stuff.
  */
-static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
+//static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
+static void PyComputePO2(string fn, string vesselgroup_path, string tumorgroup_path, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
 {
   Parameters params;
   InitParameters(params, py_parameters);
   cout << "parameters initialized" << std::endl;
-  //h5cpp::Group group = PythonToCppGroup(py_group);
-  //h5cpp::Group vesselgroup = group.open_group(path_vessels);
-  h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
+  
+  //h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
+  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
+  h5cpp::Group vesselgroup = h5cpp::Group(readInFile->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
   //checks if we have a REALWORLD simuation or a lattice
   
   //world = vesselgroup.attrs().get<string>("CLASS") == "REALWORLD";
@@ -208,10 +210,13 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
   boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels;
   //h5cpp::Group   *tumorgroup = new h5cpp::Group();
   DetailedP02Sim s;
-  if (!py_tumorgroup.is_none())
+//   if (!py_tumorgroup.is_none())
+//   {
+//     tumorgroup = PythonToCppGroup(py_tumorgroup);
+//   }
+  if (tumorgroup_path != "not_found_tumor")
   {
-    tumorgroup = PythonToCppGroup(py_tumorgroup);
-    
+    h5cpp::Group tumorgroup = h5cpp::Group(readInFile->root().open_group(tumorgroup_path));
   }
   
   s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels);

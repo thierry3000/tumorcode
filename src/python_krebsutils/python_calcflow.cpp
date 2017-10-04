@@ -33,13 +33,16 @@ namespace np = boost::python::numpy;
 namespace nm = boost::python::numeric;
 namespace h5 = h5cpp;
 
-py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_flags, const py::object &py_bfparams, bool simple, bool storeCalculationInHDF)
+//py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_flags, const py::object &py_bfparams, bool simple, bool storeCalculationInHDF)
+py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_path ,bool return_flags, const py::object &py_bfparams, bool simple, bool storeCalculationInHDF)
 {
   FpExceptionStateGuard exception_state_guard(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   
   const BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
 
-  h5::Group g_vess = PythonToCppGroup(vess_grp_obj);
+  //h5::Group g_vess = PythonToCppGroup(vess_grp_obj);
+  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
+  h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
   
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 

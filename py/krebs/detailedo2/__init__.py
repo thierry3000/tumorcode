@@ -130,7 +130,14 @@ def computePO2_(gdst, vesselgroup, tumorgroup, parameters):
   myutils.hdf_write_dict_hierarchy(gdst, 'parameters', parameters)
   gdst.file.flush()
   # now we can compute PO2. The c++ routine can a.t.m. only read from hdf so it has to use our new file
-  pickDetailedO2Library(parameters).computePO2(vesselgroup, tumorgroup, parameters, parameters.get('calcflow'), gdst)
+  #pickDetailedO2Library(parameters).computePO2(vesselgroup, tumorgroup, parameters, parameters.get('calcflow'), gdst)
+  fn=str(vesselgroup.file.filename)
+  vessel_path=str(vesselgroup.name)
+  if( not tumorgroup):
+    tumor_path="not_found_tumor"
+  else:
+    tumor_path=str(tumorgroup.name)  
+  pickDetailedO2Library(parameters).computePO2(fn, vessel_path, tumor_path, parameters, parameters.get('calcflow'), gdst)
   #r = pickDetailedO2Library(parameters).computePO2(vesselgroup, tumorgroup, parameters, parameters.get('calcflow'), gdst)
   #return r
 
