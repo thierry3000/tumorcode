@@ -56,7 +56,7 @@ py::object read_vessel_positions_from_hdf_by_filename(const string fn, const str
 {
   //h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
   h5cpp::File *readInFile = new h5cpp::File(fn,"r");
-  h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname + "vessels"));
+  h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname)); // groupname should end by vesselgroup
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   np::ssize_t ndims[] = { 3, vl->GetNCount() };

@@ -121,8 +121,12 @@ class Extractor(object):
       f.close()
     else:
       #ds = vtkcommon.vtkImageDataFromLd(self.file[k].attrs)
-      ld = ku.read_lattice_data_from_hdf(self.file[k])
-      ds = vtkcommon.vtkImageDataFromLd(ld)
+      #ld = ku.read_lattice_data_from_hdf(self.file[k])
+      fn=str(self.file[k].file.filename)
+      path=str(self.file[k].name)
+      Pyld = ku.read_lattice_data_from_hdf_by_filename(fn, path)
+      
+      ds = vtkcommon.vtkImageDataFromLd(Pyld)
       for q in g:
         # iterate over hdf datasets and add them to the image data
         try:

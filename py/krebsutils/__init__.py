@@ -432,7 +432,8 @@ def vessels_require_(vesselgroup, g, name):
       # library as c++
       #pos = read_vessel_positions_from_hdf_(vesselgroup).transpose()
       fn=str(vesselgroup.file.filename)
-      pos = read_vessel_positions_from_hdf_by_filename(fn, "/").transpose()
+      path = str(vesselgroup.name)
+      pos = read_vessel_positions_from_hdf_by_filename(fn, path).transpose()
       g.nodes['position'] = pos  
     else:
       print("WARNING")
