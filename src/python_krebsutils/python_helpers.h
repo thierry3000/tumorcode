@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/math_ext.h"
 #include "mwlib/ptree_ext.h"
 
-#include "numpy.hpp"
+//#include "numpy.hpp"
 
 namespace py = boost::python;
 namespace np = boost::python::numpy;

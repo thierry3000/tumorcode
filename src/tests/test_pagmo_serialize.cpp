@@ -43,7 +43,7 @@
 
 
 #include "../python_krebsutils/python-helpers.h"
-#include "numpy.hpp"
+//#include "numpy.hpp"
 #include "../adaption/adaption_as_pagmo_problem.h"
 #include "../common/calcflow.h"
 #include "../common/lattice-data-polymorphic.h"

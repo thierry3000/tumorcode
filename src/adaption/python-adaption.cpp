@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../../src/python_krebsutils/python_helpers.h"
-#include "numpy.hpp"
+//#include "numpy.hpp"
 #include "adaption_model2.h"
 
 #ifdef USE_PAGMO
