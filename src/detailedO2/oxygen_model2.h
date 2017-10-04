@@ -186,6 +186,7 @@ struct DetailedP02Sim : public boost::noncopyable
   
   DynArray<const Vessel*> sorted_vessels;
   DynArray<const VesselNode*> roots;
+  DynArray<const VesselNode*> arterial_roots;
   
   Array3df getPo2field();
   DetailedPO2::VesselPO2Storage getVesselPO2Storrage();
