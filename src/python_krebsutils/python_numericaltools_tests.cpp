@@ -831,7 +831,7 @@ py::object calcCurvature(const py::object py_ld, np::arrayt<float> py_phi, bool 
   
   myAssert(phi.size() == Size(extbox));
   SurfaceTensionForce<float> sft; sft.init(ld.Box(), phi, dim, ld.Scale());
-  np::arrayt<float> py_res = np::zeros(dim, Cast<np::ssize_t>(Size(ld.Box())).data(), np::getItemtype<float>());
+  np::arrayt<float> py_res = np::zeros(dim, Cast<Py_ssize_t>(Size(ld.Box())).data(), np::getItemtype<float>());
   Array3d<float> res = Array3dFromPy<float>(py_res);
   res.move(ld.Box().min);
   FOR_BBOX3(p, ld.Box())
@@ -842,7 +842,7 @@ py::object calcCurvature(const py::object py_ld, np::arrayt<float> py_phi, bool 
     return py_res.getObject();
 
   const Int3 sz_ = Size(ld.Box());
-  const np::ssize_t dims[4] = { dim, sz_[0], sz_[1], sz_[2] };
+  const Py_ssize_t dims[4] = { dim, sz_[0], sz_[1], sz_[2] };
   np::arrayt<float> acc_stf = np::zeros(4, dims, np::getItemtype<float>());
   FOR_BBOX3(p, ld.Box())
   {

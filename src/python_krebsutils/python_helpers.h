@@ -74,7 +74,8 @@ inline BBoxd<T, dim> BBoxFromPy(const py::object &p)
 template<class T, int dim>
 inline py::object BBoxToPy(const BBoxd<T, dim> &bb)
 {
-  np::ssize_t dims[1] = { dim*2 };
+  //np::ssize_t dims[1] = { dim*2 };
+  Py_ssize_t dims[1] = { dim*2 };
   np::arrayt<T> r = np::empty(1, dims, np::getItemtype<T>());
   for (int i=0; i<dim; ++i)
   {

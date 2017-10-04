@@ -41,7 +41,7 @@ np::arraytbase calcBulkTissueSourceTerm(const py::list &arg_list, const py::str 
   NewBulkTissueModel::Params params; params.assign(pt_params);
   params.init(LatticeDataQuad3d(BBox3(0,0,0,1,1,1), 30.));
   
-  np::ssize_t n = py::len(arg_list);
+  Py_ssize_t n = py::len(arg_list);
   np::arrayt<float> res = np::zeros(1, &n, np::getItemtype<float>());
   
   for (int i=0; i<n; ++i)

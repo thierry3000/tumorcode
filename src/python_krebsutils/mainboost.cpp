@@ -58,7 +58,7 @@ py::object read_vessel_positions_from_hdf(const py::object &vess_grp_obj)
   h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
-  np::ssize_t ndims[] = { 3, vl->GetNCount() };
+  Py_ssize_t ndims[] = { 3, vl->GetNCount() };
 
   // create numpy array
   np::arrayt<float> wp = np::zeros(2, ndims, np::getItemtype<float>());
@@ -90,7 +90,7 @@ py::object read_vessel_positions_from_hdf_edges(const py::object &vess_grp_obj)
   h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
-  np::ssize_t ndims[] = { 3, vl->GetECount() };
+  Py_ssize_t ndims[] = { 3, vl->GetECount() };
 
   // create numpy array
   np::arrayt<float> wp = np::zeros(2, ndims, np::getItemtype<float>());
@@ -153,7 +153,7 @@ np::arraytbase edge_to_node_property_t(int num_nodes, const np::arrayt<int> &edg
   std::vector<int> nbcount(num_nodes);
   int num_components = prop.shape()[1];
   int num_edges = edges.shape()[0];
-  np::ssize_t ndims[2] = { num_nodes, num_components };
+  Py_ssize_t ndims[2] = { num_nodes, num_components };
   np::arrayt<T> res(np::zeros(2, ndims, np::getItemtype<T>()));
   for (int i=0; i<num_edges; ++i)
   {
@@ -296,7 +296,7 @@ py::object diff_field(np::arrayt<T> py_field, int axis, double prefactor)
   //field[bb].fill(arr3d);
   //CopyBorder(field[bb], 3, 1);
 
-  np::arrayt<T> py_res = np::zeros(3, ::Size(bb).cast<np::ssize_t>().eval().data(), np::getItemtype<T>());
+  np::arrayt<T> py_res = np::zeros(3, ::Size(bb).cast<Py_ssize_t>().eval().data(), np::getItemtype<T>());
   Array3d<T> res = Array3dFromPy<T>(py_res);
 
   FOR_BBOX3(p, bb)
@@ -368,7 +368,7 @@ py::object SumIsoSurfaceIntersectionWithVessels(float level, np::ndarray py_edge
 template<class T>
 py::tuple radial_correlation(np::arrayt<T> py_field1, np::arrayt<T> py_field2, Int3 distance, int super_samples, bool subtract_avg, py::object &py_obj_mask)
 {
-  np::ssize_t num_bins = maxCoeff(distance)*super_samples;
+  Py_ssize_t num_bins = maxCoeff(distance)*super_samples;
   LatticeWorldTransform<1> ld(1./super_samples);
   ld.SetCellCentering(Vec<bool,1>(true));
   ld.SetOriginPosition(Vec<float,1>(-ld.Scale()*0.5));

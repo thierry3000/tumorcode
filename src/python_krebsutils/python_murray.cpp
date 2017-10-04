@@ -247,7 +247,7 @@ static py::object get_Murray_scale(const py::object &vess_grp_obj)
       }
     }
   }
-   np::ssize_t ndims[] = { 3, ncnt };
+   Py_ssize_t ndims[] = { 3, ncnt };
    np::arrayt<float>murray = np::zeros(2, ndims, np::getItemtype<float>());
 
   for(int i=0;i<ncnt;++i)
@@ -396,7 +396,7 @@ static py::object get_Murray2(const py::object &vess_grp_obj)
       }
     }
   }
-   np::ssize_t ndims[] = { 3, ncnt };
+   Py_ssize_t ndims[] = { 3, ncnt };
    np::arrayt<float>murray = np::zeros(2, ndims, np::getItemtype<float>());
 
   for(int i=0;i<ncnt;++i)
@@ -568,7 +568,7 @@ static py::object get_Murray2_p(const py::object &vess_grp_obj)
 //       }
     }
   }
-  np::ssize_t ndims[] = { 3, ncnt };
+  Py_ssize_t ndims[] = { 3, ncnt };
   np::arrayt<float>murray_v = np::zeros(2, ndims, np::getItemtype<float>());
   np::arrayt<float>murray_a = np::zeros(2, ndims, np::getItemtype<float>());
    
