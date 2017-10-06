@@ -18,7 +18,7 @@ void wrap_vessels_witho2(VesselList3d &vl, std::vector<BloodVessel> &bloodVessel
   int ecnt = vl.GetECount();
   
   //create new entry
-  BloodVessel suggestion;
+  vbl::BloodVessel suggestion;
   Float3 buffer;
   vector<double> bufferToFill;
   
@@ -128,7 +128,7 @@ void wrap_vessels(VesselList3d &vl, std::vector<BloodVessel> &bloodVesselVector)
     }
     */
   //create new entry
-  BloodVessel suggestion;
+  vbl::BloodVessel suggestion;
   Float3 buffer;
   vector<double> bufferToFill;
   
