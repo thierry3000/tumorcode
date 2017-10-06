@@ -26,87 +26,8 @@ void update_milotti_vessels(CellsSystem &currentCellSys, VesselList3d &vl, Detai
 {
   int ecnt = vl.GetECount();
   
-  
-  /* copy from milotti 
-   * 
-   * // lettura del file dei vasi
-    
-    ifstream BloodVesselFile( "BloodVessels.txt" );
-    cout << BloodVesselFile.is_open() << endl;
-    cout << "\nMain: blood vessels from BloodVessels.txt" << endl;
-    int nbv;
-    BloodVesselFile >> nbv;
-    cout << nbv << " vaso(i) nel file" << endl;
-    for(int k=0; k<nbv; k++)
-    {
-        cout << k;
-        BloodVessel NewBV;
-        double dbv;
-        BloodVesselFile >> dbv;
-        NewBV.SetBloodVesselR( dbv );
-        cout << "\t R: " << dbv;
-        BloodVesselFile >> dbv;
-        NewBV.SetBloodVesselvR( dbv );
-        cout << "vR: " << dbv << " ( x1 y1 z1 ) = ( ";
-        for(int j=0; j<3; j++)
-        {
-            BloodVesselFile >> dbv;
-            NewBV.SetBloodVesselak( dbv, j );
-            cout << dbv << " ";
-            // cout << "k: " << k << " a[k]: " << dbv << endl;
-        }
-        cout << "); ( x2 y2 z2 ) = ( ";
-        for(int j=0; j<3; j++)
-        {
-            BloodVesselFile >> dbv;
-            NewBV.SetBloodVesselbk( dbv, j );
-            cout << dbv << " ";
-            // cout << "k: " << k << " b[k]: " << dbv << endl;
-        }
-        cout << "); ( vx1 vy1 vz1 ) = ( ";
-        for(int j=0; j<3; j++)
-        {
-            BloodVesselFile >> dbv;
-            NewBV.SetBloodVesselvak( dbv, j );
-            cout << dbv << " ";
-        }
-        cout << "); ( vx2 vy2 vz2 ) = ( ";
-        for(int j=0; j<3; j++)
-        {
-            BloodVesselFile >> dbv;
-            NewBV.SetBloodVesselvbk( dbv, j );
-            cout << dbv << " ";
-        }
-        cout << ")" << endl;
-        
-        // chemical blood vessel variables are set equal to environmental values
-        
-        cout << "Main: chemical blood vessel variables " << endl; 
-        
-        double envO2 = O2_BV;
-        NewBV.SetBloodVesselO2start( envO2 );
-        NewBV.SetBloodVesselO2end( envO2 );
-        
-        NewBV.SetBloodVesselCO2start( 0. );
-        NewBV.SetBloodVesselCO2end( 0. );
-        
-        double envG = G_BV;
-        NewBV.SetBloodVesselG( envG );
-        
-        double envA = A_BV;
-        NewBV.SetBloodVesselA( envA );
-
-        NewBV.SetBloodVesselAcL( 0. );
-        
-        cout << endl;
-        
-        
-        CellsSystem.Add_BloodVessel( NewBV );  // qui si copia il vettore dei vasi nel vettore di CellsSystem
-
-    }
-    */
   //create new entry
-  BloodVessel suggestion;
+  vbl::BloodVessel suggestion;
   Float3 buffer;
   vector<double> bufferToFill;
   
@@ -163,85 +84,6 @@ void update_milotti_vessels(CellsSystem &currentCellSys, VesselList3d &vl)
 {
   int ecnt = vl.GetECount();
   
-  
-  /* copy from milotti 
-   * 
-   * // lettura del file dei vasi
-    
-    ifstream BloodVesselFile( "BloodVessels.txt" );
-    cout << BloodVesselFile.is_open() << endl;
-    cout << "\nMain: blood vessels from BloodVessels.txt" << endl;
-    int nbv;
-    BloodVesselFile >> nbv;
-    cout << nbv << " vaso(i) nel file" << endl;
-    for(int k=0; k<nbv; k++)
-    {
-        cout << k;
-        BloodVessel NewBV;
-        double dbv;
-        BloodVesselFile >> dbv;
-        NewBV.SetBloodVesselR( dbv );
-        cout << "\t R: " << dbv;
-        BloodVesselFile >> dbv;
-        NewBV.SetBloodVesselvR( dbv );
-        cout << "vR: " << dbv << " ( x1 y1 z1 ) = ( ";
-        for(int j=0; j<3; j++)
-        {
-            BloodVesselFile >> dbv;
-            NewBV.SetBloodVesselak( dbv, j );
-            cout << dbv << " ";
-            // cout << "k: " << k << " a[k]: " << dbv << endl;
-        }
-        cout << "); ( x2 y2 z2 ) = ( ";
-        for(int j=0; j<3; j++)
-        {
-            BloodVesselFile >> dbv;
-            NewBV.SetBloodVesselbk( dbv, j );
-            cout << dbv << " ";
-            // cout << "k: " << k << " b[k]: " << dbv << endl;
-        }
-        cout << "); ( vx1 vy1 vz1 ) = ( ";
-        for(int j=0; j<3; j++)
-        {
-            BloodVesselFile >> dbv;
-            NewBV.SetBloodVesselvak( dbv, j );
-            cout << dbv << " ";
-        }
-        cout << "); ( vx2 vy2 vz2 ) = ( ";
-        for(int j=0; j<3; j++)
-        {
-            BloodVesselFile >> dbv;
-            NewBV.SetBloodVesselvbk( dbv, j );
-            cout << dbv << " ";
-        }
-        cout << ")" << endl;
-        
-        // chemical blood vessel variables are set equal to environmental values
-        
-        cout << "Main: chemical blood vessel variables " << endl; 
-        
-        double envO2 = O2_BV;
-        NewBV.SetBloodVesselO2start( envO2 );
-        NewBV.SetBloodVesselO2end( envO2 );
-        
-        NewBV.SetBloodVesselCO2start( 0. );
-        NewBV.SetBloodVesselCO2end( 0. );
-        
-        double envG = G_BV;
-        NewBV.SetBloodVesselG( envG );
-        
-        double envA = A_BV;
-        NewBV.SetBloodVesselA( envA );
-
-        NewBV.SetBloodVesselAcL( 0. );
-        
-        cout << endl;
-        
-        
-        CellsSystem.Add_BloodVessel( NewBV );  // qui si copia il vettore dei vasi nel vettore di CellsSystem
-
-    }
-    */
   //create new entry
   BloodVessel suggestion;
   Float3 buffer;
@@ -531,7 +373,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     vl = ReadVesselList3d(file.root().open_group("vessels"), pt);
     
     //create kd-tree from vessellist
-    fillKdTreeFromVl();
+    // fillKdTreeFromVl(); // --> moved to find nearest neighbour
+    //fills the vbl vessel structure for the first time
     
     /*
      * this test worked, know we try to find the closest vessel for every cell in a similar fashion
@@ -602,14 +445,6 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   double next_output_time = 0.;
   double next_adaption_time = 0.;
   
-  //for the adaption it could be usefull to have the
-  //vessel network after the adaption in the beginning   ---> done automatically since adaption is in tum-only-vessels
-//   bool writeVesselsafter_initial_adaption = false;
-//   if(model.params.badaption_on_off)
-//   {
-//     writeVesselsafter_initial_adaption = true;
-//   }
-  
   // this is needed to pass tumor information to the DetailedPO2 simulation
   boost::optional<h5cpp::Group> lastTumorGroupWrittenByFakeTum;
   std::string lastTumorGroupWrittenByFakeTumName;
@@ -659,30 +494,6 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   /* start main loop */
   while (true)
   {
-    if (time >= next_adaption_time - params.dt * 0.1)
-    {
-#ifdef USE_ADAPTION
-      //do adaption if wanted
-      if(model.params.badaption_on_off)
-      {
-	//GenerateSprouts();
-	//if (IS_DEBUG) vl->IntegrityCheck();
-	//VesselModel1::myprint(params.adap_params.as_ptree());
-	//note: not yet adaption ready
-	//Adaption::runAdaption_Loop(params.adap_params, params.bfparams, vl, false);
-        #pragma omp parallel
-        {
-          #pragma omp for
-          for(int i=0;i<vl->GetECount();++i)
-          {
-            Vessel *v = vl->GetEdge(i);
-            v->reference_r = v->r;
-          }
-        }
-      }
-      next_adaption_time += params.apply_adaption_intervall;
-#endif
-    }
 //#pragma omp barrier
     if (time >= next_output_time - params.dt * 0.1)
     {
@@ -707,6 +518,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
 #ifdef USE_DETAILED_O2
       // feed milotti structure with detailed o2 simulation result
       update_milotti_vessels(currentCellsSystem, *vl, o2_sim.po2vessels);
+      findNearestVessel();// to have the information for the first output
 #else
       // simple version which set oxygen level of the vessels to a constant value
       update_milotti_vessels(currentCellsSystem, *vl);
@@ -732,7 +544,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     /* do a vessel model remodeling step */
     cout << boost::format("start vessel remodel step! \n");
     doStep(params.dt);
-    fillKdTreeFromVl();
+    //fillKdTreeFromVl(); // moved to find NearestVessel
+    findNearestVessel();
     cout << boost::format("finished vessel remodel step! \n");
     /* increment tumor time */
     time += params.dt;
@@ -756,11 +569,7 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
   cout << format("step %i, t=%f") % num_iteration % time << endl;
   CalcFlow(*vl, bfparams);
   /* do not use adaptation stuff for mts*/
-#ifdef USE_ADAPTION
-  model.DoStep(dt, &adap_params, &bfparams);
-#else
   model.DoStep(dt, &bfparams);
-#endif
   
   /* this calculates the simple diffusion of substances */
   //calcChemFields();
@@ -824,7 +633,10 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   h5::Group cells_out = gout.create_group("cells");
   /* writes the cell system stuff */
   //WriteCellsSystemHDF(currentCellsSystem, cells_out);
-  WriteCellsSystemHDF_with_nearest_vessel_index(currentCellsSystem,kd_tree_of_vl, cells_out);
+  if (currentCellsSystem.Get_alive()>0)
+  {
+    WriteCellsSystemHDF_with_nearest_vessel_index(currentCellsSystem,kd_tree_of_vl, cells_out);
+  }
   /* writes the vessel list */
   WriteVesselList3d(*vl, gout.create_group("vessels"));
   {
@@ -1094,26 +906,25 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   std::vector<double> z = currentCellsSystem.Get_z();
   DynArray<float> a(3*numberOfCells);
   DynArray<int> index_of_nearest_vessel(numberOfCells);
+  DynArray<float> min_distances(numberOfCells);
   for( int i = 0; i<numberOfCells ;++i)
   {
     a[3*i+0] = x[i];
     a[3*i+1] = y[i];
     a[3*i+2] = z[i];
-    queryPt[0] = x[i];
-    queryPt[1] = y[i];
-    queryPt[2] = z[i];
-    kd_tree_of_vl->annkSearch(						// search
-                              queryPt,		// query point
-                              ANN_k,			// number of near neighbors
-                              ANN_nnIdx,	// nearest neighbors (returned)
-                              ANN_dists,	// distance (returned)
-                              ANN_eps);		// error bound
-    index_of_nearest_vessel[i] = ANN_nnIdx[0];
+    nearest theNearest = vectorOfnearestVessels[i];
+    index_of_nearest_vessel[i] = theNearest.indexOfVessel;
+    min_distances[i] = theNearest.distance;
   }
   if(!out_cell_group.exists("index_of_nearest_vessel"))
   {
 //     h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_center_pos", h5cpp::Dataspace::simple_dims(a.size()/3,3), &a[0]);
     h5cpp::Dataset ds = h5cpp::create_dataset<int>(out_cell_group, "index_of_nearest_vessel", h5cpp::Dataspace::simple_dims(numberOfCells,1), &index_of_nearest_vessel[0]);
+  }
+  if(!out_cell_group.exists("distance_to_nearest_vessel"))
+  {
+//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_center_pos", h5cpp::Dataspace::simple_dims(a.size()/3,3), &a[0]);
+    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "distance_to_nearest_vessel", h5cpp::Dataspace::simple_dims(numberOfCells,1), &min_distances[0]);
   }
   if(!out_cell_group.exists("cell_center_pos"))
   {
@@ -1244,13 +1055,13 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF(CellsSystem &currentCellsS
  */
 void FakeTumMTS::FakeTumorSimMTS::fillKdTreeFromVl()
 {
-  int              nPts       = vl->GetECount();					// actual number of data points
+  int              nPts       = vl->GetECount();// actual number of data points
   myAssert(nPts<ANN_maxPts);
   
-	queryPt = annAllocPt(ANN_dim);                  // allocate query point
-	dataPts = annAllocPts(ANN_maxPts, ANN_dim);     // allocate data points
+  queryPt = annAllocPt(ANN_dim);                  // allocate query point
+  dataPts = annAllocPts(ANN_maxPts, ANN_dim);     // allocate data points
 	
-	// fill kd tree structur
+  // fill kd tree structur
   #pragma omp_parallel_for
   for(int i=0; i<nPts; ++i)
   {
@@ -1274,3 +1085,50 @@ void FakeTumMTS::FakeTumorSimMTS::fillKdTreeFromVl()
   ANN_nnIdx = new ANNidx[ANN_k];						// allocate near neigh indices
   ANN_dists = new ANNdist[ANN_k];						// allocate near neighbor dists
 }
+
+void FakeTumMTS::FakeTumorSimMTS::findNearestVessel()
+{
+  fillKdTreeFromVl();
+  int numberOfCells = currentCellsSystem.Get_ncells();
+  std::vector<double> x = currentCellsSystem.Get_x();
+  std::vector<double> y = currentCellsSystem.Get_y();
+  std::vector<double> z = currentCellsSystem.Get_z();
+  
+  //DynArray<float> a(3*numberOfCells);// a is needed to write to hdf file
+  vectorOfnearestVessels.resize(numberOfCells);
+  
+  for( int i = 0; i<numberOfCells ;++i)
+  {
+//     a[3*i+0] = x[i];
+//     a[3*i+1] = y[i];
+//     a[3*i+2] = z[i];
+    queryPt[0] = x[i];
+    queryPt[1] = y[i];
+    queryPt[2] = z[i];
+    kd_tree_of_vl->annkSearch(						// search
+                              queryPt,		// query point
+                              ANN_k,			// number of near neighbors
+                              ANN_nnIdx,	// nearest neighbors (returned)
+                              ANN_dists,	// distance (returned)
+                              ANN_eps);		// error bound
+/** at this point the 5 nearset vessel indexes are found
+ * for cell number i,
+ * now improve the search!
+ */
+    nearest candidate;
+    for(int ii=0;ii<ANN_k;ii++)
+    {
+      uint currentIndex = ANN_nnIdx[ii];
+      vbl::BloodVessel vessel = currentCellsSystem.Get_BloodVesselVector()[currentIndex];
+      double distance = vessel.DistanceFromVessel(queryPt);
+      if( distance < candidate.distance )
+      {
+	candidate.distance = distance;
+	candidate.indexOfVessel = ANN_nnIdx[ii];
+      }
+      //index_of_nearest_vessel[i][ii] = ANN_nnIdx[ii];
+    }
+    vectorOfnearestVessels[i] = candidate;
+  }
+}
+

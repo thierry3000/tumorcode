@@ -285,6 +285,9 @@ def writeCells_(graph, options):
   index_of_nearest_vessel = np.asarray(f[str(options.grp_pattern)+'/cells/index_of_nearest_vessel'])
   polydata.GetPointData().AddArray(asVtkArray(index_of_nearest_vessel, "index_of_nearest_vessel", vtkFloatArray))
   
+  distance_to_nearest_vessel = np.asarray(f[str(options.grp_pattern)+'/cells/distance_to_nearest_vessel'])
+  polydata.GetPointData().AddArray(asVtkArray(distance_to_nearest_vessel, "distance_to_nearest_vessel", vtkFloatArray))
+  
   #polydata.GetCellData().AddArray(asVtkArray(rad, "cell_radius", vtkFloatArray))
   #e = extractVtkFields.Extractor(f, search_groups, recursive = True) 
   #print 'found field datasets:'

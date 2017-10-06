@@ -42,14 +42,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /** from milotti
  */
-//#define undo
 
 #ifdef MILOTTI_MTS
 #define ANN
   #ifdef ANN
     #include <ANN/ANN.h>
   #endif
-#ifndef undo
   #include "vbl/sim.h"
   #include "vbl/InputFromFile.h"
   #include "vbl/CellType.h"
@@ -57,7 +55,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   #include "vbl/EnvironmentalSignals.h"
   #include "vbl/geom-2.h"
   #include "vbl/CellsSystem.h"
-#endif
 #endif
 
 #define USE_DETAILED_O2
@@ -93,6 +90,11 @@ enum TissuePressureDistribution
 {
   TISSUE_PRESSURE_SPHERE = 0,
   TISSUE_PRESSURE_SHELL = 1,
+};
+struct nearest
+{
+  double distance = std::numeric_limits<double>::max();
+  uint indexOfVessel = 0;
 };
 struct Parameters
 {
@@ -132,10 +134,12 @@ struct FakeTumorSimMTS : public boost::noncopyable
   const int ANN_maxPts = 25000;      // maximum number of data points --> to limit memory allocation
   const double ANN_eps = 0.0;       // error bound
   ANNpointArray    dataPts;         // data points
-	ANNpoint         queryPt;         // query point
-	ANNidxArray      ANN_nnIdx;       // near neighbor indices   --> will be filled during search
-	ANNdistArray     ANN_dists;       // near neighbor distances --> will be filled during search
-	int				       ANN_k= 3;        // number of nearest neighbors
+  ANNpoint         queryPt;         // query point
+  ANNidxArray      ANN_nnIdx;       // near neighbor indices   --> will be filled during search
+  ANNdistArray     ANN_dists;       // near neighbor distances --> will be filled during search
+  const int	   ANN_k= 5;        // number of nearest neighbors
+  
+  DynArray<nearest> vectorOfnearestVessels;
 	
 	
   VesselModel1::Model model;
@@ -199,14 +203,13 @@ struct FakeTumorSimMTS : public boost::noncopyable
   std::string writeOutput();
   
   //milotti mts
-#ifndef undo
   CellsSystem currentCellsSystem;
   void doMilottiStep();
   void WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group);
   void WriteCellsSystemHDF_with_nearest_vessel_index(CellsSystem &currentCellsSystem, ANNkd_tree *kd_tree_of_vl, h5cpp::Group &out_cell_group);
   void fillKdTreeFromVl();
+  void findNearestVessel();
   float estimateTumorRadiusFromCells();
-#endif
 };
 }//end FakeTum
 
