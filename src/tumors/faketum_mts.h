@@ -48,14 +48,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   #ifdef ANN
     #include <ANN/ANN.h>
   #endif
-  #include "vbl/sim.h"
-  #include "vbl/InputFromFile.h"
-  #include "vbl/CellType.h"
-  #include "vbl/Environment.h"
-  #include "vbl/EnvironmentalSignals.h"
-  #include "vbl/geom-2.h"
   #include "vbl/CellsSystem.h"
-  #include "vbl/BloodVessel.h"
 #endif
 
 #define USE_DETAILED_O2
@@ -204,10 +197,10 @@ struct FakeTumorSimMTS : public boost::noncopyable
   std::string writeOutput();
   
   //milotti mts
-  CellsSystem currentCellsSystem;
+  vbl::CellsSystem currentCellsSystem;
   void doMilottiStep();
-  void WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group);
-  void WriteCellsSystemHDF_with_nearest_vessel_index(CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group);
+  void WriteCellsSystemHDF(vbl::CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group);
+  void WriteCellsSystemHDF_with_nearest_vessel_index(vbl::CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group);
   void fillKdTreeFromVl();
   void findNearestVessel();
   float estimateTumorRadiusFromCells();
