@@ -42,8 +42,8 @@ py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_f
   
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
-  py::ssize_t num_nodes = vl->GetNCount();
-  py::ssize_t num_edges = vl->GetECount();
+  Py_ssize_t num_nodes = vl->GetNCount();
+  Py_ssize_t num_edges = vl->GetECount();
 
   //for some reasons this was needed before calcflow,
   //however for secomb2hdf.py this is bad.

@@ -548,7 +548,7 @@ int  IffDrugApp3d::Main(const ptree &read_params, const string &outfilename, py:
     /* first dimension is the field index 
      * (i.e. tissue compartment or w/e), 
      * higher dimensions are space dimensions*/
-    Vec<np::ssize_t, 4> dim; dim[0] = 2; 
+    Vec<Py_ssize_t, 4> dim; dim[0] = 2; 
     for (int i=0; i<3; ++i) dim[i+1] = grid.ld.Size()[i];
     np::arrayt<float> a_drug = np::zeros(4, dim.data(), np::getItemtype<float>());
     /**

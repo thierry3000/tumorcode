@@ -26,7 +26,7 @@ h5cpp::Group PythonToCppGroup(const py::object &op_)
   {
     py::object id_obj1 = py::getattr(op_, "id");
     py::object id_obj2 = py::getattr(id_obj1, "id");
-    ssize_t id = py::extract<ssize_t>(id_obj2);
+    Py_ssize_t id = py::extract<Py_ssize_t>(id_obj2);
     return h5cpp::Group(id);
   }
 }
@@ -35,7 +35,7 @@ h5cpp::Dataset PythonToCppDataset(const py::object &op_)
 {
   py::object id_obj1 = py::getattr(op_, "id");
   py::object id_obj2 = py::getattr(id_obj1, "id");
-  ssize_t id = py::extract<ssize_t>(id_obj2);
+  Py_ssize_t id = py::extract<Py_ssize_t>(id_obj2);
   return h5cpp::Dataset(id);
 }
 
@@ -178,7 +178,7 @@ struct VecToPy
 
   static PyObject* convert(const V& p)
   {
-    np::ssize_t dims[1] = { dim };
+    Py_ssize_t dims[1] = { dim };
     auto r = np::arrayt<T>(np::zeros(1, dims, np::getItemtype<T>()));
     for (int i=0; i<dim; ++i)
       r[i] = p[i];

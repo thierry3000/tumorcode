@@ -114,7 +114,7 @@ np::arraytbase sample_edges(np::arrayt<float> pos, np::arrayt<int> edges, np::ar
     num_total_samples += num_samples;
   }
 
-  np::arrayt<T> acc_res(np::empty(2, Int2(num_total_samples, ncomps).cast<np::ssize_t>().eval().data(), itemtype));
+  np::arrayt<T> acc_res(np::empty(2, Int2(num_total_samples, ncomps).cast<Py_ssize_t>().eval().data(), itemtype));
   for(int i=0, k=0; i<num_total_samples; ++i)
   {
     for(int j=0; j<ncomps; ++j,++k)
@@ -180,7 +180,7 @@ np::arraytbase sample_field(const np::ndarray py_pos, const np::arrayt<T> field,
 //   else
 //     interpolate.init(CONT_EXTRAPOLATE);
 
-  np::ssize_t num_samples = pos.shape()[0];
+  Py_ssize_t num_samples = pos.shape()[0];
   
   np::arrayt<T> res = np::zeros(1, &num_samples, np::getItemtype<T>());
 
@@ -226,7 +226,7 @@ np::arraytbase make_position_field(const py::object &py_ldobj)
   LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldobj);
   const auto box = ld.Box();
   Int3 size = Size(box);
-  np::ssize_t ndims[4] = { size[0], size[1], size[2], 3 };
+  Py_ssize_t ndims[4] = { size[0], size[1], size[2], 3 };
   np::arrayt<float> res = np::zeros(4, ndims, np::getItemtype<float>());
   FOR_BBOX3(p, box)
   {
@@ -269,7 +269,7 @@ np::arraytbase compute_vessel_volume_fraction_field(np::arrayt<float> pos, np::a
     //cout << sampler.GetSample(0).wpos << endl;
   }
   
-  np::arrayt<float> res = np::zeros(3, Cast<np::ssize_t>(::Size(ld.Box())).data(), np::getItemtype<float>());
+  np::arrayt<float> res = np::zeros(3, Cast<Py_ssize_t>(::Size(ld.Box())).data(), np::getItemtype<float>());
   FOR_BBOX3(p, ld.Box())
   {
     res(p[0], p[1], p[2]) = std::min<float>(1., tmp(p));
@@ -422,8 +422,8 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
     std::vector<BranchDat> lengths_in = MeasureBranchLengths(*vl, in_tumor);
     std::vector<BranchDat> lengths_out = MeasureBranchLengths(*vl, outside_tumor);
   
-    np::ssize_t dims_in[2] = {3,(int)lengths_in.size()};
-    np::ssize_t dims_out[2] = {3,(int)lengths_out.size()};
+    Py_ssize_t dims_in[2] = {3,(int)lengths_in.size()};
+    Py_ssize_t dims_out[2] = {3,(int)lengths_out.size()};
     // create numpy array
     np::arrayt<float> buffer_in = np::zeros(2, dims_in, np::getItemtype<float>());
     for (int i=0; i<lengths_in.size(); ++i)
@@ -458,8 +458,8 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
 	radii_out.push_back(v->r);
       }
     }
-    np::ssize_t dims_in[2] = {1,(int)radii_in.size()};
-    np::ssize_t dims_out[2] = {1,(int)radii_out.size()};
+    Py_ssize_t dims_in[2] = {1,(int)radii_in.size()};
+    Py_ssize_t dims_out[2] = {1,(int)radii_out.size()};
     // create numpy array
     np::arrayt<float> buffer_in = np::zeros(2, dims_in, np::getItemtype<float>());
     for (int i=0; i<radii_in.size(); ++i)
@@ -490,8 +490,8 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
 	radii_out.push_back(v->q);
       }
     }
-    np::ssize_t dims_in[2] = {1,(int)radii_in.size()};
-    np::ssize_t dims_out[2] = {1,(int)radii_out.size()};
+    Py_ssize_t dims_in[2] = {1,(int)radii_in.size()};
+    Py_ssize_t dims_out[2] = {1,(int)radii_out.size()};
     // create numpy array
     np::arrayt<float>buffer_in = np::zeros(2, dims_in, np::getItemtype<float>());
     for (int i=0; i<radii_in.size(); ++i)
@@ -534,8 +534,8 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
     {
       pressure_in_a.insert(pressure_in_a.end(),pressure_in_v.begin(),pressure_in_v.end());
       pressure_out_a.insert(pressure_out_a.end(),pressure_out_v.begin(),pressure_out_v.end());
-      np::ssize_t dims_in[2] = {1,(int)pressure_in_a.size()};
-      np::ssize_t dims_out[2] = {1,(int)pressure_out_a.size()};
+      Py_ssize_t dims_in[2] = {1,(int)pressure_in_a.size()};
+      Py_ssize_t dims_out[2] = {1,(int)pressure_out_a.size()};
       // create numpy array
       np::arrayt<float>buffer_in = np::zeros(2, dims_in, np::getItemtype<float>());
       for (int i=0; i<pressure_in_a.size(); ++i)
@@ -552,10 +552,10 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
     }
     if(av)
     {
-      np::ssize_t dims_in_a[2] = {1,(int)pressure_in_a.size()};
-      np::ssize_t dims_in_v[2] = {1,(int)pressure_in_v.size()};
-      np::ssize_t dims_out_a[2] = {1,(int)pressure_out_a.size()};
-      np::ssize_t dims_out_v[2] = {1,(int)pressure_out_v.size()};
+      Py_ssize_t dims_in_a[2] = {1,(int)pressure_in_a.size()};
+      Py_ssize_t dims_in_v[2] = {1,(int)pressure_in_v.size()};
+      Py_ssize_t dims_out_a[2] = {1,(int)pressure_out_a.size()};
+      Py_ssize_t dims_out_v[2] = {1,(int)pressure_out_v.size()};
       // create numpy array
       // this is quick and dirty!!!
       np::arrayt<float>buffer_in_a = np::zeros(2, dims_in_a, np::getItemtype<float>());

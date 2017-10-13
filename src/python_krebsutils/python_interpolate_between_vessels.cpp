@@ -119,7 +119,7 @@ np::arraytbase CalcIntervascularInterpolationField(
     solver.solve(lhs);
   }
 
-  np::arrayt<float> res(np::zeros(3, Cast<np::ssize_t>(::Size(ld.Box())).data(), np::getItemtype<float>()));
+  np::arrayt<float> res(np::zeros(3, Cast<Py_ssize_t>(::Size(ld.Box())).data(), np::getItemtype<float>()));
 
   #pragma omp parallel
   {
