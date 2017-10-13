@@ -39,9 +39,13 @@ include_directories($ENV{SPACK_TRANSITIVE_INCLUDE_PATH})
 ### adapted from:
 #   https://crascit.com/2015/07/25/cmake-gtest/
 # Download and unpack numpycpp at configure time
-configure_file(externalProjects/numpycpp/CMakeLists.txt.in externalProjects/numpycpp/CMakeLists.txt)
-message("CMAKE_COMMAND:   ${CMAKE_COMMAND}")
-message("CMAKE_GENERATOR:   ${CMAKE_GENERATOR}")
+if(Boost_VERSION GREATER_EQUAL 106500)
+  message("no numpy cpp!!!")
+else()
+  configure_file(externalProjects/numpycpp/CMakeLists.txt.in externalProjects/numpycpp/CMakeLists.txt)
+  message("CMAKE_COMMAND:   ${CMAKE_COMMAND}")
+  message("CMAKE_GENERATOR:   ${CMAKE_GENERATOR}")
+endif()
 
 # T.F. try to remove this since boost::python::numpy does now exist in boost 1.65.1
 # numpycpp has its own modules
@@ -281,6 +285,23 @@ include_directories(${ADDITIONAL_INCLUDE_DIRS})
 link_directories(${ADDITIONAL_LIBRARY_DIRS})
 include_directories("src/")
 
+if(Boost_VERSION GREATER_EQUAL 106500)
+set(myLibs
+  ${myLibs} #maybe something is already there
+  common  # part of this software
+  mwlib   # part of this software
+  tbb
+  #${TBB_LIBRARIES}
+  ${Trilinos_LIBRARIES} # -> trilinos
+  ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
+  ${Boost_PYTHON_LIBRARY}
+  ${HDF5_LIBRARIES}
+  ${LAPACK_LIBRARIES}
+  ${BLAS_LIBRARIES}
+  ${PNG_LIBRARIES}
+  ${PYTHON_LIBRARIES}
+)
+else()
 set(myLibs
   ${myLibs} #maybe something is already there
   common  # part of this software
@@ -297,6 +318,7 @@ set(myLibs
   ${PNG_LIBRARIES}
   ${PYTHON_LIBRARIES}
 )
+endif()
 #message(STATUS "myLibs = ${myLibs}")
 
 

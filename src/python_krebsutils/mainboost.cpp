@@ -517,7 +517,12 @@ BOOST_PYTHON_MODULE(libkrebs_)
 #endif
 {
   Py_Initialize();
+#if BOOST_VERSION>106300
   np::initialize();
+#else
+  np::importNumpyAndRegisterTypes();
+#endif
+  
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
   // setup everything to work with threads.
   my::initMultithreading(0, NULL, 1);

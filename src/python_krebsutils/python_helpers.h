@@ -71,10 +71,27 @@ inline BBoxd<T, dim> BBoxFromPy(const py::object &p)
   return r;
 }
 
+#if BOOST_VERSION>106300
 template<class T, int dim>
 inline py::object BBoxToPy(const BBoxd<T, dim> &bb)
 {
-  np::ssize_t dims[1] = { dim*2 };
+  //Py_ssize_t dims[1] = { dim*2 };
+  np::dtype dtype = np::dtype::get_builtin<T>();
+  py::tuple shape = py::make_tuple(1,dim*2);
+  np::ndarray r = np::empty(shape, dtype);
+  //np::arrayt<T> r = np::empty(1, dims, np::getItemtype<T>());
+  for (int i=0; i<dim; ++i)
+  {
+    r[i*2  ] = bb.min[i];
+    r[i*2+1] = bb.max[i];
+  }
+  return r;
+}
+#else
+template<class T, int dim>
+inline py::object BBoxToPy(const BBoxd<T, dim> &bb)
+{
+  Py_ssize_t dims[1] = { dim*2 };
   np::arrayt<T> r = np::empty(1, dims, np::getItemtype<T>());
   for (int i=0; i<dim; ++i)
   {
@@ -83,6 +100,7 @@ inline py::object BBoxToPy(const BBoxd<T, dim> &bb)
   }
   return r.getObject();
 }
+#endif
 
 
 // this is crazy shit! python generates a string representation of the entire
