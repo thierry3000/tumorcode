@@ -247,8 +247,22 @@ static py::object get_Murray_scale(const py::object &vess_grp_obj)
       }
     }
   }
-   Py_ssize_t ndims[] = { 3, ncnt };
-   np::arrayt<float>murray = np::zeros(2, ndims, np::getItemtype<float>());
+#if BOOST_VERSION>106300
+  //Py_ssize_t ndims[] = { 3, ncnt };
+  py::tuple shape = py::make_tuple(3,ncnt);
+  np::dtype dtype = np::dtype::get_builtin<float>();
+  np::ndarray murray = np::zeros(shape, dtype);
+
+  for(int i=0;i<ncnt;++i)
+  {
+    murray[0][i] = radius_daughther1[i];
+    murray[1][i] = radius_daughther2[i];
+    murray[2][i] = radius_mother[i];
+  }
+  return murray;
+#else
+  Py_ssize_t ndims[] = { 3, ncnt };
+  np::arrayt<float>murray = np::zeros(2, ndims, np::getItemtype<float>());
 
   for(int i=0;i<ncnt;++i)
   {
@@ -257,9 +271,11 @@ static py::object get_Murray_scale(const py::object &vess_grp_obj)
     murray(2,i) = radius_mother[i];
   }
   return py::object(murray);
+#endif
 }
 
-
+#if BOOST_VERSION>106300
+#else
 //serial working version
 static py::object get_Murray2(const py::object &vess_grp_obj)
 {
@@ -407,6 +423,75 @@ static py::object get_Murray2(const py::object &vess_grp_obj)
   }
   return py::object(murray);
 }
+#endif
+
+#if BOOST_VERSION>106300
+//try parallel here!!!
+static py::object get_Murray2_p(const py::object &vess_grp_obj)
+{
+  //double alpha = py::extract<double>(murrayalpha);
+  h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
+  std::auto_ptr<VesselList3d> vl;
+  vl = ReadVesselList3d(vesselgroup, make_ptree("filter", true));
+  int ncnt = vl.get()->GetNCount();
+
+  //venous
+  std::vector<double> radius_mother_v;
+  std::vector<double> radius_daughther1_v;
+  std::vector<double> radius_daughther2_v;
+  //arterial
+  std::vector<double> radius_mother_a;
+  std::vector<double> radius_daughther1_a;
+  std::vector<double> radius_daughther2_a;
+  
+  for(int i = 0;i<ncnt; ++i)
+  {
+    VesselNode* nd = vl.get()->GetNode(i);
+
+    if( nd->Count() == 3 ) //for the Y-intersections
+    {
+      std::vector<double> radii;
+      for(int k=0;k<3;++k)
+      {
+        radii.push_back(nd->GetEdge(k)->r);
+      }
+      std::sort (radii.begin(),radii.end());
+      if(nd->GetEdge(0)->IsArtery() and nd->GetEdge(1)->IsArtery() and nd->GetEdge(2)->IsArtery())
+      {
+        radius_mother_a.push_back(radii[2]);
+        radius_daughther1_a.push_back(radii[0]);
+        radius_daughther2_a.push_back(radii[1]);
+      }
+      if(nd->GetEdge(0)->IsVein() and nd->GetEdge(1)->IsVein() and nd->GetEdge(2)->IsVein())
+      {
+        radius_mother_v.push_back(radii[2]);
+        radius_daughther1_v.push_back(radii[0]);
+        radius_daughther2_v.push_back(radii[1]);
+      }
+    }
+  }
+//   Py_ssize_t ndims[] = { 3, ncnt };
+//   np::arrayt<float>murray_v = np::zeros(2, ndims, np::getItemtype<float>());
+//   np::arrayt<float>murray_a = np::zeros(2, ndims, np::getItemtype<float>());
+  py::tuple murray_shape = py::make_tuple(3,ncnt);
+  np::ndarray murray_v = np::zeros(murray_shape,np::dtype::get_builtin<float>());
+  np::ndarray murray_a = np::zeros(murray_shape,np::dtype::get_builtin<float>());
+   
+  for(int i=0;i<radius_mother_v.size();++i)
+  {
+    murray_v[0][i] = radius_daughther1_v[i];
+    murray_v[1][i] = radius_daughther2_v[i];
+    murray_v[2][i] = radius_mother_v[i];
+  }
+  for(int i=0;i<radius_mother_a.size();++i)
+  {
+    murray_a[0][i] = radius_daughther1_a[i];
+    murray_a[1][i] = radius_daughther2_a[i];
+    murray_a[2][i] = radius_mother_a[i];
+  }
+  return py::make_tuple(py::object(murray_v),py::object(murray_a));
+}
+#else
 //try parallel here!!!
 static py::object get_Murray2_p(const py::object &vess_grp_obj)
 {
@@ -586,13 +671,15 @@ static py::object get_Murray2_p(const py::object &vess_grp_obj)
   }
   return py::make_tuple(py::object(murray_v),py::object(murray_a));
 }
+#endif
 
-}
-
+}//namespace murray
 void export_get_Murray()
 {
   //py::def("get_Murray", murray::get_Murray);
   //py::def("get_Murray2", murray::get_Murray2);
+  
+  //these 2 were used
   py::def("get_Murray2", murray::get_Murray2_p);
-  py::def("get_Murray_scale", murray::get_Murray_scale);
+//   py::def("get_Murray_scale", murray::get_Murray_scale);
 }

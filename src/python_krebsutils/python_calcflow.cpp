@@ -32,6 +32,7 @@ namespace py = boost::python;
 namespace np = boost::python::numpy;
 namespace h5 = h5cpp;
 
+#if BOOST_VERSION>106300
 py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_flags, const py::object &py_bfparams, bool simple, bool storeCalculationInHDF)
 {
   FpExceptionStateGuard exception_state_guard(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
@@ -63,10 +64,88 @@ py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_f
       WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
     }
   }
+
+
+  py::tuple shape = py::make_tuple(1,num_edges);
+  np::dtype dtype = np::dtype::get_builtin<double>();
+  np::ndarray pya_flow = np::empty(shape, dtype);
+  np::ndarray pya_force = np::empty(shape, dtype);
+  np::ndarray pya_press = np::empty(shape, dtype);
+
+  for (int i=0; i<num_edges; ++i)
+  {
+    const Vessel* v = vl->GetEdge(i);
+    pya_flow[i] = v->q;
+    pya_force[i] = v->f;
+  }
+  for (int i=0; i<num_nodes; ++i)
+  {
+    pya_press[i] = vl->GetNode(i)->press;
+  }
+  py::list l;
+  l.append(pya_press);
+  l.append(pya_flow);
+  l.append(pya_force);
+  if (!simple)
+  {
+    np::ndarray pya_hema = np::empty(shape, dtype);
+    for (int i=0; i<num_edges; ++i)
+    {
+      const Vessel* v = vl->GetEdge(i);
+      pya_hema[i] = v->hematocrit;
+    }
+    l.append(pya_hema);
+  }
+  if (return_flags)
+  {
+    np::ndarray pya_flags = np::empty(shape, np::dtype::get_builtin<uint>());
+    for (int i=0; i<num_edges; ++i)
+    {
+      const Vessel* v = vl->GetEdge(i);
+      pya_flags[i] = v->flags;
+    }
+    l.append(pya_flags);
+  }
   
+  return l;
+}
+#else
+py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_flags, const py::object &py_bfparams, bool simple, bool storeCalculationInHDF)
+{
+  FpExceptionStateGuard exception_state_guard(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+  
+  const BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
+
+  h5::Group g_vess = PythonToCppGroup(vess_grp_obj);
+  
+  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
+
+  Py_ssize_t num_nodes = vl->GetNCount();
+  Py_ssize_t num_edges = vl->GetECount();
+
+  //for some reasons this was needed before calcflow,
+  //however for secomb2hdf.py this is bad.
+  //ComputeCirculatedComponents(vl.get());
+//   if (simple)
+//     CalcFlowSimple(*vl, bfparams, true);
+//   else
+  CalcFlow(*vl, bfparams);
+  
+  if( storeCalculationInHDF )
+  {
+    if( not g_vess.exists("recomputed") )
+    {
+      h5::Group grp_temp;
+      grp_temp = g_vess.create_group("recomputed");
+      ptree getEverytingPossible = make_ptree("w_adaption", false);
+      WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
+    }
+  }
+
   np::arrayt<double> pya_flow(np::empty(1, &num_edges, np::getItemtype<double>()));
   np::arrayt<double> pya_force(np::empty(1, &num_edges, np::getItemtype<double>()));
   np::arrayt<double> pya_press(np::empty(1, &num_nodes, np::getItemtype<double>()));
+
   for (int i=0; i<num_edges; ++i)
   {
     const Vessel* v = vl->GetEdge(i);
@@ -104,7 +183,7 @@ py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_f
   
   return l;
 }
-
+#endif
 
 struct BloodFlowParamsFromPy
 {
@@ -175,7 +254,29 @@ static FlReal PyCalcRelViscosity( FlReal r, FlReal h, string rheologyStr)
 }
 
 
-
+#if BOOST_VERSION>106300
+static py::object PyCalcViscosities(np::ndarray pyRad, np::ndarray pyHema, const BloodFlowParameters &bloodFlowParameters)
+{
+  CheckArray1(FlReal, pyRad, 0); // do not check dimension 
+  //np::arrayt<FlReal> rad(pyRad);
+  const int ecnt = pyRad.get_shape()[0];
+  CheckArray1(FlReal, pyHema, ecnt); // same shape as pyHema
+  //np::arrayt<FlReal> hema(pyHema);
+  // output
+  np::ndarray visc = np::empty(py::tuple(pyRad.get_shape()), np::dtype::get_builtin<FlReal>());
+  
+  // WARNING: this need cleaning up because it is copy pasted from CalcViscosities
+  #pragma omp parallel for
+  for(int i=0; i<ecnt; ++i)
+  {
+    float x = bloodFlowParameters.viscosityPlasma;
+    x *= CalcRelViscosity(py::extract<FlReal>(pyRad[i]), py::extract<FlReal>(pyHema[i]), bloodFlowParameters.rheology);
+    myAssert(x > 0. && std::isfinite(x));
+    visc[i] = x;
+  }
+  return visc;
+}
+#else
 static py::object PyCalcViscosities(np::ndarray pyRad, np::ndarray pyHema, const BloodFlowParameters &bloodFlowParameters)
 {
   CheckArray1(FlReal, pyRad, 0); // do not check dimension 
@@ -197,7 +298,33 @@ static py::object PyCalcViscosities(np::ndarray pyRad, np::ndarray pyHema, const
   }
   return visc.getObject();
 }
+#endif
 
+
+#if BOOST_VERSION>106300
+static py::object PyCalcConductivities(np::ndarray pyRad, np::ndarray pyLen, np::ndarray pyVisc)
+{
+  CheckArray1(FlReal, pyRad, 0); // do not check dimension 
+  //np::arrayt<FlReal> rad(pyRad);
+  const int ecnt = pyRad.get_shape()[0];
+  CheckArray1(FlReal, pyLen, ecnt);
+  CheckArray1(FlReal, pyVisc, ecnt);
+  //np::arrayt<FlReal> len(pyLen);
+  //np::arrayt<FlReal> visc(pyVisc);
+  // output
+  //np::arrayt<FlReal> cond(np::empty(1, rad.shape(), np::getItemtype<FlReal>()));
+  np::ndarray cond = np::empty(py::tuple(pyRad.get_shape()), np::dtype::get_builtin<FlReal>());
+  // WARNING: this need cleaning up because it is copy pasted from CalcConductivities
+  #pragma omp parallel for
+  for(int i=0; i<ecnt; ++i)
+  {
+    FlReal coeff = CalcFlowCoeff(py::extract<FlReal>(pyVisc[i]),py::extract<FlReal>(pyRad[i]),py::extract<FlReal>(pyLen[i]));
+    myAssert(coeff > 0. && std::isfinite(coeff));
+    cond[i] = coeff;
+  }
+  return cond;
+}
+#else
 static py::object PyCalcConductivities(np::ndarray pyRad, np::ndarray pyLen, np::ndarray pyVisc)
 {
   CheckArray1(FlReal, pyRad, 0); // do not check dimension 
@@ -220,7 +347,7 @@ static py::object PyCalcConductivities(np::ndarray pyRad, np::ndarray pyLen, np:
   }
   return cond.getObject();
 }
-
+#endif
 
 
 void export_calcflow()

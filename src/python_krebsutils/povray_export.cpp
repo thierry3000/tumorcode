@@ -175,7 +175,92 @@ CP clipper_factory(const py::tuple &py_clip_data)
   return cp;
 }
 
+#if BOOST_VERSION>106300
+void export_network_for_povray(const np::ndarray edges,
+                               const np::ndarray pos,
+                               const np::ndarray rad,
+                               const py::object &py_styler,
+                               const py::object &py_clip_styler,
+                               const py::tuple &py_clip_data,
+                               const std::string filename)
+{
+  int num_edges = edges.get_shape()[0];
+  int num_nodes = pos.get_shape()[0];
 
+  std::vector<float> noderad(num_nodes);
+  for (int i=0; i<num_edges; ++i)
+  {
+//     noderad[edges[i,0]] = std::max(noderad[(int)edges[i,0]], rad[i]);
+//     noderad[edges[i,1]] = std::max(noderad[edges[i,1]], rad[i]);
+//     int index_noderad_a = py::extract<int const>(edges[i,0]);
+//     noderad[index_noderad_a] = std::max(noderad[edges[index_noderad_a,0]], rad[i]);
+//     noderad[edges[i]] = std::max(noderad[edges[i]], rad[i]);
+    int a = py::extract<int>(edges[i][0]);
+    int b = py::extract<int>(edges[i][1]);
+    double radius = py::extract<float>(rad[i]);
+    noderad[a] = std::fmax(noderad[a], radius);
+    noderad[b] = std::fmax(noderad[b], radius);
+  }
+
+  CP cp = clipper_factory(py_clip_data);
+
+  std::ofstream os(filename.c_str());
+
+  for (int i=0; i<num_edges; ++i)
+  {
+    int a = py::extract<int>(edges[i][0]);
+    int b = py::extract<int>(edges[i][1]);
+    float pos_a_0 = py::extract<float>(edges[a][0]);
+    float pos_a_1 = py::extract<float>(edges[a][1]);
+    float pos_a_2 = py::extract<float>(edges[a][2]);
+    Float3 pa(pos_a_0,pos_a_1,pos_a_2);
+    float pos_b_0 = py::extract<float>(edges[b][0]);
+    float pos_b_1 = py::extract<float>(edges[b][1]);
+    float pos_b_2 = py::extract<float>(edges[b][2]);
+    Float3 pb(pos_b_0,pos_b_1,pos_b_2);
+
+    double radius = py::extract<float>(rad[i]);
+    int intersect = cp ? cp->clipCylinder(pa, pb, radius) : CLIP_NONE;
+    if (intersect == CLIP_FULL) continue;
+
+    string stylestr = py::extract<string>(py_styler.attr("edge_style")(i, a, b));
+    string objstr = str(format("cylinder {\n<%f,%f,%f>, <%f,%f,%f>, %f\n%s}\n") %
+                                pa[0] % pa[1] % pa[2] % pb[0] % pb[1] % pb[2] % rad(i) % stylestr);
+    if (intersect == CLIP_PARTIAL)
+    {
+      string clip_stylestr = py::extract<string>(py_clip_styler.attr("edge_style")(i, a, b));
+      string clip_str = cp->asPovRayObject(clip_stylestr);
+      objstr = str(format("intersection {\n %s %s}\n") % clip_str % objstr);
+    }
+
+    os << objstr;
+  }
+
+  for (int i=0; i<num_nodes; ++i)
+  {
+    //Float3 p(pos(i,0),pos(i,1),pos(i,2));
+    Float3 p(
+      py::extract<float>(pos[i][0]),
+             py::extract<float>(pos[i][1]),
+             py::extract<float>(pos[i][2]));
+
+    int intersect = cp ? cp->clipSphere(p, noderad[i]) : CLIP_NONE;
+    if (intersect == CLIP_FULL) continue;
+
+    string stylestr = py::extract<string>(py_styler.attr("node_style")(i));
+    string objstr = str(format("sphere {\n<%f,%f,%f>, %f\n%s}\n") %
+                                p[0] % p[1] % p[2] % noderad[i] % stylestr);
+    if (intersect == CLIP_PARTIAL)
+    {
+      string clip_stylestr = py::extract<string>(py_clip_styler.attr("node_style")(i));
+      string clip_str = cp->asPovRayObject(clip_stylestr);
+      objstr = str(format("intersection {\n %s %s}\n") % clip_str % objstr);
+    }
+
+    os << objstr;
+  }
+}
+#else
 void export_network_for_povray(const np::arrayt<int> edges,
                                const np::arrayt<float> pos,
                                const np::arrayt<float> rad,
@@ -241,7 +326,7 @@ void export_network_for_povray(const np::arrayt<int> edges,
     os << objstr;
   }
 }
-
+#endif
 
 py::object pv_clip_object_str(const py::tuple &py_clip_data, const py::object &py_clip_styler)
 {

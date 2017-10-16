@@ -200,10 +200,10 @@ struct FakeTumorSimMTS : public boost::noncopyable
   
   //milotti mts
 #ifndef undo
-  CellsSystem currentCellsSystem;
+  vbl::CellsSystem currentCellsSystem;
   void doMilottiStep();
-  void WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group);
-  void WriteCellsSystemHDF_with_nearest_vessel_index(CellsSystem &currentCellsSystem, ANNkd_tree *kd_tree_of_vl, h5cpp::Group &out_cell_group);
+  void WriteCellsSystemHDF(vbl::CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group);
+  void WriteCellsSystemHDF_with_nearest_vessel_index(vbl::CellsSystem &currentCellsSystem, ANNkd_tree *kd_tree_of_vl, h5cpp::Group &out_cell_group);
   void fillKdTreeFromVl();
   float estimateTumorRadiusFromCells();
 #endif

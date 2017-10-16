@@ -811,7 +811,8 @@ void runSimpleSteppersTest(const std::string &fn_out)
 }
 
 
-
+#if BOOST_VERSION>106300
+#else
 py::object calcCurvature(const py::object py_ld, np::arrayt<float> py_phi, bool has_ghost_boundary, bool return_stf)
 {
   int dim = py_phi.rank();
@@ -855,8 +856,18 @@ py::object calcCurvature(const py::object py_ld, np::arrayt<float> py_phi, bool 
   }
   return py::make_tuple(py_res.getObject(), acc_stf.getObject());
 }
+#endif
 
-
+#if BOOST_VERSION>106300
+void fill_with_smooth_delta(np::ndarray py_arr, float width)
+{
+//   np::arrayt<float> arr(py_arr);
+//   for (int i=0; i<arr.shape()[0]; ++i)
+//   {
+//     arr(i) = my::smooth_delta_cos<float>(arr(i), width);
+//   }
+}
+#else
 void fill_with_smooth_delta(np::ndarray py_arr, float width)
 {
   np::arrayt<float> arr(py_arr);
@@ -865,7 +876,7 @@ void fill_with_smooth_delta(np::ndarray py_arr, float width)
     arr(i) = my::smooth_delta_cos<float>(arr(i), width);
   }
 }
-
+#endif
 
 
 
@@ -1219,7 +1230,7 @@ py::def("testEllipticSolver", EllipticSolverTest::testEllipticSolverPy);
   py::def("levelsetRedistancing", runTestRedistancing);
   py::def("zalesakDisk", zalezakDiskFunction);
   py::def("rotationalVelocityField", rotationalVelocityField);
-  py::def("calcCurvature", calcCurvature);
+//   py::def("calcCurvature", calcCurvature);
   py::def("fill_with_smooth_delta", fill_with_smooth_delta);
   py::def("convectionTest", ConvectionModelTests::runTest);
   py::def("convectionLevelset", LevelsetConvection::runLS);

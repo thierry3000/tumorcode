@@ -47,6 +47,95 @@ data - data associated with edges or nodes, depending on mode
 sample_len - average distance between samples. The samples are taken in regular intervals if this value is smaller than the length of vessels. Otherwise the sampling becomes random.
 mode - see Mode enum
 */
+#if BOOST_VERSION>106300
+template<class T>
+np::ndarray sample_edges(np::ndarray pos, np::ndarray edges, np::ndarray data, float sample_len, int mode)
+
+{
+  int cnt = edges.get_shape()[0];
+
+//   int ncomps = data.rank() > 1 ? pos.shape()[1] : 1;
+  int ncomps = data.get_nd() > 1 ? pos.get_shape()[1] : 1;
+  np::dtype dtype = data.get_dtype();
+  //int itemtype = data.itemtype();
+  T c[16][2];
+
+  DynArray<T> tmp(1024, ConsTags::RESERVE);
+
+  int num_total_samples = 0;
+  CylinderNetworkSampler sampler;
+  sampler.Init(sample_len, ptree());
+
+  for(int i=0; i<cnt; ++i)
+  {
+    Float3 p0, p1;
+    for (int j=0; j<3; ++j)
+    {
+      int a = py::extract<int>(edges[i][0]);
+      int b = py::extract<int>(edges[i][1]);
+//       p0[j] = pos(edges(i,0), j);
+//       p1[j] = pos(edges(i,1), j);
+      p0[j] = py::extract<float>(pos[a][j]);
+      p1[j] = py::extract<float>(pos[b][j]);
+    }
+
+    sampler.Set(p0, p1, 0.); // 3rd arg is the radius
+    int num_samples = sampler.GenerateLineSamples();
+
+    for (int k=0; k<ncomps; ++k)
+    {
+      if (mode&DATA_PER_NODE)
+      {
+        myAssert(mode&DATA_LINEAR);
+        int a = py::extract<int>(edges[i][0]);
+        int b = py::extract<int>(edges[i][1]);
+        c[k][0] = py::extract<T>(data[a][k]);
+        c[k][1] = py::extract<T>(data[b][k]);
+      }
+      else if (mode&DATA_LINEAR)
+      {
+        c[k][0] = py::extract<T>(data[i][k][ 0]);
+        c[k][1] = py::extract<T>(data[i][k][ 1]);
+      }
+      else
+      {
+        c[k][0] = py::extract<T>(data[i][k]);
+      }
+    }
+    for(int j=0; j<num_samples; ++j)
+    {
+      CylinderNetworkSampler::Sample ls = sampler.GetSample(j);
+      if(mode&DATA_LINEAR)
+      {
+        float f = ls.fpos[2];
+        for(int k=0; k<ncomps; ++k)
+        {
+          tmp.push_back((1.f-f)*c[k][0] + f*c[k][1]);
+        }
+      }
+      else if(mode&DATA_CONST)
+      {
+        for(int k=0; k<ncomps; ++k) {
+          tmp.push_back(c[k][0]);
+        }
+      }
+    }
+    num_total_samples += num_samples;
+  }
+
+  //np::arrayt<T> acc_res(np::empty(2, Int2(num_total_samples, ncomps).cast<Py_ssize_t>().eval().data(), itemtype));
+  py::tuple shape = py::make_tuple(2,num_total_samples, ncomps);
+  np::ndarray acc_res = np::empty(shape, dtype);
+  for(int i=0, k=0; i<num_total_samples; ++i)
+  {
+    for(int j=0; j<ncomps; ++j,++k)
+    {
+      acc_res[i][j] = tmp[k];
+    }
+  }
+  return acc_res;
+}
+#else
 template<class T>
 np::arraytbase sample_edges(np::arrayt<float> pos, np::arrayt<int> edges, np::arrayt<T> data, float sample_len, int mode)
 
@@ -124,8 +213,53 @@ np::arraytbase sample_edges(np::arrayt<float> pos, np::arrayt<int> edges, np::ar
   }
   return acc_res;
 }
+#endif
 
+#if BOOST_VERSION>106300
+py::object sample_edges_weights(np::ndarray pypos, np::ndarray pyedges, float sample_len)
+{
+  //np::arrayt<float> pos(pypos);
+  //np::arrayt<int> edges(pyedges);
+  int cnt = pyedges.get_shape()[0];
 
+  DynArray<float> tmp(1024, ConsTags::RESERVE);
+
+  CylinderNetworkSampler sampler;
+  //set sample length
+  sampler.Init(sample_len, ptree());
+
+  for(int i=0; i<cnt; ++i)
+  {
+    //read start and end point of vessel segment in 3 dimensions
+    Float3 p0, p1;
+    int a = py::extract<int>(pyedges[i][0]);
+    int b = py::extract<int>(pyedges[i][1]);
+    for (int j=0; j<3; ++j)
+    {
+      p0[j] = py::extract<float>(pypos[a][j]);
+      p1[j] = py::extract<float>(pypos[b][j]);
+//       p0[j] = pos(edges(i,0), j);
+//       p1[j] = pos(edges(i,1), j);
+    }
+    //set start and end point on the sampler
+    sampler.Set(p0, p1, 0.); // 3rd arg is the radius
+    //generate intermediate sample points
+    int num_samples = sampler.GenerateLineSamples();
+    //for all sample points on the cylinder, 
+    //store the weight to tmp which will be writen back to python
+    for (int j=0; j<num_samples; ++j)
+    {
+      tmp.push_back(sampler.weight);
+    }
+  }
+  //np::arrayt<float> acc_res(np::empty(1, &tmp.size(), np::getItemtype<float>()));
+  int strides[] = { 1 };
+  int dims[] = { (int)tmp.size() };
+  //return np::copy<float,1>(dims, get_ptr(tmp), strides);
+  py::object own;
+  //return np::from_data(tmp,np::dtype::get_builtin<float>(),py::make_tuple(tmp.size()), py::make_tuple(sizeof(float)),own);
+}
+#else
 py::object sample_edges_weights(np::ndarray pypos, np::ndarray pyedges, float sample_len)
 {
   np::arrayt<float> pos(pypos);
@@ -163,9 +297,62 @@ py::object sample_edges_weights(np::ndarray pypos, np::ndarray pyedges, float sa
   int dims[] = { (int)tmp.size() };
   return np::copy<float,1>(dims, get_ptr(tmp), strides);
 }
+#endif
 
+#if BOOST_VERSION>106300
+template<class T>
+np::ndarray sample_field(const np::ndarray py_pos, const np::ndarray field, const py::object &py_ld, bool linear_interpolation, bool use_extrapolation_value, const T extrapolation_value)
+{
+  /*
+   * sample values from a grid, where the sample locations are given by the py_pos n x 3 array
+    */
+  //np::arrayt<float> pos(py_pos);
 
+//   FieldInterpolator<T> interpolate;
+//   if (use_extrapolation_value)
+//     interpolate.init(CONT_CONST, make_ptree("value", extrapolation_value));
+//   else
+//     interpolate.init(CONT_EXTRAPOLATE);
 
+//   Py_ssize_t num_samples = pos.shape()[0];
+//   np::arrayt<T> res = np::zeros(1, &num_samples, np::getItemtype<T>());
+  Py_ssize_t num_samples = py_pos.get_shape()[0];
+  np::ndarray res = np::zeros(py::make_tuple(1,num_samples),np::dtype::get_builtin<T>());
+
+  LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ld);
+
+  //Array3d<T> arr3d = Array3dFromPy<T>(const_cast<np::arrayt<T>&>(field));
+  Array3d<T> arr3d = Array3dFromPy<T>(field);
+  arr3d.move(ld.Box().min);
+
+  auto interpolate = [&](const Float3 &p) -> T
+  {
+    if (use_extrapolation_value)
+    {
+      if (linear_interpolation)
+        return FieldInterpolate::ValueAveraged(arr3d, ld, FieldInterpolate::Const<T>(extrapolation_value), p);
+      else
+        return FieldInterpolate::Value(arr3d, ld, FieldInterpolate::Const<T>(extrapolation_value), ld.WorldToLattice(p));
+    }
+    else
+    {
+      if (linear_interpolation)
+        return FieldInterpolate::ValueAveraged(arr3d, ld, FieldInterpolate::Extrapolate(), p);
+      else
+        return FieldInterpolate::Value(arr3d, ld, FieldInterpolate::Extrapolate(), ld.WorldToLattice(p));
+    }
+  };
+  
+  for (int i=0; i<num_samples; ++i)
+  {
+    Float3 p(py::extract<float>(py_pos[i][0]),py::extract<float>(py_pos[i][1]),py::extract<float>(py_pos[i][2]));
+    T r = interpolate(p);
+    res[i] = r;
+  }
+
+  return res;
+}
+#else
 template<class T>
 np::arraytbase sample_field(const np::ndarray py_pos, const np::arrayt<T> field, const py::object &py_ld, bool linear_interpolation, bool use_extrapolation_value, const T extrapolation_value)
 {
@@ -216,8 +403,32 @@ np::arraytbase sample_field(const np::ndarray py_pos, const np::arrayt<T> field,
 
   return res;
 }
+#endif
 
 
+#if BOOST_VERSION>106300
+np::ndarray make_position_field(const py::object &py_ldobj)
+{
+  /*
+   * this fills a 4d array with world coordinates of its grid points (or cell centers, depending on the configuration of the lattice data)
+   */
+  LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldobj);
+  const auto box = ld.Box();
+  Int3 size = Size(box);
+//   Py_ssize_t ndims[4] = { size[0], size[1], size[2], 3 };
+//   np::arrayt<float> res = np::zeros(4, ndims, np::getItemtype<float>());
+  py::tuple shape = py::make_tuple(size[0],size[1],size[2], 3);
+  np::ndarray res = np::zeros(shape,np::dtype::get_builtin<float>());
+  FOR_BBOX3(p, box)
+  {
+    Float3 w = ld.LatticeToWorld(p);
+    for (int i=0; i<3; ++i)
+//       res(p[0]-box.min[0], p[1]-box.min[1], p[2]-box.min[2], i) = w[i];
+      res[p[0]-box.min[0]][p[1]-box.min[1]][p[2]-box.min[2]][i] = w[i];
+  }
+  return res;
+}
+#else
 np::arraytbase make_position_field(const py::object &py_ldobj)
 {
   /*
@@ -236,10 +447,53 @@ np::arraytbase make_position_field(const py::object &py_ldobj)
   }
   return res;
 }
-
+#endif
 
 /**@brief Approximately fill a grid with how much of each voxel is occupied by vessels.
 */
+#if BOOST_VERSION>106300
+np::ndarray compute_vessel_volume_fraction_field(np::ndarray pos, np::ndarray edges, np::ndarray radius, const py::object &py_ldfield, int samples_per_cell)
+{
+  LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldfield);
+
+  int cnt = edges.get_shape()[0];
+
+  Array3d<float> tmp(ld.Box());
+
+  int num_total_samples = 0;
+  CylinderNetworkSampler sampler;
+  sampler.Init(ld.Scale(), make_ptree("samples_per_cell", samples_per_cell));
+
+  for(int i=0; i<cnt; ++i)
+  {
+    Float3 p0, p1;
+    int a = py::extract<int>(edges[i][0]);
+    int b = py::extract<int>(edges[i][1]);
+    for (int j=0; j<3; ++j)
+    {
+      p0[j] = py::extract<float>(pos[a][j]);
+      p1[j] = py::extract<float>(pos[b][j]);
+    }
+    sampler.Set(p0, p1, py::extract<float>(radius[i])); // 3rd arg is the radius
+    int num_samples = sampler.GenerateVolumeSamples();
+    for (int k=0; k<num_samples; ++k)
+    {
+      AddSmoothDelta(tmp, ld.Box(), ld, 3, sampler.GetSample(k).wpos, sampler.weight_per_volume);
+    }
+    //cout << sampler.GetSample(0).wpos << endl;
+  }
+  np::dtype dtype = np::dtype::get_builtin<float>();
+  py::tuple shape = py::tuple(Cast<Py_ssize_t>(::Size(ld.Box())));
+  np::ndarray res = np::zeros(shape, dtype);
+  //np::arrayt<float> res = np::zeros(3, Cast<Py_ssize_t>(::Size(ld.Box())).data(), np::getItemtype<float>());
+  FOR_BBOX3(p, ld.Box())
+  {
+    res[p[0]][p[1]][p[2]] = std::min<float>(1., tmp(p));
+  }
+
+  return res;
+}
+#else
 np::arraytbase compute_vessel_volume_fraction_field(np::arrayt<float> pos, np::arrayt<int> edges, np::arrayt<float> radius, const py::object &py_ldfield, int samples_per_cell)
 {
   LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldfield);
@@ -277,10 +531,95 @@ np::arraytbase compute_vessel_volume_fraction_field(np::arrayt<float> pos, np::a
 
   return res;
 }
+#endif
 
+/** @brief 
+ * Used to determine the Fractal Dimension of the network. (Or more correctly the box counting dimension.)
+ */
+#if BOOST_VERSION>106300
+double compute_vessel_boxcounts(np::ndarray pypos, np::ndarray pyedges, np::ndarray pyradius, const py::object &py_ldfield, double volume_scaling, double volume_threshold)
+{
+  LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldfield);
 
-/**@brief Used to determine the Fractal Dimension of the network. (Or more correctly the box counting dimension.)
-*/
+//   np::arrayt<float> pos(pypos);
+//   np::arrayt<int> edges(pyedges);
+//   np::arrayt<float> radius(pyradius);
+  int cnt = pyedges.get_shape()[0];
+
+  // first sort vessels into boxes
+  DynArray<BBox3> boxes = MakeMtBoxGridLarge(ld.Box(), 160);
+  DynArray<DynArray<int> > vesselgrid(boxes.size());
+  
+  DynArray<FloatBBox3> wboxes(boxes.size());
+  for (int i=0; i<boxes.size(); ++i)
+  {
+    BBox3 bb = boxes[i];
+    wboxes[i] = FloatBBox3(ld.LatticeToWorld(bb.min) - Float3(0.5*ld.Scale()),
+                           ld.LatticeToWorld(bb.max) + Float3(0.5*ld.Scale()));
+  }
+
+  for (int vi=0; vi<cnt; ++vi)
+  {
+    Float3 wp[2];
+    for (int dim=0; dim<3; ++dim)
+      for (int i=0; i<2; ++i)
+        wp[i][dim] = py::extract<float>(pypos[py::extract<int>(pyedges[vi][i])][ dim]);
+    
+    FloatBBox3 vwbb = FloatBBox3().Add(wp[0]).Add(wp[1]);
+    vwbb.Extend(py::extract<float>(pyradius[vi]));
+    for (int i=0; i<boxes.size(); ++i)
+    {
+      if (!(vwbb.Overlaps(wboxes[i]))) continue;
+      vesselgrid[i].push_back(vi);
+    }
+  }
+
+  int64 boxcount = 0;
+  #pragma omp parallel
+  {
+    CylinderNetworkSampler sampler;
+    sampler.Init(ld.Scale(), make_ptree("samples_per_cell", 10));
+    Array3d<float> buffer;
+    my::Time t_;
+
+    #pragma omp for nowait schedule(dynamic, 1) reduction(+:boxcount)
+    for (int ibox=0; ibox<boxes.size(); ++ibox)
+    {
+      t_ = my::Time();
+      int box_num_samples = 0;
+      buffer.initFromBox(boxes[ibox]);
+      for(int vi=0; vi<vesselgrid[ibox].size(); ++vi)
+      {
+        int i = vesselgrid[ibox][vi];
+        Float3 p0, p1;
+        for (int j=0; j<3; ++j)
+        {
+          int a = py::extract<int>(pyedges[i][0]);
+          int b = py::extract<int>(pyedges[i][1]);
+          p0[j] = py::extract<float>(pypos[a][j]);
+          p1[j] = py::extract<float>(pypos[b][j]);
+//           p0[j] = pos(edges(i,0), j);
+//           p1[j] = pos(edges(i,1), j);
+        }
+        sampler.Set(p0, p1, py::extract<float>(pyradius[i]));
+        int num_samples = sampler.GenerateVolumeSamples();
+        for (int k=0; k<num_samples; ++k)
+        {
+          AddSmoothDelta(buffer, boxes[ibox], ld, 3, sampler.GetSample(k).wpos, sampler.weight_per_volume);
+        }
+        box_num_samples += num_samples;
+      }      
+      FOR_BBOX3(p, boxes[ibox])
+      {
+        if (buffer(p)*volume_scaling > volume_threshold) {
+          ++boxcount;
+        }
+      }
+    }
+  }
+  return boxcount;
+}
+#else
 double compute_vessel_boxcounts(np::ndarray pypos, np::ndarray pyedges, np::ndarray pyradius, const py::object &py_ldfield, double volume_scaling, double volume_threshold)
 {
   LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldfield);
@@ -371,7 +710,10 @@ double compute_vessel_boxcounts(np::ndarray pypos, np::ndarray pyedges, np::ndar
   }
   return boxcount;
 }
+#endif
 
+#if BOOST_VERSION>106300
+#else
 py::object calculate_within_fake_tumor_lattice_based(const py::str &property_name, py::object &ld_grp_obj, const py::object &vess_grp_obj, const py::object &tumor_range, const bool av)
 {
   std::string property = py::extract<std::string>(property_name);
@@ -587,12 +929,14 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
   }
   return ret;
 }
+#endif
 /* 
  * returns an 3xn array with BranchDat to python
  * there this could be use to easily create histograms
  * TODO make this function also work on world coordinates?
  */
-/*
+#if BOOST_VERSION>106300
+#else
 py::object calculate_lengths_lattice_based(const py::object &ld_grp_obj, const py::object &vess_grp_obj, const py::object &tumor_range)
 { 
   FpExceptionStateGuard exception_state_guard(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
@@ -658,7 +1002,10 @@ py::object calculate_lengths_lattice_based(const py::object &ld_grp_obj, const p
 //   return abc;
   
 }
+#endif
 
+#if BOOST_VERSION>106300
+#else
 py::object get_radii_within_fake_tumor(const py::object &ld_grp_obj, const py::object &vess_grp_obj, const py::object &tumor_range)
 { 
   FpExceptionStateGuard exception_state_guard(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
@@ -727,13 +1074,9 @@ py::object get_radii_within_fake_tumor(const py::object &ld_grp_obj, const py::o
   ret.append(py_radii_in);
   ret.append(py_radii_out);
   return ret;
-  
-  
-//   py::list abc(lengths);
-//   return abc;
-  
 }
-*/
+#endif
+
 void export_samplevessels()
 {
 //   py::def("export_network_for_povray", export_network_for_povray);
@@ -756,11 +1099,16 @@ void export_samplevessels()
   DEFINE_sample_field_t(double)
   py::def("sample_edges_weights", sample_edges_weights);
   py::def("make_position_field", make_position_field);
+#if BOOST_VERSION>106300
   py::def("make_vessel_volume_fraction_field", compute_vessel_volume_fraction_field);
   py::def("calc_vessel_boxcounts", compute_vessel_boxcounts);
-//  py::def("calculate_lengths_lattice_based", calculate_lengths_lattice_based);
-//  py::def("get_radii_within_fake_tumor", get_radii_within_fake_tumor);
+#else
+  py::def("make_vessel_volume_fraction_field", compute_vessel_volume_fraction_field);
+  py::def("calc_vessel_boxcounts", compute_vessel_boxcounts);
+  py::def("calculate_lengths_lattice_based", calculate_lengths_lattice_based);
+  py::def("get_radii_within_fake_tumor", get_radii_within_fake_tumor);
   py::def("calculate_within_fake_tumor_lattice_based", calculate_within_fake_tumor_lattice_based);
+#endif
 }
 
 

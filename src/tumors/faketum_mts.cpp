@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #ifdef USE_DETAILED_O2
-void update_milotti_vessels(CellsSystem &currentCellSys, VesselList3d &vl, DetailedPO2::VesselPO2Storage &po2Store)
+void update_milotti_vessels(vbl::CellsSystem &currentCellSys, VesselList3d &vl, DetailedPO2::VesselPO2Storage &po2Store)
 {
   int ecnt = vl.GetECount();
   
@@ -106,7 +106,7 @@ void update_milotti_vessels(CellsSystem &currentCellSys, VesselList3d &vl, Detai
     }
     */
   //create new entry
-  BloodVessel suggestion;
+  vbl::BloodVessel suggestion;
   Float3 buffer;
   vector<double> bufferToFill;
   
@@ -154,7 +154,7 @@ void update_milotti_vessels(CellsSystem &currentCellSys, VesselList3d &vl, Detai
 
       suggestion.SetBloodVesselAcL( 0. );
       
-      currentCellSys.Add_BloodVessel( suggestion );
+      currentCellSys.Add_BloodVessel_at( (uint) v->Index(), &suggestion );
     }//end if circulated
   }  
 }
@@ -289,7 +289,7 @@ void update_milotti_vessels(CellsSystem &currentCellSys, VesselList3d &vl)
 }
 #endif
 
-void initMilotti(CellsSystem &currentCellsSystem)
+void initMilotti(vbl::CellsSystem &currentCellsSystem)
 //void initMilotti(CellsSystem &currentCellsSystem, VesselList3d &vl, DetailedPO2::VesselPO2Storage &po2Store)
 {
     /**   INIT Milotti   */
@@ -1082,7 +1082,7 @@ void FakeTumMTS::FakeTumorSimMTS::insertGlucoseCoefficients(int box_index, const
   }
 }
 
-void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(CellsSystem &currentCellsSystem, ANNkd_tree *kd_tree_of_vl, h5cpp::Group &out_cell_group)
+void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(vbl::CellsSystem &currentCellsSystem, ANNkd_tree *kd_tree_of_vl, h5cpp::Group &out_cell_group)
 {
   cout<< "going to write cells to a hdf file" << endl;
   int numberOfCells = currentCellsSystem.Get_ncells();
@@ -1165,7 +1165,7 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   cout<< "finished writting cells to hdf" << endl;
 }
 
-void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF(CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group)
+void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF(vbl::CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group)
 {
   cout<< "going to write cells to a hdf file" << endl;
   int numberOfCells = currentCellsSystem.Get_ncells();

@@ -13,12 +13,12 @@ namespace po = boost::program_options;
 using namespace std;
 
 
-void wrap_vessels_witho2(VesselList3d &vl, std::vector<BloodVessel> &bloodVesselVector, DynArray<float> &a)
+void wrap_vessels_witho2(VesselList3d &vl, std::vector<vbl::BloodVessel> &bloodVesselVector, DynArray<float> &a)
 {
   int ecnt = vl.GetECount();
   
   //create new entry
-  BloodVessel suggestion;
+  vbl::BloodVessel suggestion;
   Float3 buffer;
   vector<double> bufferToFill;
   
@@ -44,7 +44,7 @@ void wrap_vessels_witho2(VesselList3d &vl, std::vector<BloodVessel> &bloodVessel
   }
   
 }
-void wrap_vessels(VesselList3d &vl, std::vector<BloodVessel> &bloodVesselVector)
+void wrap_vessels(VesselList3d &vl, std::vector<vbl::BloodVessel> &bloodVesselVector)
 {
   int ecnt = vl.GetECount();
   
@@ -128,7 +128,7 @@ void wrap_vessels(VesselList3d &vl, std::vector<BloodVessel> &bloodVesselVector)
     }
     */
   //create new entry
-  BloodVessel suggestion;
+  vbl::BloodVessel suggestion;
   Float3 buffer;
   vector<double> bufferToFill;
   
@@ -202,7 +202,7 @@ int main(int argc, char* argv[])
 
   std::auto_ptr<VesselList3d> vl;
   DynArray<float> a;
-  std::vector<BloodVessel> milottiVesselList;
+  std::vector<vbl::BloodVessel> milottiVesselList;
   boost::property_tree::ptree pt;
   if( !withO2 )
   {
