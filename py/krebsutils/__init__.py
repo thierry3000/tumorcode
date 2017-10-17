@@ -122,7 +122,7 @@ fill_with_smooth_delta_ = libkrebs.fill_with_smooth_delta
     outside
       arteries veins
 '''
-calculate_within_fake_tumor_lattice_based = libkrebs.calculate_within_fake_tumor_lattice_based
+#calculate_within_fake_tumor_lattice_based = libkrebs.calculate_within_fake_tumor_lattice_based
 
 #globals
 typelist = 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split()

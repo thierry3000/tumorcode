@@ -66,7 +66,7 @@ py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_f
   }
 
 
-  py::tuple shape = py::make_tuple(1,num_edges);
+  py::tuple shape = py::make_tuple(num_edges);
   np::dtype dtype = np::dtype::get_builtin<double>();
   np::ndarray pya_flow = np::empty(shape, dtype);
   np::ndarray pya_force = np::empty(shape, dtype);
@@ -98,11 +98,11 @@ py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_f
   }
   if (return_flags)
   {
-    np::ndarray pya_flags = np::empty(shape, np::dtype::get_builtin<uint>());
+    np::ndarray pya_flags = np::empty(shape, np::dtype::get_builtin<int>());
     for (int i=0; i<num_edges; ++i)
     {
       const Vessel* v = vl->GetEdge(i);
-      pya_flags[i] = v->flags;
+      pya_flags[i] = (int) v->flags;
     }
     l.append(pya_flags);
   }

@@ -39,7 +39,8 @@ include_directories($ENV{SPACK_TRANSITIVE_INCLUDE_PATH})
 ### adapted from:
 #   https://crascit.com/2015/07/25/cmake-gtest/
 # Download and unpack numpycpp at configure time
-if(Boost_VERSION GREATER_EQUAL 106500)
+find_package(Boost REQUIRED)
+if(Boost_VERSION GREATER 106500)
   message("no numpy cpp!!!")
 else()
   configure_file(externalProjects/numpycpp/CMakeLists.txt.in externalProjects/numpycpp/CMakeLists.txt)
@@ -158,8 +159,10 @@ find_package(Boost REQUIRED COMPONENTS "thread")
 set(myLibs "${myLibs};${Boost_THREAD_LIBRARY}")
 find_package(Boost REQUIRED COMPONENTS "filesystem")
 set(myLibs "${myLibs};${Boost_FILESYSTEM_LIBRARY}")
-find_package(Boost REQUIRED COMPONENTS "numpy")
-set(myLibs "${myLibs};${Boost_NUMPY_LIBRARY}")
+if(Boost_VERSION GREATER 106500)
+  find_package(Boost REQUIRED COMPONENTS "numpy")
+  set(myLibs "${myLibs};${Boost_NUMPY_LIBRARY}")
+endif()
 
 
 #note there are system without eigen, so let the configure fail here
@@ -285,7 +288,7 @@ include_directories(${ADDITIONAL_INCLUDE_DIRS})
 link_directories(${ADDITIONAL_LIBRARY_DIRS})
 include_directories("src/")
 
-if(Boost_VERSION GREATER_EQUAL 106500)
+if(Boost_VERSION GREATER 106500)
 set(myLibs
   ${myLibs} #maybe something is already there
   common  # part of this software

@@ -540,6 +540,58 @@ py::object diff_field(np::arrayt<T> py_field, int axis, double prefactor)
 
 
 #if BOOST_VERSION>106300
+py::object SumIsoSurfaceIntersectionWithVessels(float level, np::ndarray py_edgelist, np::ndarray py_pressure, np::ndarray py_flags, np::ndarray py_nodalLevel, np::ndarray py_datavalue)
+{
+//   np::arrayt<int> edges(py_edgelist);
+//   np::arrayt<float> pressure(py_pressure);
+//   np::arrayt<int> flags(py_flags);
+//   np::arrayt<float> nodalLevel(py_nodalLevel);
+//   np::arrayt<double> dataValue(py_datavalue);
+  
+  double dataSumIn = 0., dataSumOut = 0.;
+  int nVessels = py_edgelist.get_shape()[0];
+  float nodealLevel_a=0.0;
+  float nodealLevel_b=0.0;
+  float pressure_a=0.0;
+  float pressure_b=0.0;
+  double dataValue = 0.0;
+  int flag_i=0;
+  for (int i=0; i<nVessels; ++i)
+  {
+    int a = py::extract<int>(py_edgelist[i][0]);
+    int b = py::extract<int>(py_edgelist[i][0]);
+    flag_i = py::extract<int>(py_flags[i]);
+    if (!(flag_i & CIRCULATED)) continue;
+    nodealLevel_a = py::extract<float>(py_nodalLevel[a]);
+    nodealLevel_b = py::extract<float>(py_nodalLevel[b]);
+    dataValue = py::extract<double>(py_datavalue[i]);
+    pressure_a = py::extract<float>(py_pressure[a]);
+    pressure_b = py::extract<float>(py_pressure[b]);
+    if (nodealLevel_a<level && nodealLevel_b>level) //b is in the tumor
+    {
+      if (pressure_a<pressure_b)
+      {
+        dataSumOut += dataValue;
+      }
+      else
+      {
+        dataSumIn += dataValue;
+      }
+    }
+    else if(nodealLevel_a>level && nodealLevel_b<level) //: # a is in the tumor
+    {
+      if (pressure_a>pressure_b)
+      {
+        dataSumOut += dataValue;
+      }
+      else
+      {
+        dataSumIn += dataValue;
+      }
+    }
+  }
+  return py::make_tuple(dataSumIn, dataSumOut);
+}
 #else
 py::object SumIsoSurfaceIntersectionWithVessels(float level, np::ndarray py_edgelist, np::ndarray py_pressure, np::ndarray py_flags, np::ndarray py_nodalLevel, np::ndarray py_datavalue)
 {
@@ -770,7 +822,7 @@ BOOST_PYTHON_MODULE(libkrebs_)
   py::def("flood_fill", flood_fill);
   py::def("distancemap", distancemap);
   py::def("GetHealthyVesselWallThickness", GetInitialThickness);
-  //py::def("SumIsoSurfaceIntersectionWithVessels_", SumIsoSurfaceIntersectionWithVessels);
+  py::def("SumIsoSurfaceIntersectionWithVessels_", SumIsoSurfaceIntersectionWithVessels);
   // using macros to register some more functions
 #define DEFINE_edge_to_node_property_t(T) \
   py::def("edge_to_node_property_"#T, edge_to_node_property_t<T>);

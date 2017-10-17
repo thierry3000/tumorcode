@@ -681,5 +681,5 @@ void export_get_Murray()
   
   //these 2 were used
   py::def("get_Murray2", murray::get_Murray2_p);
-//   py::def("get_Murray_scale", murray::get_Murray_scale);
+  py::def("get_Murray_scale", murray::get_Murray_scale);
 }

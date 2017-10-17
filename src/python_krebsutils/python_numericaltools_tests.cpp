@@ -812,6 +812,52 @@ void runSimpleSteppersTest(const std::string &fn_out)
 
 
 #if BOOST_VERSION>106300
+py::object calcCurvature(const py::object py_ld, np::ndarray py_phi, bool has_ghost_boundary, bool return_stf)
+{
+  int dim = py_phi.get_nd();
+  const LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ld);
+  const BBox3 extbox = ExtendForDim(ld.Box(), dim, 1);
+  Array3d<float> phi = Array3dFromPy<float>(py_phi);
+  if (!has_ghost_boundary)
+  {
+    phi.move(ld.Box().min);
+    Array3d<float> phi_ex(extbox);
+    phi_ex[ld.Box()].fill(phi[ld.Box()]);
+    CopyBorder(phi_ex[ld.Box()], dim, 1);
+    phi = phi_ex;
+  }
+  else
+    phi.move(extbox.min);
+  
+  myAssert(phi.size() == Size(extbox));
+  SurfaceTensionForce<float> sft; sft.init(ld.Box(), phi, dim, ld.Scale());
+//   np::arrayt<float> py_res = np::zeros(dim, Cast<Py_ssize_t>(Size(ld.Box())).data(), np::getItemtype<float>());
+  np::ndarray py_res = np::zeros(py::tuple(Cast<Py_ssize_t>(Size(ld.Box())).data()), np::dtype::get_builtin<float>());
+  Array3d<float> res = Array3dFromPy<float>(py_res);
+  res.move(ld.Box().min);
+  FOR_BBOX3(p, ld.Box())
+  {
+    res(p) = sft.computeCurvature(p);
+  }
+  if (!return_stf)
+    return py_res;
+
+  const Int3 sz_ = Size(ld.Box());
+  const Py_ssize_t dims[4] = { dim, sz_[0], sz_[1], sz_[2] };
+  //np::arrayt<float> acc_stf = np::zeros(4, dims, np::getItemtype<float>());
+  np::ndarray acc_stf = np::zeros(py::make_tuple(dim, sz_[0], sz_[1], sz_[2]), np::dtype::get_builtin<float>());
+  FOR_BBOX3(p, ld.Box())
+  {
+    Float3 f = sft.computeForce(p);
+    const Int3 q = p - ld.Box().min;
+    for (int axis=0; axis<dim; ++axis)
+    {
+//       acc_stf(axis, q[0], q[1], q[2]) = f[axis];
+      acc_stf[axis][q[0]][q[1]][q[2]] = f[axis];
+    }
+  }
+  return py::make_tuple(py_res, acc_stf);
+}
 #else
 py::object calcCurvature(const py::object py_ld, np::arrayt<float> py_phi, bool has_ghost_boundary, bool return_stf)
 {
@@ -1230,7 +1276,7 @@ py::def("testEllipticSolver", EllipticSolverTest::testEllipticSolverPy);
   py::def("levelsetRedistancing", runTestRedistancing);
   py::def("zalesakDisk", zalezakDiskFunction);
   py::def("rotationalVelocityField", rotationalVelocityField);
-//   py::def("calcCurvature", calcCurvature);
+  py::def("calcCurvature", calcCurvature);
   py::def("fill_with_smooth_delta", fill_with_smooth_delta);
   py::def("convectionTest", ConvectionModelTests::runTest);
   py::def("convectionLevelset", LevelsetConvection::runLS);
