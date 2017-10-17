@@ -261,7 +261,12 @@ static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters
 
   //if (!(py_po2.get_nd() == 1 && po2.isCContiguous())) throw std::invalid_argument("rank 1 and contiguous expected");
   //np::arrayt<float> result(np::empty(1, po2.shape(), np::getItemtype<float>()));
-  np::ndarray result = np::empty(py::tuple(py_po2.get_shape()[0]), np::dtype::get_builtin<float>());
+  //np::ndarray result = np::empty(py::tuple(py_po2.get_shape()[0]), np::dtype::get_builtin<float>());
+//   cout<< "shape[0]: "<< py_po2.get_shape() << endl;
+//   cout<< "nd: "<< py_po2.get_nd() << endl;
+  if(!(py_po2.get_nd() == 1))
+    throw std::invalid_argument("rank 1 and contiguous expected");
+  np::ndarray result = np::empty(py::make_tuple(py_po2.get_shape()[0]), np::dtype::get_builtin<float>());
 
   for (int i=0; i<py_po2.get_shape()[0]; ++i)
   {
@@ -270,7 +275,7 @@ static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters
   return result;
 }
 #else
-static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters)
+static py::object PyComputeSaturation(nm::array py_po2, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
@@ -291,7 +296,7 @@ static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters
 
 #if BOOST_VERSION>106300
 #else
-static py::object PyComputeMassTransferCoefficient(np::ndarray py_radius, py::dict py_parameters)
+static py::object PyComputeMassTransferCoefficient(nm::array py_radius, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
@@ -316,8 +321,30 @@ static py::object PyComputeMassTransferCoefficient(np::ndarray py_radius, py::di
 
 
 #if BOOST_VERSION>106300
-#else
 static py::object PyComputeConcentration(np::ndarray py_po2, np::ndarray py_hematocrit, py::dict py_parameters)
+{
+  DetailedPO2::Parameters params;
+  InitParameters(params, py_parameters);
+  
+//   np::arrayt<float> po2(py_po2);
+//   np::arrayt<float> hema(py_hematocrit);
+
+//   if (!(po2.rank() == 1 && po2.isCContiguous())) throw std::invalid_argument("rank 1 and contiguous expected");
+//   if (!(hema.rank() == 1 && hema.isCContiguous())) throw std::invalid_argument("rank 1 and contiguous expected");
+  if (!(py_po2.get_nd() == 1 )) throw std::invalid_argument("1 d array expected");
+  if (!(py_hematocrit.get_nd() == 1)) throw std::invalid_argument("1 d array expected");
+
+//   np::arrayt<float> result(np::empty(1, po2.shape(), np::getItemtype<float>()));
+  np::ndarray result = np::empty(py::make_tuple(py_po2.shape(0)), np::dtype::get_builtin<float>());
+
+  for (int i=0; i<py_po2.shape(0); ++i)
+  {
+    result[i] = params.BloodPO2ToConc(py::extract<float>(py_po2[i]), py::extract<float>(py_hematocrit[i]));
+  }
+  return result;
+}
+#else
+static py::object PyComputeConcentration(nm::array py_po2, nm::array py_hematocrit, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
@@ -341,7 +368,7 @@ static py::object PyComputeConcentration(np::ndarray py_po2, np::ndarray py_hema
 
 #if BOOST_VERSION>106300
 #else
-static py::object PyComputePO2FromConc(np::ndarray py_conc, np::ndarray py_hematocrit, py::dict py_parameters)
+static py::object PyComputePO2FromConc(nm::array py_conc, nm::array py_hematocrit, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
@@ -365,7 +392,7 @@ static py::object PyComputePO2FromConc(np::ndarray py_conc, np::ndarray py_hemat
 
 #if BOOST_VERSION>106300
 #else
-static py::object PyComputeUptake(np::ndarray py_po2field, const LatticeDataQuad3d &field_ld, py::object py_tumorgroup,  py::dict py_parameters)
+static py::object PyComputeUptake(nm::array py_po2field, const LatticeDataQuad3d &field_ld, py::object py_tumorgroup,  py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
@@ -439,7 +466,7 @@ static Eigen::Matrix<float, rows, 1> LinearInterpolation(float xeval, const DynA
 #if BOOST_VERSION>106300
 #else
 // may be a measurement class can come back later when it makes more sense to store persistent data between analysis steps
-py::object PySampleVessels(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, np::ndarray py_vesselpo2, np::ndarray py_po2field, const LatticeDataQuad3d &field_ld, float sample_len)
+py::object PySampleVessels(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, nm::array py_vesselpo2, nm::array py_po2field, const LatticeDataQuad3d &field_ld, float sample_len)
 {
   bool world = false;
   h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
@@ -670,9 +697,9 @@ void export_oxygen_computation()
     .def("PInit", &Parameters::PInit);
   py::def("AllocateDetailedO2ParametersFromDict", &AllocateParametersFromDict, py::return_value_policy<py::manage_new_object>());
   py::def("computePO2", PyComputePO2);
-//   py::def("computeSaturation_", PyComputeSaturation);
-//   py::def("computeConcentration_", PyComputeConcentration);
-//   py::def("computeMassTransferCoefficient_", PyComputeMassTransferCoefficient);
+  py::def("computeSaturation_", PyComputeSaturation);
+  py::def("computeConcentration_", PyComputeConcentration);
+  py::def("computeMassTransferCoefficient_", PyComputeMassTransferCoefficient);
 //   py::def("computePO2FromConc_", PyComputePO2FromConc);
 //   py::def("computeO2Uptake", PyComputeUptake);
 //   py::def("sampleVessels", PySampleVessels);

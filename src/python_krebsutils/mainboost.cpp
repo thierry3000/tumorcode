@@ -38,13 +38,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "distancemap.h"
 //#include "continuum-flow.h"
 
-// #include "numpy.hpp"
+
 #include "pylatticedata.h"
 #include "vessels3d.h"
 
-
-namespace py = boost::python;
-namespace np = boost::python::numpy;
 
 enum Mode {
   DATA_PER_NODE = 1,
@@ -361,7 +358,7 @@ py::object flood_fill(const np::ndarray &py_field, const Int3 &startpos)
   return res;
 }
 #else
-py::object flood_fill(const np::ndarray &py_field, const Int3 &startpos)
+py::object flood_fill(const nm::array &py_field, const Int3 &startpos)
 {
   np::arrayt<uchar> field(py_field);
   assert(field.rank() == 3);
@@ -430,7 +427,7 @@ py::object distancemap(const np::ndarray &py_field)
   return res;
 }
 #else
-py::object distancemap(const np::ndarray &py_field)
+py::object distancemap(const nm::array &py_field)
 {
   np::arrayt<uchar> field(py_field);
 
@@ -516,7 +513,7 @@ py::object diff_field(np::arrayt<T> py_field, int axis, double prefactor)
   //field[bb].fill(arr3d);
   //CopyBorder(field[bb], 3, 1);
 
-  np::arrayt<T> py_res = np::zeros(3, ::Size(bb).cast<Py_ssize_t>().eval().data(), np::getItemtype<T>());
+  np::arrayt<T> py_res = np::zeros(3, ::Size(bb).cast<np::ssize_t>().eval().data(), np::getItemtype<T>());
   Array3d<T> res = Array3dFromPy<T>(py_res);
 
   FOR_BBOX3(p, bb)
@@ -593,7 +590,7 @@ py::object SumIsoSurfaceIntersectionWithVessels(float level, np::ndarray py_edge
   return py::make_tuple(dataSumIn, dataSumOut);
 }
 #else
-py::object SumIsoSurfaceIntersectionWithVessels(float level, np::ndarray py_edgelist, np::ndarray py_pressure, np::ndarray py_flags, np::ndarray py_nodalLevel, np::ndarray py_datavalue)
+py::object SumIsoSurfaceIntersectionWithVessels(float level, nm::array py_edgelist, nm::array py_pressure, nm::array py_flags, nm::array py_nodalLevel, nm::array py_datavalue)
 {
   np::arrayt<int> edges(py_edgelist);
   np::arrayt<float> pressure(py_pressure);

@@ -93,6 +93,67 @@ def estimate_ratio_hypoxic(oxy_grp,threshold):
   #to mm
   hypoxic_volume = hypoxic_volume/1e9
   return hypoxic_fraction,hypoxic_volume
+''' 
+    The Clinical Importance of Assessing Tumor Hypoxia: Relationship of Tumor Hypoxia to Prognosis and Therapeutic Opportunities, doi:  10.1089/ars.2013.5378, 2014
+    normoxisch: x > 2.5mmHg
+    hypoxisch:  0.1 mmHg > x < 2.5 mmHg
+    annoxisch: x < 0.1 mmHg
+    '''
+def estimate_annoxic_hypoxic_normoxic(oxy_grp, tumorradius,threshold1,threshold2):
+  dataman = myutils.DataManager(2, [DataDetailedPO2(), DataBasicVessel()])
+
+  gvessels, gtumor = OpenVesselAndTumorGroups(oxy_grp)
+
+  po2vessels, po2field_ld, po2field, parameters = dataman('detailedPO2', oxy_grp)
+  po2vessels = np.average(po2vessels, axis=0)
+  print 'po2vessels:', po2vessels.min(), po2vessels.max()
+  print 'po2field:', np.amin(po2field), np.amax(po2field)
+  #tissueOxygen = np.asarray(oxy_grp['po2field'])
+  #print(tissueOxygen)
+  
+  #I neglect 5 entries from the boarder
+  oxy_np_field= np.asarray(po2field)
+  #find minimal dimension
+  min_dim = np.min(oxy_np_field.shape)
+  print("tumorradius: %f, ld: %f" %(tumorradius,po2field_ld.scale))
+  border0=int(np.floor(oxy_np_field.shape[0]/2)-np.ceil(tumorradius/po2field_ld.scale))
+  border1=int(np.floor(oxy_np_field.shape[1]/2)-np.ceil(tumorradius/po2field_ld.scale))
+  border2=int(np.floor(oxy_np_field.shape[2]/2)-np.ceil(tumorradius/po2field_ld.scale))
+  
+  print("border0: %i" %border0)
+  print("border1: %i" %border1)
+  print("border2: %i" %border2)
+  cropped_oxy = oxy_np_field[border0:-border0,border1:-border1,border2:-border2]
+  annoxic_Tissue = cropped_oxy<threshold1
+  annoxic_counts = np.sum(annoxic_Tissue[:])
+  hypoxic_Tissue = np.logical_and(cropped_oxy<threshold2, cropped_oxy>threshold1)
+  #hypoxic_Tissue = hypoxic_Tissue>threshold1
+  hypoxic_counts = np.sum(hypoxic_Tissue[:])
+  normoxic_Tissue = cropped_oxy>threshold2
+  normoxic_counts = np.sum(normoxic_Tissue[:])
+  number_of_boxes = cropped_oxy.shape[0]*cropped_oxy.shape[1]*cropped_oxy.shape[2]
+  ''' volume correction for not sampling a sphere, but a cube
+  \frac{volume(sphere)}{volume(cube of 2 times radius)} = \pi/6
+  '''
+  volume_correction_factor = np.pi/6.
+  #volume_correction_factor = 1.
+  #times volume of each box
+  cropped_volume = number_of_boxes*np.power(po2field_ld.scale,3)
+  print('considerd volume of: %f mum^3' % cropped_volume)
+  print('considerd volume of: %f mm^3' % (cropped_volume/1e9))
+  hypoxic_fraction = float(hypoxic_counts)/float(number_of_boxes)
+  print('hypoxic fraction: %s ' % hypoxic_fraction)
+  annoxic_volume = annoxic_counts*np.power(po2field_ld.scale,3) * volume_correction_factor
+  #to mm
+  annoxic_volume = annoxic_volume/1e9
+  normoxic_volume = normoxic_counts*np.power(po2field_ld.scale,3) * volume_correction_factor
+  #to mm
+  normoxic_volume = normoxic_volume/1e9
+  hypoxic_volume = hypoxic_counts*np.power(po2field_ld.scale,3) * volume_correction_factor
+  #to mm
+  hypoxic_volume = hypoxic_volume/1e9
+  #return hypoxic_fraction,hypoxic_volume
+  return annoxic_volume,hypoxic_volume,normoxic_volume
 def run(goodArguments):
   print('starting with arguments: %s' % goodArguments)
   no_files = len(goodArguments.oxygenFiles)
@@ -145,12 +206,18 @@ def run_out_in_single_file(goodArguments):
   print('starting with arguments: %s' % goodArguments)
   no_files = len(goodArguments.oxygenFiles)
   
+  annoxicVolumes=[]
   hypoxicVolumes=[]
+  normoxicVolumes=[]
   tumorVolumes=[]
-  threshold = 15
+  #threshold = 15
+  threshold1 = 0.1
+  threshold2 = 2.5
   test = myutils.MeanValueArray.empty()
   
+  annoxicVolumes_per_time=[]
   hypoxicVolumes_per_time=[]
+  normoxicVolumes_per_time=[]
   tumorVolumes_per_time=[]
   timepoints=[]
   
@@ -166,15 +233,21 @@ def run_out_in_single_file(goodArguments):
       print('found paths: %s' % paths)
       
       for path in paths:
-        hypoxicFraction,hypoxicTissueVolume = estimate_ratio_hypoxic(f[path], threshold)
-        hypoxicVolumes_per_time.append(hypoxicTissueVolume)      
+        #hypoxicFraction,hypoxicTissueVolume = estimate_ratio_hypoxic(f[path], threshold)
         t=f[path]['SOURCE'].attrs['time']
         r=f[path]['SOURCE/tumor'].attrs['TUMOR_RADIUS']
         volume=4/3.*3.1414*r*r*r/1e9
+        #volume=(2*r)*(2*r)*(2*r)/1e9
         tumorVolumes_per_time.append(volume)
         t = t/(3600.0*24)#days
         timepoints.append(t)
+        annoxicTissueVolume,hypoxicTissueVolume,normoxicTissueVolume = estimate_annoxic_hypoxic_normoxic(f[path],r,threshold1,threshold2)
+        annoxicVolumes_per_time.append(annoxicTissueVolume)
+        hypoxicVolumes_per_time.append(hypoxicTissueVolume)
+        normoxicVolumes_per_time.append(normoxicTissueVolume)
+      annoxicVolumes.append(annoxicVolumes_per_time)
       hypoxicVolumes.append(hypoxicVolumes_per_time)
+      normoxicVolumes.append(normoxicVolumes_per_time)
       tumorVolumes.append(tumorVolumes_per_time)
       
   print("timepoints: %s" % timepoints)    
@@ -182,8 +255,11 @@ def run_out_in_single_file(goodArguments):
   ax1 = fig1.add_subplot(111)
 #  ax1.scatter(timepoints,np.mean(hypoxicVolumes,0),color='r',label=r"hypoxic($PO_2$<%.1f mmHg)" %threshold)
 #  ax1.scatter(timepoints,np.mean(tumorVolumes,0),color='b',label=r"tumor radius")
-  ax1.errorbar(timepoints,np.mean(hypoxicVolumes,0),np.std(hypoxicVolumes,0),color='r',label=r"hypoxic($PO_2$<%.1f mmHg)" %threshold)
-  ax1.scatter(timepoints,np.mean(tumorVolumes,0),color='b',label=r"tumor radius")
+  ax1.errorbar(timepoints,np.mean(annoxicVolumes,0),np.std(annoxicVolumes,0),color='k',label=r"annoxic($PO_2$<%.1f mmHg)" % float(threshold1))
+  ax1.errorbar(timepoints,np.mean(hypoxicVolumes,0),np.std(hypoxicVolumes,0),color='r',label=r"hypoxic(%0.1f < $PO_2$ < %.1f mmHg)" % (float(threshold1),float(threshold2)))
+  ax1.errorbar(timepoints,np.mean(normoxicVolumes,0),np.std(normoxicVolumes,0),color='b',label=r"normoxic($PO_2$>%.1f mmHg)" % float(threshold2))
+  #ax1.errorbar(timepoints,np.mean(hypoxicVolumes,0),np.std(hypoxicVolumes,0),color='r',label=r"hypoxic($PO_2$<%.1f mmHg)" %threshold)
+  ax1.scatter(timepoints,np.mean(tumorVolumes,0),color='b',label=r"tumor volume")
   
   ax1.set_xlabel('time/ d')
   ax1.set_ylabel(r"volume/$mm^3$")
@@ -191,7 +267,7 @@ def run_out_in_single_file(goodArguments):
   ax1.legend(loc=2)
   common = os.path.commonprefix([afile.name for afile in goodArguments.oxygenFiles])
   ax1.set_title('file: %s' % common)
-  with mpl_utils.PdfWriter('hypoxic_%s.pdf' % common) as pdfpages:
+  with mpl_utils.PdfWriter('hypoxic_%s_threshold_%0.1f_%0.1f.pdf' % (common,threshold1,threshold2)) as pdfpages:
     pdfpages.savefig(fig1, postfix='_vesselsglobal')
 
 if __name__ == '__main__':

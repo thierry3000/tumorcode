@@ -23,7 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
 #include "python_helpers.h"
-//#include "numpy.hpp"
 #include "shared-objects.h"
 #include "lattice-data-polymorphic.h"
 #include "continuum-utils.h"
@@ -203,7 +202,7 @@ np::arraytbase sample_edges(np::arrayt<float> pos, np::arrayt<int> edges, np::ar
     num_total_samples += num_samples;
   }
 
-  np::arrayt<T> acc_res(np::empty(2, Int2(num_total_samples, ncomps).cast<Py_ssize_t>().eval().data(), itemtype));
+  np::arrayt<T> acc_res(np::empty(2, Int2(num_total_samples, ncomps).cast<np::ssize_t>().eval().data(), itemtype));
   for(int i=0, k=0; i<num_total_samples; ++i)
   {
     for(int j=0; j<ncomps; ++j,++k)
@@ -260,7 +259,7 @@ py::object sample_edges_weights(np::ndarray pypos, np::ndarray pyedges, float sa
   //return np::from_data(tmp,np::dtype::get_builtin<float>(),py::make_tuple(tmp.size()), py::make_tuple(sizeof(float)),own);
 }
 #else
-py::object sample_edges_weights(np::ndarray pypos, np::ndarray pyedges, float sample_len)
+py::object sample_edges_weights(nm::array pypos, nm::array pyedges, float sample_len)
 {
   np::arrayt<float> pos(pypos);
   np::arrayt<int> edges(pyedges);
@@ -354,7 +353,7 @@ np::ndarray sample_field(const np::ndarray py_pos, const np::ndarray field, cons
 }
 #else
 template<class T>
-np::arraytbase sample_field(const np::ndarray py_pos, const np::arrayt<T> field, const py::object &py_ld, bool linear_interpolation, bool use_extrapolation_value, const T extrapolation_value)
+np::arraytbase sample_field(const nm::array py_pos, const np::arrayt<T> field, const py::object &py_ld, bool linear_interpolation, bool use_extrapolation_value, const T extrapolation_value)
 {
   /*
    * sample values from a grid, where the sample locations are given by the py_pos n x 3 array
@@ -367,7 +366,7 @@ np::arraytbase sample_field(const np::ndarray py_pos, const np::arrayt<T> field,
 //   else
 //     interpolate.init(CONT_EXTRAPOLATE);
 
-  Py_ssize_t num_samples = pos.shape()[0];
+  np::ssize_t num_samples = pos.shape()[0];
   
   np::arrayt<T> res = np::zeros(1, &num_samples, np::getItemtype<T>());
 
@@ -437,7 +436,7 @@ np::arraytbase make_position_field(const py::object &py_ldobj)
   LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldobj);
   const auto box = ld.Box();
   Int3 size = Size(box);
-  Py_ssize_t ndims[4] = { size[0], size[1], size[2], 3 };
+  np::ssize_t ndims[4] = { size[0], size[1], size[2], 3 };
   np::arrayt<float> res = np::zeros(4, ndims, np::getItemtype<float>());
   FOR_BBOX3(p, box)
   {
@@ -523,7 +522,7 @@ np::arraytbase compute_vessel_volume_fraction_field(np::arrayt<float> pos, np::a
     //cout << sampler.GetSample(0).wpos << endl;
   }
   
-  np::arrayt<float> res = np::zeros(3, Cast<Py_ssize_t>(::Size(ld.Box())).data(), np::getItemtype<float>());
+  np::arrayt<float> res = np::zeros(3, Cast<np::ssize_t>(::Size(ld.Box())).data(), np::getItemtype<float>());
   FOR_BBOX3(p, ld.Box())
   {
     res(p[0], p[1], p[2]) = std::min<float>(1., tmp(p));
@@ -620,7 +619,7 @@ double compute_vessel_boxcounts(np::ndarray pypos, np::ndarray pyedges, np::ndar
   return boxcount;
 }
 #else
-double compute_vessel_boxcounts(np::ndarray pypos, np::ndarray pyedges, np::ndarray pyradius, const py::object &py_ldfield, double volume_scaling, double volume_threshold)
+double compute_vessel_boxcounts(nm::array pypos, nm::array pyedges, nm::array pyradius, const py::object &py_ldfield, double volume_scaling, double volume_threshold)
 {
   LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldfield);
 
@@ -764,8 +763,8 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
     std::vector<BranchDat> lengths_in = MeasureBranchLengths(*vl, in_tumor);
     std::vector<BranchDat> lengths_out = MeasureBranchLengths(*vl, outside_tumor);
   
-    Py_ssize_t dims_in[2] = {3,(int)lengths_in.size()};
-    Py_ssize_t dims_out[2] = {3,(int)lengths_out.size()};
+    np::ssize_t dims_in[2] = {3,(int)lengths_in.size()};
+    np::ssize_t dims_out[2] = {3,(int)lengths_out.size()};
     // create numpy array
     np::arrayt<float> buffer_in = np::zeros(2, dims_in, np::getItemtype<float>());
     for (int i=0; i<lengths_in.size(); ++i)
@@ -800,8 +799,8 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
 	radii_out.push_back(v->r);
       }
     }
-    Py_ssize_t dims_in[2] = {1,(int)radii_in.size()};
-    Py_ssize_t dims_out[2] = {1,(int)radii_out.size()};
+    np::ssize_t dims_in[2] = {1,(int)radii_in.size()};
+    np::ssize_t dims_out[2] = {1,(int)radii_out.size()};
     // create numpy array
     np::arrayt<float> buffer_in = np::zeros(2, dims_in, np::getItemtype<float>());
     for (int i=0; i<radii_in.size(); ++i)
@@ -832,8 +831,8 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
 	radii_out.push_back(v->q);
       }
     }
-    Py_ssize_t dims_in[2] = {1,(int)radii_in.size()};
-    Py_ssize_t dims_out[2] = {1,(int)radii_out.size()};
+    np::ssize_t dims_in[2] = {1,(int)radii_in.size()};
+    np::ssize_t dims_out[2] = {1,(int)radii_out.size()};
     // create numpy array
     np::arrayt<float>buffer_in = np::zeros(2, dims_in, np::getItemtype<float>());
     for (int i=0; i<radii_in.size(); ++i)
@@ -876,8 +875,8 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
     {
       pressure_in_a.insert(pressure_in_a.end(),pressure_in_v.begin(),pressure_in_v.end());
       pressure_out_a.insert(pressure_out_a.end(),pressure_out_v.begin(),pressure_out_v.end());
-      Py_ssize_t dims_in[2] = {1,(int)pressure_in_a.size()};
-      Py_ssize_t dims_out[2] = {1,(int)pressure_out_a.size()};
+      np::ssize_t dims_in[2] = {1,(int)pressure_in_a.size()};
+      np::ssize_t dims_out[2] = {1,(int)pressure_out_a.size()};
       // create numpy array
       np::arrayt<float>buffer_in = np::zeros(2, dims_in, np::getItemtype<float>());
       for (int i=0; i<pressure_in_a.size(); ++i)
@@ -894,10 +893,10 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
     }
     if(av)
     {
-      Py_ssize_t dims_in_a[2] = {1,(int)pressure_in_a.size()};
-      Py_ssize_t dims_in_v[2] = {1,(int)pressure_in_v.size()};
-      Py_ssize_t dims_out_a[2] = {1,(int)pressure_out_a.size()};
-      Py_ssize_t dims_out_v[2] = {1,(int)pressure_out_v.size()};
+      np::ssize_t dims_in_a[2] = {1,(int)pressure_in_a.size()};
+      np::ssize_t dims_in_v[2] = {1,(int)pressure_in_v.size()};
+      np::ssize_t dims_out_a[2] = {1,(int)pressure_out_a.size()};
+      np::ssize_t dims_out_v[2] = {1,(int)pressure_out_v.size()};
       // create numpy array
       // this is quick and dirty!!!
       np::arrayt<float>buffer_in_a = np::zeros(2, dims_in_a, np::getItemtype<float>());
@@ -937,19 +936,20 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
  */
 #if BOOST_VERSION>106300
 #else
+/*
 py::object calculate_lengths_lattice_based(const py::object &ld_grp_obj, const py::object &vess_grp_obj, const py::object &tumor_range)
 { 
   FpExceptionStateGuard exception_state_guard(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
-  my::h5::Group g_ld = PythonToCppGroup(ld_grp_obj);
-  my::h5::Group g_vess = PythonToCppGroup(vess_grp_obj);
+  h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
+  h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
   float theTumorRange = py::extract<float>(tumor_range);
 
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, g_ld, make_ptree("filter", true));
+  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", true));
   
   //discriminate unwanted vessels
-  std::vector<bool> in_tumor(vl->GetECount(),RESERVE);
-  std::vector<bool> outside_tumor(vl->GetECount(),RESERVE);
+  std::vector<bool> in_tumor(vl->GetECount(),ConsTags::RESERVE_t);
+  std::vector<bool> outside_tumor(vl->GetECount(),ConsTags::RESERVE_t);
   for(int i=0;i<vl->GetECount();++i)
   {
     Vessel* v = vl->GetEdge(i);
@@ -998,23 +998,22 @@ py::object calculate_lengths_lattice_based(const py::object &ld_grp_obj, const p
   return ret;
   
   
-//   py::list abc(lengths);
-//   return abc;
-  
 }
+*/
 #endif
 
 #if BOOST_VERSION>106300
 #else
+/*
 py::object get_radii_within_fake_tumor(const py::object &ld_grp_obj, const py::object &vess_grp_obj, const py::object &tumor_range)
 { 
   FpExceptionStateGuard exception_state_guard(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 
-  my::h5::Group g_ld = PythonToCppGroup(ld_grp_obj);
-  my::h5::Group g_vess = PythonToCppGroup(vess_grp_obj);
+  h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
+  h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
   float theTumorRange = py::extract<float>(tumor_range);
 
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, g_ld, make_ptree("filter", true));
+  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", true));
   
   //discriminate unwanted vessels
   std::vector<bool> in_tumor(vl->GetECount(),RESERVE);
@@ -1057,13 +1056,13 @@ py::object get_radii_within_fake_tumor(const py::object &ld_grp_obj, const py::o
   int dims_in[2] = {1,radii_in.size()};
   int dims_out[2] = {1,radii_out.size()};
   // create numpy array
-  np::array py_radii_in = np::zeros(2, dims_in, np::get_itemtype<float>());
+  nm::array py_radii_in = np::zeros(2, dims_in, np::get_itemtype<float>());
   np::arrayt<float>buffer_in(py_radii_in)  ;
   for (int i=0; i<radii_in.size(); ++i)
   {
     buffer_in(0, i) = radii_in[i];
   }
-  np::array py_radii_out = np::zeros(2, dims_out, np::get_itemtype<float>());
+  nm::array py_radii_out = np::zeros(2, dims_out, np::get_itemtype<float>());
   np::arrayt<float>buffer_out(py_radii_out)  ;
   for (int i=0; i<radii_out.size(); ++i)
   {
@@ -1075,11 +1074,11 @@ py::object get_radii_within_fake_tumor(const py::object &ld_grp_obj, const py::o
   ret.append(py_radii_out);
   return ret;
 }
+*/
 #endif
 
 void export_samplevessels()
 {
-//   py::def("export_network_for_povray", export_network_for_povray);
   py::enum_<Mode>("VesselSamplingFlags")
     .value("DATA_PER_NODE", DATA_PER_NODE)
     .value("DATA_CONST", DATA_CONST)
@@ -1105,8 +1104,8 @@ void export_samplevessels()
 #else
   py::def("make_vessel_volume_fraction_field", compute_vessel_volume_fraction_field);
   py::def("calc_vessel_boxcounts", compute_vessel_boxcounts);
-  py::def("calculate_lengths_lattice_based", calculate_lengths_lattice_based);
-  py::def("get_radii_within_fake_tumor", get_radii_within_fake_tumor);
+//   py::def("calculate_lengths_lattice_based", calculate_lengths_lattice_based);
+//   py::def("get_radii_within_fake_tumor", get_radii_within_fake_tumor);
   py::def("calculate_within_fake_tumor_lattice_based", calculate_within_fake_tumor_lattice_based);
 #endif
 }

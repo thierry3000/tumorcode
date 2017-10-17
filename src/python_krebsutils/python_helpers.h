@@ -26,6 +26,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/python/tuple.hpp>
 #if BOOST_VERSION>106300
   #include <boost/python/numpy.hpp>
+#else
+  #include "numpy.hpp"
+  namespace nm = boost::python::numeric;
 #endif
 #include <boost/format.hpp>
 #include <fenv.h>
@@ -35,10 +38,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/math_ext.h"
 #include "mwlib/ptree_ext.h"
 
-//#include "numpy.hpp"
-
 namespace py = boost::python;
-namespace np = boost::python::numpy;
+namespace np = boost::python::numpy;//either defined by numpycpp-> welter or boost
 
 using boost::format;
 using boost::str;
@@ -81,7 +82,7 @@ inline py::object BBoxToPy(const BBoxd<T, dim> &bb)
 {
   //Py_ssize_t dims[1] = { dim*2 };
   np::dtype dtype = np::dtype::get_builtin<T>();
-  py::tuple shape = py::make_tuple(1,dim*2);
+  py::tuple shape = py::make_tuple(dim*2);
   np::ndarray r = np::empty(shape, dtype);
   //np::arrayt<T> r = np::empty(1, dims, np::getItemtype<T>());
   for (int i=0; i<dim; ++i)

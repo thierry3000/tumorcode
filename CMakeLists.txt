@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
-
+project(tumorcode C CXX)
 ###############  set up spack stuff  ##############
 
 # enable @rpath in the install name for any shared library being built
@@ -50,17 +50,20 @@ endif()
 
 # T.F. try to remove this since boost::python::numpy does now exist in boost 1.65.1
 # numpycpp has its own modules
-# set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src/.cmake/modules;")
-# message("CMAKE_MODULE_PATH at numpycpp build:   ${CMAKE_MODULE_PATH}")
-# execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-#   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/numpycpp" )
-# execute_process(COMMAND "${CMAKE_COMMAND}" --build .
-#   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/numpycpp" )
-# include_directories("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src")
-# # Add numpycpp directly to our build. This adds
-# # the following targets: numpycpp
-# add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src"
-#                  "${CMAKE_BINARY_DIR}/externalProjects/numpycpp-build")
+if(Boost_VERSION GREATER 106500)
+else()
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src/.cmake/modules;")
+message("CMAKE_MODULE_PATH at numpycpp build:   ${CMAKE_MODULE_PATH}")
+execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/numpycpp" )
+execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/numpycpp" )
+include_directories("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src")
+# Add numpycpp directly to our build. This adds
+# the following targets: numpycpp
+add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src"
+                 "${CMAKE_BINARY_DIR}/externalProjects/numpycpp-build")
+endif()
 
 ## HDF5-cpp-wrapper does not need compilation
 configure_file(externalProjects/HDF5-cpp-wrapper/CMakeLists.txt.in externalProjects/HDF5-cpp-wrapper/CMakeLists.txt)
@@ -74,23 +77,23 @@ include_directories("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src")
 
 ## ANN
 # to find nearest vessels for cells we contact the ANN add_library
-configure_file(externalProjects/ANN/CMakeLists.txt.in externalProjects/ANN/CMakeLists.txt)
-message("CMAKE_COMMAND:   ${CMAKE_COMMAND}")
-message("CMAKE_GENERATOR:   ${CMAKE_GENERATOR}")
-# numpycpp has its own modules
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_BINARY_DIR}/externalProjects/ANN-src/.cmake/modules;")
-message("CMAKE_MODULE_PATH at ANN build:   ${CMAKE_MODULE_PATH}")
-execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
-execute_process(COMMAND "${CMAKE_COMMAND}" --build .
-  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
-include_directories("${CMAKE_BINARY_DIR}/externalProjects/ANN-src/include")
-# Add numpycpp directly to our build. This adds
-# the following targets: numpycpp
-add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/ANN-src"
-                 "${CMAKE_BINARY_DIR}/externalProjects/ANN-build")
+# configure_file(externalProjects/ANN/CMakeLists.txt.in externalProjects/ANN/CMakeLists.txt)
+# message("CMAKE_COMMAND:   ${CMAKE_COMMAND}")
+# message("CMAKE_GENERATOR:   ${CMAKE_GENERATOR}")
+# # numpycpp has its own modules
+# set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_BINARY_DIR}/externalProjects/ANN-src/.cmake/modules;")
+# message("CMAKE_MODULE_PATH at ANN build:   ${CMAKE_MODULE_PATH}")
+# execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+#   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
+# execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+#   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
+# include_directories("${CMAKE_BINARY_DIR}/externalProjects/ANN-src/include")
+# # Add numpycpp directly to our build. This adds
+# # the following targets: numpycpp
+# add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/ANN-src"
+#                  "${CMAKE_BINARY_DIR}/externalProjects/ANN-build")
 
-project(allmystuff C CXX)
+
 list(APPEND CMAKE_CXX_SOURCE_FILE_EXTENSIONS c)
 add_definitions(-DSILENT)
 find_package(Threads REQUIRED)
@@ -111,11 +114,13 @@ if(USE_MILOTTI_MTS)
   message("MILOTTI_MTS preprocessor defined")
   add_definitions(-DMILOTTI_MTS)
 endif()
+
 option(USE_ADAPTION "decide to build the adaption library" OFF)
 CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" OFF "USE_ADAPTION" ON)
 CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" OFF
                        "USE_ADAPTION;USE_PAGMO" ON)
 option(TOTAL_SILENCE "suppress all output, good for running on cluster" OFF)
+
 if(TOTAL_SILENCE)
   message("TOTAL_SILENCE preprocessor defined")
   add_definitions(-DTOTAL_SILENCE)

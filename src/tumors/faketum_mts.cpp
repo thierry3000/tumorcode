@@ -154,7 +154,7 @@ void update_milotti_vessels(vbl::CellsSystem &currentCellSys, VesselList3d &vl, 
 
       suggestion.SetBloodVesselAcL( 0. );
       
-      currentCellSys.Add_BloodVessel_at( (uint) v->Index(), &suggestion );
+      currentCellSys.Add_BloodVessel_at( (int) v->Index(), suggestion );
     }//end if circulated
   }  
 }

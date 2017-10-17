@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "python_helpers.h"
-//#include "numpy.hpp"
+
 #include "pylatticedata.h"
 
 #include "hdf_wrapper.h"
@@ -28,8 +28,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "shared-objects.h"
 #include "vessels3d.h"
 
-namespace py = boost::python;
-namespace np = boost::python::numpy;
 namespace h5 = h5cpp;
 
 #if BOOST_VERSION>106300
@@ -277,7 +275,7 @@ static py::object PyCalcViscosities(np::ndarray pyRad, np::ndarray pyHema, const
   return visc;
 }
 #else
-static py::object PyCalcViscosities(np::ndarray pyRad, np::ndarray pyHema, const BloodFlowParameters &bloodFlowParameters)
+static py::object PyCalcViscosities(nm::array pyRad, nm::array pyHema, const BloodFlowParameters &bloodFlowParameters)
 {
   CheckArray1(FlReal, pyRad, 0); // do not check dimension 
   np::arrayt<FlReal> rad(pyRad);
@@ -325,7 +323,7 @@ static py::object PyCalcConductivities(np::ndarray pyRad, np::ndarray pyLen, np:
   return cond;
 }
 #else
-static py::object PyCalcConductivities(np::ndarray pyRad, np::ndarray pyLen, np::ndarray pyVisc)
+static py::object PyCalcConductivities(nm::array pyRad, nm::array pyLen, nm::array pyVisc)
 {
   CheckArray1(FlReal, pyRad, 0); // do not check dimension 
   np::arrayt<FlReal> rad(pyRad);

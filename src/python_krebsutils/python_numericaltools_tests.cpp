@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "python_helpers.h"
-//#include "numpy.hpp"
 
 #include "common.h"
 #include "continuum-flow.h"
@@ -914,7 +913,7 @@ void fill_with_smooth_delta(np::ndarray py_arr, float width)
 //   }
 }
 #else
-void fill_with_smooth_delta(np::ndarray py_arr, float width)
+void fill_with_smooth_delta(nm::array py_arr, float width)
 {
   np::arrayt<float> arr(py_arr);
   for (int i=0; i<arr.shape()[0]; ++i)

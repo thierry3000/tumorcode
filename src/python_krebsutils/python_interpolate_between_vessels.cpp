@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "python_helpers.h"
-//#include "numpy.hpp"
 #include "shared-objects.h"
 #include "continuum-utils.h"
 #include "continuum-grid.h"
@@ -163,10 +162,10 @@ np::ndarray CalcIntervascularInterpolationField(
 }
 #else
 np::arraytbase CalcIntervascularInterpolationField(
-                                      np::ndarray pypos, 
-                                      np::ndarray pyedges, 
-                                      np::ndarray pyradius,
-                                      np::ndarray pysource,
+                                      nm::array pypos, 
+                                      nm::array pyedges, 
+                                      nm::array pyradius,
+                                      nm::array pysource,
                                       const py::object &py_ldfield,
                                       double source_factor,
                                       int samples_per_cell)
@@ -257,7 +256,7 @@ np::arraytbase CalcIntervascularInterpolationField(
     {
       FOR_BBOX3(p, bbox)
       {
-        //res(p[0],p[1],p[2]) = lhs[grid.ld.LatticeToSite(p)];
+        res(p[0],p[1],p[2]) = (*lhs)[grid.ld.LatticeToSite(p)];
       }
     }
   }

@@ -48,9 +48,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   #include "../adaption/adaption_model2.h"
 #endif
 
-namespace py = boost::python;
-
-
 
 namespace Tumors{
   
@@ -226,14 +223,32 @@ void run_fakeTumor(const py::str &param_info_str)
   
   FakeTum::FakeTumorSim s;
   //construct default parameters
-  FakeTum::Parameters defaultParams;  /// default parameters
-  ptree faketumSettings = defaultParams.as_ptree();
-  boost::property_tree::update(faketumSettings,pt_params);
+  //get default params
+  ptree bfSettings = s.params.bfparams.as_ptree();
+#ifdef USE_ADAPTION
+  ptree adaptionSettings = s.params.adap_params.as_ptree();
+  if(pt_params.count("adaption")>0)
+  {
+    boost::property_tree::update(adaptionSettings, pt_params.get_child("adaption"));
+  }
+  s.params.adap_params.assign(adaptionSettings);
+#endif
+  ptree fakeTumSettings = s.params.as_ptree();
+  //update with read in params
+  boost::property_tree::update(bfSettings, pt_params.get_child("calcflow"));
+  boost::property_tree::update(fakeTumSettings, pt_params);
+  
+  s.params.bfparams.assign(bfSettings);
+  s.params.assign(fakeTumSettings);
+  
+//   FakeTum::Parameters defaultParams;  /// default parameters
+//   ptree faketumSettings = defaultParams.as_ptree();
+//   boost::property_tree::update(faketumSettings,pt_params);
   //printPtree(defaultParams.as_ptree());
   
-  printPtree(faketumSettings);
+  //printPtree(faketumSettings);
   
-  int returnCode = s.run(faketumSettings);
+  int returnCode = s.run();
   //return returnCode;
 }
 void export_faketum()
@@ -325,7 +340,9 @@ BOOST_PYTHON_MODULE(libtumors_)
 #endif
 { 
   Py_Initialize();
+#if BOOST_VERSION>106300
   np::initialize();
+#endif
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
   if (my::MultiprocessingInitializer_exists())
   {

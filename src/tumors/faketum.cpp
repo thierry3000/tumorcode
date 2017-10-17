@@ -172,35 +172,36 @@ Float3 FakeTum::FakeTumorSim::getGfGrad(const Float3 &pos) const
     return Float3(0.);
 }
 
-int FakeTum::FakeTumorSim::run(const ptree &pt_params)
+//int FakeTum::FakeTumorSim::run(const ptree &pt_params)
+int FakeTum::FakeTumorSim::run()
 {
-  {
-    FakeTum::Parameters::update_ptree(all_pt_params, pt_params);
-    this->params.assign(all_pt_params);
-  }
-  /***** vessels ******/
-  {
-    ptree vesselSettings = vessel_model.params.as_ptree();
-    boost::property_tree::update(vesselSettings,pt_params.get_child("vessels"));
-    vessel_model.params.assign(vesselSettings);
-  }
-  /****** blood flow ****/
-  {
-    ptree bfSettings = params.bfparams.as_ptree();
-    boost::property_tree::update(bfSettings,pt_params.get_child("calcflow"));
-    params.bfparams.assign(bfSettings);
-  }
+//   {
+//     FakeTum::Parameters::update_ptree(all_pt_params, pt_params);
+//     this->params.assign(all_pt_params);
+//   }
+//   /***** vessels ******/
+//   {
+//     ptree vesselSettings = vessel_model.params.as_ptree();
+//     boost::property_tree::update(vesselSettings,pt_params.get_child("vessels"));
+//     vessel_model.params.assign(vesselSettings);
+//   }
+//   /****** blood flow ****/
+//   {
+//     ptree bfSettings = params.bfparams.as_ptree();
+//     boost::property_tree::update(bfSettings,pt_params.get_child("calcflow"));
+//     params.bfparams.assign(bfSettings);
+//   }
   // direct cout through log
   cout.rdbuf(my::log().rdbuf());
   {
-#ifdef USE_ADAPTION
-    ptree adaptionSettings = params.adap_params.as_ptree();
-    boost::property_tree::update(adaptionSettings,(pt_params.get_child("adaption")).get_child("adaption"));
-    params.adap_params.assign(adaptionSettings);
-    // BAD HACK
-    // do be done
-    //this->params.adap_params.radMin_for_kill = this->model.params.radMin;
-#endif
+// #ifdef USE_ADAPTION
+//     ptree adaptionSettings = params.adap_params.as_ptree();
+//     boost::property_tree::update(adaptionSettings,(pt_params.get_child("adaption")).get_child("adaption"));
+//     params.adap_params.assign(adaptionSettings);
+//     // BAD HACK
+//     // do be done
+//     //this->params.adap_params.radMin_for_kill = this->model.params.radMin;
+// #endif
     my::SetNumThreads(params.num_threads);
     
     h5cpp::File file(params.fn_vessel, "r");

@@ -210,13 +210,13 @@ void export_network_for_povray(const np::ndarray edges,
   {
     int a = py::extract<int>(edges[i][0]);
     int b = py::extract<int>(edges[i][1]);
-    float pos_a_0 = py::extract<float>(edges[a][0]);
-    float pos_a_1 = py::extract<float>(edges[a][1]);
-    float pos_a_2 = py::extract<float>(edges[a][2]);
+    float pos_a_0 = py::extract<float>(pos[a][0]);
+    float pos_a_1 = py::extract<float>(pos[a][1]);
+    float pos_a_2 = py::extract<float>(pos[a][2]);
     Float3 pa(pos_a_0,pos_a_1,pos_a_2);
-    float pos_b_0 = py::extract<float>(edges[b][0]);
-    float pos_b_1 = py::extract<float>(edges[b][1]);
-    float pos_b_2 = py::extract<float>(edges[b][2]);
+    float pos_b_0 = py::extract<float>(pos[b][0]);
+    float pos_b_1 = py::extract<float>(pos[b][1]);
+    float pos_b_2 = py::extract<float>(pos[b][2]);
     Float3 pb(pos_b_0,pos_b_1,pos_b_2);
 
     double radius = py::extract<float>(rad[i]);
@@ -225,7 +225,7 @@ void export_network_for_povray(const np::ndarray edges,
 
     string stylestr = py::extract<string>(py_styler.attr("edge_style")(i, a, b));
     string objstr = str(format("cylinder {\n<%f,%f,%f>, <%f,%f,%f>, %f\n%s}\n") %
-                                pa[0] % pa[1] % pa[2] % pb[0] % pb[1] % pb[2] % rad(i) % stylestr);
+                                pa[0] % pa[1] % pa[2] % pb[0] % pb[1] % pb[2] % radius % stylestr);
     if (intersect == CLIP_PARTIAL)
     {
       string clip_stylestr = py::extract<string>(py_clip_styler.attr("edge_style")(i, a, b));
