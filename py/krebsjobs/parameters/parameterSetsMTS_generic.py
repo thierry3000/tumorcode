@@ -121,6 +121,8 @@ milotti_feedback.update(
     rGf = 100.,
     tend= 860000, # about 10 days
     )
+milotti_test = deepcopy(milotti_detailed)
+milotti_test['detailedo2'] = parameterSetsO2.milotti_o2_test
 #milotti_detailed['detailedo2'] = parameterSetsO2.default_o2
 #factory = getattr(parameterSets, tumorParameterName)
 #milotti_detailed['detailedo2'].update(

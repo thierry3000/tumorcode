@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "python-helpers.h"
+#include "python_helpers.h"
 #include "trilinos_matrixfree.h"
 #include "trilinos_linsys_construction.h"
 #include "common.h"
@@ -162,7 +162,9 @@ py::object testOperatorSolve(const Int3 &size, bool write_image)
 #endif
   Epetra_Map epetra_map((int)grid.ld.NumSites(), 0, epetra_comm);
 
-  boost::scoped_ptr<EpetraOperatorType> op(new EpetraOperatorType(
+//   boost::scoped_ptr<EpetraOperatorType> op(new EpetraOperatorType(
+//       grid.ld, grid.dim, mtboxes, -1., ConstFaceVarFunctor(1.), diag_offset, epetra_map));
+  Teuchos::RCP<Epetra_CrsMatrix> op(new EpetraOperatorType(
       grid.ld, grid.dim, mtboxes, -1., ConstFaceVarFunctor(1.), diag_offset, epetra_map));
 
   Epetra_Vector epetra_rhs(Epetra_DataAccess::View, epetra_map, rhs.getPtr());

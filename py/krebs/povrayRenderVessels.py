@@ -300,7 +300,11 @@ def addVesselTree(epv, vesselgraph, trafo, options):
 def ComputeBoundingBox(vesselgroup, vesselgraph):
   if 'lattice' in vesselgroup:
     vess_ldgroup = vesselgroup['lattice']
-    wbbox = krebsutils.read_lattice_data_from_hdf(vess_ldgroup).worldBox
+    #wbbox = krebsutils.read_lattice_data_from_hdf(vess_ldgroup).worldBox
+    fn=str(vess_ldgroup.file.filename)
+    path=str(vess_ldgroup.name)
+    Pyld = krebsutils.read_lattice_data_from_hdf_by_filename(fn, path)
+    wbbox = Pyld.worldBox
   else:
     pos = vesselgraph['position']
     minval = np.amin(pos, axis=0)

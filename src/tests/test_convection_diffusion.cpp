@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "convection_diffusion_solver.h"
+#include "mwlib/time_stepper.h"
 #include "mwlib/ptree_ext.h"
 
 #include <boost/format.hpp>
@@ -27,18 +28,69 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using boost::str;
 using boost::format;
 
+//this is from calc-ifdrug.h
+struct State : boost::noncopyable
+{
+  int id;
+  Array3d<float> field[2];
+  int num_fields;
+
+  State() : id(-1), num_fields(0) {}
+
+  void addScaled(double s, const State &u, double s_self = 1.)
+  {
+    for (int i=0; i<num_fields; ++i)
+      AddScaled(s_self, field[i], s, u.field[i]);
+  }
+
+  void setId(int id_) { id = id_; }
+  int getId() const { return id; }
+
+  void init(int num_fields_, const LatticeDataQuad3d &grid, int ndims, int border)
+  {
+    num_fields = num_fields_;
+    for (int i=0; i<num_fields; ++i)
+      field[i] = MakeArray3dWithBorder<float>(grid.Box(), ndims, border);
+    id = 0;
+  }
+
+  void initCloned(const State &other)
+  {
+    num_fields = other.num_fields;
+    id = other.id;
+    for (int i=0; i<num_fields; ++i)
+      field[i].initDeepCopy<>(other.field[i]);
+  }
+
+  void initLike(const State &other)
+  {
+    num_fields = other.num_fields;
+    id = 0;
+    for (int i=0; i<num_fields; ++i)
+      field[i].initFromBox(other.field[i].getBox());
+  }
+
+  void clear()
+  {
+    num_fields = 0;
+    for (int i=0; i<num_fields; ++i)
+      field[i].clear();
+  }
+};
 
 int main(int argc, char **argv)
 {
-  return 0;
-}
-
-#if 0
+//   return 0;
+// }
+// 
+// #if 0
   const int dim = 2;
   LatticeDataQuad3d ld;
   ld.Init(Int3(100, 100, 1), 1.);
-  ld.SetWorldPosition(-0.5*ld.GetWorldBox().max);
-  LatticeIndexRanges ir = LatticeIndexRangesFromCellRange(ld.Box(), dim);
+//   ld.SetWorldPosition(-0.5*ld.GetWorldBox().max);
+  ld.SetOriginPosition(-0.5*ld.GetWorldBox().max);
+  //LatticeIndexRanges ir = LatticeIndexRangesFromCellRange(ld.Box(), dim);
+  LatticeIndexRanges ir = LatticeIndexRanges::FromCellRange(ld.Box(), dim);
 
   double p_velocity = 10.;
   double p_kdiff = 2;
@@ -71,8 +123,13 @@ int main(int argc, char **argv)
   //double max_dt = 0.1;
 
   typedef Array3d<float> AT;
-  typedef ConvectionDiffusionStepper<AT, AT, AT, AT, float> Stepper;
-  Stepper stepper; stepper.init(ld, dim);
+//   typedef ConvectionDiffusionStepper<AT, AT, AT, AT, float> Stepper;
+//   Stepper stepper; stepper.init(ld, dim);
+  string stepper_compartments = "bla";
+  stepper_interaction                                 = Steppers::createCallbackBased<State>(stepper_compartments);
+  stepper_interaction->model().calcSlope              = boost::bind(&Calculator::calcSlopeEc, this, _1, _2, _3);
+  stepper_interaction->model().calcSlopesIMEX         = boost::bind(&Calculator::calcSlopesEc, this, _1, _2, _3, _4);
+  stepper_interaction->model().invertImplicitOperator = boost::bind(&Calculator::invertImplicitOperatorEc, this, _1, _2, _3, _4, _5, _6);
 
   my::Time rt_;
   
@@ -113,4 +170,4 @@ int main(int argc, char **argv)
   cout << "runtime = " << (my::Time() - rt_) << endl;
 
 }
-#endif
+// #endif

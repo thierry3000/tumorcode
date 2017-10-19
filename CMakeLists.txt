@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.3)
 project(tumorcode C CXX)
+
+if(FALSE)
 ###############  set up spack stuff  ##############
 
 # enable @rpath in the install name for any shared library being built
@@ -32,6 +34,7 @@ ENDIF("${isSystemDir}" STREQUAL "-1")
 # Include all the transitive dependencies determined by Spack.
 # If we're not running with Spack, this does nothing...
 include_directories($ENV{SPACK_TRANSITIVE_INCLUDE_PATH})
+endif()
 
 ###############  end spack stuff  ##############
 
@@ -93,7 +96,6 @@ include_directories("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src")
 # add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/ANN-src"
 #                  "${CMAKE_BINARY_DIR}/externalProjects/ANN-build")
 
-
 list(APPEND CMAKE_CXX_SOURCE_FILE_EXTENSIONS c)
 add_definitions(-DSILENT)
 find_package(Threads REQUIRED)
@@ -114,13 +116,11 @@ if(USE_MILOTTI_MTS)
   message("MILOTTI_MTS preprocessor defined")
   add_definitions(-DMILOTTI_MTS)
 endif()
-
 option(USE_ADAPTION "decide to build the adaption library" OFF)
 CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" OFF "USE_ADAPTION" ON)
 CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" OFF
                        "USE_ADAPTION;USE_PAGMO" ON)
 option(TOTAL_SILENCE "suppress all output, good for running on cluster" OFF)
-
 if(TOTAL_SILENCE)
   message("TOTAL_SILENCE preprocessor defined")
   add_definitions(-DTOTAL_SILENCE)
@@ -155,14 +155,21 @@ set (ADDITIONAL_LIBRARY_DIRS CACHE PATH "Additional dirs to search for linked li
 find_package(Boost REQUIRED COMPONENTS "program_options")
 message("Boost_PROGRAM_OPTIONS_LIBRARY: ${Boost_PROGRAM_OPTIONS_LIBRARY}")
 set(myLibs "${myLibs};${Boost_PROGRAM_OPTIONS_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "system")
 message("Boost_SYSTEM_LIBRARY: ${Boost_SYSTEM_LIBRARY}")
 set(myLibs "${myLibs};${Boost_SYSTEM_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "serialization")
+message("Boost_SERIALIZATION_LIBRARY: ${Boost_SERIALIZATION_LIBRARY}")
 set(myLibs "${myLibs};${Boost_SERIALIZATION_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "thread")
+message("Boost_THREAD_LIBRARY: ${Boost_THREAD_LIBRARY}")
 set(myLibs "${myLibs};${Boost_THREAD_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "filesystem")
+message("Boost_FILESYSTEM_LIBRARY: ${Boost_FILESYSTEM_LIBRARY}")
 set(myLibs "${myLibs};${Boost_FILESYSTEM_LIBRARY}")
 if(Boost_VERSION GREATER 106500)
   find_package(Boost REQUIRED COMPONENTS "numpy")

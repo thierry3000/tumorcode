@@ -106,8 +106,6 @@ TumorTypes determineTumorType(boost::optional<h5cpp::Group> tumorgroup)
 }
 void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, boost::optional<h5cpp::Group> tumorgroup)
 {
-  //h5cpp::Group   tumorgroup      = PythonToCppGroup(py_tumorgroup);
-  //if (tumorgroup.attrs().exists("TYPE") && tumorgroup.attrs().get<string>("TYPE")=="faketumor")
   TumorTypes tumortype = determineTumorType(tumorgroup);
   if( tumortype == TumorTypes::NONE )
   {
