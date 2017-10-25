@@ -1051,6 +1051,8 @@ void IntegrateVesselPO2(const Parameters &params,
 			bool world
  		      )
 {
+  if (params.loglevel > 0)
+    cout << format("Start IntegrateVesselPO2 !") << endl;
   my::Time t_;
   //DynArray<bool> nodal_o2ready(vl.GetNCount(), false);
   
@@ -1166,7 +1168,10 @@ struct ConvergenceCriteriumAccumulator2Norm
   int n;
   ConvergenceCriteriumAccumulator2Norm() : n(0), val() {}
   void Add(const T &x) { val += my::sqr(x); ++n; }
-  T operator()() const { return n>0 ? (std::sqrt(val)/n) : std::numeric_limits<T>::quiet_NaN(); }
+//   T operator()() const { return n>0 ? (std::sqrt(val)/n) : std::numeric_limits<T>::quiet_NaN(); }
+  // T.F.
+  // Intel compiler is not respecting the quiet_NaN and throw, I do not know why --> intel bug
+  T operator()() const { return n>0 ? (std::sqrt(val)/n) : std::numeric_limits<T>::max(); }
 };
 
 template<class T>
@@ -1176,7 +1181,10 @@ struct ConvergenceCriteriumAccumulatorMaxNorm
   int n;
   ConvergenceCriteriumAccumulatorMaxNorm() : val(), n(0) {}
   void Add(const T &x) { val = std::max(val, std::abs(x)); ++n; }
-  T operator()() const { return n>0 ? val : std::numeric_limits<T>::quiet_NaN(); }
+//   T operator()() const { return n>0 ? val : std::numeric_limits<T>::quiet_NaN(); }
+  // T.F.
+  // Intel compiler is not respecting the quiet_NaN and throw, I do not know why --> intel bug
+  T operator()() const { return n>0 ? val : std::numeric_limits<T>::max(); }
 };
 
 
@@ -1244,8 +1252,13 @@ void ComputePo2Field(const Parameters &params,
       }
     }
   }
-
-  ptree solver_params = make_ptree("preconditioner","multigrid")("verbosity", (params.loglevel>0 ? (params.loglevel>1 ? "full" : "normal") : "silent"))("use_smoothed_aggregation", false)("max_iter", 500)("conv","rhs")("max_resid",1.e-8)("keep_preconditioner", keep_preconditioner);
+  //trilionos solver settings
+  ptree solver_params = make_ptree  ("preconditioner","multigrid")
+                                    ("verbosity", (params.loglevel>0 ? (params.loglevel>1 ? "full" : "normal") : "silent"))("use_smoothed_aggregation", false)
+                                    ("max_iter", 500)
+                                    ("conv","rhs")
+                                    ("max_resid",1.e-8)
+                                    ("keep_preconditioner", keep_preconditioner);
 
   try {
     EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
@@ -1491,7 +1504,9 @@ int DetailedP02Sim::run(VesselList3d &vl)
     }
     const double tolerance = params.convergence_tolerance;
     // break if convergent
-    if (iteration_num > params.max_iter || (delta_fieldM()<tolerance && delta_vessM()<tolerance))
+    const double res_delta_fieldM = delta_fieldM();
+    const double res_delta_vessM = delta_vessM();
+    if (iteration_num > params.max_iter || (res_delta_fieldM<tolerance && res_delta_vessM<tolerance))
       break;
     
     //initialize output with zero

@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h> // calculte 3rd root
 // to check if parameter files are present
 #include <boost/filesystem.hpp>
-
+#include <memory> //std::shared_ptr
 #ifdef USE_ADAPTION
   #include "adaption/adaption_model2.h"
 #endif
@@ -143,7 +143,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
   void insertO2Coefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder& mb);
 #endif
   // simple o2
-  void calcChemFields();
+//   void calcChemFields();
   // lattice definition of the continuum field lattice
   ContinuumGrid grid;
   DomainDecomposition mtboxes;
@@ -197,13 +197,13 @@ struct FakeTumorSimMTS : public boost::noncopyable
   std::string writeOutput();
   
   //milotti mts
-  vbl::CellsSystem currentCellsSystem;
+  vbl::CellsSystem *currentCellsSystem;
   void doMilottiStep();
-  void update_milotti_vessels(vbl::CellsSystem &currentCellSys, VesselList3d &vl, DetailedPO2::VesselPO2Storage &po2Store);
-  void WriteCellsSystemHDF(vbl::CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group);
-  void WriteCellsSystemHDF_with_nearest_vessel_index(vbl::CellsSystem &currentCellsSystem, h5cpp::Group &out_cell_group);
-  void fillKdTreeFromVl();
-  void findNearestVessel();
+  //void update_milotti_vessels(vbl::CellsSystem &currentCellSys, VesselList3d &vl, DetailedPO2::VesselPO2Storage &po2Store);
+  //void WriteCellsSystemHDF(h5cpp::Group &out_cell_group);
+  void WriteCellsSystemHDF_with_nearest_vessel_index(h5cpp::Group &out_cell_group);
+  //void fillKdTreeFromVl();
+  void findNearestVessel( DetailedPO2::VesselPO2Storage &po2Store);
   float estimateTumorRadiusFromCells();
 };
 }//end FakeTum

@@ -42,7 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "pylatticedata.h"
 #include "vessels3d.h"
 
-
+#include "python_elliptic_solver_test.cpp"
 enum Mode {
   DATA_PER_NODE = 1,
   DATA_CONST = 0,
@@ -917,6 +917,7 @@ BOOST_PYTHON_MODULE(libkrebs_)
   export_calcflow();
   export_get_Murray();
   export_compute_interpolation_field();
+  export_elliptic_solver_test();
   PyLerp::export_me();
 
 }

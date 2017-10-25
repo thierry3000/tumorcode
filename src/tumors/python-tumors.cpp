@@ -23,12 +23,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/property_tree/info_parser.hpp>
 
 #include <fenv.h>
+#include <cstdlib> // std::getenv()
 #include "mwlib/hdf_wrapper_ptree.h"
 #include "mwlib/log.h"
 #include "shared-objects.h"
 #include "common.h"
 
-//#include <boost/python/module.hpp>
+#include <boost/filesystem.hpp>
 //#include <boost/python/def.hpp>
 #include "faketum.h"
 
@@ -167,6 +168,24 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   s.o2_sim.bfparams.assign(bfSettings);
   s.bfparams.assign(bfSettings);
   s.params.assign(fakeTumMTSSettings);
+  std::string slurm_id = std::getenv("SLURM_JOB_ID");
+  boost::filesystem::path P = boost::filesystem::path(s.params.fn_out);
+  for(auto& part : boost::filesystem::path(s.params.fn_out))
+        std::cout << part << "\n";
+  
+
+  const std::string rndString = "quz";
+  boost::filesystem::path pathOfNewFolder = P.parent_path()/boost::filesystem::path(slurm_id);
+  boost::filesystem::create_directory(pathOfNewFolder);
+  std::cout << pathOfNewFolder << std::endl;
+  boost::filesystem::path newPath = pathOfNewFolder / boost::filesystem::path(P.stem().string());
+  std::cout << newPath << std::endl;
+
+//   boost::filesystem::path p(s.params.fn_out);
+//   std::string new_filename = p.leaf() + ".foo";
+//   p.remove_leaf() /= new_filename;
+//   std::cout << p << '\n';
+  s.params.fn_out = newPath.string();
 #else
   /*
    * simple or no o2 case

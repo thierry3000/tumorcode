@@ -119,6 +119,8 @@ py::object testOperatorApplication(const Int3 &size, bool write_image)
 
 
 // compute \laplace c - lambda c = -r
+#define new_solver_handling 0
+#if new_solver_handling
 py::object testOperatorSolve(const Int3 &size, bool write_image)
 {
   ContinuumGrid grid;
@@ -164,8 +166,9 @@ py::object testOperatorSolve(const Int3 &size, bool write_image)
 
 //   boost::scoped_ptr<EpetraOperatorType> op(new EpetraOperatorType(
 //       grid.ld, grid.dim, mtboxes, -1., ConstFaceVarFunctor(1.), diag_offset, epetra_map));
-  Teuchos::RCP<Epetra_CrsMatrix> op(new EpetraOperatorType(
-      grid.ld, grid.dim, mtboxes, -1., ConstFaceVarFunctor(1.), diag_offset, epetra_map));
+//   Teuchos::RCP<Epetra_CrsMatrix> op(new EpetraOperatorType(
+//       grid.ld, grid.dim, mtboxes, -1., ConstFaceVarFunctor(1.), diag_offset, epetra_map));
+  Teuchos::RCP<Epetra_CrsMatrix> mat = new Epetra_CrsMatrix(EpetraOperatorType(grid.ld, grid.dim, mtboxes, -1., ConstFaceVarFunctor(1.), diag_offset, epetra_map));
 
   Epetra_Vector epetra_rhs(Epetra_DataAccess::View, epetra_map, rhs.getPtr());
   Epetra_Vector epetra_lhs(Epetra_DataAccess::View, epetra_map, lhs.getPtr());
@@ -178,6 +181,7 @@ py::object testOperatorSolve(const Int3 &size, bool write_image)
   uint64 mem_usage = GetMemoryUsage().rss;
   my::Time t_;
   
+  //int SolveEllipticEquation(Teuchos::RCP<Epetra_CrsMatrix> &matrix, Teuchos::RCP<Epetra_Vector> &rhs, Teuchos::RCP<Epetra_Vector> &lhs, const boost::property_tree::ptree &params)
   SolveEllipticEquation(*op, epetra_rhs, epetra_lhs, params);
 
   double result_time_ms = (my::Time() - t_).to_ms();
@@ -200,7 +204,7 @@ py::object testOperatorSolve(const Int3 &size, bool write_image)
 
   return py::make_tuple(result_time_ms, result_mem_bytes_per_dof);
 }
-
+#endif
 
 
 };
@@ -208,7 +212,8 @@ py::object testOperatorSolve(const Int3 &size, bool write_image)
 
 void export_elliptic_solver_test()
 {
-  py::def("EST_testOperatorApplication", EllipticSolverTest::testOperatorApplication);
-  py::def("EST_testOperatorSolve", EllipticSolverTest::testOperatorSolve);
+  //I have to update this to the new solver handling!
+//   py::def("EST_testOperatorApplication", EllipticSolverTest::testOperatorApplication);
+//   py::def("EST_testOperatorSolve", EllipticSolverTest::testOperatorSolve);
 }
 
