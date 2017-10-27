@@ -2,7 +2,7 @@
 This file is part of tumorcode project.
 (http://www.uni-saarland.de/fak7/rieger/homepage/research/tumor/tumor.html)
 
-Copyright (C) 2016 Thierry Fredrich
+Copyright (C) 2017 Thierry Fredrich
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -63,6 +63,10 @@ void initMilotti(vbl::CellsSystem &currentCellsSystem)
   currentCellsSystem.CPU_timer(vbl::timer_button::Start_timer);		// start del CPU timer (e reset del timer degli intertempi)
   currentCellsSystem.Timing( true );				// reset del timer
   currentCellsSystem.StepStat( true );			// reset delle statistiche (azzera anche il vettore convergence_fail)
+  if (currentCellsSystem.Get_alive()==0)
+  {
+    throw std::runtime_error(" no alive cell present");
+  }
   cout << "\nStartup milotti completed" << endl; 
 }
 
@@ -373,7 +377,14 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   /* vessel volume fractions are need to set the source strengths */
   UpdateVesselVolumeFraction();
   /* init the cell system */
-  initMilotti(*currentCellsSystem);
+  try{
+    initMilotti(*currentCellsSystem);
+  }
+  catch( const std::runtime_error& e)
+  {
+    std::cerr << "exception in initMilotti: " << e.what() << std::endl;
+  }
+    
   
   last_chem_update = -1;
   last_vessels_checksum = -1;

@@ -50,29 +50,39 @@ void FiniteVolumeMatrixBuilder::FiniteVolumeMatrixBuilder::Init7Point(const Latt
 {
   ld = ld_;
   dim = dim_;
-  const int d = 3; // dimension
-  const BBox3 bb(ld.Box());
-  int num_dof = (bb.max - bb.min + BBox3::Vec(1)).prod();
+  const int d = 3;            // dimension
+  const BBox3 bb(ld.Box());   // set boundary of physical box eg {42,39,32}
+  /** incase box is centered at zero
+   * here: bb.max = {42,39,32}, --> bb.max = {42,39,32} and bb.min = {0,0,0}
+   */
+  auto boundary_vector = BBox3::Vec(1);
+  //getting degrees of freedom for matrix system, add one element per dimension for boundary conditions
+  //eg: (42+1)*(39+1)*(32+1) = 56760
+  int num_dof = (bb.max - bb.min + boundary_vector).prod();
 
   DynArray<int> num_entries(num_dof);
+  //decide which elemets of matrix are non zeros in order
+  //to set up the sparse system
   FOR_BBOX3(p,bb)
   {
     int n = 1; // one for the diagonal element
     // cell has more neighbors if not at the boundary
-    for(int i=0; i<3; ++i)
+    for(int i=0; i<dim; ++i)
     {
-      if(p[i]>bb.min[i]) n += 1;
-      if(p[i]<bb.max[i]) n += 1;
+      if(p[i]>bb.min[i]) 
+        n += 1;
+      if(p[i]<bb.max[i])
+        n += 1;
     }
     int site = ld.LatticeToSite(p);
     num_entries[site] = n;
   }
 
 #ifdef EPETRA_MPI
-    //#warning "Compiling with MPI Enabled"
+    #warning "Compiling with MPI Enabled"
     Epetra_MpiComm epetra_comm(MPI_COMM_SELF);
 #else
-    //#warning "Compiling without MPI"
+    #warning "Compiling without MPI"
     Epetra_SerialComm epetra_comm;
 #endif
   

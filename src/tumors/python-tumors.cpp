@@ -168,24 +168,24 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   s.o2_sim.bfparams.assign(bfSettings);
   s.bfparams.assign(bfSettings);
   s.params.assign(fakeTumMTSSettings);
-  std::string slurm_id = std::getenv("SLURM_JOB_ID");
+  /* 
+   * if we are on a cluster, we expect multiple runs
+   * and create a directory for each run 
+   */
   boost::filesystem::path P = boost::filesystem::path(s.params.fn_out);
-  for(auto& part : boost::filesystem::path(s.params.fn_out))
-        std::cout << part << "\n";
+//   for(auto& part : boost::filesystem::path(s.params.fn_out))
+//         std::cout << part << "\n";
   
-
-  const std::string rndString = "quz";
-  boost::filesystem::path pathOfNewFolder = P.parent_path()/boost::filesystem::path(slurm_id);
-  boost::filesystem::create_directory(pathOfNewFolder);
-  std::cout << pathOfNewFolder << std::endl;
-  boost::filesystem::path newPath = pathOfNewFolder / boost::filesystem::path(P.stem().string());
-  std::cout << newPath << std::endl;
-
-//   boost::filesystem::path p(s.params.fn_out);
-//   std::string new_filename = p.leaf() + ".foo";
-//   p.remove_leaf() /= new_filename;
-//   std::cout << p << '\n';
-  s.params.fn_out = newPath.string();
+  if( std::getenv("SLURM_JOB_ID") )// environmental variable present, we are on a slurm cluster queue!
+  {
+    boost::filesystem::path pathOfNewFolder = P.parent_path()/boost::filesystem::path(std::getenv("SLURM_JOB_ID"));
+    boost::filesystem::create_directory(pathOfNewFolder);
+    std::cout << pathOfNewFolder << std::endl;
+    boost::filesystem::path newPath = pathOfNewFolder / boost::filesystem::path(P.stem().string());
+    std::cout << newPath << std::endl;
+    s.params.fn_out = newPath.string();
+  }
+  
 #else
   /*
    * simple or no o2 case
