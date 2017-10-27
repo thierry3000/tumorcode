@@ -172,7 +172,9 @@ INSTANTIATE_ADDSMOOTHDELTA(double)
 
 //-----------------------------------
 //-----------------------------------
-
+/** @brief does the index splitting
+ * bb: total box elements
+ */
 void FillBoxGridArray(const BBox3 &bb, const Int3 &cnt, const Int3 &bs, DynArray<BBox3> &res)
 {
   Int3 ijk;
@@ -197,10 +199,11 @@ void FillBoxGridArray(const BBox3 &bb, const Int3 &cnt, const Int3 &bs, DynArray
 /*
  * makes a list of blocks which form a grid and their union is bb
  * bs -> hint for block size
+ * e.g.: bb={42,39,32}   bs={8,8,8}
  */
 DynArray<BBox3> MakeMtBoxGrid(const BBox3 &bb, const Int3 &bs)
 {
-  Int3 cnt = Size(bb).cwiseQuotient(bs).cwiseMax(Int3(1));
+  Int3 cnt = Size(bb).cwiseQuotient(bs).cwiseMax(Int3(1)); // e.g. cnt={5,5,4}
   DynArray<BBox3> res; res.reserve(cnt.prod());
   FillBoxGridArray(bb, cnt, bs, res);
   return res;
@@ -208,7 +211,7 @@ DynArray<BBox3> MakeMtBoxGrid(const BBox3 &bb, const Int3 &bs)
 
 DynArray<BBox3> MakeMtBoxGrid(const BBox3 &bb)
 {
-  return MakeMtBoxGrid(bb, Int3(IS_DEBUG ? 8 : 64));
+  return MakeMtBoxGrid(bb, Int3(IS_DEBUG ? 8 : 64));//if debug Int3(8) = {8,8,8}
 }
 
 

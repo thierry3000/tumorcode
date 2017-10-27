@@ -103,4 +103,8 @@ if(USE_ADAPTION)
     endif()
   endif()
 endif()
-add_subdirectory(trilinos)
+
+if (MPI_NEEDED)
+  #moste trilinos test deal with mpi
+  add_subdirectory(trilinos)
+endif()

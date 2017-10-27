@@ -35,7 +35,7 @@ if(USE_MILOTTI_MTS)
   set(myLibs "${myLibs};gmp")
   
   ### ANN
-  set(myLibs "${myLibs};ANN")
+  set(myLibs "${myLibs};ann")
 
   #message("set comiler flags: ${CMAKE_CXX_FLAGS}")
 else()

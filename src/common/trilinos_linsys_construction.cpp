@@ -77,7 +77,9 @@ void FiniteVolumeMatrixBuilder::FiniteVolumeMatrixBuilder::Init7Point(const Latt
     int site = ld.LatticeToSite(p);
     num_entries[site] = n;
   }
-
+/** may on could think of calling this subroutine from a mpi4py environment 
+ * in future to exploit the full parallism of trilinos
+ */
 #ifdef EPETRA_MPI
     #warning "Compiling with MPI Enabled"
     Epetra_MpiComm epetra_comm(MPI_COMM_SELF);
@@ -89,22 +91,26 @@ void FiniteVolumeMatrixBuilder::FiniteVolumeMatrixBuilder::Init7Point(const Latt
   Epetra_Map epetra_map(num_dof, 0, epetra_comm);
   Epetra_CrsGraph graph(Copy, epetra_map, get_ptr(num_entries), true); // static profile, memory alloction is fixed, map object is copied
 
-  DynArray<BBox3> mtboxes = MakeMtBoxGrid(bb);
+  DynArray<BBox3> mtboxes = MakeMtBoxGrid(bb); //creates boxes per thread (mt: multithread)
   #pragma omp parallel
   {
-    DynArray<int> columns(2 * d + 1, ConsTags::RESERVE); // temp buffer for column indices; each thread has its own.
+    /** temp buffer for column indices; each thread has its own.
+     * per dimension we have a left and a right neightbour, plus the point itself
+     */
+    DynArray<int> columns(2 * d + 1, ConsTags::RESERVE);
     #pragma omp for nowait
+    //for each mutlithread box, do this in different threads.
     for (int i=0; i<mtboxes.size(); ++i)
     {
-      FOR_BBOX3(p, mtboxes[i])
+      FOR_BBOX3(p, mtboxes[i])// in this local thread we go through the local box indeces p, which are in vectors of 3 ( <x>, <y>, <z> )
       {
-        int site = ld.LatticeToSite(p);
-        columns.push_back(site);
+        int site = ld.LatticeToSite(p);     // lattice index to site, this is important since the sites are linear in the matrix!
+        columns.push_back(site);            // fill the culums in the local thread
         for(int d=0; d<LatticeDataQuad3d::DIR_CNT; ++d)
         {
-          const Int3 nbp = ld.NbLattice(p,d);
-          if(!ld.IsInsideLattice(nbp)) continue;
-          columns.push_back(ld.LatticeToSite(nbp));
+          const Int3 nbp = ld.NbLattice(p,d);       //get the neighbour on the lattice
+          if(!ld.IsInsideLattice(nbp)) continue;    //check if the neighbours are still inside the domain
+          columns.push_back(ld.LatticeToSite(nbp)); //add neighbouring points to the matrix
         }
         graph.InsertGlobalIndices(site, columns.size(), get_ptr(columns)); // this function should better be thread safe, at least if the memory layout has been determined in advance!
         columns.remove_all();
