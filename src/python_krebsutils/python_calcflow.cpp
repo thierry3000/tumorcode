@@ -30,14 +30,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace h5 = h5cpp;
 
-#if BOOST_VERSION>106300
-py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_flags, const py::object &py_bfparams, bool simple, bool storeCalculationInHDF)
+py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_path ,bool return_flags, const py::object &py_bfparams, bool simple, bool storeCalculationInHDF)
 {
   FpExceptionStateGuard exception_state_guard(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   
   const BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
 
-  h5::Group g_vess = PythonToCppGroup(vess_grp_obj);
+  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
+  h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
   
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
@@ -63,7 +63,8 @@ py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_f
     }
   }
 
-
+#if BOOST_VERSION>106300
+// boost::numpy
   py::tuple shape = py::make_tuple(num_edges);
   np::dtype dtype = np::dtype::get_builtin<double>();
   np::ndarray pya_flow = np::empty(shape, dtype);
@@ -105,41 +106,8 @@ py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_f
     l.append(pya_flags);
   }
   
-  return l;
-}
 #else
-py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_flags, const py::object &py_bfparams, bool simple, bool storeCalculationInHDF)
-{
-  FpExceptionStateGuard exception_state_guard(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
-  
-  const BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
-
-  h5::Group g_vess = PythonToCppGroup(vess_grp_obj);
-  
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
-
-  Py_ssize_t num_nodes = vl->GetNCount();
-  Py_ssize_t num_edges = vl->GetECount();
-
-  //for some reasons this was needed before calcflow,
-  //however for secomb2hdf.py this is bad.
-  //ComputeCirculatedComponents(vl.get());
-//   if (simple)
-//     CalcFlowSimple(*vl, bfparams, true);
-//   else
-  CalcFlow(*vl, bfparams);
-  
-  if( storeCalculationInHDF )
-  {
-    if( not g_vess.exists("recomputed") )
-    {
-      h5::Group grp_temp;
-      grp_temp = g_vess.create_group("recomputed");
-      ptree getEverytingPossible = make_ptree("w_adaption", false);
-      WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
-    }
-  }
-
+  //welter numpycpp
   np::arrayt<double> pya_flow(np::empty(1, &num_edges, np::getItemtype<double>()));
   np::arrayt<double> pya_force(np::empty(1, &num_edges, np::getItemtype<double>()));
   np::arrayt<double> pya_press(np::empty(1, &num_nodes, np::getItemtype<double>()));
@@ -178,10 +146,10 @@ py::list calc_vessel_hydrodynamics(const py::object &vess_grp_obj ,bool return_f
     }
     l.append(pya_flags.getObject());
   }
-  
-  return l;
-}
 #endif
+  return l;
+};
+
 
 struct BloodFlowParamsFromPy
 {
@@ -249,7 +217,7 @@ static FlReal PyCalcRelViscosity( FlReal r, FlReal h, string rheologyStr)
 {
   Rheology rheology = strTo<Rheology>(rheologyStr);
   return CalcRelViscosity(r, h, rheology);
-}
+};
 
 
 #if BOOST_VERSION>106300

@@ -111,7 +111,7 @@ def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
     for name in ['radius', 'node_a_index', 'node_b_index']:
       gv['edges'].copy(name, gvedst)
   # then we recompute blood flow because the alorithm has changed and we may or may not want hematocrit
-  pressure, flow, shearforce, hematocrit, flags = krebsutils.calc_vessel_hydrodynamics(gv, calc_hematocrit=True, return_flags = True, bloodflowparams = bloodflowparams)
+  pressure, flow, shearforce, hematocrit, flags = krebsutils.calc_vessel_hydrodynamics_(gv, calc_hematocrit=True, return_flags = True, override_hematocrit= True, bloodflowparams = bloodflowparams,storeCalculationInHDF=False)
   # then we save the new data to complete the network copy
   gvedst.create_dataset('flow'      , data = flow       , compression = 9)
   gvedst.create_dataset('shearforce', data = shearforce , compression = 9)
