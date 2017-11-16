@@ -75,11 +75,13 @@ struct State : boost::noncopyable
   int vessels_checksum;
   boost::optional<Array3df> previous_po2field;
   boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels;
-  Array3d<float> o2field;
-  Array3d<float> glucoseField;
-  //Array3d<float> gffield;
+  //Array3d<float> o2field;
+  //Array3d<float> glucoseField;
+  Array3d<float> gffield;
   int chem_checksum;
 };  
+
+
 enum TissuePressureDistribution
 {
   TISSUE_PRESSURE_SPHERE = 0,
@@ -142,18 +144,20 @@ struct FakeTumorSimMTS : public boost::noncopyable
 #else
   void insertO2Coefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder& mb);
 #endif
-  // simple o2
-//   void calcChemFields();
+  
+  void calcChemFields();
   // lattice definition of the continuum field lattice
   ContinuumGrid grid;
   DomainDecomposition mtboxes;
   // the state
   State state;
   
-  void insertGlucoseCoefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder& mb);
+//   void insertGlucoseCoefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder& mb);
+  void insertGFCoefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder& mb);
   Array3d<float> vessel_volume_fraction;
-  Array3d<float> vessel_o2src_clin, vessel_o2src_crhs;
-  Array3d<float> vessel_glucosesrc_clin, vessel_glucosesrc_crhs;
+//   Array3d<float> vessel_o2src_clin, vessel_o2src_crhs;
+//   Array3d<float> vessel_glucosesrc_clin, vessel_glucosesrc_crhs;
+  Array3d<float> cell_GFsrc_clin, cell_GFsrc_crhs;
   Array3dOps<float> oxyops;
   Array3dOps<float> glucoseOps;
   double last_chem_update;
@@ -164,7 +168,9 @@ struct FakeTumorSimMTS : public boost::noncopyable
   TissuePhases phases;//Declaration
   
   FakeTumMTS::Parameters params;
-  GlucoseModel::GlucoseParams glucoseParams;
+  //GlucoseModel::GlucoseParams glucoseParams;
+  GfModel_Cell gf_model;
+  
   BloodFlowParameters bfparams;
 #ifdef USE_ADAPTION
   Adaption::Parameters adap_params;

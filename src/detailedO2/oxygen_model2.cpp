@@ -1515,7 +1515,7 @@ int DetailedP02Sim::run(VesselList3d &vl)
      * 1) propagate the oxygen along the blood stream
      */
     //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
-    IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
+    //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
     {
       h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");

@@ -156,10 +156,12 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   boost::property_tree::update(bfSettings, detailedO2Settings.get_child("calcflow"));
   boost::property_tree::update(fakeTumMTSSettings, pt_params);
   #ifdef DEBUG
-  std::cout << "detailed params after update: " << std::endl;
+  std::cout << "detailedO2 params after update: " << std::endl;
   printPtree(detailedO2Settings);
   std::cout << "calcflow params after update: " << std::endl;
   printPtree(bfSettings);
+  std::cout << "fakeTumMTSSettings  after update: " << std::endl;
+  printPtree(fakeTumMTSSettings);
   #endif
   
   // assign o2 parameters to the simulation

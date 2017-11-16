@@ -108,6 +108,7 @@ S Convolve3x3x3( const ConstArray3d<T> &filter, const ConstArray3d<S> &a, const 
 template<class T>
 void AddSmoothDelta(Array3d<T> &arr, const BBox3 &bbox, const LatticeDataQuad3d &ld, int dim, const Float3 &pos, T weight);
 
+
 /*------------------------------------------------------
 ------------------------------------------------------*/
 

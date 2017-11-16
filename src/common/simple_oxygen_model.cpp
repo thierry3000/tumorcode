@@ -144,7 +144,7 @@ ptree SimpleO2Params::as_ptree() const
 /************************************** END OF PARAMETERS ***************************/
 
 
-/** @note this function wokrks with an array of vessel pointer as
+/** @note this function works with an array of vessel pointer as
  *        opposed to the other one which works with the vessel list structure
  *        because of multithread issues we have to deepcopy them!
  *        --> delete unused vl version
