@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <iostream>
 //#include "../python_krebsutils/python-helpers.h"
-#include "numpy.hpp"
+//#include "numpy.hpp"
 //#include "../adaption/adaption_model2.h"
 //#include "../common/calcflow.h"
 #include <algorithm>

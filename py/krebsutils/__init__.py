@@ -55,6 +55,7 @@ imports_ = [ f.strip() for f in
     '\
     LatticeData, \
     read_lattice_data_from_hdf, \
+    read_lattice_data_from_hdf_by_filename, \
     write_lattice_data_to_hdf, \
     export_network_for_povray, \
     ClipShape, \
@@ -104,6 +105,7 @@ locals().update( (f,getattr(libkrebs, f)) for f in imports_)
 '''
 calc_vessel_hydrodynamics_Ccode = libkrebs.calc_vessel_hydrodynamics
 read_vessel_positions_from_hdf_ = libkrebs.read_vessel_positions_from_hdf
+read_vessel_positions_from_hdf_by_filename = libkrebs.read_vessel_positions_from_hdf_by_filename
 read_vessel_positions_from_hdf_edges_ = libkrebs.read_vessel_positions_from_hdf_edges
 #read_vessel_positions_from_hdf_world_ = libkrebs.read_vessel_positions_from_hdf_world
 flood_fill_ = libkrebs.flood_fill
@@ -122,7 +124,7 @@ fill_with_smooth_delta_ = libkrebs.fill_with_smooth_delta
     outside
       arteries veins
 '''
-calculate_within_fake_tumor_lattice_based = libkrebs.calculate_within_fake_tumor_lattice_based
+#calculate_within_fake_tumor_lattice_based = libkrebs.calculate_within_fake_tumor_lattice_based
 
 #globals
 typelist = 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split()
@@ -426,7 +428,12 @@ def vessels_require_(vesselgroup, g, name):
     
     if "CLASS" in vesselgroup.attrs:
       # c++ site now manages this
-      pos = read_vessel_positions_from_hdf_(vesselgroup).transpose()
+      # I try to remove the this dependency, since h5py not always uses the same
+      # library as c++
+      #pos = read_vessel_positions_from_hdf_(vesselgroup).transpose()
+      fn=str(vesselgroup.file.filename)
+      path = str(vesselgroup.name)
+      pos = read_vessel_positions_from_hdf_by_filename(fn, path).transpose()
       g.nodes['position'] = pos  
     else:
       print("WARNING")
@@ -599,9 +606,10 @@ def calc_vessel_hydrodynamics_(vesselgroup, calc_hematocrit, return_flags, overr
     print('Using c++ default falue')
   #usage:
   #const py::object &vess_grp_obj ,bool return_flags, const BloodFlowParameters &bfparams, bool simple
-  
-  return calc_vessel_hydrodynamics_Ccode(vesselgroup, return_flags, bloodflowparams, simple, storeCalculationInHDF)
-
+  #return calc_vessel_hydrodynamics_Ccode(vesselgroup, return_flags, bloodflowparams, simple, storeCalculationInHDF)
+  fn=str(vesselgroup.file.filename)
+  vessel_path=str(vesselgroup.name)
+  return calc_vessel_hydrodynamics_Ccode(fn, vessel_path, return_flags, bloodflowparams, simple, storeCalculationInHDF)
 
 def calc_vessel_conductivities(rad, length, hema, bloodflowparams = dict()):
   rad    = np.ascontiguousarray(rad, dtype = np.float64)
@@ -874,7 +882,10 @@ def test():
 
 def GetWorldBox(vesselgroup):
     if( vesselgroup.attrs['CLASS'] == 'GRAPH' ):
-      ld = read_lattice_data_from_hdf(vesselgroup['lattice'])
+      #ld = read_lattice_data_from_hdf(vesselgroup['lattice'])
+      fn=str(vesselgroup.file.filename)
+      path=str(vesselgroup.name)
+      ld = read_lattice_data_from_hdf_by_filename(fn, path)
       worldbox = ld.worldBox
       #worldbox = read_lattice_data_from_hdf(vesselgroup['lattice']).GetWorldBox()
     if( vesselgroup.attrs['CLASS'] == 'REALWORLD'):

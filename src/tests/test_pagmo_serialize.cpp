@@ -43,7 +43,7 @@
 
 
 #include "../python_krebsutils/python-helpers.h"
-#include "numpy.hpp"
+//#include "numpy.hpp"
 #include "../adaption/adaption_as_pagmo_problem.h"
 #include "../common/calcflow.h"
 #include "../common/lattice-data-polymorphic.h"
@@ -57,7 +57,7 @@
 #include <boost/accumulators/statistics.hpp>
 
 namespace py = boost::python;
-namespace nm = boost::python::numeric;
+namespace np = boost::python::numpy;
 
 //-------------------------------------------------------------------------------
 // static data needed to test the non-default constructor in some of the problems.

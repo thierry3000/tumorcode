@@ -161,7 +161,7 @@ static bool run(DoStep &doStep, Observer &observer, const ptree &params)
   {
     if (ctrl.t >= next_time - 0.1 * ctrl.dt)
     {
-      //cout << format("out @t = %f, dt = %f, num = %i") % t % dt % out_num << endl;
+//       cout << format("out @t = %f, dt = %f, num = %i") % ctrl.t % ctrl.dt % 42 << endl;
       observer(ctrl.t);
       next_time += out_intervall;
     }

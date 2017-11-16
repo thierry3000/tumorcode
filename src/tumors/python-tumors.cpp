@@ -23,12 +23,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/property_tree/info_parser.hpp>
 
 #include <fenv.h>
+#include <cstdlib> // std::getenv()
 #include "mwlib/hdf_wrapper_ptree.h"
 #include "mwlib/log.h"
 #include "shared-objects.h"
 #include "common.h"
 
-//#include <boost/python/module.hpp>
+#include <boost/filesystem.hpp>
 //#include <boost/python/def.hpp>
 #include "faketum.h"
 
@@ -47,9 +48,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef USE_ADAPTION
   #include "../adaption/adaption_model2.h"
 #endif
-
-namespace py = boost::python;
-
 
 
 namespace Tumors{
@@ -170,6 +168,24 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   s.o2_sim.bfparams.assign(bfSettings);
   s.bfparams.assign(bfSettings);
   s.params.assign(fakeTumMTSSettings);
+  /* 
+   * if we are on a cluster, we expect multiple runs
+   * and create a directory for each run 
+   */
+  boost::filesystem::path P = boost::filesystem::path(s.params.fn_out);
+//   for(auto& part : boost::filesystem::path(s.params.fn_out))
+//         std::cout << part << "\n";
+  
+  if( std::getenv("SLURM_JOB_ID") )// environmental variable present, we are on a slurm cluster queue!
+  {
+    boost::filesystem::path pathOfNewFolder = P.parent_path()/boost::filesystem::path(std::getenv("SLURM_JOB_ID"));
+    boost::filesystem::create_directory(pathOfNewFolder);
+    std::cout << pathOfNewFolder << std::endl;
+    boost::filesystem::path newPath = pathOfNewFolder / boost::filesystem::path(P.stem().string());
+    std::cout << newPath << std::endl;
+    s.params.fn_out = newPath.string();
+  }
+  
 #else
   /*
    * simple or no o2 case
@@ -226,14 +242,32 @@ void run_fakeTumor(const py::str &param_info_str)
   
   FakeTum::FakeTumorSim s;
   //construct default parameters
-  FakeTum::Parameters defaultParams;  /// default parameters
-  ptree faketumSettings = defaultParams.as_ptree();
-  boost::property_tree::update(faketumSettings,pt_params);
+  //get default params
+  ptree bfSettings = s.params.bfparams.as_ptree();
+#ifdef USE_ADAPTION
+  ptree adaptionSettings = s.params.adap_params.as_ptree();
+  if(pt_params.count("adaption")>0)
+  {
+    boost::property_tree::update(adaptionSettings, pt_params.get_child("adaption"));
+  }
+  s.params.adap_params.assign(adaptionSettings);
+#endif
+  ptree fakeTumSettings = s.params.as_ptree();
+  //update with read in params
+  boost::property_tree::update(bfSettings, pt_params.get_child("calcflow"));
+  boost::property_tree::update(fakeTumSettings, pt_params);
+  
+  s.params.bfparams.assign(bfSettings);
+  s.params.assign(fakeTumSettings);
+  
+//   FakeTum::Parameters defaultParams;  /// default parameters
+//   ptree faketumSettings = defaultParams.as_ptree();
+//   boost::property_tree::update(faketumSettings,pt_params);
   //printPtree(defaultParams.as_ptree());
   
-  printPtree(faketumSettings);
+  //printPtree(faketumSettings);
   
-  int returnCode = s.run(faketumSettings);
+  int returnCode = s.run();
   //return returnCode;
 }
 void export_faketum()
@@ -323,7 +357,11 @@ BOOST_PYTHON_MODULE(libtumors_d)
 #else
 BOOST_PYTHON_MODULE(libtumors_)
 #endif
-{
+{ 
+  Py_Initialize();
+#if BOOST_VERSION>106300
+  np::initialize();
+#endif
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
   if (my::MultiprocessingInitializer_exists())
   {

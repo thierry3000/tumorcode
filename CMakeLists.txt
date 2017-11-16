@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.3)
+project(tumorcode C CXX)
 
+if(FALSE)
 ###############  set up spack stuff  ##############
 
 # enable @rpath in the install name for any shared library being built
@@ -32,6 +34,7 @@ ENDIF("${isSystemDir}" STREQUAL "-1")
 # Include all the transitive dependencies determined by Spack.
 # If we're not running with Spack, this does nothing...
 include_directories($ENV{SPACK_TRANSITIVE_INCLUDE_PATH})
+endif()
 
 ###############  end spack stuff  ##############
 
@@ -39,10 +42,19 @@ include_directories($ENV{SPACK_TRANSITIVE_INCLUDE_PATH})
 ### adapted from:
 #   https://crascit.com/2015/07/25/cmake-gtest/
 # Download and unpack numpycpp at configure time
-configure_file(externalProjects/numpycpp/CMakeLists.txt.in externalProjects/numpycpp/CMakeLists.txt)
-message("CMAKE_COMMAND:   ${CMAKE_COMMAND}")
-message("CMAKE_GENERATOR:   ${CMAKE_GENERATOR}")
+find_package(Boost REQUIRED)
+if(Boost_VERSION GREATER 106500)
+  message("no numpy cpp!!!")
+else()
+  configure_file(externalProjects/numpycpp/CMakeLists.txt.in externalProjects/numpycpp/CMakeLists.txt)
+  message("CMAKE_COMMAND:   ${CMAKE_COMMAND}")
+  message("CMAKE_GENERATOR:   ${CMAKE_GENERATOR}")
+endif()
+
+# T.F. try to remove this since boost::python::numpy does now exist in boost 1.65.1
 # numpycpp has its own modules
+if(Boost_VERSION GREATER 106500)
+else()
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src/.cmake/modules;")
 message("CMAKE_MODULE_PATH at numpycpp build:   ${CMAKE_MODULE_PATH}")
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
@@ -54,6 +66,7 @@ include_directories("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src")
 # the following targets: numpycpp
 add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src"
                  "${CMAKE_BINARY_DIR}/externalProjects/numpycpp-build")
+endif()
 
 ## HDF5-cpp-wrapper does not need compilation
 configure_file(externalProjects/HDF5-cpp-wrapper/CMakeLists.txt.in externalProjects/HDF5-cpp-wrapper/CMakeLists.txt)
@@ -66,24 +79,24 @@ include_directories("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src")
 #                  "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-build")
 
 ## ANN
+# it is now supposed, that ANN is present on the system
 # to find nearest vessels for cells we contact the ANN add_library
-configure_file(externalProjects/ANN/CMakeLists.txt.in externalProjects/ANN/CMakeLists.txt)
-message("CMAKE_COMMAND:   ${CMAKE_COMMAND}")
-message("CMAKE_GENERATOR:   ${CMAKE_GENERATOR}")
-# numpycpp has its own modules
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_BINARY_DIR}/externalProjects/ANN-src/.cmake/modules;")
-message("CMAKE_MODULE_PATH at ANN build:   ${CMAKE_MODULE_PATH}")
-execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
-execute_process(COMMAND "${CMAKE_COMMAND}" --build .
-  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
-include_directories("${CMAKE_BINARY_DIR}/externalProjects/ANN-src/include")
-# Add numpycpp directly to our build. This adds
-# the following targets: numpycpp
-add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/ANN-src"
-                 "${CMAKE_BINARY_DIR}/externalProjects/ANN-build")
+# configure_file(externalProjects/ANN/CMakeLists.txt.in externalProjects/ANN/CMakeLists.txt)
+# message("CMAKE_COMMAND:   ${CMAKE_COMMAND}")
+# message("CMAKE_GENERATOR:   ${CMAKE_GENERATOR}")
+# # numpycpp has its own modules
+# set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_BINARY_DIR}/externalProjects/ANN-src/.cmake/modules;")
+# message("CMAKE_MODULE_PATH at ANN build:   ${CMAKE_MODULE_PATH}")
+# execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+#   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
+# execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+#   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/ANN" )
+# include_directories("${CMAKE_BINARY_DIR}/externalProjects/ANN-src/include")
+# # Add numpycpp directly to our build. This adds
+# # the following targets: numpycpp
+# add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/ANN-src"
+#                  "${CMAKE_BINARY_DIR}/externalProjects/ANN-build")
 
-project(allmystuff C CXX)
 list(APPEND CMAKE_CXX_SOURCE_FILE_EXTENSIONS c)
 add_definitions(-DSILENT)
 find_package(Threads REQUIRED)
@@ -99,7 +112,7 @@ message("TrilinosDIR: ${TrilinosDIR}")
 
 include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)
 
-option(USE_MILOTTI_MTS "decide to use libvbl.so" ON)
+option(USE_MILOTTI_MTS "decide to use libvbl.so" OFF)
 if(USE_MILOTTI_MTS)
   message("MILOTTI_MTS preprocessor defined")
   add_definitions(-DMILOTTI_MTS)
@@ -143,15 +156,26 @@ set (ADDITIONAL_LIBRARY_DIRS CACHE PATH "Additional dirs to search for linked li
 find_package(Boost REQUIRED COMPONENTS "program_options")
 message("Boost_PROGRAM_OPTIONS_LIBRARY: ${Boost_PROGRAM_OPTIONS_LIBRARY}")
 set(myLibs "${myLibs};${Boost_PROGRAM_OPTIONS_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "system")
 message("Boost_SYSTEM_LIBRARY: ${Boost_SYSTEM_LIBRARY}")
 set(myLibs "${myLibs};${Boost_SYSTEM_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "serialization")
+message("Boost_SERIALIZATION_LIBRARY: ${Boost_SERIALIZATION_LIBRARY}")
 set(myLibs "${myLibs};${Boost_SERIALIZATION_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "thread")
+message("Boost_THREAD_LIBRARY: ${Boost_THREAD_LIBRARY}")
 set(myLibs "${myLibs};${Boost_THREAD_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "filesystem")
+message("Boost_FILESYSTEM_LIBRARY: ${Boost_FILESYSTEM_LIBRARY}")
 set(myLibs "${myLibs};${Boost_FILESYSTEM_LIBRARY}")
+if(Boost_VERSION GREATER 106500)
+  find_package(Boost REQUIRED COMPONENTS "numpy")
+  set(myLibs "${myLibs};${Boost_NUMPY_LIBRARY}")
+endif()
 
 
 #note there are system without eigen, so let the configure fail here
@@ -277,6 +301,23 @@ include_directories(${ADDITIONAL_INCLUDE_DIRS})
 link_directories(${ADDITIONAL_LIBRARY_DIRS})
 include_directories("src/")
 
+if(Boost_VERSION GREATER 106500)
+set(myLibs
+  ${myLibs} #maybe something is already there
+  common  # part of this software
+  mwlib   # part of this software
+  tbb
+  #${TBB_LIBRARIES}
+  ${Trilinos_LIBRARIES} # -> trilinos
+  ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
+  ${Boost_PYTHON_LIBRARY}
+  ${HDF5_LIBRARIES}
+  ${LAPACK_LIBRARIES}
+  ${BLAS_LIBRARIES}
+  ${PNG_LIBRARIES}
+  ${PYTHON_LIBRARIES}
+)
+else()
 set(myLibs
   ${myLibs} #maybe something is already there
   common  # part of this software
@@ -293,6 +334,7 @@ set(myLibs
   ${PNG_LIBRARIES}
   ${PYTHON_LIBRARIES}
 )
+endif()
 #message(STATUS "myLibs = ${myLibs}")
 
 

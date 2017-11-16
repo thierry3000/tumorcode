@@ -20,8 +20,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef PYTHON_HELPERS_H
 #define PYTHON_HELPERS_H
 
+
+
 #include <boost/python.hpp>
 #include <boost/python/tuple.hpp>
+#if BOOST_VERSION>106300
+  #include <boost/python/numpy.hpp>
+#else
+  #include "numpy.hpp"
+  namespace nm = boost::python::numeric;
+#endif
 #include <boost/format.hpp>
 #include <fenv.h>
 
@@ -30,11 +38,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/math_ext.h"
 #include "mwlib/ptree_ext.h"
 
-#include "numpy.hpp"
-
 namespace py = boost::python;
-namespace np = boost::python::numpy;
-namespace nm = boost::python::numeric;
+namespace np = boost::python::numpy;//either defined by numpycpp-> welter or boost
+
 using boost::format;
 using boost::str;
 
@@ -70,10 +76,27 @@ inline BBoxd<T, dim> BBoxFromPy(const py::object &p)
   return r;
 }
 
+#if BOOST_VERSION>106300
 template<class T, int dim>
 inline py::object BBoxToPy(const BBoxd<T, dim> &bb)
 {
-  np::ssize_t dims[1] = { dim*2 };
+  //Py_ssize_t dims[1] = { dim*2 };
+  np::dtype dtype = np::dtype::get_builtin<T>();
+  py::tuple shape = py::make_tuple(dim*2);
+  np::ndarray r = np::empty(shape, dtype);
+  //np::arrayt<T> r = np::empty(1, dims, np::getItemtype<T>());
+  for (int i=0; i<dim; ++i)
+  {
+    r[i*2  ] = bb.min[i];
+    r[i*2+1] = bb.max[i];
+  }
+  return r;
+}
+#else
+template<class T, int dim>
+inline py::object BBoxToPy(const BBoxd<T, dim> &bb)
+{
+  Py_ssize_t dims[1] = { dim*2 };
   np::arrayt<T> r = np::empty(1, dims, np::getItemtype<T>());
   for (int i=0; i<dim; ++i)
   {
@@ -82,6 +105,7 @@ inline py::object BBoxToPy(const BBoxd<T, dim> &bb)
   }
   return r.getObject();
 }
+#endif
 
 
 // this is crazy shit! python generates a string representation of the entire
@@ -90,7 +114,28 @@ inline py::object BBoxToPy(const BBoxd<T, dim> &bb)
 boost::property_tree::ptree convertInfoStr(const py::str &param_info_str, const boost::property_tree::ptree &defaults);
 
 
-
+#if BOOST_VERSION>106300
+static void _CheckArray(const py::object &obj, np::dtype itemtype, int rank, const int *dims, const char* file, const int line )
+{
+  //hopefullty obj is already ndarray!
+  np::ndarray a = np::from_object(obj);
+  if(rank>0 && a.get_nd()!=rank) throw std::invalid_argument(str(format("array rank %i expected, got %i @ %s(%i)") % rank % a.get_nd() % file % line));
+//   if(itemtype>0 && a.itemtype()!=itemtype) throw std::invalid_argument(str(format("array itemtype %i expected, got %i @ %s(%i)") % itemtype % a.itemtype() % file % line));
+  if(!np::equivalent(a.get_dtype(),itemtype)) throw std::invalid_argument(str(format("array itemtype %i expected, got %i @ %s(%i)") % a.get_dtype() % itemtype % file % line));
+  //TODO: fix itemtypes. For some reason a python array of type np.float64 gives a different itemtype than NPY_DOUBLE ...!!!!!
+  if(dims)
+  {
+    const auto* adims = a.get_shape();
+    for(int i=0; i<a.get_nd(); ++i)
+    {
+      if(dims[i]>0 && adims[i]!=dims[i])
+      {
+        throw std::invalid_argument(str(format("array dims[%i] %i expected, got %i @ %s(%i)") %  i % dims[i] % adims[i] % file % line));
+      }
+    }
+  }
+}
+#else
 static void _CheckArray(const py::object &obj, int itemtype, int rank, const int *dims, const char* file, const int line )
 {
   np::arraytbase a(obj);
@@ -109,9 +154,41 @@ static void _CheckArray(const py::object &obj, int itemtype, int rank, const int
     }
   }
 }
+#endif
 
 #define CheckArray(a,itemtype,rank,dims) _CheckArray(a,itemtype,rank,dims,__FILE__,__LINE__)
 
+#if BOOST_VERSION>106300
+//maybe it is possible to ignore all this checks
+template<class T>
+static void _CheckArray1(const py::object &obj, int dim1, const char* file, const int line)
+{
+  const int dims[] = { dim1 };
+  //_CheckArray(obj, np::getItemtype<T>(), 1, dims, file, line);
+  np::dtype aDataType = np::dtype::get_builtin<T>();
+  _CheckArray(obj, aDataType, 1, dims, file, line);
+}
+
+template<class T>
+static void _CheckArray2(const py::object &obj, int dim1, int dim2, const char* file, const int line)
+{
+  const int dims[] = { dim1, dim2 };
+  //_CheckArray(obj, np::getItemtype<T>(), 2, dims, file, line);
+  _CheckArray(obj, np::dtype::get_builtin<T>(), 2, dims, file, line);
+}
+
+template<class T>
+static void _CheckArray3(const py::object &obj, int dim1, int dim2, int dim3, const char* file, const int line)
+{
+  const int dims[] = { dim1, dim2, dim3 };
+  //_CheckArray(obj, np::getItemtype<T>(), 3, dims, file, line);
+  _CheckArray(obj, np::dtype::get_builtin<T>(), 3, dims, file, line);
+}
+
+#define CheckArray1(T, a,dim1) _CheckArray1<T>(a, dim1, __FILE__,__LINE__)
+#define CheckArray2(T, a,dim1,dim2) _CheckArray2<T>(a, dim1, dim2, __FILE__,__LINE__)
+#define CheckArray3(T, a,dim1,dim2,dim3) _CheckArray3<T>(a, dim1, dim2, dim3, __FILE__,__LINE__)
+#else
 template<class T>
 static void _CheckArray1(const py::object &obj, int dim1, const char* file, const int line)
 {
@@ -137,6 +214,8 @@ static void _CheckArray3(const py::object &obj, int dim1, int dim2, int dim3, co
 #define CheckArray2(T, a,dim1,dim2) _CheckArray2<T>(a, dim1, dim2, __FILE__,__LINE__)
 #define CheckArray3(T, a,dim1,dim2,dim3) _CheckArray3<T>(a, dim1, dim2, dim3, __FILE__,__LINE__)
 
+#endif
+
 // #define THROW_ERROR(msg)        throw std::invalid_argument(str(format(msg + " @ %s(%i)") % __FILE__ % __LINE__))
 // #define THROW_ERROR1(msg,a1)    throw std::invalid_argument(str(format(msg + " @ %s(%i)") % a1 % __FILE__ % __LINE__))
 // #define THROW_ERROR2(msg,a1,a2) throw std::invalid_argument(str(format(msg + " @ %s(%i)") % a1 % a2 % __FILE__ % __LINE__))
@@ -151,12 +230,27 @@ static void _CheckArray3(const py::object &obj, int dim1, int dim2, int dim3, co
  * this was due to extraction of 32bit int as type, now size_t is used
  */
 h5cpp::Group PythonToCppGroup(const py::object &op_);
-h5cpp::Dataset PythonToCppDataset(const py::object &op_);
 
 #include "mwlib/field.h"
 
 // wrap data from a numpy array in a Array3d<T>
 // the numpy array must be kept alive while this array exists
+#if BOOST_VERSION>106300
+template<class T>
+inline Array3d<T> Array3dFromPy(const np::ndarray &a)
+{
+  assert(a.get_nd() <= 3);
+  Int3 size(1);
+  for (int i=0; i<a.get_nd(); ++i)
+  {
+    size[i] = a.get_shape()[i];
+  }
+  Array3d<T> arr3d(size,
+                   Int3(a.get_strides()[0],a.get_strides()[1],a.get_strides()[2])/sizeof(T),
+                       (T*)a.get_dtype().get_itemsize(), size.prod(),false);
+  return arr3d;
+}
+#else
 template<class T>
 inline Array3d<T> Array3dFromPy(np::arrayt<T> &a)
 {
@@ -168,7 +262,7 @@ inline Array3d<T> Array3dFromPy(np::arrayt<T> &a)
                        (T*)a.bytes(), size.prod(),false);
   return arr3d;
 }
-
+#endif
 
 struct FpExceptionStateGuard
 {

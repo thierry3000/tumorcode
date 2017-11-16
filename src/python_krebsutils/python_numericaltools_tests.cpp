@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "python_helpers.h"
-#include "numpy.hpp"
 
 #include "common.h"
 #include "continuum-flow.h"
@@ -811,7 +810,54 @@ void runSimpleSteppersTest(const std::string &fn_out)
 }
 
 
+#if BOOST_VERSION>106300
+py::object calcCurvature(const py::object py_ld, np::ndarray py_phi, bool has_ghost_boundary, bool return_stf)
+{
+  int dim = py_phi.get_nd();
+  const LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ld);
+  const BBox3 extbox = ExtendForDim(ld.Box(), dim, 1);
+  Array3d<float> phi = Array3dFromPy<float>(py_phi);
+  if (!has_ghost_boundary)
+  {
+    phi.move(ld.Box().min);
+    Array3d<float> phi_ex(extbox);
+    phi_ex[ld.Box()].fill(phi[ld.Box()]);
+    CopyBorder(phi_ex[ld.Box()], dim, 1);
+    phi = phi_ex;
+  }
+  else
+    phi.move(extbox.min);
+  
+  myAssert(phi.size() == Size(extbox));
+  SurfaceTensionForce<float> sft; sft.init(ld.Box(), phi, dim, ld.Scale());
+//   np::arrayt<float> py_res = np::zeros(dim, Cast<Py_ssize_t>(Size(ld.Box())).data(), np::getItemtype<float>());
+  np::ndarray py_res = np::zeros(py::tuple(Cast<Py_ssize_t>(Size(ld.Box())).data()), np::dtype::get_builtin<float>());
+  Array3d<float> res = Array3dFromPy<float>(py_res);
+  res.move(ld.Box().min);
+  FOR_BBOX3(p, ld.Box())
+  {
+    res(p) = sft.computeCurvature(p);
+  }
+  if (!return_stf)
+    return py_res;
 
+  const Int3 sz_ = Size(ld.Box());
+  const Py_ssize_t dims[4] = { dim, sz_[0], sz_[1], sz_[2] };
+  //np::arrayt<float> acc_stf = np::zeros(4, dims, np::getItemtype<float>());
+  np::ndarray acc_stf = np::zeros(py::make_tuple(dim, sz_[0], sz_[1], sz_[2]), np::dtype::get_builtin<float>());
+  FOR_BBOX3(p, ld.Box())
+  {
+    Float3 f = sft.computeForce(p);
+    const Int3 q = p - ld.Box().min;
+    for (int axis=0; axis<dim; ++axis)
+    {
+//       acc_stf(axis, q[0], q[1], q[2]) = f[axis];
+      acc_stf[axis][q[0]][q[1]][q[2]] = f[axis];
+    }
+  }
+  return py::make_tuple(py_res, acc_stf);
+}
+#else
 py::object calcCurvature(const py::object py_ld, np::arrayt<float> py_phi, bool has_ghost_boundary, bool return_stf)
 {
   int dim = py_phi.rank();
@@ -831,7 +877,7 @@ py::object calcCurvature(const py::object py_ld, np::arrayt<float> py_phi, bool 
   
   myAssert(phi.size() == Size(extbox));
   SurfaceTensionForce<float> sft; sft.init(ld.Box(), phi, dim, ld.Scale());
-  np::arrayt<float> py_res = np::zeros(dim, Cast<np::ssize_t>(Size(ld.Box())).data(), np::getItemtype<float>());
+  np::arrayt<float> py_res = np::zeros(dim, Cast<Py_ssize_t>(Size(ld.Box())).data(), np::getItemtype<float>());
   Array3d<float> res = Array3dFromPy<float>(py_res);
   res.move(ld.Box().min);
   FOR_BBOX3(p, ld.Box())
@@ -842,7 +888,7 @@ py::object calcCurvature(const py::object py_ld, np::arrayt<float> py_phi, bool 
     return py_res.getObject();
 
   const Int3 sz_ = Size(ld.Box());
-  const np::ssize_t dims[4] = { dim, sz_[0], sz_[1], sz_[2] };
+  const Py_ssize_t dims[4] = { dim, sz_[0], sz_[1], sz_[2] };
   np::arrayt<float> acc_stf = np::zeros(4, dims, np::getItemtype<float>());
   FOR_BBOX3(p, ld.Box())
   {
@@ -855,8 +901,18 @@ py::object calcCurvature(const py::object py_ld, np::arrayt<float> py_phi, bool 
   }
   return py::make_tuple(py_res.getObject(), acc_stf.getObject());
 }
+#endif
 
-
+#if BOOST_VERSION>106300
+void fill_with_smooth_delta(np::ndarray py_arr, float width)
+{
+//   np::arrayt<float> arr(py_arr);
+//   for (int i=0; i<arr.shape()[0]; ++i)
+//   {
+//     arr(i) = my::smooth_delta_cos<float>(arr(i), width);
+//   }
+}
+#else
 void fill_with_smooth_delta(nm::array py_arr, float width)
 {
   np::arrayt<float> arr(py_arr);
@@ -865,7 +921,7 @@ void fill_with_smooth_delta(nm::array py_arr, float width)
     arr(i) = my::smooth_delta_cos<float>(arr(i), width);
   }
 }
-
+#endif
 
 
 

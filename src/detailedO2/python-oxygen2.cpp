@@ -167,14 +167,16 @@ inline boost::optional<T> getOptional(const char* name, py::dict &d)
  * 
  * Calls the important stuff.
  */
-static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
+//static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
+static void PyComputePO2(string fn, string vesselgroup_path, string tumorgroup_path, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
 {
   Parameters params;
   InitParameters(params, py_parameters);
   cout << "parameters initialized" << std::endl;
-  //h5cpp::Group group = PythonToCppGroup(py_group);
-  //h5cpp::Group vesselgroup = group.open_group(path_vessels);
-  h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
+  
+  //h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
+  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
+  h5cpp::Group vesselgroup = h5cpp::Group(readInFile->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
   //checks if we have a REALWORLD simuation or a lattice
   
   //world = vesselgroup.attrs().get<string>("CLASS") == "REALWORLD";
@@ -208,10 +210,13 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
   boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels;
   //h5cpp::Group   *tumorgroup = new h5cpp::Group();
   DetailedP02Sim s;
-  if (!py_tumorgroup.is_none())
+//   if (!py_tumorgroup.is_none())
+//   {
+//     tumorgroup = PythonToCppGroup(py_tumorgroup);
+//   }
+  if (tumorgroup_path != "not_found_tumor")
   {
-    tumorgroup = PythonToCppGroup(py_tumorgroup);
-    
+    h5cpp::Group tumorgroup = h5cpp::Group(readInFile->root().open_group(tumorgroup_path));
   }
   
   s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels);
@@ -251,7 +256,30 @@ static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py
   }
 }
 
+#if BOOST_VERSION>106300
+static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters)
+{
+  DetailedPO2::Parameters params;
+  InitParameters(params, py_parameters);
+  
+  //np::arrayt<float> po2(py_po2);
 
+  //if (!(py_po2.get_nd() == 1 && po2.isCContiguous())) throw std::invalid_argument("rank 1 and contiguous expected");
+  //np::arrayt<float> result(np::empty(1, po2.shape(), np::getItemtype<float>()));
+  //np::ndarray result = np::empty(py::tuple(py_po2.get_shape()[0]), np::dtype::get_builtin<float>());
+//   cout<< "shape[0]: "<< py_po2.get_shape() << endl;
+//   cout<< "nd: "<< py_po2.get_nd() << endl;
+  if(!(py_po2.get_nd() == 1))
+    throw std::invalid_argument("rank 1 and contiguous expected");
+  np::ndarray result = np::empty(py::make_tuple(py_po2.get_shape()[0]), np::dtype::get_builtin<float>());
+
+  for (int i=0; i<py_po2.get_shape()[0]; ++i)
+  {
+    result[i] = params.Saturation(py::extract<float>(py_po2[i]));
+  }
+  return result;
+}
+#else
 static py::object PyComputeSaturation(nm::array py_po2, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
@@ -268,8 +296,11 @@ static py::object PyComputeSaturation(nm::array py_po2, py::dict py_parameters)
   }
   return result.getObject();
 }
+#endif
 
 
+#if BOOST_VERSION>106300
+#else
 static py::object PyComputeMassTransferCoefficient(nm::array py_radius, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
@@ -291,8 +322,33 @@ static py::object PyComputeMassTransferCoefficient(nm::array py_radius, py::dict
   }
   return mtc.getObject();
 }
+#endif
 
 
+#if BOOST_VERSION>106300
+static py::object PyComputeConcentration(np::ndarray py_po2, np::ndarray py_hematocrit, py::dict py_parameters)
+{
+  DetailedPO2::Parameters params;
+  InitParameters(params, py_parameters);
+  
+//   np::arrayt<float> po2(py_po2);
+//   np::arrayt<float> hema(py_hematocrit);
+
+//   if (!(po2.rank() == 1 && po2.isCContiguous())) throw std::invalid_argument("rank 1 and contiguous expected");
+//   if (!(hema.rank() == 1 && hema.isCContiguous())) throw std::invalid_argument("rank 1 and contiguous expected");
+  if (!(py_po2.get_nd() == 1 )) throw std::invalid_argument("1 d array expected");
+  if (!(py_hematocrit.get_nd() == 1)) throw std::invalid_argument("1 d array expected");
+
+//   np::arrayt<float> result(np::empty(1, po2.shape(), np::getItemtype<float>()));
+  np::ndarray result = np::empty(py::make_tuple(py_po2.shape(0)), np::dtype::get_builtin<float>());
+
+  for (int i=0; i<py_po2.shape(0); ++i)
+  {
+    result[i] = params.BloodPO2ToConc(py::extract<float>(py_po2[i]), py::extract<float>(py_hematocrit[i]));
+  }
+  return result;
+}
+#else
 static py::object PyComputeConcentration(nm::array py_po2, nm::array py_hematocrit, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
@@ -312,8 +368,11 @@ static py::object PyComputeConcentration(nm::array py_po2, nm::array py_hematocr
   }
   return result.getObject();
 }
+#endif
 
 
+#if BOOST_VERSION>106300
+#else
 static py::object PyComputePO2FromConc(nm::array py_conc, nm::array py_hematocrit, py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
@@ -333,8 +392,11 @@ static py::object PyComputePO2FromConc(nm::array py_conc, nm::array py_hematocri
   }
   return result.getObject();
 }
+#endif
 
 
+#if BOOST_VERSION>106300
+#else
 static py::object PyComputeUptake(nm::array py_po2field, const LatticeDataQuad3d &field_ld, py::object py_tumorgroup,  py::dict py_parameters)
 {
   DetailedPO2::Parameters params;
@@ -374,7 +436,7 @@ static py::object PyComputeUptake(nm::array py_po2field, const LatticeDataQuad3d
 
   return consumption.getObject();
 }
-
+#endif
 
 template<int rows>
 static Eigen::Matrix<float, rows, 1> LinearInterpolation(float xeval, const DynArray<Eigen::Matrix<float, rows, 1> > &sol)
@@ -406,7 +468,8 @@ static Eigen::Matrix<float, rows, 1> LinearInterpolation(float xeval, const DynA
   return (1.-f)*r0 + f*r1;
 }
 
-
+#if BOOST_VERSION>106300
+#else
 // may be a measurement class can come back later when it makes more sense to store persistent data between analysis steps
 py::object PySampleVessels(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, nm::array py_vesselpo2, nm::array py_po2field, const LatticeDataQuad3d &field_ld, float sample_len)
 {
@@ -492,7 +555,10 @@ py::object PySampleVessels(py::object py_vesselgroup, py::object py_tumorgroup, 
 
   return py::make_tuple(samples, fluxes);
 }
+#endif
 
+#if BOOST_VERSION>106300
+#else
 // may be a measurement class can come back later when it makes more sense to store persistent data between analysis steps
 py::object PySampleVesselsWorld(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, np::arrayt<float> py_vesselpo2, np::arrayt<float> py_po2field, const LatticeDataQuad3d &field_ld, float sample_len)
 {
@@ -578,7 +644,7 @@ py::object PySampleVesselsWorld(py::object py_vesselgroup, py::object py_tumorgr
 
   return py::make_tuple(samples, fluxes);
 }
-
+#endif
 
 
 DetailedPO2::Parameters* AllocateParametersFromDict(const py::dict &d)
@@ -638,11 +704,12 @@ void export_oxygen_computation()
   py::def("computePO2", PyComputePO2);
   py::def("computeSaturation_", PyComputeSaturation);
   py::def("computeConcentration_", PyComputeConcentration);
-  py::def("computeMassTransferCoefficient_", PyComputeMassTransferCoefficient);
-  py::def("computePO2FromConc_", PyComputePO2FromConc);
-  py::def("computeO2Uptake", PyComputeUptake);
-  py::def("sampleVessels", PySampleVessels);
-  py::def("sampleVesselsWorld", PySampleVesselsWorld);
+  //those are not yet boost::numpy ready
+//  py::def("computeMassTransferCoefficient_", PyComputeMassTransferCoefficient);
+//   py::def("computePO2FromConc_", PyComputePO2FromConc);
+//   py::def("computeO2Uptake", PyComputeUptake);
+//   py::def("sampleVessels", PySampleVessels);
+//   py::def("sampleVesselsWorld", PySampleVesselsWorld);
   // just some tests
   py::def("testCalcOxy", TestSaturationCurve);
   py::def("testCalcOxy2", TestSingleVesselPO2Integration);

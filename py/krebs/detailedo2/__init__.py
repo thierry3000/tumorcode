@@ -111,7 +111,7 @@ def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
     for name in ['radius', 'node_a_index', 'node_b_index']:
       gv['edges'].copy(name, gvedst)
   # then we recompute blood flow because the alorithm has changed and we may or may not want hematocrit
-  pressure, flow, shearforce, hematocrit, flags = krebsutils.calc_vessel_hydrodynamics(gv, calc_hematocrit=True, return_flags = True, bloodflowparams = bloodflowparams)
+  pressure, flow, shearforce, hematocrit, flags = krebsutils.calc_vessel_hydrodynamics_(gv, calc_hematocrit=True, return_flags = True, override_hematocrit= True, bloodflowparams = bloodflowparams,storeCalculationInHDF=False)
   # then we save the new data to complete the network copy
   gvedst.create_dataset('flow'      , data = flow       , compression = 9)
   gvedst.create_dataset('shearforce', data = shearforce , compression = 9)
@@ -130,7 +130,14 @@ def computePO2_(gdst, vesselgroup, tumorgroup, parameters):
   myutils.hdf_write_dict_hierarchy(gdst, 'parameters', parameters)
   gdst.file.flush()
   # now we can compute PO2. The c++ routine can a.t.m. only read from hdf so it has to use our new file
-  pickDetailedO2Library(parameters).computePO2(vesselgroup, tumorgroup, parameters, parameters.get('calcflow'), gdst)
+  #pickDetailedO2Library(parameters).computePO2(vesselgroup, tumorgroup, parameters, parameters.get('calcflow'), gdst)
+  fn=str(vesselgroup.file.filename)
+  vessel_path=str(vesselgroup.name)
+  if( not tumorgroup):
+    tumor_path="not_found_tumor"
+  else:
+    tumor_path=str(tumorgroup.name)  
+  pickDetailedO2Library(parameters).computePO2(fn, vessel_path, tumor_path, parameters, parameters.get('calcflow'), gdst)
   #r = pickDetailedO2Library(parameters).computePO2(vesselgroup, tumorgroup, parameters, parameters.get('calcflow'), gdst)
   #return r
 

@@ -82,7 +82,8 @@ struct FakeTumorSim : public boost::noncopyable
 
   // main functions
   //int run(int argc, char **argv);
-  int run(const ptree &params);
+//   int run(const ptree &params);
+  int run();
   void doStep(double dt);
   void writeOutput();
 };

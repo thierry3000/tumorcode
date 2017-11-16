@@ -5,8 +5,11 @@ include_directories(../common)
 
 add_library(krebs_ SHARED
             mainboost.cpp pylatticedata.cpp python_helpers.cpp
-            povray_export.cpp samplevessels.cpp python_tumormodel_tests.cpp
-            python_numericaltools_tests.cpp python_vesselgen.cpp
+            povray_export.cpp samplevessels.cpp 
+            python_tumormodel_tests.cpp
+            python_numericaltools_tests.cpp 
+#             python_elliptic_solver_test.cpp
+            python_vesselgen.cpp
             python_calcflow.cpp python_interpolate_between_vessels.cpp
             python_murray.cpp)
 #I have to take care of python_elliptic_solver_test.cpp

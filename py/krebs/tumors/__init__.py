@@ -134,6 +134,10 @@ def set_lattice_size(c, vesselfilename):
 def run_faketum_mts(configstring_file):
   if qsub.is_client:
     qsub.printClientInfo()
+    #moved to c++ side
+#    slurm_id = os.environ.get('SLURM_JOB_ID')
+#    if slurm_id:
+#      print("current slurm job id: %s" % slurm_id)
   with open(configstring_file, 'r') as f:
     configstring = f.read()
   return tumor_cpp.run_faketum_mts_(configstring)

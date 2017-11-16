@@ -30,7 +30,7 @@ h5cpp::Group PythonToCppGroup(const py::object &op_)
     return h5cpp::Group(id);
   }
 }
-
+/*
 h5cpp::Dataset PythonToCppDataset(const py::object &op_)
 {
   py::object id_obj1 = py::getattr(op_, "id");
@@ -38,7 +38,7 @@ h5cpp::Dataset PythonToCppDataset(const py::object &op_)
   ssize_t id = py::extract<ssize_t>(id_obj2);
   return h5cpp::Dataset(id);
 }
-
+*/
 
 using boost::property_tree::ptree;
 
@@ -171,25 +171,26 @@ struct VecFromPy
     }
 };
 
-template<class T, int dim>
-struct VecToPy
-{
-  typedef Vec<T,dim> V;
-
-  static PyObject* convert(const V& p)
-  {
-    np::ssize_t dims[1] = { dim };
-    auto r = np::arrayt<T>(np::zeros(1, dims, np::getItemtype<T>()));
-    for (int i=0; i<dim; ++i)
-      r[i] = p[i];
-    return py::incref(r.getObject().ptr());
-  }
-
-  static void Register()
-  {
-    py::to_python_converter<V, VecToPy<T,dim> >();
-  }
-};
+// template<class T, int dim>
+// struct VecToPy
+// {
+//   typedef Vec<T,dim> V;
+// 
+//   static PyObject* convert(const V& p)
+//   {
+//     Py_ssize_t dims[1] = { dim };
+//     
+//     auto r = np::arrayt<T>(np::zeros(1, dims, np::getItemtype<T>()));
+//     for (int i=0; i<dim; ++i)
+//       r[i] = p[i];
+//     return py::incref(r.getObject().ptr());
+//   }
+// 
+//   static void Register()
+//   {
+//     py::to_python_converter<V, VecToPy<T,dim> >();
+//   }
+// };
 
 
 void exportH5Converters()
@@ -207,10 +208,10 @@ void exportVectorClassConverters()
   mw_py_impl::VecFromPy<float, 3>::Register();
   mw_py_impl::VecFromPy<double, 3>::Register();
   mw_py_impl::VecFromPy<bool, 3>::Register();
-  mw_py_impl::VecToPy<int, 3>::Register();
-  mw_py_impl::VecToPy<float, 3>::Register();
-  mw_py_impl::VecToPy<double, 3>::Register();
-  mw_py_impl::VecToPy<bool, 3>::Register();
+//   mw_py_impl::VecToPy<int, 3>::Register();
+//   mw_py_impl::VecToPy<float, 3>::Register();
+//   mw_py_impl::VecToPy<double, 3>::Register();
+//   mw_py_impl::VecToPy<bool, 3>::Register();
 }
 
 //template<class T>

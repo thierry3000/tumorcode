@@ -1041,7 +1041,8 @@ static void NumericallyIntegrateVesselPO2(const Parameters &params,
  */
 void IntegrateVesselPO2(const Parameters &params, 
 			VesselPO2Storage &vesselpo2,
-			const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels,
+			const VesselList3d &vl, 
+			DynArray<const Vessel*> &sorted_vessels,
 			DynArray<const VesselNode*> &arterial_roots,
 			const ContinuumGrid &grid,
 			const Array3df extpo2,
@@ -1050,8 +1051,20 @@ void IntegrateVesselPO2(const Parameters &params,
 			bool world
  		      )
 {
+  if (params.loglevel > 0)
+    cout << format("Start IntegrateVesselPO2 !") << endl;
   my::Time t_;
-  DynArray<bool> nodal_o2ready(vl.GetNCount(), false);
+  //DynArray<bool> nodal_o2ready(vl.GetNCount(), false);
+  
+  /** tumor can occupy nodes with higher indexes,
+   * not yet present. should we make this a map?.
+   */
+  boost::unordered_map<int, bool> nodal_o2ready;
+  for(int i =0;i<vl.GetNCount();++i)
+  {
+    const VesselNode *nd = vl.GetNode(i);
+    nodal_o2ready[nd->Index()] = false;
+  }
   BOOST_FOREACH(const VesselNode* nd, arterial_roots)
   {//loop over all arterial roots, we follow the blood stream starting here
     nodal_o2ready[nd->Index()] = true;
@@ -1120,7 +1133,11 @@ void DetailedP02Sim::PrepareNetworkInfo(const VesselList3d &vl, DynArray<const V
     sorted_vessels[order[i]] = vl.GetEdge(i);
   }
 
-  roots.reserve(32);
+  roots.clear();
+  /* in case some roots are not circulated,
+   * we do not want to keep them in the list.
+   */
+  //uint count_roots = 0;
   for (int i=0; i<vl.GetECount(); ++i)
   {
     const Vessel* v = vl.GetEdge(i);
@@ -1128,15 +1145,18 @@ void DetailedP02Sim::PrepareNetworkInfo(const VesselList3d &vl, DynArray<const V
     
     if (v->NodeA()->IsBoundary())
     {
+      //count_roots++;
       roots.push_back(v->NodeA());
       OUTPUT_PO2INTEGRATION(fprintf(stderr,"vessel %i/%i, order %i -> init po2\n",v->Index(), v->NodeA()->Index(), order[v->Index()]);)
     }
     if (v->NodeB()->IsBoundary())
     {
+      //count_roots++;
       roots.push_back(v->NodeB());
       OUTPUT_PO2INTEGRATION(fprintf(stderr,"vessel %i/%i, order %i -> init po2\n",v->Index(), v->NodeB()->Index(), order[v->Index()]);)
     }
   }
+  //roots.resize(count_roots);
 }
 
 
@@ -1148,7 +1168,10 @@ struct ConvergenceCriteriumAccumulator2Norm
   int n;
   ConvergenceCriteriumAccumulator2Norm() : n(0), val() {}
   void Add(const T &x) { val += my::sqr(x); ++n; }
-  T operator()() const { return n>0 ? (std::sqrt(val)/n) : std::numeric_limits<T>::quiet_NaN(); }
+//   T operator()() const { return n>0 ? (std::sqrt(val)/n) : std::numeric_limits<T>::quiet_NaN(); }
+  // T.F.
+  // Intel compiler is not respecting the quiet_NaN and throw, I do not know why --> intel bug
+  T operator()() const { return n>0 ? (std::sqrt(val)/n) : std::numeric_limits<T>::max(); }
 };
 
 template<class T>
@@ -1158,7 +1181,10 @@ struct ConvergenceCriteriumAccumulatorMaxNorm
   int n;
   ConvergenceCriteriumAccumulatorMaxNorm() : val(), n(0) {}
   void Add(const T &x) { val = std::max(val, std::abs(x)); ++n; }
-  T operator()() const { return n>0 ? val : std::numeric_limits<T>::quiet_NaN(); }
+//   T operator()() const { return n>0 ? val : std::numeric_limits<T>::quiet_NaN(); }
+  // T.F.
+  // Intel compiler is not respecting the quiet_NaN and throw, I do not know why --> intel bug
+  T operator()() const { return n>0 ? val : std::numeric_limits<T>::max(); }
 };
 
 
@@ -1226,8 +1252,13 @@ void ComputePo2Field(const Parameters &params,
       }
     }
   }
-
-  ptree solver_params = make_ptree("preconditioner","multigrid")("verbosity", (params.loglevel>0 ? (params.loglevel>1 ? "full" : "normal") : "silent"))("use_smoothed_aggregation", false)("max_iter", 500)("conv","rhs")("max_resid",1.e-8)("keep_preconditioner", keep_preconditioner);
+  //trilionos solver settings
+  ptree solver_params = make_ptree  ("preconditioner","multigrid")
+                                    ("verbosity", (params.loglevel>0 ? (params.loglevel>1 ? "full" : "normal") : "silent"))("use_smoothed_aggregation", false)
+                                    ("max_iter", 500)
+                                    ("conv","rhs")
+                                    ("max_resid",1.e-8)
+                                    ("keep_preconditioner", keep_preconditioner);
 
   try {
     EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
@@ -1351,12 +1382,16 @@ void DetailedP02Sim::init(Parameters &params_,
     {
       cout<<"works"<<endl;
       po2field.fill(*previous_po2field);
-      if(vl.GetECount() < previous_po2vessels->size())
+      if(vl.GetECount() <= previous_po2vessels->size())
       {
         for(int i = 0;i<vl.GetECount();++i)
         {
           po2vessels[i] = previous_po2vessels->operator[](i);
         }
+      }
+      else
+      {
+	printf("Warning: more vessels suggested than in previous run present!\n");
       }
       //previous_po2vessels
 //       h5cpp::File f2("/localdisk/thierry/output_milotti/with_o2_sim/fakeTumMTS-default-typeI-sample00-milotti_detailed.h5", "r");
@@ -1403,9 +1438,23 @@ void DetailedP02Sim::init(Parameters &params_,
     
     
     
-    //executes topological ordering
+    /** executes topological ordering
+     * potential remodelling due to tumor should be considered
+     */
+    sorted_vessels.clear();
+    roots.clear();
+    arterial_roots.clear();
     PrepareNetworkInfo(vl, sorted_vessels, roots);
-    //note vl is lost after this call!!!!
+    BOOST_FOREACH(const VesselNode* nd, roots)
+    {
+      if(nd->Count()>0)// there needs to be a connected vessel to check for type
+      {
+	if(nd->GetEdge(0)->IsArtery())
+	{
+	  arterial_roots.push_back(nd);
+	}
+      }
+    }   //note vl is lost after this call!!!!
   }
 }
 
@@ -1444,16 +1493,20 @@ int DetailedP02Sim::run(VesselList3d &vl)
     {
       h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
       WriteOutput(f.root().create_group(str(format("out%04i-a") % iteration_num)),
-                  vl, params,
+                  vl, 
+		  params,
                   //vesselpo2,
                   po2vessels,
                   sorted_vessels,
-                  grid, po2field,
+                  grid, 
+		  po2field,
                   tissue_diff_matrix_builder);
     }
     const double tolerance = params.convergence_tolerance;
     // break if convergent
-    if (iteration_num > params.max_iter || (delta_fieldM()<tolerance && delta_vessM()<tolerance))
+    const double res_delta_fieldM = delta_fieldM();
+    const double res_delta_vessM = delta_vessM();
+    if (iteration_num > params.max_iter || (res_delta_fieldM<tolerance && res_delta_vessM<tolerance))
       break;
     
     //initialize output with zero
@@ -1461,15 +1514,18 @@ int DetailedP02Sim::run(VesselList3d &vl)
     /*
      * 1) propagate the oxygen along the blood stream
      */
-    IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
+    //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
+    IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
     {
       h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
       WriteOutput(f.root().create_group(str(format("out%04i-b") % iteration_num)),
-                  vl, params,
+                  vl, 
+		  params,
                   po2vessels,
                   sorted_vessels,
-                  grid, po2field,
+                  grid, 
+		  po2field,
                   tissue_diff_matrix_builder);
     }
     //bool keep_preconditioner = (iteration_num>2 && tissue_diff_solver.iteration_count<25);
@@ -1539,7 +1595,8 @@ int DetailedP02Sim::run(VesselList3d &vl)
     cout << "computing final results" << endl;
   
   tissue_diff_matrix_builder.ZeroOut();
-  IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
+  IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
+  //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
   
   ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, true);
   return 0;

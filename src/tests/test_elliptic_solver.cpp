@@ -24,6 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/random.h"
 
 #include "shared-objects.h"
+#include <boost/program_options.hpp>
+
+namespace po=boost::program_options;
 
 struct ConstFaceVarFunctor
 {
@@ -87,10 +90,10 @@ void doit(const Int3 size)
   
   //double scaling = 1./mb.m->NormInf();
   double scaling = -1.;
+  
   mb.m->Scale(scaling);
   mb.rhs->Scale(scaling);
-
-  Epetra_Vector lhs(mb.rhs->Map(), true);
+  Teuchos::RCP<Epetra_Vector> lhs = Teuchos::rcp(new Epetra_Vector(mb.rhs->Map()));
   
   boost::property_tree::ptree pt;
   pt.put("output", 1);
@@ -101,7 +104,7 @@ void doit(const Int3 size)
   pt.put("max_iter", 100);
   pt.put("throw", false);
 
-  SolveEllipticEquation(*mb.m, *mb.rhs, lhs, pt);
+  SolveEllipticEquation(mb.m, mb.rhs, lhs, pt);
 
   //EllipticEquationSolver solver;
   //solver.init(*mb.m, *mb.rhs, pt);
@@ -112,7 +115,7 @@ void doit(const Int3 size)
   Array3d<float> res(ld.Box());
   FOR_BBOX3(p, ld.Box())
   {
-    res(p) = lhs[ld.LatticeToSite(p)];
+    res(p) = (*lhs)[ld.LatticeToSite(p)];
   }
 
   Image img;
@@ -247,18 +250,51 @@ void doit2(const Int3 size)
 
 int main(int argc, char **argv)
 {
-  throw std::runtime_error("implement parameter handling with boost program options");
-#if 0
+  // Declare the supported options.
+  po::options_description desc("Allowed options");
+  desc.add_options()
+      ("help,h", "produce help message")
+      ("size,s", po::value<Int3>(), "set size")
+      ("repetitions,r" ,po::value<int>(), "set repeat")
+      ("num_threads,n" ,po::value<int>(), "set threads")
+  ;
+  //throw std::runtime_error("implement parameter handling with boost program options");
+#if 1
   my::MultiprocessingInitializer mpinit(argc, argv);
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   Int3 size(100, 100, 10);
   int repetitions = 1;
   int num_threads = 1;
-  my::ProgramOptions opts;
-  opts.add(size, "--size");
-  opts.add(repetitions, "--repeat");
-  opts.add(num_threads, "--num-threads");
-  opts.parse(argv, argc);
+  po::variables_map vm;
+  po::store(po::parse_command_line(argc, argv, desc), vm);
+  po::notify(vm);
+  
+  if (vm.count("help")) 
+  {
+    cout << desc << "\n";
+    return 1;
+  }
+  if (vm.count("size")) 
+  {
+    cout << "size was set to " << vm["size"].as<Int3>() << ".\n";
+  } else 
+  {
+    cout << "size was not set using 100,100,10.\n";
+  }
+  if (vm.count("repetitions")) 
+  {
+    cout << "repetitions was set to " << vm["repetitions"].as<int>() << ".\n";
+  } else 
+  {
+    cout << "repetitions was not set using 1.\n";
+  }
+  if (vm.count("num_threads")) 
+  {
+    cout << "num_threads was set to " << vm["num_threads"].as<int>() << ".\n";
+  } else 
+  {
+    cout << "num_threads was not set using 1.\n";
+  }
   my::SetNumThreads(num_threads);
   cout << "size = " << size << ", " << num_threads << " threads" << endl;
   for (int i=0; i<repetitions; ++i)

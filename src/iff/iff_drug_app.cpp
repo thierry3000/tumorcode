@@ -548,9 +548,16 @@ int  IffDrugApp3d::Main(const ptree &read_params, const string &outfilename, py:
     /* first dimension is the field index 
      * (i.e. tissue compartment or w/e), 
      * higher dimensions are space dimensions*/
-    Vec<np::ssize_t, 4> dim; dim[0] = 2; 
-    for (int i=0; i<3; ++i) dim[i+1] = grid.ld.Size()[i];
+    Vec<Py_ssize_t, 4> dim; dim[0] = 2; 
+    for (int i=0; i<3; ++i)
+    {
+      dim[i+1] = grid.ld.Size()[i];
+    }
+#if BOOST_VERSION>106300
+    np::ndarray a_drug = np::zeros(py::make_tuple(dim[0],dim[1],dim[2],dim[3]), np::dtype::get_builtin<float>());
+#else
     np::arrayt<float> a_drug = np::zeros(4, dim.data(), np::getItemtype<float>());
+#endif
     /**
       * main drug loop
       */
@@ -586,14 +593,22 @@ int  IffDrugApp3d::Main(const ptree &read_params, const string &outfilename, py:
           for (int i=0; i<2; ++i)
           {
             v[i] /= loc_phi_cells + 1.e-13;
+#if BOOST_VERSION>106300
+            a_drug[i][p[0]-org[0]][ p[1]-org[1]][p[2]-org[2]] = v[i];//shift to center?
+#else
             a_drug(i, p[0]-org[0], p[1]-org[1], p[2]-org[2]) = v[i];//shift to center?
+#endif
           }
         }
         py::tuple py_stats = py::make_tuple(ctrl.t, ctrl.dt);
 	/* 
 	 * tight shit, is this a python function acting inside C++? Yes it is!
 	 */
+#if BOOST_VERSION>106300
+        drug_measurement_function(py_stats, a_drug);
+#else
         drug_measurement_function(py_stats, a_drug.getObject());
+#endif
         next_time_py_measure += out_intervall;
       }
       

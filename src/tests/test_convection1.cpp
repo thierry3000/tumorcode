@@ -151,7 +151,9 @@ void run(const ptree &params)
     string in_fn = init_conc_from;
     Array3d<float> a = ReadArrayFromImage<float>(in_fn,0,1);
     ld.Init(a.size(), scale);
-    ld.SetWorldPosition(-ld.GetWorldBox().max * 0.5); // set origin = lower left side
+    
+    ld.SetOriginPosition(-0.5*ld.GetWorldBox().max);
+//     ld.SetWorldPosition(-ld.GetWorldBox().max * 0.5); // set origin = lower left side
     ndims = a.size()[1] > 1 ? 2 : 1;
     model.init(ld, ndims, params);
     state.initFromBox(ExtendForDim(ld.Box(), ndims, 2));

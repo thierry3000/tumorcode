@@ -20,7 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "iff_drug_app.h"
 
 #include "../python_krebsutils/python_helpers.h"
-#include "numpy.hpp"
 #include "../common/calcflow.h"
 #include <algorithm>
 
@@ -74,5 +73,9 @@ BOOST_PYTHON_MODULE(libiff_d)
 BOOST_PYTHON_MODULE(libiff_)
 #endif
 {
+  Py_Initialize();
+#if BOOST_VERSION>106300
+  np::initialize();
+#endif
   Iff::export_iffsim();
 }
