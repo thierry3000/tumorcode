@@ -1037,7 +1037,9 @@ static void NumericallyIntegrateVesselPO2(const Parameters &params,
  * @brief integrates the po2 along a vessel
  * 
  * The hiarachial ordering of the vessel segments is provided, in the sorted_vessels array.
- * As Starting point of the integration, an initial value dependent on the  
+ * As Starting point of the integration, an initial value dependent on the inlet hemoglobin and
+ * arterial root pressure
+ * @note this function is not very parallel
  */
 void IntegrateVesselPO2(const Parameters &params, 
 			VesselPO2Storage &vesselpo2,
@@ -1060,11 +1062,13 @@ void IntegrateVesselPO2(const Parameters &params,
    * not yet present. should we make this a map?.
    */
   boost::unordered_map<int, bool> nodal_o2ready;
-  for(int i =0;i<vl.GetNCount();++i)
+
+  for(int i =0;i<vl.GetNCount();i++)
   {
     const VesselNode *nd = vl.GetNode(i);
     nodal_o2ready[nd->Index()] = false;
   }
+
   BOOST_FOREACH(const VesselNode* nd, arterial_roots)
   {//loop over all arterial roots, we follow the blood stream starting here
     nodal_o2ready[nd->Index()] = true;
@@ -1514,8 +1518,7 @@ int DetailedP02Sim::run(VesselList3d &vl)
     /*
      * 1) propagate the oxygen along the blood stream
      */
-    //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
-    //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
+    IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
     {
       h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
