@@ -185,15 +185,16 @@ float FakeTumMTS::FakeTumorSimMTS::estimateTumorRadiusFromCells()
 //float FakeTumMTS::FakeTumorSimMTS::getGf(const Float3 &pos) const
 float FakeTumMTS::FakeTumorSimMTS::getGf(const Float3 &pos)
 {
-#define someInteraction
-#ifdef someInteraction // do the super cool new interaction stuff
-  float estimated_tum_radius = estimateTumorRadiusFromCells();
-  float currentShell = pos.norm();
-  return std::max(estimated_tum_radius + params.rGf - currentShell, 0.);
-#else // do it like fake tum has done it before
-  float r = pos.norm();
-  return std::max(tumor_radius + params.rGf - r, 0.);
-#endif
+// #define someInteraction
+// #ifdef someInteraction // do the super cool new interaction stuff
+//   float estimated_tum_radius = estimateTumorRadiusFromCells();
+//   float currentShell = pos.norm();
+//   return std::max(estimated_tum_radius + params.rGf - currentShell, 0.);
+// #else // do it like fake tum has done it before
+//   float r = pos.norm();
+//   return std::max(tumor_radius + params.rGf - r, 0.);
+// #endif
+  FieldInterpolate::ValueAveraged(state.gffield, grid.ld, FieldInterpolate::Const(0.f), pos);
 }
 
 //float FakeTumMTS::FakeTumorSimMTS::getPress(const Float3 &pos) const
@@ -357,7 +358,13 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   int dim = s[2]<=1 ? (s[1]<=1 ? 1 : 2) : 3;
   LatticeDataQuad3d field_ld;
   Bool3 centering = Bool3::mapIndex([=](int i) { return i<dim; });
+#ifdef DEBUG
+  printf("params.lattice_size: %i %i %i\n" , params.lattice_size[0],params.lattice_size[1],params.lattice_size[2]);
+  printf("params.lattice_scale: %f\n" , params.lattice_scale);
+#endif
   field_ld.Init(params.lattice_size, params.lattice_scale);
+  //Int3 lat(30,30,30);
+  //field_ld.Init(lat, 20);
   field_ld.SetCellCentering(centering);
   field_ld.SetOriginPosition(-field_ld.GetWorldBox().max.cwiseProduct(centering.cast<float>()) * 0.5); // set origin = lower left side
   grid.init(field_ld, dim);
@@ -466,21 +473,21 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
   cout << format("step %i, t=%f") % num_iteration % time << endl;
   CalcFlow(*vl, bfparams);
   /* do not use adaptation stuff for mts*/
-#pragma omp parallel
-{
-  BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
-  {
-    gf_model.AddSourceDistribution_from_cell( currentCellsSystem->Get_x(),
-                                            currentCellsSystem->Get_y(),
-                                            currentCellsSystem->Get_z(),
-                                            bbox,
-                                            grid.ld, 
-                                            grid.dim, 
-                                            cell_GFsrc_clin, 
-                                            cell_GFsrc_crhs, 
-                                            all_pt_params);
-  }
-}
+// #pragma omp parallel
+// {
+//   BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
+//   {
+//     gf_model.AddSourceDistribution_from_cell( currentCellsSystem->Get_x(),
+//                                             currentCellsSystem->Get_y(),
+//                                             currentCellsSystem->Get_z(),
+//                                             bbox,
+//                                             grid.ld, 
+//                                             grid.dim, 
+//                                             cell_GFsrc_clin, 
+//                                             cell_GFsrc_crhs, 
+//                                             all_pt_params);
+//   }
+// }
   model.DoStep(dt, &bfparams);
   
   /* this calculates the simple diffusion of substances */
@@ -612,9 +619,28 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
 {
   {
     my::log().push("gf:");
+    
+    // create source field from cells
+    Array3d<float> cell_source;
+    #pragma omp parallel
+    {
+      BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
+      {
+        for(int i=0; i<currentCellsSystem->Get_x().size();++i)
+        {
+          float offset = 10*15;
+          offset = 0.0;
+          Float3 pos(currentCellsSystem->Get_x()[i]+offset,currentCellsSystem->Get_y()[i]+offset,currentCellsSystem->Get_z()[i]+offset);
+          AddSmoothDelta(cell_source, bbox, grid.ld, grid.dim, pos, (float)1.0);
+        }
+      }
+    }
+    
+    gf_model.update(state.gffield, cell_source);
 
-    ptree pt_params = make_ptree("preconditioner","multigrid")("output", 1)("max_iter", 100);
-    StationaryDiffusionSolve(grid, mtboxes, state.gffield, boost::bind(&FakeTumorSimMTS::insertGFCoefficients, this, _1, _2, boost::cref(state), _3) , pt_params);
+    //ptree pt_params = make_ptree("preconditioner","multigrid")("output", 1)("max_iter", 100);
+    
+    //StationaryDiffusionSolve(grid, mtboxes, state.gffield, boost::bind(&FakeTumorSimMTS::insertGFCoefficients, this, _1, _2, boost::cref(state), _3) , pt_params);
     
 // #ifndef USE_DETAILED_O2
 //     StationaryDiffusionSolve(grid, mtboxes, state.o2field, boost::bind(&FakeTumorSimMTS::insertO2Coefficients, this, _1, _2, boost::cref(state), _3) , pt_params);
@@ -674,45 +700,6 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
   state.chem_checksum++;
 }
 
-#ifndef USE_DETAILED_O2
-void FakeTumMTS::FakeTumorSimMTS::insertO2Coefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder &mb)
-{
-  Array3d<float> l_coeff(bbox),
-                 rhs(bbox);
-  l_coeff[bbox] += vessel_o2src_clin[bbox];
-  rhs[bbox] += vessel_o2src_crhs[bbox];
-
-//   Array3df phases[3];
-//   tie(phases[TISSUE], phases[TCS], phases[DEAD]) = tumor_model.getTissuePhases(bbox, state.tumor);
-// 
-  float hemostatic_cell_frac_norm[3];
-//   hemostatic_cell_frac_norm[TISSUE] = 1./tumor_model.params.ncells_norm;
-//   hemostatic_cell_frac_norm[TCS] = 1./tumor_model.params.ncells_tumor;
-//   hemostatic_cell_frac_norm[DEAD] = 1./tumor_model.params.ncells_tumor;
-  hemostatic_cell_frac_norm[TISSUE] = 1./0.4;
-  hemostatic_cell_frac_norm[TCS] = 1./0.6;
-  hemostatic_cell_frac_norm[DEAD] = 1./0.6;
-//   
-  mb.AddDiffusion(bbox, ConstValueFunctor<float>(1.), -1.);
-  
-  FOR_BBOX3(p, bbox)
-  {
-    const float loc_phases[3] = { phases.phase_arrays[0](p), phases.phase_arrays[1](p), phases.phase_arrays[2](p) };
-//     const float loc_phases = phases.phase_arrays[0](p);
-    //const float loc_phases[3] = { phases[0](p), phases[1](p), phases[2](p) };
-    // we must ensure that the resulting diffusion distance agrees with the parameters which define it
-    // by l = sqrt(c/D). So the effect that the cell volume fraction is about 0.5 must be canceled out.
-    float loc_l_coeff = 0.;
-    for (int i=0; i<3; ++i)
-    {
-      loc_l_coeff -= hemostatic_cell_frac_norm[i] * loc_phases[i] * o2_params.o2_cons_coeff[i];
-    }
-//     loc_l_coeff = hemostatic_cell_frac_norm[0] * loc_phases * o2_params.o2_cons_coeff[0];
-    mb.AddLocally(p, -loc_l_coeff - l_coeff(p), -rhs(p)); /// this was it before
-//     mb.AddLocally(p, - l_coeff(p), -rhs(p));
-  }
-}
-#endif
 
 /* this has to be tidyed up before proceeding */
 void FakeTumMTS::FakeTumorSimMTS::UpdateVesselVolumeFraction()
@@ -806,8 +793,11 @@ void FakeTumMTS::FakeTumorSimMTS::insertGFCoefficients(int box_index, const BBox
 {
   Array3d<float> l_coeff(bbox),
                  rhs(bbox);
+                 
   l_coeff[bbox] += cell_GFsrc_clin[bbox];
   rhs[bbox] += cell_GFsrc_crhs[bbox];
+  
+  
 
 //   Array3df phases[3];
 //   tie(phases[TISSUE], phases[TCS], phases[DEAD]) = tumor_model.getTissuePhases(bbox, state.tumor);
@@ -822,10 +812,17 @@ void FakeTumMTS::FakeTumorSimMTS::insertGFCoefficients(int box_index, const BBox
 //   
   //mb.AddDiffusion(bbox, ConstValueFunctor<float>(1.), -1.);
   //mb.AddDiffusion<> (bbox, ConstValueFunctor<float>(1.), -params.po2_kdiff);
-  mb.AddDiffusion<> (bbox, ConstValueFunctor<float>(1.), -1);
+  mb.AddDiffusion<> (bbox, ConstValueFunctor<float>(1.), -0.005);
   
   FOR_BBOX3(p, bbox)
   {
+//     for(int i = 0;i<currentCellsSystem->Get_x().size();++i)
+//     {
+//       if(sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2])<currentCellsSystem->Get_r()[i])
+//       {
+//         l_coeff(p) = 42;
+//       }
+//     }
 #if 0
     const float loc_phases[3] = { phases.phase_arrays[0](p), phases.phase_arrays[1](p), phases.phase_arrays[2](p) };
 //     const float loc_phases = phases.phase_arrays[0](p);
@@ -842,7 +839,8 @@ void FakeTumMTS::FakeTumorSimMTS::insertGFCoefficients(int box_index, const BBox
 //     loc_l_coeff = hemostatic_cell_frac_norm[0] * loc_phases * o2_params.o2_cons_coeff[0];
 #endif
     //mb.AddLocally(p, -loc_l_coeff - l_coeff(p), -rhs(p)); /// this was it before
-    mb.AddLocally(p, - 42*sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2]) , -rhs(p)); /// this was it before
+    //mb.AddLocally(p, - 42*sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2]) , -rhs(p)); /// this was it before
+    mb.AddLocally(p, -l_coeff(p) , -rhs(p));
   }
 }
 

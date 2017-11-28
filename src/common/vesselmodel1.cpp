@@ -480,7 +480,14 @@ bool Model::CheckCanSprout(Random &rnd, const Int3 &lpos, const VesselNode* nd, 
   double timeInTum  = v ? v->timeInTumor : GetTimeInTumor(nd);
   if ( timeInTum > params.sproutDelay) return false;
 
-  if( GetGfConc(lpos)<params.gfVessProl) return false;
+#ifdef DEBUG
+  printf("gf is: %f\n", GetGfConc(lpos));
+  printf("threshold is: %f\n", params.gfVessProl);
+#endif
+  if( GetGfConc(lpos)<params.gfVessProl)
+  {
+    return false;
+  }
 
   return true;
 }

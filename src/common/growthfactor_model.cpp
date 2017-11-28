@@ -54,7 +54,12 @@ void GfModel_Cell::AddSourceDistribution_from_cell( std::vector<double> x,
 //     float glucoseLevel = coeffBloodGlucose;
 // //     myAssert(v->hematocrit > 0.);
 //     //float perm = capillary_wall_permeability * maturation_at_r5 / std::max<float>(maturation_at_r20, v->maturation);  // maturation has the value of vessel wall thickness, have to limit it so the coefficient does not become infinite
-//     //float perm = capillary_wall_permeability * 1./std::max<float>(1., v->maturation / maturation_at_r5);
+    float cell_perm = 1e-10;
+    float loc_l_coef = cell_perm*2;
+    float loc_rhs = cell_perm*4;
+    loc_l_coef = 1;
+    loc_rhs = 5;
+  //     //float perm = capillary_wall_permeability * 1./std::max<float>(1., v->maturation / maturation_at_r5);
 // //     float perm = capillary_wall_permeability;
 //     float perm = 1.0;
 // //     myAssert(v->maturation > 0.);
@@ -76,9 +81,11 @@ void GfModel_Cell::AddSourceDistribution_from_cell( std::vector<double> x,
   printf("lets design the GF source distribution\n");
   for(int i=0; i<x.size();++i)
   {
-    Float3 pos(x[i],y[i],z[i]);
-    AddSmoothDelta(l_coeff, bbox, field_ld, dim, pos, (float) -1.0);
-    AddSmoothDelta(rhs, bbox, field_ld, dim, pos, (float) -1.0);
+    float offset = 10*15;
+    offset = 0.0;
+    Float3 pos(x[i]+offset,y[i]+offset,z[i]+offset);
+    AddSmoothDelta(l_coeff, bbox, field_ld, dim, pos, loc_l_coef);
+    AddSmoothDelta(rhs, bbox, field_ld, dim, pos, loc_rhs);
   }
   
 }

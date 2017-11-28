@@ -418,7 +418,8 @@ void BulkTissue::NewTumorSim::UpdateVesselVolumeFraction()
     {
       int dummy_;
       volumegen.Fill(bbox, vessel_volume_fraction, vessboxes[bbox.global_index], dummy_);
-      O2Model::AddSourceDistribution( bbox, grid.ld, 
+      O2Model::AddSourceDistribution( bbox, 
+                                      grid.ld, 
                                       grid.dim, 
                                       vessel_o2src_clin, 
                                       vessel_o2src_crhs, 
