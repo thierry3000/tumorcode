@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "growthfactor_model.h"
 
+/** the source should be at this stage,
+ * here we add how this source propergates some GF
+ */
 void GfModel_Cell::AddSourceDistribution_from_cell( std::vector<double> x,
                                       std::vector<double> y,
                                       std::vector<double> z,
@@ -26,7 +29,6 @@ void GfModel_Cell::AddSourceDistribution_from_cell( std::vector<double> x,
                             const LatticeDataQuad3d &field_ld, 
                             int dim, 
                             Array3d<float> l_coeff, 
-                            Array3d<float> rhs, 
                             const ptree &params)
 {
 //   //const double capillary_wall_permeability = params.get<double>("capillary_wall_permeability");
@@ -85,7 +87,7 @@ void GfModel_Cell::AddSourceDistribution_from_cell( std::vector<double> x,
     offset = 0.0;
     Float3 pos(x[i]+offset,y[i]+offset,z[i]+offset);
     AddSmoothDelta(l_coeff, bbox, field_ld, dim, pos, loc_l_coef);
-    AddSmoothDelta(rhs, bbox, field_ld, dim, pos, loc_rhs);
+    //AddSmoothDelta(rhs, bbox, field_ld, dim, pos, loc_rhs);
   }
   
 }

@@ -223,7 +223,6 @@ void AddSourceDistribution_from_cell( std::vector<double> x,
                             const LatticeDataQuad3d &field_ld, 
                             int dim, 
                             Array3d<float> l_coeff, 
-                            Array3d<float> rhs, 
                             const ptree &params);
 
 private:

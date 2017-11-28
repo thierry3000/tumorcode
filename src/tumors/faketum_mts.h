@@ -138,7 +138,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
   DynArray<nearest> vectorOfnearestVessels;
 	
 	
-  VesselModel1::Model model;
+  VesselModel1::Model vessel_model;
 #ifdef USE_DETAILED_O2
   DetailedPO2::DetailedP02Sim o2_sim;
 #else
@@ -157,7 +157,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
   Array3d<float> vessel_volume_fraction;
 //   Array3d<float> vessel_o2src_clin, vessel_o2src_crhs;
 //   Array3d<float> vessel_glucosesrc_clin, vessel_glucosesrc_crhs;
-  Array3d<float> cell_GFsrc_clin, cell_GFsrc_crhs;
+  Array3d<float> cell_GFsrc;
   Array3dOps<float> oxyops;
   Array3dOps<float> glucoseOps;
   double last_chem_update;

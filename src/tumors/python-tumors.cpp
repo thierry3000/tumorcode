@@ -145,7 +145,7 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   ptree detailedO2Settings = s.o2_params.as_ptree();
   ptree bfSettings = s.o2_sim.bfparams.as_ptree();
   ptree fakeTumMTSSettings = s.params.as_ptree();
-  ptree vesselSettings = s.model.params.as_ptree();
+  ptree vesselSettings = s.vessel_model.params.as_ptree();
   #ifdef DEBUG
   std::cout << "with detailed params: " << std::endl;
   printPtree(detailedO2Settings);
@@ -171,7 +171,7 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   // assign bfparams parameters to the simulation
   s.o2_sim.bfparams.assign(bfSettings);
   s.bfparams.assign(bfSettings);
-  s.model.params.assign(vesselSettings);
+  s.vessel_model.params.assign(vesselSettings);
   s.params.assign(fakeTumMTSSettings);
   /* 
    * if we are on a cluster, we expect multiple runs
