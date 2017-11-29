@@ -903,10 +903,10 @@ BOOST_PYTHON_MODULE(libkrebs_)
   py::def("diff_field_"#T, diff_field<T>);
   DEFINE_diff_field_t(float)
   DEFINE_diff_field_t(double)
-// #define DEFINE_radial_correlation_t(T)\
-//   py::def("radial_correlation_"#T, radial_correlation<T>);
-//   DEFINE_radial_correlation_t(float)
-//   DEFINE_radial_correlation_t(double)
+#define DEFINE_radial_correlation_t(T)\
+  py::def("radial_correlation_"#T, radial_correlation<T>);
+  DEFINE_radial_correlation_t(float)
+  DEFINE_radial_correlation_t(double)
   
   export_povray_export();
   export_samplevessels();

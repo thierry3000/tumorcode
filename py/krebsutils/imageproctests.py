@@ -21,10 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os, sys
+from os.path import join, basename, dirname, splitext
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
 
 import numpy as np
 import krebsutils as krebs
 import extensions
+import PIL
 from PIL import Image
 
 import matplotlib
@@ -45,12 +49,12 @@ def testfill():
   c = np.asarray((25, 25, 25))
   a = make_test_array(c)
   x = krebs.flood_fill(a, (0,0,0))
-  img = Image.fromArray(255*np.asarray(x[:,:,c[2]],dtype=np.uint8))
+  img = Image.fromarray(255*np.asarray(x[:,:,c[2]],dtype=np.uint8))
   img.save('filled2.png')  
   x = krebs.flood_fill(a, c)
-  img = Image.fromArray(255*np.asarray(x[:,:,c[2]],dtype=np.uint8))
+  img = Image.fromarray(255*np.asarray(x[:,:,c[2]],dtype=np.uint8))
   img.save('filled1.png')  
-  img = Image.fromArray(255*np.asarray(a[:,:,c[2]],dtype=np.uint8))
+  img = Image.fromarray(255*np.asarray(a[:,:,c[2]],dtype=np.uint8))
   img.save('tobefilled.png')
 
 def testdistancemap():
@@ -87,7 +91,9 @@ def testfieldsampling():
   ld = krebs.LatticeDataQuad3d(bb, 1.)
   ld.SetCellCentering((True, True, True))
   wbb = ld.worldBox
-  print ld  , wbb
+  print(ld)
+  print("box: ")
+  print(wbb)
   
   num = (bb[1]-bb[0])*(bb[3]-bb[2])
   pos = np.random.uniform(wbb[0], wbb[1], num), np.random.uniform(wbb[2], wbb[3], num), 0.5*np.ones(num)
@@ -102,7 +108,10 @@ def testfieldsampling():
 
   img = a[:,::-1,1]
   img = img.transpose()
-  plt.imshow(img, extent = ld.worldBox, interpolation='nearest', vmin=0, vmax=1)
+  theExtent=ld.worldBox
+  #mpl change the interface here
+  plt.imshow(img, extent=theExtent[0:4], interpolation='nearest',vmin=0,vmax=1)
+  #plt.imshow(img, extent = ld.worldBox, interpolation='nearest', vmin=0, vmax=1)
 
   plt.scatter(pos[:,0], pos[:,1], c=smpl, vmin=0., vmax=1.)
   
@@ -147,10 +156,11 @@ def testcorrelation():
 
 
 def run():
-  #testfill()
-  #testdistancemap()
-  #testfieldsampling()
+  testfill()
+  testdistancemap()
+  testfieldsampling()
   testcorrelation()
   
 if __name__ == '__main__':
+  print("using PIL version: %s" % PIL.VERSION)
   run()
