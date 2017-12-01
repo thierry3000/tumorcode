@@ -465,20 +465,26 @@ py::object distancemap(const np::ndarray &py_field)
 {
   //np::arrayt<uchar> field(py_field);
 //   np::arrayt<float> res = np::zeros(field.rank(), field.shape(), np::getItemtype<float>());
-  py::tuple shape = py::tuple(py_field.get_shape());
-  np::ndarray res = np::zeros(shape, np::dtype::get_builtin<float>());
-
-  Array3d<float> arr3d = Array3dFromPy<float>(res);
+  //py::tuple shape = py::tuple(py_field.get_shape());
+  //np::ndarray res = np::zeros(shape, np::dtype::get_builtin<float>());
+//   np::ndarray res = np::zeros(py::make_tuple(py_field.get_shape()[0]), np::dtype::get_builtin<float>());
+//   np::ndarray arr3d = np::zeros(py::make_tuple(py_field.get_shape()[0]), np::dtype::get_builtin<float>());
+  np::ndarray res = np::zeros(py::make_tuple(py_field.get_shape()[0],py_field.get_shape()[1],py_field.get_shape()[2]), np::dtype::get_builtin<float>());
+  np::ndarray arr3d = np::zeros(py::make_tuple(py_field.get_shape()[0],py_field.get_shape()[1],py_field.get_shape()[2]), np::dtype::get_builtin<float>());
+  Int3 theBox(py_field.shape(0),py_field.shape(1),py_field.shape(2));
+  //theBox[0] = py_field.shape(0);
+  //Array3d<float> arr3d = Array3dFromPy<float>(res);
   LatticeDataQuad3d ld;
-  ld.Init(arr3d.getBox(), 1.);
+  //ld.Init(arr3d.getBox(), 1.);
+  ld.Init(theBox, 1.);
   DistanceFieldComputer dfc;
   
   FOR_BBOX3(p, ld.Box())
   {
     if (py_field[p[0]][p[1]][p[2]])
-      arr3d(p) = dfc.DIST_MAX;
+      arr3d[p] = dfc.DIST_MAX;
     else
-      arr3d(p) = 0;
+      arr3d[p] = 0;
   }
 
   dfc.Do(ld, arr3d);
@@ -486,9 +492,9 @@ py::object distancemap(const np::ndarray &py_field)
   FOR_BBOX3(p, ld.Box())
   {
     if (py_field[p[0]][p[1]][p[2]])
-      arr3d(p) *= -1;
+      arr3d[p] *= -1;
     else
-      arr3d(p) = dfc.DIST_MAX;
+      arr3d[p] = dfc.DIST_MAX;
   }
 
   dfc.Do(ld, arr3d);

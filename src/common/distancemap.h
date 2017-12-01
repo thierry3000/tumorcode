@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef DISTANCEMAP_H
 #define DISTANCEMAP_H
 
+#include "python_krebsutils/python_helpers.h"
+
 #include "mwlib/dynamicarray.h"
 #include "mwlib/helpers-containers.h" // for the heap
 #include "mwlib/helpers-vec.h"
@@ -57,6 +59,9 @@ struct DistanceFieldComputer
 public:    
   DistanceFieldComputer();    
   void Do(const LatticeDataQuad3d &ld_, Array3d<float> &f );
+#if BOOST_VERSION>106300
+  void Do(const LatticeDataQuad3d &ld_, np::ndarray &f );
+#endif
 };
 
 

@@ -575,6 +575,7 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
     
     // create source field from cells
     //Array3d<float> cell_source;
+    float n_cells = (float) currentCellsSystem->Get_ncells();
     #pragma omp parallel
     {
       BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
@@ -584,7 +585,7 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
           float offset = 10*15;
           offset = 0.0;
           Float3 pos(currentCellsSystem->Get_x()[i]+offset,currentCellsSystem->Get_y()[i]+offset,currentCellsSystem->Get_z()[i]+offset);
-          AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)1.0);
+          AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)1.0/n_cells);
         }
       }
     }

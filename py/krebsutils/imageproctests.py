@@ -21,6 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os, sys
+from os.path import join, basename, dirname, splitext
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
 
 import numpy as np
 import krebsutils as krebs
@@ -148,9 +151,9 @@ def testcorrelation():
 
 def run():
   #testfill()
-  #testdistancemap()
+  testdistancemap()
   #testfieldsampling()
-  testcorrelation()
+  #testcorrelation()
   
 if __name__ == '__main__':
   run()

@@ -210,3 +210,97 @@ void DistanceFieldComputer::Do(const LatticeDataQuad3d &ld_, Array3d<float> &_f 
   //GeDebugOut("compute distance field: %i ms",GeGetTimer()-_t);
 }
 
+#if BOOST_VERSION>106300
+void DistanceFieldComputer::Do(const LatticeDataQuad3d &ld_, np::ndarray &_f )
+{
+  //f = _f;
+//   for(int i =0;i<_f.shape(0);++i)
+//   {
+//     for(int ii =0;ii<_f.shape(1);++ii)
+//     {
+//       for(int iii =0;iii<_f.shape(2);++iii)
+//       {
+//         //f((i,ii,iii)) = _f[i,ii,iii];
+//         float bla = (float)_f[i][ii][iii];
+//       }
+//     }
+//   }
+  
+  ld = ld_;
+  const BBox3 bb = ld.Box();
+  FOR_BBOX3(p, bb)
+  {
+    f(p) = py::extract<float>(_f[0][1][2]);
+//     float buffer = _f[0,1,2];
+//     f(p) = buffer;
+  }
+  dim = ::Size(bb)[2] == 1 ? (::Size(bb)[1] == 1 ? 1 : 2) : 3;
+  
+  flags.initFromBox(bb, FLAG_OUTER);
+
+  heap.lessfunc.f = f;
+  heap.swapfunc.flags = flags;
+
+  DynArray<Int3> inner(1024,ConsTags::RESERVE);
+  FOR_BBOX3(p,bb)
+  {
+    if(std::abs(f(p)) < std::numeric_limits<float>::max()*0.5) {
+      flags(p) = FLAG_INNER;
+      inner.push_back(p);
+    } else {
+      f(p) = DIST_MAX;
+    }
+  }
+
+  for(int i=0; i<inner.size(); ++i)
+  {      
+    const Int3 p = inner[i];
+    //bool insert = false;
+    for(int k=0; k<LD::DIR_CNT; ++k)
+    {
+      const Int3 nb = ld.NbLattice(p,k);
+      if(!ld.IsInsideLattice(nb)) continue;
+      if(flags(nb)==FLAG_OUTER)
+      {
+        //insert = true;
+        float g = ComputeCenterGradient(nb);
+        if (g < DIST_MAX*0.5) // hack! because i dont find the bug where it cannot compute the value from the gradient
+          f(nb) = g;
+        else
+          f(nb) = 0;
+        //printf("added %i %i %i value = %f\n",nb.x(),nb.y(), nb.z(),f(nb));
+        InsertActive(nb);
+      }
+    }
+    //if (!insert) continue;
+    //InsertActive(p);
+  }
+
+  clear_and_free_memory(inner);
+  
+  while(heap.size()>0)
+  {
+    Int3 p = heap.extremum();
+    RemoveActive(p);
+
+   // printf("added %i %i %i value = %f\n",p.x(),p.y(), p.z(),f(p));
+    //myAssert(f(p) < DIST_MAX*0.5);
+
+    for(int k=0; k<LD::DIR_CNT; ++k)
+    {
+      const Int3 nb = ld.NbLattice(p,k);
+      if(!ld.IsInsideLattice(nb)) continue;
+      if(flags(nb)==FLAG_INNER) continue;
+      float g = ComputeCenterGradient(nb);
+      if (g < DIST_MAX*0.5)
+        f(nb) = g;
+      //f(nb) = std::min(f(nb), g);
+      //cout << "visited " << nb << " new value is " << f(nb) << endl;
+      if(flags(nb)>=0) RemoveActive(nb);
+      InsertActive(nb);
+    }    
+  }
+  //GeDebugOut("compute distance field: %i ms",GeGetTimer()-_t);
+}
+
+#endif
