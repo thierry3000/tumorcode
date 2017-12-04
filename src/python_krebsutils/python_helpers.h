@@ -243,11 +243,16 @@ inline Array3d<T> Array3dFromPy(const np::ndarray &a)
   Int3 size(1);
   for (int i=0; i<a.get_nd(); ++i)
   {
-    size[i] = a.get_shape()[i];
+    size[i] = a.shape(i);
   }
   Array3d<T> arr3d(size,
-                   Int3(a.get_strides()[0],a.get_strides()[1],a.get_strides()[2])/sizeof(T),
+                   Int3(a.strides(0),a.strides(1),a.strides(2))/sizeof(T),
                        (T*)a.get_dtype().get_itemsize(), size.prod(),false);
+#ifdef DEBUG
+  Int3 aIndex = Int3(0,0,0);
+  float bla = arr3d(aIndex);
+  printf("this is the entry: %f\n", bla);
+#endif
   return arr3d;
 }
 #else
