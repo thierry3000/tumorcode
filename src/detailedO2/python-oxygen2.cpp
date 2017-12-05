@@ -168,19 +168,28 @@ inline boost::optional<T> getOptional(const char* name, py::dict &d)
  * Calls the important stuff.
  */
 //static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
-static void PyComputePO2(string fn, string vesselgroup_path, string tumorgroup_path, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
+//static void PyComputePO2(string fn, string vesselgroup_path, string tumorgroup_path, py::dict py_parameters, py::object py_bfparams, string h5_out_path)
+static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
 {
   Parameters params;
   InitParameters(params, py_parameters);
   cout << "parameters initialized" << std::endl;
   
   //h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
-  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
-  h5cpp::Group vesselgroup = h5cpp::Group(readInFile->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
+  // this was fn
+  const string fn = py::extract<string>(py_parameters.get("output_file_name", "None"));
+  h5cpp::File *o2File = new h5cpp::File(fn,"a");
+  
+  string vesselgroup_path = py::extract<string>(py_parameters.get("vessel_group_path", "None"));
+  vesselgroup_path = "/" + vesselgroup_path;
+  h5cpp::Group *vesselgroup = new h5cpp::Group(o2File->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
+  //h5cpp::Group vesselgroup = h5cpp::Group(o2File->root().open_group("recomputed_flow")); // groupname should end by vesselgroup
+  //h5cpp::Group vesselgroup(readInFile.root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
   //checks if we have a REALWORLD simuation or a lattice
   
   //world = vesselgroup.attrs().get<string>("CLASS") == "REALWORLD";
-  const std::auto_ptr<VesselList3d> vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
+  //std::auto_ptr<VesselList3d> vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
+  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(*vesselgroup, make_ptree("filter",false));
   
   
   
@@ -214,10 +223,11 @@ static void PyComputePO2(string fn, string vesselgroup_path, string tumorgroup_p
 //   {
 //     tumorgroup = PythonToCppGroup(py_tumorgroup);
 //   }
-  if (tumorgroup_path != "not_found_tumor")
-  {
-    h5cpp::Group tumorgroup = h5cpp::Group(readInFile->root().open_group(tumorgroup_path));
-  }
+  
+//   if (tumorgroup_path != "not_found_tumor")
+//   {
+//     h5cpp::Group tumorgroup = h5cpp::Group(readInFile->root().open_group(tumorgroup_path));
+//   }
   
   s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels);
 //   else
@@ -247,12 +257,29 @@ static void PyComputePO2(string fn, string vesselgroup_path, string tumorgroup_p
   return py::make_tuple(py_po2vessels, py_ld, py_po2field);
 #endif
   {
-    h5cpp::Group outputGroup = PythonToCppGroup(py_h5outputGroup);
-    h5cpp::Group ldgroup = outputGroup.create_group("field_ld");
-    WriteHdfLd(ldgroup, s.grid.ld);
-    WriteScalarField<float>(outputGroup, "po2field", s.po2field, s.grid.ld, ldgroup);
-    h5cpp::create_dataset<float>(outputGroup, "po2vessels", h5cpp::Dataspace::simple_dims(s.po2vessels.size(), 2), (float*)s.po2vessels[0].data(), h5cpp::CREATE_DS_COMPRESSED); // FIX ME: transpose the array!
-    WriteHdfPtree(outputGroup, s.metadata, HDF_WRITE_PTREE_AS_DATASETS);
+//    readInFile->close();
+//    h5cpp::File *outputFile = new h5cpp::File(fn,"a");
+//h5cpp::Group outputGroup = readInFile->open_group("po2");
+    //h5cpp::File outputFile("someOutput.h5","w");
+    h5cpp::Group root = o2File->root();
+    h5cpp::Group gout = root.create_group("data");
+    h5cpp::Group g_o2;
+    h5cpp::Group po2outputGroup = gout.create_group("po2");
+    h5cpp::Group ldgroup = po2outputGroup.create_group("field_ld");
+    cout<<"start writiong!"<<endl;
+    //WriteHdfLd(ldgroup, s.grid.ld);
+    //o2File->flush();
+    //outputFile.flush();
+    //outputFile.close();
+    //h5cpp::Group outputGroup = outputFile.root().create_group("data");
+    //h5cpp::Group outputGroup = h5cpp::Group(outputFile.root().create_group("data")); // groupname should end by vesselgroup
+// //     h5cpp::Group outputGroup = PythonToCppGroup(py_h5outputGroup);
+    //h5cpp::Group ldgroup = po2outputGroup.create_group("field_ld");
+    //WriteHdfLd(ldgroup, s.grid.ld);
+    //WriteScalarField<float>(outputGroup, "po2field", s.po2field, s.grid.ld, ldgroup);
+//      h5cpp::create_dataset<float>(outputGroup, "po2vessels", h5cpp::Dataspace::simple_dims(s.po2vessels.size(), 2), (float*)s.po2vessels[0].data(), h5cpp::CREATE_DS_COMPRESSED); // FIX ME: transpose the array!
+//      WriteHdfPtree(outputGroup, s.metadata, HDF_WRITE_PTREE_AS_DATASETS);
+    //outputFile.close();
   }
 }
 

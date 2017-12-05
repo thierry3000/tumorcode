@@ -1501,6 +1501,7 @@ int DetailedP02Sim::run(VesselList3d &vl)
                   grid, 
 		  po2field,
                   tissue_diff_matrix_builder);
+      f.close();
     }
     const double tolerance = params.convergence_tolerance;
     // break if convergent
@@ -1527,6 +1528,7 @@ int DetailedP02Sim::run(VesselList3d &vl)
                   grid, 
 		  po2field,
                   tissue_diff_matrix_builder);
+      f.close();
     }
     //bool keep_preconditioner = (iteration_num>2 && tissue_diff_solver.iteration_count<25);
     bool keep_preconditioner = true;

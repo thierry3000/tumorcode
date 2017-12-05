@@ -100,6 +100,7 @@ include_directories("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src")
 list(APPEND CMAKE_CXX_SOURCE_FILE_EXTENSIONS c)
 add_definitions(-DSILENT)
 find_package(Threads REQUIRED)
+message("CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
 # set a search path for additional custom cmake modules.
 # according to recommendation in https://cmake.org/Wiki/CMake:How_To_Find_Libraries
 message("CMAKE_ROOT: ${CMAKE_ROOT}")
@@ -108,7 +109,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/;")
 message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 message("CMAKE_EXE_LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
 message("TrilinosDIR: ${TrilinosDIR}")
-
 
 include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)
 
@@ -266,10 +266,12 @@ message(STATUS "PYTHON_LIBRARIES 	=${PYTHON_LIBRARIES}")
 message(STATUS "Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE         	=${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}")
 message(STATUS "LAPACK lib 					=${LAPACK_LIBRARIES}")
 message(STATUS "BLAS_LIBRARIES   	= ${BLAS_LIBRARIES}")
+message(STATUS "automatic hdf5 detection")
 message(STATUS "HDF5_CXX_LIBRARIES      = ${HDF5_CXX_LIBRARIES}")
 message(STATUS "HDF5_C_LIBRARIES    	= ${HDF5_C_LIBRARIES}")
 message(STATUS "HDF5_LIBRARY_DIRS	= ${HDF5_LIBRARY_DIRS}")
 message(STATUS "HDF5_INCLUDE_DIRS	= ${HDF5_INCLUDE_DIRS}")
+#set (HDF5_INCLUDE_DIRS CACHE PATH "/usr/include/hdf5/openmpi")
 
 
 message(STATUS "Boost_lib dirs     	= ${Boost_LIBRARY_DIRS}")
@@ -365,7 +367,7 @@ if (NOT IS_INTEL_COMPILER)
   message("Set for gnu gxx")
   set(Warnings "-Wall -Wextra -Wno-sign-compare -Wno-reorder -Wno-deprecated -Wuninitialized -Wno-unused-parameter -Wno-unused-variable -Wno-unused-result -Wno-unused-function -Wno-unused-local-typedefs") # -Wno-unknown-pragmas   -Wpointer-arith -Wwrite-strings -Woverloaded-virtual -Wno-long-long  -Wuninitialized ")
   set(Warnings "${Warnings} -Wno-deprecated-declarations")  # -Wswitch -Wno-extra -Wsynth
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} -pthread -fPIC -ftemplate-depth-128")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} ${CMAKE_THREAD_LIBS_INIT} -fPIC -ftemplate-depth-128")
 else()
   #1478 is a deprecation warning for auto_ptr
   #set(Warnings "-gcc -cxxlib -wd1478") #gnu++0x
@@ -384,7 +386,7 @@ if (IS_INTEL_COMPILER)
 endif()
 
 #-fstrict-aliasing
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} -pthread -fPIC -ftemplate-depth-128")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} ${CMAKE_THREAD_LIBS_INIT} -fPIC -ftemplate-depth-128")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -g -Wno-unknown-pragmas" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O2 -g") # -funroll-all-loops
 if (MAX_OPTIMIZATION)

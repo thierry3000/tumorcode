@@ -158,8 +158,8 @@ def testcorrelation():
 def run():
   testfill()
   testdistancemap()
-  testfieldsampling()
-  testcorrelation()
+  #testfieldsampling()
+  #testcorrelation()
   
 if __name__ == '__main__':
   print("using PIL version: %s" % PIL.VERSION)

@@ -27,7 +27,6 @@ import qsub
 import dicttoinfo
 import krebsutils
 import myutils
-import h5py
 import h5files
 import itertools
 import copy
@@ -49,7 +48,6 @@ def worker_on_client(fn, pattern, o2params):
     for ref in o2_refs:
       po2group = h5files.open(ref.fn)[ref.path]
       detailedo2Analysis.WriteSamplesToDisk(po2group)
-  h5files.closeall() # just to be sure
 
 
 def worker_plots_for_paper(filenames, pattern):
@@ -91,7 +89,7 @@ def run(parameter_set_name, filenames, grp_pattern, systemsize):
 
   dirs = set()
   for fn in filenames:
-    with h5py.File(fn, 'r') as f:
+    with h5files.open(fn, 'r') as f:
       d = myutils.walkh5(f, grp_pattern)
       assert len(d), 'you fucked up, pattern "%s" not found in "%s"!' % (grp_pattern, fn)
       dirs =set.union(dirs, d)

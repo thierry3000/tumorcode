@@ -474,8 +474,11 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
   
   std::auto_ptr<VesselList3d> vl;
   typedef polymorphic_latticedata::LatticeData LatticeData;
-  
+  h5cpp::Attributes a = vesselgroup.attrs();
+/*
   if(vesselgroup.attrs().get<std::string>("CLASS") == "GRAPH")
+    */
+  if(a.get<std::string>("CLASS") == "GRAPH")
   {
 #ifdef DEBUG
     cout << "read vl from: \n " << vesselgroup.get_file_name() << endl;
