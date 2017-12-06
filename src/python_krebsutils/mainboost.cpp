@@ -466,17 +466,26 @@ py::object flood_fill(const nm::array &py_field, const Int3 &startpos)
 #if BOOST_VERSION>106300
 py::object distancemap(const np::ndarray &py_field)
 {
+  //std::cout << std::endl << "Python ndarray :" << py::extract<char const *>(py::str(py_field)) << std::flush;
   //np::arrayt<uchar> field(py_field);
 //   np::arrayt<float> res = np::zeros(field.rank(), field.shape(), np::getItemtype<float>());
   //py::tuple shape = py::tuple(py_field.get_shape());
   //np::ndarray res = np::zeros(py::make_tuple(py), np::dtype::get_builtin<float>());
-  np::ndarray res = np::zeros(py::make_tuple(py_field.shape(0),py_field.shape(1),py_field.shape(2)),np::dtype::get_builtin<float>());
+  //np::ndarray res = np::zeros(py::make_tuple(py_field.shape(0),py_field.shape(1),py_field.shape(2)),np::dtype::get_builtin<float>());
 
+  //Array3d<uchar> field = Array3dFromPy<uchar>(py_field);
+  //np::arrayt<float> res = np::zeros(field.rank(), field.shape(), np::getItemtype<float>());
+  //np::ndarray res = np::zeros(py::make_tuple(field.shape()[0],field.shape()[1],field.shape()[2]),np::dtype::get_builtin<float>());
+  //Array3d<float> arr3d;
+  // read in from python side
+  Array3d<uchar> arr3d_uchar = Array3dFromPy<uchar>(py_field);
+  //prepare output
+  np::ndarray res = np::zeros(py::make_tuple(py_field.shape(0),py_field.shape(1),py_field.shape(2)),np::dtype::get_builtin<float>());
   Array3d<float> arr3d;
   arr3d = Array3dFromPy<float>(res);
   
   Int3 aIndex = Int3(0,0,0);
-  float bla = arr3d(aIndex);
+  uchar bla = arr3d_uchar(aIndex);
   printf("this is the entry: %f\n", bla);
   
   LatticeDataQuad3d ld;
@@ -504,6 +513,11 @@ py::object distancemap(const np::ndarray &py_field)
 
   dfc.Do(ld, arr3d);
 
+//   np::ndarray res = np::zeros(py::make_tuple(py_field.shape(0),py_field.shape(1),py_field.shape(2)),np::dtype::get_builtin<float>());
+//   FOR_BBOX3(ppp, ld.Box())
+//   {
+//     res[ppp[0]][ppp[1]][ppp[2]] = arr3d(ppp);
+//   }
   return res;
 }
 #else
@@ -558,8 +572,8 @@ py::object diff_field(np::ndarray py_field, int axis, double prefactor)
   //CopyBorder(field[bb], 3, 1);
 
   //np::arrayt<T> py_res = np::zeros(3, ::Size(bb).cast<Py_ssize_t>().eval().data(), np::getItemtype<T>());
-  np::ndarray py_res = np::zeros(py::tuple(::Size(bb).cast<Py_ssize_t>().eval().data()), np::dtype::get_builtin<T>());
-  Array3d<T> res = Array3dFromPy<T>(py_res);
+  //np::ndarray py_res = np::zeros(py::tuple(::Size(bb).cast<Py_ssize_t>().eval().data()), np::dtype::get_builtin<T>());
+  Array3d<T> res = Array3dFromPy<T>(py_field);
 
   FOR_BBOX3(p, bb)
   {
@@ -576,6 +590,7 @@ py::object diff_field(np::ndarray py_field, int axis, double prefactor)
     res(p) = f*prefactor*(field(p1)-field(p0));
   }
 
+  np::ndarray py_res = np::zeros(py::make_tuple(py_field.shape(0),py_field.shape(1),py_field.shape(2)),np::dtype::get_builtin<float>());
   return py_res;
 }
 #else
@@ -954,6 +969,7 @@ BOOST_PYTHON_MODULE(libkrebs_d)
 BOOST_PYTHON_MODULE(libkrebs_)
 #endif
 {
+  printf("Loaded libkrebs_ module.\n");
   Py_Initialize();
 #if BOOST_VERSION>106300
   np::initialize();

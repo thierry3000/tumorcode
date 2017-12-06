@@ -239,21 +239,49 @@ h5cpp::Group PythonToCppGroup(const py::object &op_);
 template<class T>
 inline Array3d<T> Array3dFromPy(const np::ndarray &a)
 {
+//   printf("I am here!\n");
+//   std::cout << "blaaa" << std::endl;
+//   std::cout << std::endl << "Python ndarray :" << py::extract<char const *>(py::str(a)) << std::flush;
+          
   assert(a.get_nd() <= 3);
   Int3 size(1);
   for (int i=0; i<a.get_nd(); ++i)
   {
     size[i] = a.shape(i);
   }
-  Array3d<T> arr3d(size,
-                   Int3(a.strides(0),a.strides(1),a.strides(2))/sizeof(T),
-                       (T*)a.get_dtype().get_itemsize(), size.prod(),false);
-#ifdef DEBUG
-  Int3 aIndex = Int3(0,0,0);
-  float bla = arr3d(aIndex);
-  printf("this is the entry: %f\n", bla);
-#endif
-  return arr3d;
+  int product = size.prod();
+  Int3 strides_vec(a.strides(0),a.strides(1),a.strides(2));
+  
+  Array3d<T> arr3d_internal(size,strides_vec/sizeof(T),(T*)a.get_data(), product,false);
+  
+//   Array3d<T> arr3d_internal;
+//   arr3d_internal.init(size);
+//   for(int i=0;i<size[0];++i)
+//   {
+//     for( int j=0;j<size[1];++j)
+//     {
+//       for( int k=0;k<size[2];++k)
+//       {
+//         float aFloat = (float) a.get_data()[i*a.strides(0)+j*a.strides(1)+k*a.strides(2)];
+//         //float aFloat = py::extract<float>(a[i][j][k]);
+//         arr3d_internal(i,j,k) = aFloat;
+//       }
+//     }
+//   }
+  
+//   FOR_BBOX3(ppp, size)
+//   {
+//     arr3d(ppp) = py::extract<float>(a[ppp[0]][ppp[1]][ppp[2]]);
+//   }
+  
+// #ifdef DEBUG
+//   FOR_BBOX3(p, size)
+//   {
+//     float bla = arr3d_internal(p);
+//     printf("this is the entry: %f\n", bla);
+//   }
+// #endif
+  return arr3d_internal;
 }
 #else
 template<class T>
