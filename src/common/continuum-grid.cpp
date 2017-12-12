@@ -217,7 +217,11 @@ DynArray<BBox3> MakeMtBoxGrid(const BBox3 &bb)
 
 DynArray<BBox3> MakeMtBoxGridLarge(const BBox3 &mainbb, int max_size)
 {
+#ifdef mwOMP
   int num_threads = my::GetNumThreads();
+#else
+  int num_threads = omp_get_max_threads();
+#endif
   int bs = std::min(max_size, std::max(16, maxCoeff(Size(mainbb)) / (2 * num_threads)));
   Int3 cnt = (Size(mainbb)/bs).cwiseMax(Int3(1));
   int total_cnt = cnt.prod();

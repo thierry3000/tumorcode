@@ -17,6 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+//#define mwOMP
+
 #include "../python_krebsutils/python_helpers.h"
 #include "vesselgen/vesselgen.h"
 #include "calcflow.h"
@@ -367,6 +369,7 @@ BOOST_PYTHON_MODULE(libtumors_)
 #if BOOST_VERSION>106300
   np::initialize();
 #endif
+#ifdef mwOMP
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
   if (my::MultiprocessingInitializer_exists())
   {
@@ -375,6 +378,7 @@ BOOST_PYTHON_MODULE(libtumors_)
   {
     my::initMultithreading(0, NULL, 1);
   }
+#endif
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   Tumors::export_faketum();
   Tumors::export_bulktissue_no_vessels();

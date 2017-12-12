@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #ifndef _OXYGEN_MODEL2_H_
 #define _OXYGEN_MODEL2_H_
-
+//#define mwOMP
 #include "../python_krebsutils/python_helpers.h"
 #include "hdf_wrapper.h"
 

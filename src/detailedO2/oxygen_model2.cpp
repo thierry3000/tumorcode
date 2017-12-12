@@ -1072,7 +1072,7 @@ void IntegrateVesselPO2(const Parameters &params,
   BOOST_FOREACH(const VesselNode* nd, arterial_roots)
   {//loop over all arterial roots, we follow the blood stream starting here
     nodal_o2ready[nd->Index()] = true;
-    for (int i=0; i<nd->Count(); ++i)
+    for (int i=0; i<nd->Count(); ++i) // this information is already contained in the sorted vessels?
     {
       const Vessel* v = nd->GetEdge(i);
       int side_index = (v->NodeA() == nd) ? 0 : 1;
@@ -1312,8 +1312,10 @@ void DetailedP02Sim::init(Parameters &params_,
   params = params_;
   world = !vl.HasLattice();
   
+#ifdef mwOMP
   //multithreading
   my::SetNumThreads(params.num_threads);
+#endif
   {
     //this worked only for lattices
     //int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
@@ -1349,14 +1351,19 @@ void DetailedP02Sim::init(Parameters &params_,
       }
     }
     grid.init(ld, dim);
-    mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
+    //mtboxes.init(MakeMtBoxGrid(grid.Box()));
+    mtboxes.init(MakeMtBoxGridLarge(grid.Box(),128));
     if (params.loglevel > 0)
     {
       cout << "continuum grid:" << endl;
       grid.ld.print(cout);
       cout << endl;
       cout << "multithreading:" << endl;
+#ifdef mwOMP
       cout << my::GetNumThreads()<<endl;
+#else
+      cout << omp_get_max_threads() << endl;
+#endif
     }
     if (params.loglevel > 0)
     {
@@ -1440,8 +1447,6 @@ void DetailedP02Sim::init(Parameters &params_,
     }
     
     
-    
-    
     /** executes topological ordering
      * potential remodelling due to tumor should be considered
      */
@@ -1451,12 +1456,12 @@ void DetailedP02Sim::init(Parameters &params_,
     PrepareNetworkInfo(vl, sorted_vessels, roots);
     BOOST_FOREACH(const VesselNode* nd, roots)
     {
-      if(nd->Count()>0)// there needs to be a connected vessel to check for type
+      if(nd->Count()>0)// there needs to be at leat one connected vessel to check for type
       {
-	if(nd->GetEdge(0)->IsArtery())
-	{
-	  arterial_roots.push_back(nd);
-	}
+        if(nd->GetEdge(0)->IsArtery())
+        {
+          arterial_roots.push_back(nd);
+        }
       }
     }   //note vl is lost after this call!!!!
   }

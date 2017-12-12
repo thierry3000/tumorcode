@@ -976,13 +976,15 @@ BOOST_PYTHON_MODULE(libkrebs_)
 #else
   np::importNumpyAndRegisterTypes();
 #endif
-  
+
+#ifdef mwOMP
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
   // setup everything to work with threads.
   my::initMultithreading(0, NULL, 1);
   // register function to set the number of threads
   py::def("set_num_threads", my::SetNumThreads);
-  
+#endif
+
   mw_py_impl::exportVectorClassConverters();
   mw_py_impl::exportLatticeData();
   mw_py_impl::exportH5Converters();

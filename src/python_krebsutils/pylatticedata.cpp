@@ -62,8 +62,8 @@ public:
     ld->SetOriginPosition(pos);
   }
   
-  Float3 GetOriginPosition() {
-    return ld->GetOriginPosition();
+  py::tuple GetOriginPosition() {
+    return py::make_tuple(ld->GetOriginPosition()[0],ld->GetOriginPosition()[1],ld->GetOriginPosition()[2]);
   }
   
   py::object GetWorldBox() const {

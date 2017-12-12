@@ -111,6 +111,10 @@ message("TrilinosDIR: ${TrilinosDIR}")
 
 
 include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)
+option(BUILD_TESTS "decide to create the tests" ON)
+if(BUILD_TESTS)
+  message("Building tests!")
+endif()
 
 option(USE_MILOTTI_MTS "decide to use libvbl.so" OFF)
 if(USE_MILOTTI_MTS)
@@ -335,6 +339,9 @@ set(myLibs
   ${PYTHON_LIBRARIES}
 )
 endif()
+if(USE_MILOTTI_MTS)
+  set(myLibs "${myLibs};${Boost_PYTHON_LIBRARY}")
+endif()
 #message(STATUS "myLibs = ${myLibs}")
 
 
@@ -409,8 +416,6 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 #message("executables go to ${EXECUTABLE_OUTPUT_PATH}")
 
 #endif()
-
-message(STATUS "myLibs = ${myLibs}")
 
 # defer to build scripts in the src dir
 add_subdirectory(src)

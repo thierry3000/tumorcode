@@ -175,6 +175,7 @@ static void FindBiComponents(const GRAPH &g,
   low.resize( vccnt, -1 );
 
   auto node_range_end = boost::end(g.node_range());
+  
   for(auto node_iter=boost::begin(g.node_range()); node_iter!=node_range_end; ++node_iter)
   {
     N vc = *node_iter;

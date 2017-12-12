@@ -18,7 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "faketum_mts.h"
-
+#include <chrono>
+#include <omp.h>
 
 
 
@@ -256,7 +257,9 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   cout.rdbuf(my::log().rdbuf());
   {
     /* setup basic things */
+#ifdef mwOMP
     my::SetNumThreads(params.num_threads);
+#endif
     /* open hdf5 file containing the vessels */
     h5cpp::File file(params.fn_vessel, "r");
     /* instructions on how to read the vessels */
@@ -336,8 +339,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   
   SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, field_ld);
   grid.init(field_ld, dim);
-  mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(8, 8, 8)));
-  
+  //mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(8, 8, 8)));
+  mtboxes.init(MakeMtBoxGridLarge(grid.Box(),128));
   
   //gf_model.init(grid, mtboxes, params.as_ptree());
   gf_model.init(field_ld, mtboxes, params.as_ptree());
@@ -352,7 +355,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
 //   glucoseOps.init(state.glucoseField);
 //   all_pt_params.add_child("glucose" , glucoseParams.as_ptree());
   /* vessel volume fractions are need to set the source strengths */
-  UpdateVesselVolumeFraction();
+  
+  //UpdateVesselVolumeFraction();
   
   /* init the cell system */
   try{
@@ -367,11 +371,14 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   /* start main loop */
   while (true)
   {
-    if (time >= next_output_time - params.dt * 0.1)
+    if (time >= next_output_time - params.dt )
     {
 #ifdef USE_DETAILED_O2
       /* right now, the o2 simulation is called at every output time */
       {
+#ifdef W_timing
+        currentTiming.begin_o2 = std::chrono::steady_clock::now();
+#endif
         o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels);
         cout << "\nInit O2 completed" << endl;
         o2_sim.run(*vl);
@@ -379,6 +386,11 @@ int FakeTumMTS::FakeTumorSimMTS::run()
         state.previous_po2field = o2_sim.getPo2field();
         state.previous_po2vessels = o2_sim.getVesselPO2Storrage();
         cout << "\nDetailed O2 completed" << endl;
+#ifdef W_timing
+        currentTiming.end_o2 = std::chrono::steady_clock::now();
+        currentTiming.run_o2 = currentTiming.run_o2 +
+                                std::chrono::duration_cast<std::chrono::microseconds>(currentTiming.end_o2-currentTiming.begin_o2).count();
+#endif
       }
 #else
       /// no detailed o2 model
@@ -390,19 +402,29 @@ int FakeTumMTS::FakeTumorSimMTS::run()
 #ifdef USE_DETAILED_O2
       // feed milotti structure with detailed o2 simulation result
       //update_milotti_vessels(currentCellsSystem, *vl, o2_sim.po2vessels);
+#ifdef W_timing
+      currentTiming.begin_ann = std::chrono::steady_clock::now();
+#endif
       findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
+#ifdef W_timing
+      currentTiming.end_ann = std::chrono::steady_clock::now();
+      currentTiming.run_ann = currentTiming.run_ann +
+    std::chrono::duration_cast<std::chrono::microseconds>(currentTiming.end_ann-currentTiming.begin_ann).count();
+#endif
 #else
       // simple version which set oxygen level of the vessels to a constant value
       update_milotti_vessels(currentCellsSystem, *vl);
 #endif
+
       lastTumorGroupWrittenByFakeTumName = writeOutput();//detailedO2 should be calculated prior to this call
-      h5::File f(params.fn_out + ".h5", "a");
-      lastTumorGroupWrittenByFakeTum = f.root().open_group(lastTumorGroupWrittenByFakeTumName+"/tumor");
+      currentTiming.reset();
+      //h5::File f(params.fn_out + ".h5", "a");
+      //lastTumorGroupWrittenByFakeTum = f.root().open_group(lastTumorGroupWrittenByFakeTumName+"/tumor");
       
       //provide addition information about the tissue phases to the diffusion solver
       // this is where we need the information about the tissue state
-      SetupTissuePhases(phases, grid, mtboxes, lastTumorGroupWrittenByFakeTum);//filling
-      f.close();// close file to get proper handling
+      //SetupTissuePhases(phases, grid, mtboxes, lastTumorGroupWrittenByFakeTum);//filling
+      //f.close();// close file to get proper handling
       next_output_time += params.out_intervall;
     }
 
@@ -415,7 +437,15 @@ int FakeTumMTS::FakeTumorSimMTS::run()
 
     /* do a vessel model remodeling step */
     cout << boost::format("start vessel remodel step! \n");
+#ifdef W_timing
+    currentTiming.begin_doStep = std::chrono::steady_clock::now();
+#endif
     doStep(params.dt);
+#ifdef W_timing
+    currentTiming.end_doStep = std::chrono::steady_clock::now();
+    currentTiming.run_doStep = currentTiming.run_doStep +
+    std::chrono::duration_cast<std::chrono::microseconds>(currentTiming.end_doStep-currentTiming.begin_doStep).count();
+#endif
     
     cout << boost::format("finished vessel remodel step! \n");
     /* increment tumor time */
@@ -423,14 +453,29 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     /* propergate cells in time until current fake tumor time */
     cout << boost::format("advance milotti until: %f\n") % time;
     //currentCellsSystem->Set_tmax(time);
+#ifdef W_timing
+    currentTiming.begin_doMilottiStep = std::chrono::steady_clock::now();
+#endif
     doMilottiStep();
-    findNearestVessel(o2_sim.po2vessels);
+#ifdef W_timing
+    currentTiming.end_doMilottiStep = std::chrono::steady_clock::now();
+    currentTiming.run_doMilottiStep = currentTiming.run_doMilottiStep +
+    std::chrono::duration_cast<std::chrono::microseconds>(currentTiming.end_doMilottiStep-currentTiming.begin_doMilottiStep).count();
+#endif
     
+#ifdef W_timing
+    currentTiming.begin_ann = std::chrono::steady_clock::now();
+#endif
+    findNearestVessel(o2_sim.po2vessels);
+#ifdef W_timing
+    currentTiming.end_ann = std::chrono::steady_clock::now();
+    currentTiming.run_ann = currentTiming.run_ann +
+    std::chrono::duration_cast<std::chrono::microseconds>(currentTiming.end_ann-currentTiming.begin_ann).count();
+#endif
     ++num_iteration;
   }
-#ifndef undo
+
   currentCellsSystem->CloseOutputFiles();						// Closing output files
-#endif 
   return 0;
 }
 
@@ -448,7 +493,7 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
   tumor_radius += dt * params.tumor_speed;
 }
 
-#ifndef undo
+
 void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
 {
   cout << format("start mts at tumor time: %f\n" ) % time;
@@ -469,7 +514,6 @@ void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
   cout << format("finished FakeTumMTS::FakeTumorSimMTS::doMilottiStep(),  mts at tumor time: %f\n" ) % time;
   //end milotti
 }
-#endif
 
 std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
 {
@@ -480,6 +524,8 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   h5::Group g_o2;
 
   h5::Attributes a = root.attrs();
+  int num_threads = omp_get_max_threads();
+  a.set("detectedNumberOfThreads", num_threads);
   
   if (output_num == 0)
   {
@@ -502,6 +548,24 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   a = gout.attrs();
   a.set("time", time);
   a.set("OUTPUT_NUM",output_num);
+  h5::Group timing = gout.create_group("timing");
+  h5::Attributes timing_attrs= timing.attrs();
+  timing_attrs.set("run_init_o2", currentTiming.run_init_o2);
+  timing_attrs.set("run_o2", currentTiming.run_o2);
+  timing_attrs.set("run_ann", currentTiming.run_ann);
+  timing_attrs.set("run_doStep", currentTiming.run_doStep);
+  timing_attrs.set("run_doMilottiStep", currentTiming.run_doMilottiStep);
+  //timing_attrs.set("run_findNearestVessel", currentTiming.run_findNearestVessel);
+  timing_attrs.set("run_vbl_diff", currentCellsSystem->myTiming.diff);
+  timing_attrs.set("run_vbl_geometry", currentCellsSystem->myTiming.geometry);
+  timing_attrs.set("run_vbl_cellEvents", currentCellsSystem->myTiming.cellEvents);
+  timing_attrs.set("run_vbl_writeToFile", currentCellsSystem->myTiming.writeToFile);
+  
+  const auto now = std::chrono::system_clock::now();
+  const auto epoch   = now.time_since_epoch();
+  const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+  timing_attrs.set("secondsSinceEpoch", (int)seconds.count());
+  
   h5::Group cells_out = gout.create_group("cells");
   /* writes the cell system stuff */
   //WriteCellsSystemHDF(currentCellsSystem, cells_out);
@@ -1081,3 +1145,14 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
     currentCellsSystem->Add_BloodVesselVector(suggestion);
   }
 }
+// void FakeTumMTS::Timing::calculate_timings()
+// {
+//   run_calcflow = std::chrono::duration_cast<std::chrono::microseconds>(end_calcflow-begin_calcflow).count();
+//   run_o2 = std::chrono::duration_cast<std::chrono::microseconds>(end_o2-begin_o2).count();
+//   run_ann = std::chrono::duration_cast<std::chrono::microseconds>(end_ann-begin_ann).count();
+//   run_doStep = std::chrono::duration_cast<std::chrono::microseconds>(end_doStep-begin_doStep).count();
+//   run_doMilottiStep = std::chrono::duration_cast<std::chrono::microseconds>(end_doMilottiStep-begin_doMilottiStep).count();
+//   run_findNearestVessel = std::chrono::duration_cast<std::chrono::microseconds>(end_findNearestVessel-begin_findNearestVessel).count();
+//   run_mts_main_loop = std::chrono::duration_cast<std::chrono::microseconds>(end_mts_main_loop-begin_mts_main_loop).count();
+//   
+// }

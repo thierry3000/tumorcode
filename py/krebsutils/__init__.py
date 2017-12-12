@@ -64,7 +64,6 @@ imports_ = [ f.strip() for f in
     calcBulkTissueSourceTerm, \
     make_vessel_volume_fraction_field, \
     calc_vessel_boxcounts, \
-    set_num_threads, \
     run_vesselgen, \
     vesselgen_generate_grid, \
     vesselgen_generate_single, \

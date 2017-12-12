@@ -59,6 +59,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   #include "../common/simple_oxygen_model.h"
 #endif
 
+#ifdef W_timing
+  #include <chrono>
+#endif
 namespace h5 = h5cpp;
 
 namespace FakeTumMTS{
@@ -121,8 +124,47 @@ struct Parameters
   ptree as_ptree() const;
   static void update_ptree(ptree &dst, const ptree &src);
 };
+#ifdef W_timing
+//everything in mu seconds
+struct Timing
+{
+  std::chrono::steady_clock::time_point begin_init_o2;
+  std::chrono::steady_clock::time_point end_init_o2;
+  std::chrono::steady_clock::time_point begin_o2;
+  std::chrono::steady_clock::time_point end_o2;
+  std::chrono::steady_clock::time_point begin_ann;
+  std::chrono::steady_clock::time_point end_ann;
+  std::chrono::steady_clock::time_point begin_doStep; 
+  std::chrono::steady_clock::time_point end_doStep;
+  std::chrono::steady_clock::time_point begin_doMilottiStep; 
+  std::chrono::steady_clock::time_point end_doMilottiStep;
+  std::chrono::steady_clock::time_point begin_findNearestVessel;
+  std::chrono::steady_clock::time_point end_findNearestVessel;
+  std::chrono::steady_clock::time_point begin_mts_main_loop;
+  std::chrono::steady_clock::time_point end_mts_main_loop;
+  int run_init_o2 = 0;
+  int run_o2 = 0;
+  int run_ann = 0;
+  int run_doStep = 0;
+  int run_doMilottiStep = 0;
+  int run_findNearestVessel = 0;
+  int run_mts_main_loop = 0;
+//   void calculate_timings();
+  void reset()
+  {
+    run_init_o2 = 0;
+    run_o2 = 0;
+    run_ann = 0;
+    run_doStep =0;
+    run_doMilottiStep =0 ;
+    run_findNearestVessel=0;
+    run_mts_main_loop=0;
+  };
+};
+#endif
 struct FakeTumorSimMTS : public boost::noncopyable
 {
+  Timing currentTiming;
   std::auto_ptr<VesselList3d> vl;
   // ANN stuff
 //   ANNkd_tree* kd_tree_of_vl;        // ann kd tree structurs

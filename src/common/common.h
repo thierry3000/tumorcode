@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #ifndef COMMON_H
 #define COMMON_H
-
+//#define mwOMP
+#include <omp.h>
 #include "mwlib/helpers-defs.h"
 #include "mwlib/myAssert.h"
 #include "mwlib/helpers-vec.h"
