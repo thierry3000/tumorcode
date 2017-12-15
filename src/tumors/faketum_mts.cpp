@@ -388,8 +388,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
         cout << "\nDetailed O2 completed" << endl;
 #ifdef W_timing
         currentTiming.end_o2 = std::chrono::steady_clock::now();
-        currentTiming.run_o2 = currentTiming.run_o2 +
-                                std::chrono::duration_cast<std::chrono::microseconds>(currentTiming.end_o2-currentTiming.begin_o2).count();
+        currentTiming.time_diff = currentTiming.end_o2 - currentTiming.begin_o2;
+        currentTiming.run_o2 = currentTiming.run_o2 + currentTiming.time_diff.count();
 #endif
       }
 #else
@@ -408,8 +408,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
 #ifdef W_timing
       currentTiming.end_ann = std::chrono::steady_clock::now();
-      currentTiming.run_ann = currentTiming.run_ann +
-    std::chrono::duration_cast<std::chrono::microseconds>(currentTiming.end_ann-currentTiming.begin_ann).count();
+      currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
+      currentTiming.run_ann = currentTiming.run_ann + currentTiming.time_diff.count();
 #endif
 #else
       // simple version which set oxygen level of the vessels to a constant value
@@ -443,8 +443,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     doStep(params.dt);
 #ifdef W_timing
     currentTiming.end_doStep = std::chrono::steady_clock::now();
-    currentTiming.run_doStep = currentTiming.run_doStep +
-    std::chrono::duration_cast<std::chrono::microseconds>(currentTiming.end_doStep-currentTiming.begin_doStep).count();
+    currentTiming.time_diff = currentTiming.end_doStep-currentTiming.begin_doStep;
+    currentTiming.run_doStep = currentTiming.run_doStep + currentTiming.time_diff.count();
 #endif
     
     cout << boost::format("finished vessel remodel step! \n");
@@ -459,8 +459,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     doMilottiStep();
 #ifdef W_timing
     currentTiming.end_doMilottiStep = std::chrono::steady_clock::now();
-    currentTiming.run_doMilottiStep = currentTiming.run_doMilottiStep +
-    std::chrono::duration_cast<std::chrono::microseconds>(currentTiming.end_doMilottiStep-currentTiming.begin_doMilottiStep).count();
+    currentTiming.time_diff = currentTiming.end_doMilottiStep-currentTiming.begin_doMilottiStep;
+    currentTiming.run_doMilottiStep = currentTiming.run_doMilottiStep + currentTiming.time_diff.count();
 #endif
     
 #ifdef W_timing
@@ -469,8 +469,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     findNearestVessel(o2_sim.po2vessels);
 #ifdef W_timing
     currentTiming.end_ann = std::chrono::steady_clock::now();
-    currentTiming.run_ann = currentTiming.run_ann +
-    std::chrono::duration_cast<std::chrono::microseconds>(currentTiming.end_ann-currentTiming.begin_ann).count();
+    currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
+    currentTiming.run_ann = currentTiming.run_ann + currentTiming.time_diff.count();
 #endif
     ++num_iteration;
   }
@@ -557,9 +557,14 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   timing_attrs.set("run_doMilottiStep", currentTiming.run_doMilottiStep);
   //timing_attrs.set("run_findNearestVessel", currentTiming.run_findNearestVessel);
   timing_attrs.set("run_vbl_diff", currentCellsSystem->myTiming.diff);
+  timing_attrs.set("run_vbl_diff_loop_1", currentCellsSystem->myTiming.diff_loop_1);
+  timing_attrs.set("run_vbl_diff_loop_2", currentCellsSystem->myTiming.diff_loop_2);
+  timing_attrs.set("run_vbl_diff_loop_3", currentCellsSystem->myTiming.diff_loop_3);
+  timing_attrs.set("run_vbl_dynamics", currentCellsSystem->myTiming.dynamics);
   timing_attrs.set("run_vbl_geometry", currentCellsSystem->myTiming.geometry);
   timing_attrs.set("run_vbl_cellEvents", currentCellsSystem->myTiming.cellEvents);
   timing_attrs.set("run_vbl_writeToFile", currentCellsSystem->myTiming.writeToFile);
+  timing_attrs.set("run_vbl_bico_call", currentCellsSystem->myTiming.bico_call);
   
   const auto now = std::chrono::system_clock::now();
   const auto epoch   = now.time_since_epoch();

@@ -142,13 +142,14 @@ struct Timing
   std::chrono::steady_clock::time_point end_findNearestVessel;
   std::chrono::steady_clock::time_point begin_mts_main_loop;
   std::chrono::steady_clock::time_point end_mts_main_loop;
-  int run_init_o2 = 0;
-  int run_o2 = 0;
-  int run_ann = 0;
-  int run_doStep = 0;
-  int run_doMilottiStep = 0;
-  int run_findNearestVessel = 0;
-  int run_mts_main_loop = 0;
+  std::chrono::duration<double> time_diff;
+  double run_init_o2 = 0;
+  double run_o2 = 0;
+  double run_ann = 0;
+  double run_doStep = 0;
+  double run_doMilottiStep = 0;
+  double run_findNearestVessel = 0;
+  double run_mts_main_loop = 0;
 //   void calculate_timings();
   void reset()
   {
