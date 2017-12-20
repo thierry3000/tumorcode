@@ -41,7 +41,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/continuum-flow.h"
 #include "common/time_stepper_utils.h"
 
-namespace h5 = h5cpp;
+#include <H5Cpp.h>
 
 
 class VirtualGridFuncCellsWoNecro : public VirtualGridFunctions<float, 1>
@@ -122,7 +122,7 @@ class IffDrugApp3d
   void InitAsSimpleModels(Array3d< float > theta_tumor, Array3d< float > theta_necro, Array3d< float > phi_water, Array3d< float > phi_cells);
 
   void DoIffCalc();
-  void MeasureIfFlowState(h5::Group g);
+  void MeasureIfFlowState(H5::Group g);
 
 #ifdef USE_IFDRUGSIM
   void WriteDrugOutput(double t, const IfDrug::Calculator::State &conc_field, const IfDrug::Calculator& model, const ptree& params);

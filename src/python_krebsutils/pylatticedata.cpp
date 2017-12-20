@@ -116,8 +116,9 @@ public:
 PyLd* read_lattice_data_from_hdf_by_filename(const string fn, const string path)
 {
   //h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
-  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
-  h5cpp::Group g_ld = h5cpp::Group(readInFile->root().open_group(path));
+  H5::H5File *readInFile = new H5::H5File(fn, H5F_ACC_RDONLY);
+  //h5cpp::Group g_ld = h5cpp::Group(readInFile->root().open_group(path));
+  H5::Group g_ld = readInFile->openGroup(path);
   std::printf("if you read this, lattice data is in c++\n");
   typedef polymorphic_latticedata::LatticeData LD;
 //  return new PyLd(new LD(ld));
@@ -131,6 +132,7 @@ PyLd* read_lattice_data_from_hdf_by_filename(const string fn, const string path)
 }
 
 //pointer issue changed to boost::shared_ptr
+#if 0 //depricate since H5Cpp
 PyLd* read_lattice_data_from_hdf(const py::object &ld_grp_obj)
 {
   h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
@@ -145,14 +147,16 @@ PyLd* read_lattice_data_from_hdf(const py::object &ld_grp_obj)
 //  return new PyLd(ldp.get());
 //  return new PyLd(ldp.get());
 }
+#endif
 
-
+#if 0 //depricated since H5Cpp
 void write_lattice_data_to_hdf(py::object py_h5grp, const std::string &name, const PyLd *cpp_py_ld)
 {
   h5cpp::Group g = PythonToCppGroup(py_h5grp);
   h5cpp::Group g_ld = g.create_group(name);
   cpp_py_ld->get().WriteHdf(g_ld);
 }
+#endif
 
 
 void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float safety_spacing, LatticeDataQuad3d &ld);
@@ -250,11 +254,11 @@ void exportLatticeData()
     .def("__str__", &PyLd::toString)
     ;
 
-  py::def("read_lattice_data_from_hdf", read_lattice_data_from_hdf,
-          py::return_value_policy<py::manage_new_object>());
+//   py::def("read_lattice_data_from_hdf", read_lattice_data_from_hdf,
+//           py::return_value_policy<py::manage_new_object>());
   py::def("read_lattice_data_from_hdf_by_filename", read_lattice_data_from_hdf_by_filename,
           py::return_value_policy<py::manage_new_object>());
-  py::def("write_lattice_data_to_hdf", write_lattice_data_to_hdf);
+//   py::def("write_lattice_data_to_hdf", write_lattice_data_to_hdf);
   py::def("SetupFieldLattice", PySetupFieldLattice, py::return_value_policy<py::manage_new_object>());
   
   //serialize fuck

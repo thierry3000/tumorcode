@@ -193,20 +193,20 @@ struct ObserverPde
 {
   string fn_out, group_name_pattern;
   bool save_hdf, save_image;
-  h5cpp::File f;
+  H5::H5File f;
   my::Time t_real_start;
   bool first, clear_the_file;
   int out_num;
 
-  h5cpp::File openH5File()
+  H5::H5File openH5File()
   {
     if (first)
     {
       first = false;
-      return h5cpp::File(fn_out+".h5", clear_the_file ? "w" : "a");
+      return H5::H5File(fn_out+".h5", clear_the_file ? H5F_ACC_RDWR : H5F_ACC_TRUNC);
     }
     else
-      return h5cpp::File(fn_out+".h5", "a");
+      return H5::H5File(fn_out+".h5", H5F_ACC_TRUNC);
   }
 
   ObserverPde(const ptree &params)
@@ -222,22 +222,27 @@ struct ObserverPde
     boost::optional<string> stepper = params.get_optional<string>("stepper");
     if (stepper)
     {
-      h5cpp::File f = openH5File();
-      f.root().attrs().set<string>("stepper", *stepper);
+      H5::H5File f = openH5File();
+      writeAttrToGroup<string>(f.openGroup("/"), string("stepper"), *stepper);
+      //f.root().attrs().set<string>("stepper", *stepper);
     }
   }
 
   template<class State, class Model>
   void writeH5(const string &groupname, double t, State &state, Model &model)
   {
-    h5cpp::File f = openH5File();
-    cout << format("hdf output -> %s") % f.get_file_name() << endl;
-    h5cpp::Group g = f.root().create_group(groupname);
-    g.attrs().set("time", t);
-    g.attrs().set("real_time", (my::Time() - t_real_start).to_s());
+    H5::H5File f = openH5File();
+    cout << format("hdf output -> %s") % f.getFileName() << endl;
+    H5::Group g = f.createGroup(groupname);
+    writeAttrToGroup<double>(g, string("time"), t);
+    writeAttrToGroup<double>(g, string("real_time"), (my::Time() - t_real_start).to_s());
+//     g.attrs().set("time", t);
+//     g.attrs().set("real_time", (my::Time() - t_real_start).to_s());
     MemUsage memusage = GetMemoryUsage();
-    g.attrs().set<uint64>("mem_vsize", memusage.vmem_peak);
-    g.attrs().set<uint64>("mem_rss", memusage.rss_peak);
+    writeAttrToGroup<uint64>(g, string("mem_vsize"), memusage.vmem_peak);
+    writeAttrToGroup<uint64>(g, string("mem_rss"), memusage.rss_peak);
+//     g.attrs().set<uint64>("mem_vsize", memusage.vmem_peak);
+//     g.attrs().set<uint64>("mem_rss", memusage.rss_peak);
     model.writeH5(f, g, state, t, out_num);
   }
 
@@ -265,7 +270,7 @@ struct ObserverPde
 
 struct ObserverOde
 {
-  h5cpp::Group g;
+  H5::Group g;
   DynArray<DynArray<double> > data;
   DynArray<string> data_names;
 
@@ -296,7 +301,8 @@ struct ObserverOde
   {
     for (int i=0; i<data_names.size(); ++i)
     {
-      h5cpp::Dataset ds = h5cpp::create_dataset(g, data_names[i], data[i]);
+      //h5cpp::Dataset ds = h5cpp::create_dataset(g, data_names[i], data[i]);
+      H5::DataSet ds = writeDataSetToGroup<DynArray<double>>(g, data_names[i], data[i]);
     }
   }
 };

@@ -69,14 +69,14 @@ add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src"
 endif()
 
 ## HDF5-cpp-wrapper does not need compilation
+if( False )
 configure_file(externalProjects/HDF5-cpp-wrapper/CMakeLists.txt.in externalProjects/HDF5-cpp-wrapper/CMakeLists.txt)
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper" )
 execute_process(COMMAND "${CMAKE_COMMAND}" --build .
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper" )
 include_directories("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src")
-# add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src"
-#                  "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-build")
+endif()
 
 ## ANN
 # it is now supposed, that ANN is present on the system
@@ -181,7 +181,8 @@ endif()
 #note there are system without eigen, so let the configure fail here
 find_package(Eigen3 3.2 QUIET)
 #find_package(HDF5 1.8.10 REQUIRED)
-find_package(HDF5 REQUIRED)
+find_package(HDF5 COMPONENTS C CXX HL REQUIRED)
+#find_package(HDF5 REQUIRED)
 if(HDF5_IS_PARALLEL)
   message(WARNING "your hdf5 is parallel, you probably need mpi")
 endif()
@@ -314,6 +315,7 @@ set(myLibs
   ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
   ${Boost_PYTHON_LIBRARY}
   ${HDF5_LIBRARIES}
+  ${HDF5_CXX_LIBRARIES}
   ${LAPACK_LIBRARIES}
   ${BLAS_LIBRARIES}
   ${PNG_LIBRARIES}

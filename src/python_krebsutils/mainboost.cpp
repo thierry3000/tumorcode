@@ -87,8 +87,9 @@ py::object read_vessel_positions_from_hdf_by_filename(const string fn, const str
 py::object read_vessel_positions_from_hdf_by_filename(const string fn, const string groupname)
 {
   //h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
-  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
-  h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname)); // groupname should end by vesselgroup
+  H5::H5File *readInFile = new H5::H5File(fn, H5F_ACC_RDONLY );
+  //h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname)); // groupname should end by vesselgroup
+  H5::Group g_vess = readInFile->openGroup(groupname); // groupname should end by vesselgroup
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   Py_ssize_t ndims[] = { 3, vl->GetNCount() };
@@ -118,6 +119,9 @@ py::object read_vessel_positions_from_hdf_by_filename(const string fn, const str
   return wp.getObject();
 }
 #endif
+
+#if 0 
+//depricted since H5Cpp
 py::object read_vessel_positions_from_hdf(const py::object &vess_grp_obj)
 {
   
@@ -164,6 +168,10 @@ py::object read_vessel_positions_from_hdf(const py::object &vess_grp_obj)
   return wp.getObject();
 #endif
 }
+#endif
+
+#if 0
+//depricated since H5Cpp
 py::object read_vessel_positions_from_hdf_edges(const py::object &vess_grp_obj)
 {
   
@@ -224,6 +232,7 @@ py::object read_vessel_positions_from_hdf_edges(const py::object &vess_grp_obj)
   return wp.getObject();
 #endif
 }
+#endif
 
 template<class T> inline void op_logical_and(T &a, const T &b) { a &= b; }
 template<> inline void op_logical_and<double>(double &a, const double &T) {}
@@ -882,9 +891,13 @@ BOOST_PYTHON_MODULE(libkrebs_)
   
   // register some python wrapped functions
   //py::def("test", test);
-  py::def("read_vessel_positions_from_hdf", read_vessel_positions_from_hdf);
+  /* depricated */
+  //py::def("read_vessel_positions_from_hdf", read_vessel_positions_from_hdf);
+  
   py::def("read_vessel_positions_from_hdf_by_filename", read_vessel_positions_from_hdf_by_filename);
-  py::def("read_vessel_positions_from_hdf_edges", read_vessel_positions_from_hdf_edges);
+  /* depricated */
+  //py::def("read_vessel_positions_from_hdf_edges", read_vessel_positions_from_hdf_edges);
+  
   py::def("flood_fill", flood_fill);
   py::def("distancemap", distancemap);
   py::def("GetHealthyVesselWallThickness", GetInitialThickness);

@@ -19,7 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-#include "../python_krebsutils/python_helpers.h"
+//#include "../python_krebsutils/python_helpers.h"
+#include "H5Cpp.h"
 //#include "numpy.hpp"
 #include "oxygen_model2.h"
 #include "calcflow.h"
@@ -37,7 +38,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //namespace py = boost::python;
 //namespace np = boost::python::numpy;
 //namespace nm = boost::python::numeric;
-namespace h5 = h5cpp;
 
 /**
  * @brief Sets tissue phases on the lattice sites
@@ -178,18 +178,128 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   //h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
   // this was fn
   const string fn = py::extract<string>(py_parameters.get("output_file_name", "None"));
-  h5cpp::File *o2File = new h5cpp::File(fn,"a");
+  //h5cpp::File *o2File = new h5cpp::File(fn,"a");
+  std::auto_ptr<VesselList3d> vl;
+  try
+   {
+      /*
+       * Turn off the auto-printing when failure occurs so that we can
+       * handle the errors appropriately
+       */
+      H5::Exception::dontPrint();
+      /*
+       * Open the specified file and the specified dataset in the file.
+       */
+      H5::H5File o2File( fn, H5F_ACC_RDONLY );
+//       DataSet dataset = file.openDataSet( DATASET_NAME );
+//       /*
+//        * Get the class of the datatype that is used by the dataset.
+//        */
+//       H5T_class_t type_class = dataset.getTypeClass();
+//       /*
+//        * Get class of datatype and print message if it's an integer.
+//        */
+//       if( type_class == H5T_INTEGER )
+//       {
+//      cout << "Data set has INTEGER type" << endl;
+//          /*
+//       * Get the integer datatype
+//           */
+//      IntType intype = dataset.getIntType();
+//          /*
+//           * Get order of datatype and print message if it's a little endian.
+//           */
+//      H5std_string order_string;
+//          H5T_order_t order = intype.getOrder( order_string );
+//      cout << order_string << endl;
+//          /*
+//           * Get size of the data element stored in file and print it.
+//           */
+//          size_t size = intype.getSize();
+//          cout << "Data size is " << size << endl;
+//       }
+//       /*
+//        * Get dataspace of the dataset.
+//        */
+//       DataSpace dataspace = dataset.getSpace();
+//       /*
+//        * Get the number of dimensions in the dataspace.
+//        */
+//       int rank = dataspace.getSimpleExtentNdims();
+//       /*
+//        * Get the dimension size of each dimension in the dataspace and
+//        * display them.
+//        */
+//       hsize_t dims_out[2];
+//       int ndims = dataspace.getSimpleExtentDims( dims_out, NULL);
+//       cout << "rank " << rank << ", dimensions " <<
+//           (unsigned long)(dims_out[0]) << " x " <<
+//           (unsigned long)(dims_out[1]) << endl;
+//       /*
+//        * Define hyperslab in the dataset; implicitly giving strike and
+//        * block NULL.
+//        */
+//       hsize_t      offset[2];   // hyperslab offset in the file
+//       hsize_t      count[2];    // size of the hyperslab in the file
+//       offset[0] = 1;
+//       offset[1] = 2;
+//       count[0]  = NX_SUB;
+//       count[1]  = NY_SUB;
+//       dataspace.selectHyperslab( H5S_SELECT_SET, count, offset );
+//       /*
+//        * Define the memory dataspace.
+//        */
+//       hsize_t     dimsm[3];              /* memory space dimensions */
+//       dimsm[0] = NX;
+//       dimsm[1] = NY;
+//       dimsm[2] = NZ ;
+//       DataSpace memspace( RANK_OUT, dimsm );
+//       /*
+//        * Define memory hyperslab.
+//        */
+//       hsize_t      offset_out[3];   // hyperslab offset in memory
+//       hsize_t      count_out[3];    // size of the hyperslab in memory
+//       offset_out[0] = 3;
+//       offset_out[1] = 0;
+//       offset_out[2] = 0;
+//       count_out[0]  = NX_SUB;
+//       count_out[1]  = NY_SUB;
+//       count_out[2]  = 1;
+//       memspace.selectHyperslab( H5S_SELECT_SET, count_out, offset_out );
+//       /*
+//        * Read data from hyperslab in the file into the hyperslab in
+//        * memory and display the data.
+//        */
+//       dataset.read( data_out, PredType::NATIVE_INT, memspace, dataspace );
+//       for (j = 0; j < NX; j++)
+//       {
+//     for (i = 0; i < NY; i++)
+//        cout << data_out[j][i][0] << " ";
+//     cout << endl;
+//       }
+      /*
+       * 0 0 0 0 0 0 0
+       * 0 0 0 0 0 0 0
+       * 0 0 0 0 0 0 0
+       * 3 4 5 6 0 0 0
+       * 4 5 6 7 0 0 0
+       * 5 6 7 8 0 0 0
+       * 0 0 0 0 0 0 0
+       */
+      string vesselgroup_path = py::extract<string>(py_parameters.get("vessel_group_path", "None"));
+      vesselgroup_path = "/" + vesselgroup_path;
+      H5::Group vesselgroup = o2File.openGroup(vesselgroup_path);
+      vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
+      //h5cpp::Group *vesselgroup = new h5cpp::Group(o2File->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
+   }  // end of try block
+      // catch failure caused by the H5File operations
+   catch( H5::FileIException error )
+   {
+      error.printError();
+   }
+   
   
-  string vesselgroup_path = py::extract<string>(py_parameters.get("vessel_group_path", "None"));
-  vesselgroup_path = "/" + vesselgroup_path;
-  h5cpp::Group *vesselgroup = new h5cpp::Group(o2File->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
-  //h5cpp::Group vesselgroup = h5cpp::Group(o2File->root().open_group("recomputed_flow")); // groupname should end by vesselgroup
-  //h5cpp::Group vesselgroup(readInFile.root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
-  //checks if we have a REALWORLD simuation or a lattice
-  
-  //world = vesselgroup.attrs().get<string>("CLASS") == "REALWORLD";
-  //std::auto_ptr<VesselList3d> vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(*vesselgroup, make_ptree("filter",false));
+  //std::auto_ptr<VesselList3d> vl = ReadVesselList3d(*vesselgroup, make_ptree("filter",false));
   
   
   
@@ -214,7 +324,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
     //bfparams=nullptr;
   }
   //cout << format("in c++: %.20f %.20f %.20f\n") % params.conductivity_coeff1 % params.conductivity_coeff2 % params.conductivity_coeff_gamma;
-  boost::optional<h5cpp::Group> tumorgroup;
+  boost::optional<H5::Group> tumorgroup;
   boost::optional<Array3df> previous_po2field;
   boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels;
   //h5cpp::Group   *tumorgroup = new h5cpp::Group();
@@ -261,12 +371,28 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
 //    h5cpp::File *outputFile = new h5cpp::File(fn,"a");
 //h5cpp::Group outputGroup = readInFile->open_group("po2");
     //h5cpp::File outputFile("someOutput.h5","w");
-    h5cpp::Group root = o2File->root();
-    h5cpp::Group gout = root.create_group("data");
-    h5cpp::Group g_o2;
-    h5cpp::Group po2outputGroup = gout.create_group("po2");
-    h5cpp::Group ldgroup = po2outputGroup.create_group("field_ld");
-    cout<<"start writiong!"<<endl;
+//     try
+//     {
+// 	/*
+// 	* Turn off the auto-printing when failure occurs so that we can
+// 	* handle the errors appropriately
+// 	*/
+// 	H5::Exception::dontPrint();
+// 	/*
+// 	* Open the specified file and the specified dataset in the file.
+// 	*/
+// 	H5::H5File o2File( fn, H5F_ACC_RDONLY );
+//     }
+//     catch( H5::FileIException error )
+//     {
+// 	error.printError();
+//     }
+//     h5cpp::Group root = o2File->root();
+//     h5cpp::Group gout = root.create_group("data");
+//     h5cpp::Group g_o2;
+//     h5cpp::Group po2outputGroup = gout.create_group("po2");
+//     h5cpp::Group ldgroup = po2outputGroup.create_group("field_ld");
+//     cout<<"start writiong!"<<endl;
     //WriteHdfLd(ldgroup, s.grid.ld);
     //o2File->flush();
     //outputFile.flush();
@@ -422,6 +548,7 @@ static py::object PyComputePO2FromConc(nm::array py_conc, nm::array py_hematocri
 #endif
 
 
+#if 0// not H5Cpp ready
 #if BOOST_VERSION>106300
 #else
 static py::object PyComputeUptake(nm::array py_po2field, const LatticeDataQuad3d &field_ld, py::object py_tumorgroup,  py::dict py_parameters)
@@ -464,6 +591,7 @@ static py::object PyComputeUptake(nm::array py_po2field, const LatticeDataQuad3d
   return consumption.getObject();
 }
 #endif
+#endif
 
 template<int rows>
 static Eigen::Matrix<float, rows, 1> LinearInterpolation(float xeval, const DynArray<Eigen::Matrix<float, rows, 1> > &sol)
@@ -495,6 +623,7 @@ static Eigen::Matrix<float, rows, 1> LinearInterpolation(float xeval, const DynA
   return (1.-f)*r0 + f*r1;
 }
 
+#if 0// not H5Cpp ready
 #if BOOST_VERSION>106300
 #else
 // may be a measurement class can come back later when it makes more sense to store persistent data between analysis steps
@@ -583,7 +712,9 @@ py::object PySampleVessels(py::object py_vesselgroup, py::object py_tumorgroup, 
   return py::make_tuple(samples, fluxes);
 }
 #endif
+#endif
 
+#if 0//not H5Cpp ready
 #if BOOST_VERSION>106300
 #else
 // may be a measurement class can come back later when it makes more sense to store persistent data between analysis steps
@@ -672,7 +803,7 @@ py::object PySampleVesselsWorld(py::object py_vesselgroup, py::object py_tumorgr
   return py::make_tuple(samples, fluxes);
 }
 #endif
-
+#endif
 
 DetailedPO2::Parameters* AllocateParametersFromDict(const py::dict &d)
 {
@@ -712,9 +843,9 @@ void TestLinearInterpolation()
     samples.push_back(s);
   }
 
-  h5cpp::File f("interpolationtest.h5");
-  h5cpp::create_dataset(f.root(), "data", h5cpp::Dataspace::simple_dims(data.size(),3), (float*)get_ptr(data));
-  h5cpp::create_dataset(f.root(), "samples", h5cpp::Dataspace::simple_dims(samples.size(), 4), (float*)get_ptr(samples));
+//   h5cpp::File f("interpolationtest.h5");
+//   h5cpp::create_dataset(f.root(), "data", h5cpp::Dataspace::simple_dims(data.size(),3), (float*)get_ptr(data));
+//   h5cpp::create_dataset(f.root(), "samples", h5cpp::Dataspace::simple_dims(samples.size(), 4), (float*)get_ptr(samples));
 }
 
 

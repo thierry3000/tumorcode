@@ -20,22 +20,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 
 #include "remodeler.h"
-#include "hdf_wrapper.h"
+
 #include "../calcflow.h"
 #include "../hdfio.h"
 #include <deque>
 
 
-namespace h5 = h5cpp;
-
 //void WriteHdfHistogram( h5::Group f, const string &id, const BasicHistogram1D<float> &h );
-void DoOutput(h5::File &file,
+void DoOutput(H5::H5File &file,
               const VesselList3d &vl,
               const Grower &grower,
               const boost::property_tree::atree &additional_data,
               const ptree &input_pt
              );
-h5cpp::Group DebugOutVessels(const Grower &grower, const string &name);
+H5::Group DebugOutVessels(const Grower &grower, const string &name);
 
 
 struct QualityAnalysis
@@ -175,7 +173,7 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
   if (finished_countdown > 0 && last_iter_data.get<float>("rBV")>last_saved_quality && grower.hierarchy_level>=grower.max_hierarchy_level)
   {
     iter_data.put<my::Time>("real_start_time", real_start_time);
-    h5cpp::File file(outfilename+".h5", "w");
+    H5::H5File file(outfilename+".h5", H5F_ACC_RDWR);
     //CalcFlow(grower.get_vl(),);
     DoOutput(file, grower.get_vl(), grower, iter_data, input_pt);
   }

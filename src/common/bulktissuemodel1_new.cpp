@@ -1080,10 +1080,11 @@ and for
  * @param ls level set function
  * @param necro fraction of necrotic cells?
  */
-void Model::writeH5(h5cpp::Group g, State &state, double t, h5cpp::Group &ld_group) const
+void Model::writeH5(H5::Group g, State &state, double t, H5::Group &ld_group) const
 {
   const OutState &ost = getOutState(state, OutState::ALL);
-  g.attrs().set("TYPE", "BulkTissueFormat1");
+  writeAttrToGroup<string>(g, string("TYPE"), string("BulkTissueFormat1"));
+  //g.attrs().set("TYPE", "BulkTissueFormat1");
   const BBox3 cellrange = grid->ld.Box();
   WriteScalarField(g, "conc", ost.phi_cells[cellrange], grid->ld, ld_group);
   WriteScalarField(g, "ptc", ost.theta[cellrange], grid->ld, ld_group);
@@ -1093,7 +1094,7 @@ void Model::writeH5(h5cpp::Group g, State &state, double t, h5cpp::Group &ld_gro
   {
     for (int i=0; i<grid->dim; ++i)
     {
-      h5cpp::Dataset ds = WriteArray3D(g, str(format("vel_%i") % i), ost.velocities[i][grid->ir.faces[i]]);
+      H5::DataSet ds = WriteArray3D(g, str(format("vel_%i") % i), ost.velocities[i][grid->ir.faces[i]]);
     }
   }
   if (pt_params.get<bool>("write_surface_tension_force", false))
@@ -1110,11 +1111,10 @@ void Model::writeH5(h5cpp::Group g, State &state, double t, h5cpp::Group &ld_gro
   {
     WriteScalarField(g, "necro", ost.phi_necro[grid->ir.cells], grid->ld, ld_group);
   }
-  h5cpp::Attributes a = g.attrs();
-  a.set("max_dt_diff", (double)max_dt_diff);
-  a.set("max_dt_src", (double)max_dt_src);
-  a.set("max_dt_vel", (double)max_dt_vel);
-  a.set("max_dt_stf", (double)max_dt_stf);
+  writeAttrToGroup<double>(g, "max_dt_diff", (double)max_dt_diff );
+  writeAttrToGroup<double>(g, "max_dt_src", (double)max_dt_src );
+  writeAttrToGroup<double>(g, "max_dt_vel", (double)max_dt_vel );
+  writeAttrToGroup<double>(g, "max_dt_stf", (double)max_dt_stf );
 }
 
 const OutState& Model::getOutState(const State &state_, int flags) const

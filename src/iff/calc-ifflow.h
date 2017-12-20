@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "continuum-flow.h"
 #include "calcflow.h"
 #include "vessels3d.h"
-#include "hdf_wrapper.h"
+
 #include "mwlib/time_stepper.h"
 #include "convection_diffusion_solver.h"
 #include "shared-objects.h"
@@ -64,7 +64,7 @@ struct IFVesselSeg
 struct IffParams
 {
   IffParams();
-  void WriteH5(h5cpp::Group g) const;
+  void WriteH5(H5::Group g) const;
   void assign(const ptree &pt);
   ptree as_ptree() const;
   

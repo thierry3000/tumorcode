@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LATTICE_DATA_POLYMORPHIC
 
 #include "mwlib/lattice-data.h"
-#include "hdf_wrapper.h"
+#include "H5Cpp.h"
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -31,10 +31,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 // forward declaration, their location may change
-void WriteHdfLd( h5cpp::Group f, const LatticeDataQuad3d &ld );
-void ReadHdfLd( h5cpp::Group f, LatticeDataQuad3d &ld );
-void WriteHdfLd( h5cpp::Group f, const LatticeDataFCC &ld );
-void ReadHdfLd( h5cpp::Group f, LatticeDataFCC &ld );
+
+void WriteHdfLd( H5::Group f, const LatticeDataQuad3d &ld );
+void ReadHdfLd( H5::Group f, LatticeDataQuad3d &ld );
+void WriteHdfLd( H5::Group f, const LatticeDataFCC &ld );
+void ReadHdfLd( H5::Group f, LatticeDataFCC &ld );
+
 namespace polymorphic_latticedata{
 template<class Ld>
 class Derived;
@@ -105,8 +107,8 @@ class LatticeData : boost::noncopyable
     static std::auto_ptr<LatticeData> Make(const char* ldtype, const BBox3 &bb, float scale);
 
     // hdf 5 support
-    static std::auto_ptr<LatticeData> ReadHdf(h5cpp::Group g);
-    virtual void WriteHdf(h5cpp::Group g) const {};
+    static std::auto_ptr<LatticeData> ReadHdf(H5::Group g);
+    virtual void WriteHdf(H5::Group g) const {};
 };
 
 template<class Ld>
@@ -165,7 +167,7 @@ public:
 
   virtual void print(std::ostream &os) const { ld.print(os); }
   // hdf5 support
-  virtual void WriteHdf(h5cpp::Group g) const { WriteHdfLd(g, ld); }
+  virtual void WriteHdf(H5::Group g) const { WriteHdfLd(g, ld); }
 };
 
 inline std::ostream& operator<<(std::ostream &os, const LatticeData &ld)

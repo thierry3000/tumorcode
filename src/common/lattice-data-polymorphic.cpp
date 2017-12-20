@@ -50,24 +50,46 @@ template Int3 WorldToLatticeWrapper(const LatticeDataQuad3d &ld, const Float3 &p
 template Int3 WorldToLatticeWrapper(const LatticeDataFCC &ld, const Float3 &p); // needs explicit instantiation. It doesn't work automatically for some reason.
 
 
+// template<class LD>
+// static std::auto_ptr<LatticeData> ReadHdfLdGeneric(h5cpp::Group g)
+// {
+//   LD ld;
+//   ReadHdfLd(g, ld);
+//   return std::auto_ptr<LatticeData>(new Derived<LD>(ld));
+// }
 template<class LD>
-static std::auto_ptr<LatticeData> ReadHdfLdGeneric(h5cpp::Group g)
+static std::auto_ptr<LatticeData> ReadHdfLdGeneric(H5::Group g)
 {
   LD ld;
   ReadHdfLd(g, ld);
   return std::auto_ptr<LatticeData>(new Derived<LD>(ld));
 }
 
-
-std::auto_ptr<LatticeData> LatticeData::ReadHdf(h5cpp::Group g)
+// std::auto_ptr<LatticeData> LatticeData::ReadHdf(h5cpp::Group g)
+// {
+//   const string type = g.attrs().get<string>("TYPE");
+//   if (type == "QUAD3D")
+//     return ReadHdfLdGeneric<LatticeDataQuad3d>(g);
+//   else if (type == "FCC")
+//     return ReadHdfLdGeneric<LatticeDataFCC>(g);
+//   else
+//     throw std::runtime_error(boost::str(boost::format("unknown lattice data type %s in hdf file") % type));
+// }
+std::auto_ptr<LatticeData> LatticeData::ReadHdf(H5::Group g)
 {
-  const string type = g.attrs().get<string>("TYPE");
-  if (type == "QUAD3D")
+  H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
+  H5std_string strreadbuff("");
+  H5::Attribute myatt_out = g.openAttribute("TYPE");
+  myatt_out.read(strdatatype,strreadbuff);
+  //const string type = g.attrs().get<string>("TYPE");
+  if (strreadbuff == "QUAD3D")
     return ReadHdfLdGeneric<LatticeDataQuad3d>(g);
-  else if (type == "FCC")
+  else if (strreadbuff == "FCC")
     return ReadHdfLdGeneric<LatticeDataFCC>(g);
   else
-    throw std::runtime_error(boost::str(boost::format("unknown lattice data type %s in hdf file") % type));
+    throw std::runtime_error(boost::str(boost::format("unknown lattice data type %s in hdf file") % strreadbuff));
 }
+
+
 
 }//polymorphic_latticedata

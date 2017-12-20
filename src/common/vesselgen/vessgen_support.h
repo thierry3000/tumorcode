@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 //#include <mwlib/histogram.h>
+#include <H5Cpp.h>
 
 struct BranchDat
 {
@@ -28,5 +29,5 @@ struct BranchDat
 };
 
 std::vector<BranchDat> MeasureBranchLengths( const VesselList3d& vl, const std::vector<bool> wanted);
-void WriteHdfHistogram( h5cpp::Group f, const string &id, const BasicHistogram1D<float> &h );
+void WriteHdfHistogram( H5::Group f, const string &id, const BasicHistogram1D<float> &h );
 const my::Averaged<float> MeasureBranchLengths( const VesselList3d& vl, Histo &distrib, Histo &byrad );

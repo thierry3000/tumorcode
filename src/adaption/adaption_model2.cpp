@@ -25,8 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/calcflow_common.h" //at least for remap_keys
 
 #include "mwlib/math_ext.h"
-//#include "hdf_wrapper.h"
-//#include "hdf_wrapper_stl.h"
+
 
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/tools/tuple.hpp>

@@ -20,16 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "python_helpers.h"
 #include <boost/property_tree/info_parser.hpp>
 
-h5cpp::Group PythonToCppGroup(const py::object &op_)
-{
-  if( !op_.is_none() )
-  {
-    py::object id_obj1 = py::getattr(op_, "id");
-    py::object id_obj2 = py::getattr(id_obj1, "id");
-    ssize_t id = py::extract<ssize_t>(id_obj2);
-    return h5cpp::Group(id);
-  }
-}
+
 /*
 h5cpp::Dataset PythonToCppDataset(const py::object &op_)
 {
@@ -103,23 +94,23 @@ struct H5FromPy : public Details
 // this is a bit more general than needed, but still ...
 struct H5DetailFile
 {
-  typedef h5cpp::File ResultType;
+  typedef H5::H5File ResultType;
   static const char* ResultPyClass() { return "File"; }
-  static void Construct(void* storage, int id) { new (storage) h5cpp::File(id); }
+  static void Construct(void* storage, int id) { new (storage) H5::H5File(id); }
 };
 
 struct H5DetailGroup
 {
-  typedef h5cpp::Group ResultType;
+  typedef H5::Group ResultType;
   static const char* ResultPyClass() { return "Group"; }
-  static void Construct(void* storage, int id) { new (storage) h5cpp::Group(id); }
+  static void Construct(void* storage, int id) { new (storage) H5::Group(id); }
 };
 
 struct H5DetailDataset
 {
-  typedef h5cpp::Dataset ResultType;
+  typedef H5::DataSet ResultType;
   static const char* ResultPyClass() { return "Dataset"; }
-  static void Construct(void* storage, int id) { new (storage) h5cpp::Dataset(id); }
+  static void Construct(void* storage, int id) { new (storage) H5::DataSet(id); }
 };
 
 

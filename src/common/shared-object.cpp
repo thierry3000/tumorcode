@@ -33,7 +33,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/program_options.hpp>
 
 using namespace my;
-namespace h5 = h5cpp;
 
 #define VESSEL_INTEGRITY_CHECK_SWITCH(x)
 
@@ -51,7 +50,7 @@ class myexception: public std::exception
   }
 };
 
-TumorTypes determineTumorType(boost::optional<h5cpp::Group> tumorgroup)
+TumorTypes determineTumorType(boost::optional<H5::Group> tumorgroup)
 {
 // #ifdef DEBUG
 //     cout<<format("tumorgroup.attrs().exists(\"TYPE\"): %s\n") % (bool)(tumorgroup.attrs().exists("TYPE"));
@@ -62,9 +61,19 @@ TumorTypes determineTumorType(boost::optional<h5cpp::Group> tumorgroup)
   if(tumorgroup)//means it is initialized
   {
     //std::string detailedTumorDescription = tumorgroup.attrs().get<std::string>("TYPE");
-    if( tumorgroup->attrs().exists("TYPE") )
+    /*
+    try {  // to determine if the dataset exists in the group
+        dataset = new DataSet( group->openDataSet( "Compressed_Data" ));
+    }
+    catch( GroupIException not_found_error ) {
+        cout << " Dataset is not found." << endl;
+    }
+    cout << "dataset \"/Data/Compressed_Data\" is open" << endl;
+    */
+    
+    try
     {
-      std::string detailedTumorDescription = tumorgroup->attrs().get<std::string>("TYPE");
+      string detailedTumorDescription = readAttrFromGroup<string>(*tumorgroup, string("TYPE"));
       if( detailedTumorDescription == "faketumor" )
       {
         tumortype = TumorTypes::FAKE;
@@ -74,11 +83,28 @@ TumorTypes determineTumorType(boost::optional<h5cpp::Group> tumorgroup)
         tumortype = TumorTypes::BULKTISSUE;
       }
     }
+    catch( H5::AttributeIException not_found_error)
+    {
+      cout << " Attribute TYPE not found" << endl;
+    }
   }
-  else
-  {
-    tumortype = TumorTypes::NONE;
-  }
+//     if( tumorgroup->attrs().exists("TYPE") )
+//     {
+//       std::string detailedTumorDescription = tumorgroup->attrs().get<std::string>("TYPE");
+//       if( detailedTumorDescription == "faketumor" )
+//       {
+//         tumortype = TumorTypes::FAKE;
+//       }
+//       else if ( detailedTumorDescription == "BulkTissueFormat1")
+//       {
+//         tumortype = TumorTypes::BULKTISSUE;
+//       }
+//     }
+//   }
+//   else
+//   {
+//     tumortype = TumorTypes::NONE;
+//   }
 //   try
 //     {
 //       std::string detailedTumorDescription = tumorgroup.attrs().get<std::string>("TYPE");
@@ -104,7 +130,8 @@ TumorTypes determineTumorType(boost::optional<h5cpp::Group> tumorgroup)
 //   tumortype = TumorTypes::FAKE;
 //   return TumorTypes::FAKE;
 }
-void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, boost::optional<h5cpp::Group> tumorgroup)
+
+void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, boost::optional<H5::Group> tumorgroup)
 {
   TumorTypes tumortype = determineTumorType(tumorgroup);
   if( tumortype == TumorTypes::NONE )
@@ -117,7 +144,8 @@ void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDe
   else if( tumortype == TumorTypes::FAKE)
   {
     //there is a faketumor group provided
-    double tumor_radius = tumorgroup->attrs().get<double>("TUMOR_RADIUS");
+    //double tumor_radius = tumorgroup->attrs().get<double>("TUMOR_RADIUS");
+    double tumor_radius = readAttrFromGroup<double>(*tumorgroup, "TUMOR_RADIUS");
     phases = TissuePhases(3, grid.Box());//consistent labeling problems Tissue is 2 in enumeration
     #pragma omp parallel
     {
@@ -137,10 +165,15 @@ void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDe
   else if (tumortype == TumorTypes::BULKTISSUE)
   {
     //there is a bulktissue tumor group provided
-    h5cpp::Dataset cell_vol_fraction_ds = tumorgroup->open_dataset("conc");
-    h5cpp::Dataset tumor_fraction_ds = tumorgroup->open_dataset("ptc");
-    h5cpp::Dataset necro_fraction_ds = tumorgroup->open_dataset("necro");
-    h5cpp::Group   ldgroup        = tumor_fraction_ds.get_file().root().open_group(tumor_fraction_ds.attrs().get<string>("LATTICE_PATH"));
+    H5::DataSet cell_vol_fraction_ds = tumorgroup->openDataSet("conc");
+    H5::DataSet tumor_fraction_ds = tumorgroup->openDataSet("ptc");
+    H5::DataSet necro_fraction_ds = tumorgroup->openDataSet("necro");
+    string latticePath = readAttrFromGroup<string>(*tumorgroup, "LATTICE_PATH");
+    
+    H5::H5File file(tumor_fraction_ds.getFileName(), H5F_ACC_RDONLY);
+    H5::Group ldgroup = file.openGroup(latticePath);
+    
+    //H5::Group   ldgroup        = tumor_fraction_ds.get_file().root().open_group(tumor_fraction_ds.attrs().get<string>("LATTICE_PATH"));
 
     Array3df cell_vol_fraction;
     Array3df tumor_fraction;
@@ -463,10 +496,7 @@ int FindDistanceToJunction( const Vessel* vstart, int posOnVess, const VesselNod
 }
 
 
-//std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, float scale);
-
-//, h5cpp::Group ldgroup
-std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptree &params)
+std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group vesselgroup, const ptree &params)
 {
   float grid_scale = params.get<float>("scale subdivide", -1.);
   bool filter_uncirculated = params.get<bool>("filter", false);
@@ -474,27 +504,42 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
   
   std::auto_ptr<VesselList3d> vl;
   typedef polymorphic_latticedata::LatticeData LatticeData;
-  h5cpp::Attributes a = vesselgroup.attrs();
+  // Create new string datatype for attribute
+  H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
+  H5std_string strreadbuff("");
+  H5::Attribute myatt_out = vesselgroup.openAttribute("CLASS");
+  myatt_out.read(strdatatype,strreadbuff);
+  //std::string myString = vesselgroup.openAttribute("CLASS");
+  //h5cpp::Attributes a = vesselgroup.attrs();
 /*
   if(vesselgroup.attrs().get<std::string>("CLASS") == "GRAPH")
     */
-  if(a.get<std::string>("CLASS") == "GRAPH")
+  if(strreadbuff == "GRAPH")
   {
 #ifdef DEBUG
-    cout << "read vl from: \n " << vesselgroup.get_file_name() << endl;
+    cout << "read vl from: \n " << strreadbuff << endl;
 #endif
     //we have a lattice struture->get it, could also produce an error
-    if(!vesselgroup.exists("lattice"))
-    {
-      string latticeIOError = str(format("No lattice group in hdf: %s\n") % vesselgroup.get_file_name());
-      throw std::runtime_error(latticeIOError);
-    }
-    h5cpp::Group ldgroup = vesselgroup.open_group("lattice");//may not be there
-//     std::auto_ptr<LatticeData> ldp = LatticeData::ReadHdf(ldgroup);
-//     //std::auto_ptr<VesselList3d> vl_local(new VesselList3d(ldp));
-//     std::auto_ptr<VesselList3d> vl_local;
-//     vl_local->Init(*ldp);
-//     vl=vl_local;
+        /*
+     * Access "lattice" group .
+     */
+    H5::Group ldgroup;
+    ldgroup = vesselgroup.openGroup("lattice");
+//     try {  // to determine if the lattice group exists
+//       ldgroup = vesselgroup.openGroup("lattice");
+//     }
+//     catch( H5::GroupIException not_found_error ) {
+//         cout << " lattice group is not found." << endl;
+//     }
+    cout << "group lattice is open" << endl;
+    
+//     if(!vesselgroup.exists("lattice"))
+//     {
+//       string latticeIOError = str(format("No lattice group in hdf: %s\n") % vesselgroup.get_file_name());
+//       throw std::runtime_error(latticeIOError);
+//     }
+//     h5cpp::Group ldgroup = vesselgroup.open_group("lattice");//may not be there
+
     
     std::auto_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(ldgroup);
 #ifdef DEBUG
@@ -566,6 +611,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
       v->f = v->q = 0.;
     }
 
+#if 0
     DynArray<decltype(VNodeData::press)> pressure;
     if (vesselgroup.exists("nodes/pressure"))
     {
@@ -663,6 +709,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
 	}
       }
     }
+#endif
   }//end hdf failscope
     
 
@@ -710,8 +757,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
 }
 
 
-
-void WriteVesselList3d(const VesselList3d &vl, h5cpp::Group vesselgroup, const ptree &params)
+void WriteVesselList3d(const VesselList3d &vl, H5::Group vesselgroup, const ptree &params)
 {
   WriteHdfGraph(vesselgroup,vl);
 
@@ -732,17 +778,27 @@ void WriteVesselList3d(const VesselList3d &vl, h5cpp::Group vesselgroup, const p
   if (w_pressure)
   {
     for(int i=0; i<ncnt; ++i) { arrd[i] = vl.GetNode(i)->press; }
-    h5::Dataset ds = h5::create_dataset(vesselgroup,"nodes/pressure",arrd);
-    ds.attrs().set("MODE","linear");
+    //h5::Dataset ds = h5::create_dataset(vesselgroup,"nodes/pressure",arrd);
+    //H5::DataSet ds = vesselgroup.createDataSet("nodes/pressure");
+    writeDataSetToGroup<std::vector<double>>(vesselgroup, string("nodes/pressure"), arrd);
+    //H5::DataSet ds = h5::create_dataset(vesselgroup,"nodes/pressure",arrd);
+    //ds.attrs().set("MODE","linear");
+    writeAttrToDataset<string>(vesselgroup.openDataSet(string("nodes/pressure")),string("MODE"), string("linear"));
 
     //for(int i=0; i<ncnt; ++i) { arrd[i] = vl.GetNode(i)->residual; }
     //ds = h5::create_dataset_range(vesselgroup,"nodes/residual",arrd);
   }
+// #define _WRITE_STATE_FILL_ARRAY_EDGE(arr,var,name)\
+// {\
+//   for(int i=0; i<ecnt; ++i) { arr[i] = vl.GetEdge(i)->var; }\
+//   h5::Dataset ds = h5::create_dataset(vesselgroup,name,arr);\
+//   ds.attrs().set("MODE","const");\
+// }
 #define _WRITE_STATE_FILL_ARRAY_EDGE(arr,var,name)\
 {\
   for(int i=0; i<ecnt; ++i) { arr[i] = vl.GetEdge(i)->var; }\
-  h5::Dataset ds = h5::create_dataset(vesselgroup,name,arr);\
-  ds.attrs().set("MODE","const");\
+  H5::DataSet ds = writeDataSetToGroup<std::vector<double>>(vesselgroup, string(name), arr);\
+  writeAttrToDataset<string>(ds, string("MODE"), string("const"));\
 }
   arrf.resize(ecnt);
   arrd.resize(ecnt);
@@ -758,22 +814,25 @@ void WriteVesselList3d(const VesselList3d &vl, h5cpp::Group vesselgroup, const p
   {
     _WRITE_STATE_FILL_ARRAY_EDGE(arrd,f,"edges/shearforce");
     _WRITE_STATE_FILL_ARRAY_EDGE(arrd,q,"edges/flow");
-    _WRITE_STATE_FILL_ARRAY_EDGE(arrf,hematocrit,"edges/hematocrit");
+    _WRITE_STATE_FILL_ARRAY_EDGE(arrd,hematocrit,"edges/hematocrit");
   }
   if (w_all)
   {
-    _WRITE_STATE_FILL_ARRAY_EDGE(arrf,initial_f,"edges/initial_shearforce");
-    _WRITE_STATE_FILL_ARRAY_EDGE(arrf,reference_r,"edges/initial_radius");
-    _WRITE_STATE_FILL_ARRAY_EDGE(arrf,maturation,"edges/maturation");
-    _WRITE_STATE_FILL_ARRAY_EDGE(arrf,timeInTumor,"edges/timeInTumor");
-    _WRITE_STATE_FILL_ARRAY_EDGE(arrf,timeSprout,"edges/timeSprout");
+    _WRITE_STATE_FILL_ARRAY_EDGE(arrd,initial_f,"edges/initial_shearforce");
+    _WRITE_STATE_FILL_ARRAY_EDGE(arrd,reference_r,"edges/initial_radius");
+    _WRITE_STATE_FILL_ARRAY_EDGE(arrd,maturation,"edges/maturation");
+    _WRITE_STATE_FILL_ARRAY_EDGE(arrd,timeInTumor,"edges/timeInTumor");
+    _WRITE_STATE_FILL_ARRAY_EDGE(arrd,timeSprout,"edges/timeSprout");
   }
-  DynArray<uchar> tmp2(vl.GetNCount());
+  std::vector<uchar> tmp2;
+  tmp2.resize(vl.GetNCount());
+  //DynArray<uchar> tmp2(vl.GetNCount());
   for (int i=0; i<vl.GetNCount(); ++i)
   {
     tmp2[i] = vl.GetNode(i)->flags;
   }
-  h5::create_dataset(vesselgroup, "nodes/nodeflags", tmp2);
+  H5::DataSet nodeflags = writeDataSetToGroup<std::vector<uchar>>(vesselgroup, string("nodes/nodeflags"), tmp2);
+  //h5::create_dataset(vesselgroup, "nodes/nodeflags", tmp2);
 }
 
 

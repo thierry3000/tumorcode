@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "levelset.h"
 #include "mwlib/time_stepper.h"
-#include "hdf_wrapper.h"
+#include "hdfio.h"
 #include "continuum-flow.h"
 #include "mwlib/ptree_ext.h"
 #include "shared-objects.h"
@@ -681,14 +681,36 @@ struct LevelSetReinit
 
   void writeDebugH5(const string &out_fn, State &state, int iter)
   {
-    h5cpp::File f(out_fn+".h5", iter==0 ? "w" : "a");
-    h5cpp::Group ld_group = RequireLatticeDataGroup(f.root(),"field_ld", ld);
-    h5cpp::Group g = f.root().create_group(str(format("out%04i") % iter));
-    g.attrs().set("time", iter);
+//     h5cpp::File f(out_fn+".h5", iter==0 ? "w" : "a");
+//     h5cpp::Group ld_group = RequireLatticeDataGroup(f.root(),"field_ld", ld);
+//     h5cpp::Group g = f.root().create_group(str(format("out%04i") % iter));
+//     g.attrs().set("time", iter);
+//     WriteScalarField(g, "ls", state.phi[ld.Box()], ld, ld_group);
+//     WriteArray3D<float>(g, "ls_full", state.phi[ExtendForDim(ld.Box(), dim, 3)]);
+//     if (iter == 0)
+//       WriteArray3D<char>(f.root(), "active", active[ld.Box()]);
+    H5::H5File f;
+    if ( iter==0)
+    {
+      f = H5::H5File(out_fn+".h5", H5F_ACC_TRUNC);
+    }
+    else
+    {
+      f = H5::H5File(out_fn+".h5", H5F_ACC_RDWR);
+    }
+    //H5::H5File f = H5::H5File(out_fn+".h5", iter==0 ? "w" : "a");
+    H5::Group ld_group = RequireLatticeDataGroup(f,"field_ld", ld);
+    H5::Group g = f.createGroup(str(format("out%04i") % iter));
+    //H5::Group g = f.root().create_group(str(format("out%04i") % iter));
+    //H5::Attribute attr = g.createAttribute("time");
+    writeAttrToGroup<int>(g, "time", iter);
+    
+    //g.attrs().set("time", iter);
+    
     WriteScalarField(g, "ls", state.phi[ld.Box()], ld, ld_group);
     WriteArray3D<float>(g, "ls_full", state.phi[ExtendForDim(ld.Box(), dim, 3)]);
     if (iter == 0)
-      WriteArray3D<char>(f.root(), "active", active[ld.Box()]);
+      WriteArray3D<char>(f.openGroup("/"), "active", active[ld.Box()]);
   }
 };
 

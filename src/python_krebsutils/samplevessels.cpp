@@ -711,6 +711,11 @@ double compute_vessel_boxcounts(nm::array pypos, nm::array pyedges, nm::array py
 }
 #endif
 
+
+/* I am not sure whehter I will use that in future
+ * right now it is not compatible with H5Cpp
+ */
+#if 0
 #if BOOST_VERSION>106300
 #else
 py::object calculate_within_fake_tumor_lattice_based(const py::str &property_name, py::object &ld_grp_obj, const py::object &vess_grp_obj, const py::object &tumor_range, const bool av)
@@ -929,6 +934,8 @@ py::object calculate_within_fake_tumor_lattice_based(const py::str &property_nam
   return ret;
 }
 #endif
+#endif
+
 /* 
  * returns an 3xn array with BranchDat to python
  * there this could be use to easily create histograms
@@ -1106,7 +1113,9 @@ void export_samplevessels()
   py::def("calc_vessel_boxcounts", compute_vessel_boxcounts);
 //   py::def("calculate_lengths_lattice_based", calculate_lengths_lattice_based);
 //   py::def("get_radii_within_fake_tumor", get_radii_within_fake_tumor);
-  py::def("calculate_within_fake_tumor_lattice_based", calculate_within_fake_tumor_lattice_based);
+
+//  py::def("calculate_within_fake_tumor_lattice_based", calculate_within_fake_tumor_lattice_based);
+
 #endif
 }
 

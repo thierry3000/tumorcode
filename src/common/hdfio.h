@@ -21,10 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define HDFIO_H
 
 #include "mwlib/helpers-vec.h"
-#include "hdf_wrapper.h"
+
 #include "mwlib/hdf_wrapper_array3d.h"
 #include "mwlib/hdf_wrapper_ptree.h"
 #include "mwlib/field.h"
+
+#include <string>
+#include <H5Cpp.h>
+#include <H5Exception.h>
+
+
 
 struct LatticeDataQuad3d;
 class VesselList3d;
@@ -32,22 +38,46 @@ class ContinuumTumor;
 struct SimParameters3d;
 struct ContinuumTumorState;
 
-void WriteHdfGraph( h5cpp::Group f, const VesselList3d &vl );
-void ReadHdfGraph( h5cpp::Group f, VesselList3d *vl );
+void WriteHdfGraph( H5::Group f, const VesselList3d &vl );
+void ReadHdfGraph( H5::Group f, VesselList3d *vl );
 
+
+// template<class T>
+// H5::DataSet WriteScalarField(H5::Group g, const string &name, ConstArray3d<T> arr, const LatticeDataQuad3d &ld, const h5cpp::Group ldgroup, const h5cpp::Datatype &disktype = h5cpp::get_disktype<T>());
 
 template<class T>
-h5cpp::Dataset WriteScalarField(h5cpp::Group g, const string &name, ConstArray3d<T> arr, const LatticeDataQuad3d &ld, const h5cpp::Group ldgroup, const h5cpp::Datatype &disktype = h5cpp::get_disktype<T>());
+H5::DataSet WriteScalarField(H5::Group g, const string &name, ConstArray3d<T> arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup);
 
 template<class Vector>
-h5cpp::Dataset WriteVectorField(h5cpp::Group g, const string &name, ConstArray3d<Vector> arr, const LatticeDataQuad3d &ld, const h5cpp::Group ldgroup);
+H5::DataSet WriteVectorField(H5::Group g, const string &name, ConstArray3d<Vector> arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup);
 
 template<class T>
-h5cpp::Dataset WriteAveragedFaceVariables(h5cpp::Group file, const std::string &id, int dim, const ConstArray3d<T> *face_fields);
+H5::DataSet WriteAveragedFaceVariables(H5::Group file, const std::string &id, int dim, const ConstArray3d<T> *face_fields);
 
 template<class T>
-h5cpp::Dataset WriteAveragedFaceVariableField(h5cpp::Group file, const std::string &id, int dim, const ConstArray3d<T> *face_fields, const LatticeDataQuad3d &ld, const h5cpp::Group ldgroup);
+H5::DataSet WriteAveragedFaceVariableField(H5::Group file, const std::string &id, int dim, const ConstArray3d<T> *face_fields, const LatticeDataQuad3d &ld, const H5::Group ldgroup);
 
-h5cpp::Group RequireLatticeDataGroup(h5cpp::Group g, const string &name, const LatticeDataQuad3d &ld);
+H5::Group RequireLatticeDataGroup(H5::H5File f, const string &name, const LatticeDataQuad3d &ld);
+H5::Group RequireLatticeDataGroup(H5::Group g, const LatticeDataQuad3d &ld);
 
+template<typename T>
+T readAttrFromGroup(H5::Group g, string attr_name);
+
+template<typename T>
+T readAttrFromDataSet(H5::DataSet g, string attr_name);
+
+template<class T>
+void writeAttrToGroup(H5::Group g, string attr_name, T value);
+
+template<class T>
+void writeAttrToDataset(H5::DataSet g, string attr_name, T value);
+
+template<class T>
+H5::DataSet writeDataSetToGroup(H5::Group g, string attr_name, T value);
+
+template<class T>
+void readDataSetFromGroup(H5::Group, string attr_name, T *placeToStore);
+
+template<class T>
+string getH5Name(T g);
 #endif

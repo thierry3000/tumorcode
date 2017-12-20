@@ -66,9 +66,7 @@ params(params_),bfparams(bfparams_), base(3)
 #endif
   //std::mt19937 mt(rd());
   //std::uniform_real_distribution<float> adapt_dist(0.5,4.0);
-//   h5cpp::File *readInFile = new h5cpp::File(this->vessel_fn,"r");
-//   h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group("adaption/vessels_after_adaption"));
-//   //h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group("adaption/recomputed"));
+
 //   this->vl = ReadVesselList3d(vl_grp, make_ptree("filter", false));
   set_lb(0.5);
   set_ub(4.0);
