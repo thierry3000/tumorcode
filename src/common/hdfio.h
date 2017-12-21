@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HDFIO_H
 #define HDFIO_H
 
+
 #include "mwlib/helpers-vec.h"
 
 #include "mwlib/hdf_wrapper_array3d.h"
@@ -68,6 +69,8 @@ T readAttrFromDataSet(H5::DataSet g, string attr_name);
 
 template<class T>
 void writeAttrToGroup(H5::Group g, string attr_name, T value);
+
+void writeAttrToGroup(H5::Group g, std::string &attr_name, int value);
 
 template<class T>
 void writeAttrToDataset(H5::DataSet g, string attr_name, T value);

@@ -157,13 +157,13 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
 
   my::log().push(" init: ");
   {
-    h5cpp::File file(params.fn_vessel, "r");
+    H5::H5File file(params.fn_vessel, H5F_ACC_RDONLY);
     ptree pt;
     //factor by which lattice is subdivided for tumor growth
     pt.put("scale subdivide", 10.);
     pt.put("scale override", params.override_scale);
     //pt.put("filter", true); // does not help, is also filtered in oxygen model
-    std::auto_ptr<VesselList3d> vl = ReadVesselList3d(file.root().open_group("vessels"),pt);
+    std::auto_ptr<VesselList3d> vl = ReadVesselList3d(file.openGroup("/vessels"),pt);
     // adjust vessel list ld
     const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
     vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
@@ -171,9 +171,11 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     cout << "--------------------"<< endl;
     cout << "Vessel Lattice is: " << endl;
     vl->Ld().print(cout); cout  << endl;
-
-    params.vesselfile_message = file.root().open_group("parameters").attrs().get<string>("MESSAGE");
-    params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
+    H5::Group h5params = file.openGroup("/parameters");
+    params.vesselfile_message = readAttrFromGroup<string>(h5params, string("MESSAGE"));
+    params.vesselfile_ensemble_index = readAttrFromGroup<int>(h5params, string("ENSEMBLE_INDEX"));
+    //params.vesselfile_message = file.openGroup("/parameters").attrs().get<string>("MESSAGE");
+    //params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
     
     state.vessels.reset(vl.release());
     last_vessels_checksum = -1;
@@ -544,58 +546,61 @@ Float3 BulkTissue::NewTumorSim::getGfGrad(const Float3 &pos) const
   return FieldInterpolate::Gradient(state.gffield, grid.ld, FieldInterpolate::Extrapolate(), pos);
   //return fieldinterp_extrapolate.gradient(state.gffield, grid.ld, _pos);
 }
-namespace h5 = h5cpp;
+
 
 void BulkTissue::NewTumorSim::writeOutput(double time)
 {
   my::log().push("out:");
-  h5::File f;
-  h5::Group g, gout;
-  h5::Attributes a;
+  H5::H5File f;
+  H5::Group g, gout;
+  //h5::Attributes a;
   if (!params.create_single_output_file)
   {
     const string fn = str(format("%s-%03i.h5") % RemoveExtension(params.fn_out) % output_num);
     cout << format("output %i -> %s") % output_num % fn << endl;
-    f = h5::File(fn, "w");
-    gout = f.root();
+    f = H5::H5File(fn, H5F_ACC_RDWR);
+    gout = f.openGroup("/");
   }
   else
   {
     const string fn = RemoveExtension(params.fn_out)+".h5";
     cout << format("output %i +-> %s") % output_num % fn << endl;
-    f = h5::File(fn, output_num==0 ? "w" : "a");
-    gout = f.root().require_group(str(format("out%04i") % output_num));
+    f = H5::H5File(fn, output_num==0 ? H5F_ACC_RDWR : H5F_ACC_TRUNC);
+    //f = h5::File(fn, output_num==0 ? "w" : "a");
+    //gout = f.root().require_group(str(format("out%04i") % output_num));
+    gout = f.openGroup(str(format("out%04i") % output_num));
   }
   if (output_num == 0 || !params.create_single_output_file)
   {
-    a= f.root().attrs();
-    a.set("MESSAGE",params.message);
-    a.set("VESSELTREEFILE", params.fn_vessel);
-    a.set("OUTPUT_NUM",output_num);
-    a.set("OUTPUT_NAME", params.fn_out);
-    a.set("VESSELFILE_MESSAGE", params.vesselfile_message);
-    a.set("VESSELFILE_ENSEMBLE_INDEX", params.vesselfile_ensemble_index);
-    // parameters
-    g = f.root().create_group("parameters");
-    WriteHdfPtree(g.create_group("vessels"), vessel_model.params.as_ptree());
-    WriteHdfPtree(g.create_group("tumor"), tumor_model.pt_params);
-    WriteHdfPtree(g, params.as_ptree());
+//     a= f.root().attrs();
+//     a.set("MESSAGE",params.message);
+//     a.set("VESSELTREEFILE", params.fn_vessel);
+//     a.set("OUTPUT_NUM",output_num);
+//     a.set("OUTPUT_NAME", params.fn_out);
+//     a.set("VESSELFILE_MESSAGE", params.vesselfile_message);
+//     a.set("VESSELFILE_ENSEMBLE_INDEX", params.vesselfile_ensemble_index);
+//     // parameters
+//     g = f.root().create_group("parameters");
+//     WriteHdfPtree(g.create_group("vessels"), vessel_model.params.as_ptree());
+//     WriteHdfPtree(g.create_group("tumor"), tumor_model.pt_params);
+//     WriteHdfPtree(g, params.as_ptree());
   }
   // snapshot attributes
   MemUsage memusage = GetMemoryUsage();
-  a = gout.attrs();
-  a.set("time", time);
-  a.set("real_time", (my::Time() - real_start_time).to_s());
-  a.set<uint64>("mem_vsize", memusage.vmem_peak);
-  a.set<uint64>("mem_rss", memusage.rss_peak);
+//   a = gout.attrs();
+//   a.set("time", time);
+//   a.set("real_time", (my::Time() - real_start_time).to_s());
+//   a.set<uint64>("mem_vsize", memusage.vmem_peak);
+//   a.set<uint64>("mem_rss", memusage.rss_peak);
   bool has_grp;
   // vessels
-  WriteVesselList3d(*state.vessels, gout.create_group("vessels"));
+  WriteVesselList3d(*state.vessels, gout.createGroup("vessels"));
   // tumor
-  h5::Group ld_group_tum = f.root().require_group("field_ld", &has_grp);
+  //H5::Group ld_group_tum = f.root().require_group("field_ld", &has_grp);
+  H5::Group ld_group_tum = f.openGroup("field_ld");
   if (!has_grp)
     WriteHdfLd(ld_group_tum, grid.ld);
-  g = gout.create_group("tumor");
+  g = gout.createGroup("tumor");
   tumor_model.writeH5(g, state.tumor, time, ld_group_tum);
   // chem fields
   WriteScalarField(gout, "fieldGf", state.gffield, grid.ld, ld_group_tum);

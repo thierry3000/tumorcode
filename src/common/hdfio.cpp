@@ -625,6 +625,48 @@ void writeAttrToGroup(H5::Group g, string attr_name, string value)
   }
 };
 
+void writeAttrToGroup(H5::Group g, string attr_name,  Float3 value)
+{ 
+  {
+    hsize_t dims[2];
+    int rank = 2;
+    H5::DataSpace mspace( rank, dims);
+    H5::Attribute attr_out = g.createAttribute(attr_name, H5::PredType::NATIVE_FLOAT, mspace);
+    
+    // Create new dataspace for attribute
+    //H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
+    // Create new string datatype for attribute
+    //H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
+    // Set up write buffer for attribute
+    //const H5::H5std_string strwritebuf (value);
+    //const string strwritebuf (value);
+    //H5::Attribute myatt_in = g.createAttribute(attr_name, strdatatype, attr_dataspace);
+    //myatt_in.write(strdatatype, &value);
+    attr_out.write(H5::PredType::NATIVE_FLOAT, &value);
+  }
+};
+void writeAttrToGroup(H5::Group g, std::string attr_name,  int value)
+{ 
+  {
+    //hsize_t dims[2];
+    //int rank = 2;
+    //H5::DataSpace mspace( rank, dims);
+    
+    
+    // Create new dataspace for attribute
+    H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
+    H5::Attribute attr_out = g.createAttribute(attr_name, H5::PredType::NATIVE_INT64, attr_dataspace);
+    // Create new string datatype for attribute
+    //H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
+    // Set up write buffer for attribute
+    //const H5::H5std_string strwritebuf (value);
+    //const string strwritebuf (value);
+    //H5::Attribute myatt_in = g.createAttribute(attr_name, strdatatype, attr_dataspace);
+    //myatt_in.write(strdatatype, &value);
+    attr_out.write(H5::PredType::NATIVE_FLOAT, &value);
+  }
+};
+
 template<class T>
 void writeAttrToDataset(H5::DataSet g, string attr_name, T value)
 {

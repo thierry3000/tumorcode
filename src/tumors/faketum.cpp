@@ -204,10 +204,10 @@ int FakeTum::FakeTumorSim::run()
 // #endif
     my::SetNumThreads(params.num_threads);
     
-    h5cpp::File file(params.fn_vessel, "r");
+    H5::H5File file(params.fn_vessel, H5F_ACC_RDONLY);
     ptree pt;
     pt.put("scale subdivide", 10.);
-    vl = ReadVesselList3d(file.root().open_group("vessels"), pt);
+    vl = ReadVesselList3d(file.openGroup("vessels"), pt);
     
     // adjust vessel list ld
     const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
@@ -218,8 +218,11 @@ int FakeTum::FakeTumorSim::run()
     vl->Ld().print(cout); cout  << endl;
     cout << "--------------------"<< endl;
 
-    params.vesselfile_message = file.root().open_group("parameters").attrs().get<string>("MESSAGE");
-    params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
+    H5::Group h5params = file.openGroup("/parameters");
+    params.vesselfile_message = readAttrFromGroup<string>(h5params, string("MESSAGE"));
+    params.vesselfile_ensemble_index = readAttrFromGroup<int>(h5params, string("ENSEMBLE_INDEX"));
+//     params.vesselfile_message = file.root().open_group("parameters").attrs().get<string>("MESSAGE");
+//     params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
     
     VesselModel1::Callbacks callbacks;
     callbacks.getGf = boost::bind(&FakeTumorSim::getGf, boost::ref(*this), _1);
@@ -328,54 +331,52 @@ void FakeTum::FakeTumorSim::doStep(double dt)
   tumor_radius += dt * params.tumor_speed;
 }
 
-namespace h5 = h5cpp;
-
 void FakeTum::FakeTumorSim::writeOutput()
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
-  h5::File f(params.fn_out, output_num==0 ? "w" : "a");
-  h5::Group g, root = f.root();
+  H5::H5File f(params.fn_out, output_num==0 ? H5F_ACC_RDWR : H5F_ACC_TRUNC);
+  H5::Group g, root = f.openGroup("/");
 
-  h5::Attributes a = root.attrs();
-  
-  if (output_num == 0)
-  {
-    a.set("MESSAGE",params.message);
-    a.set("VESSELTREEFILE",params.fn_vessel);
-    a.set("OUTPUT_NAME", params.fn_out);
-    a.set("VESSELFILE_MESSAGE", params.vesselfile_message);
-    a.set("VESSELFILE_ENSEMBLE_INDEX", params.vesselfile_ensemble_index);
-    g = root.create_group("parameters");
-    WriteHdfPtree(g.create_group("vessels"),vessel_model.params.as_ptree());
-    WriteHdfPtree(g, params.as_ptree());
-  }
-
-  h5::Group gout = root.create_group(str(format("out%04i") % output_num));
-  a = gout.attrs();
-  a.set("time", time);
-  a.set("OUTPUT_NUM",output_num);
-  
-  WriteVesselList3d(*vl, gout.create_group("vessels"));
-  {
-    LatticeDataQuad3d ld;
-    SetupFieldLattice(vl->Ld().GetWorldBox(), 3, 100., 0.1 * vl->Ld().Scale(), ld);
-    Array3d<float> tum_field(ld.Box());
-    FOR_BBOX3(p, ld.Box())
-    {
-      float t = getTumorDens(ld.LatticeToWorld(p));
-      tum_field(p) = t;
-    }
-
-    h5::Group gtum = gout.create_group("tumor");
-    gtum.attrs().set("TYPE", "faketumor");
-    gtum.attrs().set("TUMOR_RADIUS", tumor_radius);
-    /*contains also the critical call 
-      * somewhere down from here simple_dims, is called.
-      * I think by set_array
-      * on snowden I have the error 
-      * "nd dataspace with rank 0 not permitted, use create_scalar()"
-      */
-    //WriteScalarField(gtum, "tc_density", tum_field, ld, field_ld_group);
-  }
+//   h5::Attributes a = root.attrs();
+//   
+//   if (output_num == 0)
+//   {
+//     a.set("MESSAGE",params.message);
+//     a.set("VESSELTREEFILE",params.fn_vessel);
+//     a.set("OUTPUT_NAME", params.fn_out);
+//     a.set("VESSELFILE_MESSAGE", params.vesselfile_message);
+//     a.set("VESSELFILE_ENSEMBLE_INDEX", params.vesselfile_ensemble_index);
+//     g = root.create_group("parameters");
+//     WriteHdfPtree(g.create_group("vessels"),vessel_model.params.as_ptree());
+//     WriteHdfPtree(g, params.as_ptree());
+//   }
+// 
+//   h5::Group gout = root.create_group(str(format("out%04i") % output_num));
+//   a = gout.attrs();
+//   a.set("time", time);
+//   a.set("OUTPUT_NUM",output_num);
+//   
+//   WriteVesselList3d(*vl, gout.create_group("vessels"));
+//   {
+//     LatticeDataQuad3d ld;
+//     SetupFieldLattice(vl->Ld().GetWorldBox(), 3, 100., 0.1 * vl->Ld().Scale(), ld);
+//     Array3d<float> tum_field(ld.Box());
+//     FOR_BBOX3(p, ld.Box())
+//     {
+//       float t = getTumorDens(ld.LatticeToWorld(p));
+//       tum_field(p) = t;
+//     }
+// 
+//     h5::Group gtum = gout.create_group("tumor");
+//     gtum.attrs().set("TYPE", "faketumor");
+//     gtum.attrs().set("TUMOR_RADIUS", tumor_radius);
+//     /*contains also the critical call 
+//       * somewhere down from here simple_dims, is called.
+//       * I think by set_array
+//       * on snowden I have the error 
+//       * "nd dataspace with rank 0 not permitted, use create_scalar()"
+//       */
+//     //WriteScalarField(gtum, "tc_density", tum_field, ld, field_ld_group);
+//   }
   ++output_num;
 }

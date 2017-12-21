@@ -108,3 +108,5 @@ if (MPI_NEEDED)
   #moste trilinos test deal with mpi
   add_subdirectory(trilinos)
 endif()
+
+add_subdirectory(H5)

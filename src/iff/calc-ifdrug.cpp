@@ -794,7 +794,7 @@ void Calculator::writeH5(H5::H5File f, H5::Group g, const State& state, double t
 //   h5::Attributes a = g.attrs();
 //   a.set("DRUG_INFLOW_CONC", drugcalc.GetInflowVesselConc());
 
-  writeAttrToGroup<T>(g, string("DRUG_INFLOW_CONC"),drugcalc.GetInflowVesselConc() );
+  //writeAttrToGroup<T>(g, string("DRUG_INFLOW_CONC"),drugcalc.GetInflowVesselConc() );
   const LatticeDataQuad3d &ld = grid->ld;
 
   Array3d<T> conc_total(ld.Box());

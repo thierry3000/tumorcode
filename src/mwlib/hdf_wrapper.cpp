@@ -29,7 +29,7 @@ void WriteHdfLdGenericPart_(H5::Group g, const LD &ld)
   writeAttrToGroup<int>(g,"SIZEX", ld.Size()[0]);
   writeAttrToGroup<int>(g,"SIZEY", ld.Size()[1]);
   writeAttrToGroup<int>(g,"SIZEZ", ld.Size()[2]);
-  writeAttrToGroup(g, "SIZE", ld.Size());
+  writeAttrToGroup<Int3>(g, "SIZE", ld.Size());
   //H5::Attribute attrs = g.attrs();
 //   attrs.set("SIZEX",ld.Size()[0]);
 //   attrs.set("SIZEY",ld.Size()[1]);
@@ -38,13 +38,14 @@ void WriteHdfLdGenericPart_(H5::Group g, const LD &ld)
   BBox3 bb = ld.Box();
   // box is stored in a 6 component vector, xxyyzz, must match python code
   Vec<int, 6> bv;
+  //Int6 bv;
   for (int i=0; i<3; ++i)
   {
     bv[i*2  ] = bb.min[i];
     bv[i*2+1] = bb.max[i];
   }
-  writeAttrToGroup(g, "BOX", bv);
-  writeAttrToGroup(g, "WORLD_OFFSET",ld.GetOriginPosition() );
+  writeAttrToGroup<Vec<int,6>>(g, string("BOX"), bv);
+  writeAttrToGroup<Float3>(g, string("WORLD_OFFSET"),ld.GetOriginPosition() );
   //set_array(attrs, "BOX", bv);
   //attrs.set("SCALE",ld.Scale());
   //set_array(attrs, "WORLD_OFFSET", ld.GetOriginPosition());
@@ -80,7 +81,7 @@ void ReadHdfLdGenericPart_(H5::Group g, LD &ld)
   try
   {
     // box is stored in a 6 component vector, xxyyzz
-    Int6 bv = readAttrFromGroup<Int6>(g, string("BOX"));
+    Vec<int, 6> bv = readAttrFromGroup<Vec<int, 6>>(g, string("BOX"));
     //Vec<int, 6> bv = get_array<int, 6>(attrs, "BOX");
     for (int i=0; i<3; ++i)
     {
