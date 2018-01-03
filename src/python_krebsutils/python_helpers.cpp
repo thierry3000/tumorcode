@@ -171,27 +171,32 @@ struct VecFromPy
     }
 };
 
-// template<class T, int dim>
-// struct VecToPy
-// {
-//   typedef Vec<T,dim> V;
-// 
-//   static PyObject* convert(const V& p)
-//   {
-//     Py_ssize_t dims[1] = { dim };
-//     
-//     auto r = np::arrayt<T>(np::zeros(1, dims, np::getItemtype<T>()));
-//     for (int i=0; i<dim; ++i)
-//       r[i] = p[i];
-//     return py::incref(r.getObject().ptr());
-//   }
-// 
-//   static void Register()
-//   {
-//     py::to_python_converter<V, VecToPy<T,dim> >();
-//   }
-// };
+/* this part uses np::arrayt which in implemented in numpycpp and no longer supported by boost */
+#if BOOST_VERSION>106300
+//to be implemented
+// see BBoxToPy for some inspiration
+#else
+template<class T, int dim>
+struct VecToPy
+{
+  typedef Vec<T,dim> V;
 
+  static PyObject* convert(const V& p)
+  {
+    Py_ssize_t dims[1] = { dim };
+    
+    auto r = np::arrayt<T>(np::zeros(1, dims, np::getItemtype<T>()));
+    for (int i=0; i<dim; ++i)
+      r[i] = p[i];
+    return py::incref(r.getObject().ptr());
+  }
+
+  static void Register()
+  {
+    py::to_python_converter<V, VecToPy<T,dim> >();
+  }
+};
+#endif
 
 void exportH5Converters()
 {
@@ -208,10 +213,10 @@ void exportVectorClassConverters()
   mw_py_impl::VecFromPy<float, 3>::Register();
   mw_py_impl::VecFromPy<double, 3>::Register();
   mw_py_impl::VecFromPy<bool, 3>::Register();
-//   mw_py_impl::VecToPy<int, 3>::Register();
-//   mw_py_impl::VecToPy<float, 3>::Register();
-//   mw_py_impl::VecToPy<double, 3>::Register();
-//   mw_py_impl::VecToPy<bool, 3>::Register();
+  mw_py_impl::VecToPy<int, 3>::Register();
+  mw_py_impl::VecToPy<float, 3>::Register();
+  mw_py_impl::VecToPy<double, 3>::Register();
+  mw_py_impl::VecToPy<bool, 3>::Register();
 }
 
 //template<class T>
