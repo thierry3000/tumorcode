@@ -26,10 +26,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 template<class LD>
 void WriteHdfLdGenericPart_(H5::Group g, const LD &ld)
 {
-  writeAttrToGroup<int>(g,"SIZEX", ld.Size()[0]);
-  writeAttrToGroup<int>(g,"SIZEY", ld.Size()[1]);
-  writeAttrToGroup<int>(g,"SIZEZ", ld.Size()[2]);
-  writeAttrToGroup<Int3>(g, "SIZE", ld.Size());
+  writeAttrToH5(g,"SIZEX", ld.Size()[0]);
+  writeAttrToH5(g,"SIZEY", ld.Size()[1]);
+  writeAttrToH5(g,"SIZEZ", ld.Size()[2]);
+  writeAttrToH5(g, "SIZE", ld.Size());
   //H5::Attribute attrs = g.attrs();
 //   attrs.set("SIZEX",ld.Size()[0]);
 //   attrs.set("SIZEY",ld.Size()[1]);
@@ -37,15 +37,15 @@ void WriteHdfLdGenericPart_(H5::Group g, const LD &ld)
 //   set_array(attrs, "SIZE", ld.Size());
   BBox3 bb = ld.Box();
   // box is stored in a 6 component vector, xxyyzz, must match python code
-  Vec<int, 6> bv;
+  Int6 bv;
   //Int6 bv;
   for (int i=0; i<3; ++i)
   {
     bv[i*2  ] = bb.min[i];
     bv[i*2+1] = bb.max[i];
   }
-  writeAttrToGroup<Vec<int,6>>(g, string("BOX"), bv);
-  writeAttrToGroup<Float3>(g, string("WORLD_OFFSET"),ld.GetOriginPosition() );
+  writeAttrToH5(g, string("BOX"), bv);
+  writeAttrToH5(g, string("WORLD_OFFSET"),ld.GetOriginPosition() );
   //set_array(attrs, "BOX", bv);
   //attrs.set("SCALE",ld.Scale());
   //set_array(attrs, "WORLD_OFFSET", ld.GetOriginPosition());
@@ -53,9 +53,9 @@ void WriteHdfLdGenericPart_(H5::Group g, const LD &ld)
 
 void WriteHdfLd( H5::Group g, const LatticeDataQuad3d &ld )
 {
-  //writeAttrToGroup<Bool3>(g, "CENTERING", ld.GetCellCentering().cast<int>());
-  writeAttrToGroup<Bool3>(g, "CENTERING", ld.GetCellCentering());
-  writeAttrToGroup<string>(g, "TYPE", "QUAD3D");
+  //writeAttrToH5<Bool3>(g, "CENTERING", ld.GetCellCentering().cast<int>());
+  writeAttrToH5(g, "CENTERING", ld.GetCellCentering());
+  writeAttrToH5(g, "TYPE", "QUAD3D");
 //   h5cpp::Attributes attrs = g.attrs();
 //   attrs.set("TYPE","QUAD3D");
 //   set_array<int,3>(attrs, "CENTERING", ld.GetCellCentering().cast<int>());
@@ -66,7 +66,7 @@ void WriteHdfLd( H5::Group g, const LatticeDataFCC &ld )
 {
 //   h5cpp::Attributes attrs = g.attrs();
 //   attrs.set("TYPE","FCC");
-  writeAttrToGroup<string>(g, "TYPE", "FCC");
+  writeAttrToH5(g, "TYPE", "FCC");
   WriteHdfLdGenericPart_(g, ld);
 }
 

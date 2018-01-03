@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.3)
 project(tumorcode C CXX)
+set(CMAKE_CXX_STANDARD 11)
 
 if(FALSE)
 ###############  set up spack stuff  ##############

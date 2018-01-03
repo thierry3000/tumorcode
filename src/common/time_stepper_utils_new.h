@@ -219,7 +219,7 @@ struct ObserverPde
     if (stepper)
     {
       H5::H5File f = openH5File();
-      writeAttrToGroup<string>(f.openGroup("/"), string("stepper"), *stepper);
+      writeAttrToH5(f.openGroup("/"), string("stepper"), *stepper);
       //f.root().attrs().set<string>("stepper", *stepper);
     }
   }
@@ -230,13 +230,13 @@ struct ObserverPde
     H5::H5File f = openH5File();
     cout << format("hdf output -> %s") % f.getFileName() << endl;
     H5::Group g = f.createGroup(groupname);
-    writeAttrToGroup<double>(g, string("time"), t);
-    writeAttrToGroup<double>(g, string("real_time"), (my::Time() - t_real_start).to_s());
+    writeAttrToH5(g, string("time"), t);
+    writeAttrToH5(g, string("real_time"), (my::Time() - t_real_start).to_s());
 //     g.attrs().set("time", t);
 //     g.attrs().set("real_time", (my::Time() - t_real_start).to_s());
     MemUsage memusage = GetMemoryUsage();
-    writeAttrToGroup<uint64>(g, string("mem_vsize"), memusage.vmem_peak);
-     writeAttrToGroup<uint64>(g, string("mem_rss"), memusage.rss_peak);
+    writeAttrToH5(g, string("mem_vsize"), (int)memusage.vmem_peak);
+    writeAttrToH5(g, string("mem_rss"), (int)memusage.rss_peak);
 //     g.attrs().set<uint64>("mem_vsize", memusage.vmem_peak);
 //     g.attrs().set<uint64>("mem_rss", memusage.rss_peak);
     model.writeH5(f, g, state, t, out_num);

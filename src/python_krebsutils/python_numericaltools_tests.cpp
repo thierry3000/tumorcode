@@ -401,7 +401,7 @@ public:
     state.ToHeaviside(theta, grid.Box(), grid.Scale());
     WriteScalarField(g, "theta", theta, grid, ld_group);
     float mass = theta.valueStatistics().Sum() * std::pow(grid.Scale(), ndims);
-    writeAttrToGroup<float>(g, string("mass"), mass);
+    writeAttrToH5(g, string("mass"), mass);
     //g.attrs().set("mass", mass);
   }
 
@@ -719,8 +719,8 @@ void run(H5::Group g, const ptree &params, int id, double lambda)
 
   //observer.g = g = g.require_group(str(format("study%02i") % id));
   observer.g = g = g.openGroup(str(format("study%02i") % id));
-  writeAttrToGroup<string>(g, string("method"), string(method_name[method]));
-  writeAttrToGroup<double>(g, string("dt"), dt);
+  writeAttrToH5(g, string("method"), string(method_name[method]));
+  writeAttrToH5(g, string("dt"), dt);
 //   g.attrs().set("method", method_name[method]);
 //   g.attrs().set("dt", dt);
 
@@ -792,7 +792,7 @@ void runSimpleSteppersTest(const std::string &fn_out)
 //     h5cpp::create_dataset(g, "x", ax);
 //     h5cpp::create_dataset(g, "y", ay);
   }
-  writeAttrToGroup<double>(f.openGroup("/"), string("lambda"), lambda);
+  writeAttrToH5(f.openGroup("/"), string("lambda"), lambda);
   //f.root().attrs().set("lambda", lambda);
 
 #if 1
@@ -1100,7 +1100,7 @@ public:
     WriteScalarField(g, "ls", levelset.phi, grid.ld, ld_group);
     Array3d<float> theta; theta.initFromBox(grid.ld.Box());
     levelset.ToHeaviside(theta, grid.ld.Box(), grid.ld.Scale());
-    writeAttrToGroup<double>(g, string("area"),  theta.valueStatistics().Sum()*std::pow(grid.ld.Scale(), grid.dim));
+    writeAttrToH5(g, string("area"),  theta.valueStatistics().Sum()*std::pow(grid.ld.Scale(), grid.dim));
     //g.attrs().set("area", theta.valueStatistics().Sum()*std::pow(grid.ld.Scale(), grid.dim));
     theta *= rho;
     my::Averaged<double> stats = theta.valueStatistics();
@@ -1110,11 +1110,11 @@ public:
 //     g.attrs().set("max_dt_diffusion", max_dt_diffusion);
 //     g.attrs().set("max_dt_velocity", max_dt_velocity);
     
-    writeAttrToGroup<double>(g, string("mass"), stats.Sum() * std::pow(grid.ld.Scale(), grid.dim));
-    writeAttrToGroup<double>(g, string("rho_min"), stats.Min());
-    writeAttrToGroup<double>(g, string("rho_max"), stats.Max());
-    writeAttrToGroup<double>(g, string("max_dt_diffusion"),  max_dt_diffusion);
-    writeAttrToGroup<double>(g, string("max_dt_velocity"), max_dt_velocity);
+    writeAttrToH5(g, string("mass"), stats.Sum() * std::pow(grid.ld.Scale(), grid.dim));
+    writeAttrToH5(g, string("rho_min"), stats.Min());
+    writeAttrToH5(g, string("rho_max"), stats.Max());
+    writeAttrToH5(g, string("max_dt_diffusion"),  max_dt_diffusion);
+    writeAttrToH5(g, string("max_dt_velocity"), max_dt_velocity);
     
     WriteScalarField(g, "rho", rho, grid.ld, ld_group);
     for (int axis=0; axis<grid.dim; ++axis)
@@ -1164,7 +1164,7 @@ bool runSTF(const py::str &param_info_str, const py::object &py_ld, const py::di
   Py_BEGIN_ALLOW_THREADS
   NewSteppers::run(doStep, doObserve, params);
   Py_END_ALLOW_THREADS
-  writeAttrToGroup<bool>(observer.openH5File().openGroup("/"), string("hard_fail"), model.fail_flag);
+  writeAttrToH5(observer.openH5File().openGroup("/"), string("hard_fail"), model.fail_flag);
   //observer.openH5File().root().attrs().set("hard_fail", model.fail_flag);
   return !model.fail_flag;
 }

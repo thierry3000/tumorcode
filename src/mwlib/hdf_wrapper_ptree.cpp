@@ -38,7 +38,7 @@ void WriteHdfPtree(H5::Group f, const ptree &pt, HdfWritePtreeAs storage_mode)
     {
       if (storage_mode == HDF_WRITE_PTREE_AS_ATTRIBUTE)
       {
-	writeAttrToGroup<string>(f, k, v.data());
+	writeAttrToH5(f, k, v.data());
       }
       else
       {

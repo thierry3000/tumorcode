@@ -50,7 +50,7 @@ typedef Vec<int,2> Int2;
 typedef Vec<double,6> Double6;
 
 
-void writeAttrToGroup(H5::Group g, const string &attr_name,  int &value)
+void writeAttrToH5(H5::Group g, const string &attr_name,  int &value)
 { 
   { 
     // Create new dataspace for attribute
@@ -59,7 +59,7 @@ void writeAttrToGroup(H5::Group g, const string &attr_name,  int &value)
     attr_out.write(H5::PredType::NATIVE_INT, &value);
   }
 };
-void writeAttrToGroup(H5::Group g, const string &attr_name,  double &value)
+void writeAttrToH5(H5::Group g, const string &attr_name,  double &value)
 { 
   { 
     // Create new dataspace for attribute
@@ -68,7 +68,7 @@ void writeAttrToGroup(H5::Group g, const string &attr_name,  double &value)
     attr_out.write(H5::PredType::NATIVE_DOUBLE, &value);
   }
 };
-void writeAttrToGroup(H5::Group g, const string &attr_name,  float &value)
+void writeAttrToH5(H5::Group g, const string &attr_name,  float &value)
 { 
   { 
     // Create new dataspace for attribute
@@ -77,7 +77,7 @@ void writeAttrToGroup(H5::Group g, const string &attr_name,  float &value)
     attr_out.write(H5::PredType::NATIVE_FLOAT, &value);
   }
 };
-void writeAttrToGroup(H5::Group g, const string &attr_name,  string &value)
+void writeAttrToH5(H5::Group g, const string &attr_name,  string &value)
 { 
   { 
     // Create new dataspace for attribute
@@ -95,7 +95,7 @@ void writeAttrToGroup(H5::Group g, const string &attr_name,  string &value)
   }
 };
 template <class T>
-void writeAttrToGroup(H5::Group g, const string &attr_name,  T &value)
+void writeAttrToH5(H5::Group g, const string &attr_name,  T &value)
 { 
   { 
     int noOfEntries = value.size();

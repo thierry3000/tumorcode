@@ -77,8 +77,6 @@ struct BloodFlowParameters
 ostream& operator<<(ostream &os, const BloodFlowParameters &bfparams);
 
 
-
-typedef double FlReal;
 FlReal CalcRelViscosity( FlReal r, FlReal h, Rheology rheology);
 //FlReal CalcRelViscosityByTable( FlReal r, FlReal h, Rheology rheology);
 FlReal CalcFahraeusEffect(double h, double r, Rheology rheology);

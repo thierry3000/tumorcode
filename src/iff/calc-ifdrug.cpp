@@ -113,30 +113,30 @@ void Params::assign(const ptree& pt)
 void Params::WriteH5(H5::Group g) const
 {
 //#define SETP(id) g.attrs().set(#id,id)
-#define SETP(id) writeAttrToGroup<string>(g, #id, id)
+#define SETP(id) writeAttrToH5<string>(g, #id, id)
 //#define SETP2(id,val) g.attrs().set(#id,val)
   switch(inject_mode)
   {
   case Params::DF_INJECT_MODE_EXP:
-    writeAttrToGroup<string>(g, string("DF_INJECT_MODE"),string("DF_INJECT_MODE_EXP")); 
+    writeAttrToH5(g, string("DF_INJECT_MODE"),string("DF_INJECT_MODE_EXP")); 
     //SETP2(DF_INJECT_MODE,"DF_INJECT_MODE_EXP");
     break;
   case Params::DF_INJECT_MODE_JUMP:
     //SETP2(DF_INJECT_MODE,"DF_INJECT_MODE_JUMP");
-    writeAttrToGroup<string>(g, string("DF_INJECT_MODE"),string("DF_INJECT_MODE_JUMP"));
+    writeAttrToH5(g, string("DF_INJECT_MODE"),string("DF_INJECT_MODE_JUMP"));
     break;
   }
-  writeAttrToGroup<FlReal>(g, string("inject_t"),inject_t);
-  writeAttrToGroup<FlReal>(g, string("kdiff"),kdiff);
-  writeAttrToGroup<FlReal>(g, string("comprates_k12"),comprates_k12);
-  writeAttrToGroup<FlReal>(g, string("comprates_k21"),comprates_k21);
-  writeAttrToGroup<FlReal>(g, string("capillary_permeability_normal"),capillary_permeability_normal);
-  writeAttrToGroup<FlReal>(g, string("capillary_permeability_tumor"),capillary_permeability_tumor);
+  writeAttrToH5(g, string("inject_t"),inject_t);
+  writeAttrToH5(g, string("kdiff"),kdiff);
+  writeAttrToH5(g, string("comprates_k12"),comprates_k12);
+  writeAttrToH5(g, string("comprates_k21"),comprates_k21);
+  writeAttrToH5(g, string("capillary_permeability_normal"),capillary_permeability_normal);
+  writeAttrToH5(g, string("capillary_permeability_tumor"),capillary_permeability_tumor);
 
-  writeAttrToGroup<string>(g, string("stepper"),stepper);
-  writeAttrToGroup<string>(g, string("stepper_compartments"),stepper_compartments);
+  writeAttrToH5(g, string("stepper"),stepper);
+  writeAttrToH5(g, string("stepper_compartments"),stepper_compartments);
   
-  writeAttrToGroup<bool>(g, string("convective_transport_enabled"),convective_transport_enabled);
+  writeAttrToH5(g, string("convective_transport_enabled"),convective_transport_enabled);
  
   
 
@@ -794,7 +794,7 @@ void Calculator::writeH5(H5::H5File f, H5::Group g, const State& state, double t
 //   h5::Attributes a = g.attrs();
 //   a.set("DRUG_INFLOW_CONC", drugcalc.GetInflowVesselConc());
 
-  //writeAttrToGroup<T>(g, string("DRUG_INFLOW_CONC"),drugcalc.GetInflowVesselConc() );
+  //writeAttrToH5<T>(g, string("DRUG_INFLOW_CONC"),drugcalc.GetInflowVesselConc() );
   const LatticeDataQuad3d &ld = grid->ld;
 
   Array3d<T> conc_total(ld.Box());

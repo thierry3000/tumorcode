@@ -17,6 +17,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+/**
+ * until 2018 tumorcode relied on some homebrewed hdfwrapper 
+ * (https://github.com/DaWelter/HDF5-cpp-wrapper).
+ * Because of numerous bugs, interface problem and inconvieniences,
+ * I decided to change the api to the official supported HDF5 Cpp wrapper.
+ * Probably this will take some time to behave well.
+ */
 #ifndef HDFIO_H
 #define HDFIO_H
 
@@ -67,13 +75,34 @@ T readAttrFromGroup(H5::Group g, string attr_name);
 template<typename T>
 T readAttrFromDataSet(H5::DataSet g, string attr_name);
 
-template<class T>
-void writeAttrToGroup(H5::Group g, string attr_name, T value);
+/** @brief
+ * write attributes to Group 
+ */
+void writeAttrToH5(H5::Group h, const string &attr_name,  const Int6 &value);
+void writeAttrToH5(H5::Group h, const string &attr_name,  const Int3 &value);
+void writeAttrToH5(H5::Group h, const string &attr_name,  const int &value);
+void writeAttrToH5(H5::Group h, const string &attr_name,  const Float3 &value);
+void writeAttrToH5(H5::Group h, const string &attr_name,  const float &value);
+void writeAttrToH5(H5::Group h, const string &attr_name,  const Double3 &value);
+void writeAttrToH5(H5::Group h, const string &attr_name,  const double &value);
+void writeAttrToH5(H5::Group h, const string &attr_name,  const string &value);
+void writeAttrToH5(H5::Group h, const string &attr_name,  const Bool3 &value);
+void writeAttrToH5(H5::Group h, const string &attr_name,  const bool &value);
+/** @brief
+ * write attributes to DataSet 
+ */
+void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Int6 &value);
+void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Int3 &value);
+void writeAttrToH5(H5::DataSet h, const string &attr_name,  const int &value);
+void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Float3 &value);
+void writeAttrToH5(H5::DataSet h, const string &attr_name,  const float &value);
+void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Double3 &value);
+void writeAttrToH5(H5::DataSet h, const string &attr_name,  const double &value);
+void writeAttrToH5(H5::DataSet h, const string &attr_name,  const string &value);
+void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Bool3 &value);
+void writeAttrToH5(H5::DataSet h, const string &attr_name,  const bool &value);
 
-void writeAttrToGroup(H5::Group g, std::string &attr_name, int value);
 
-template<class T>
-void writeAttrToDataset(H5::DataSet g, string attr_name, T value);
 
 template<class T>
 H5::DataSet writeDataSetToGroup(H5::Group g, string attr_name, T value);

@@ -71,7 +71,7 @@ struct Model
     else if (mode == VFILL_DIVERGE_CUBIC)
     {
       LatticeDataQuad3d ld_face(ir.faces[0], grid.Scale());
-      ld_face.SetCellCentering(Vec<bool,3>(false, true, true));
+      ld_face.SetCellCentering(Bool3(false, true, true));
       ld_face.SetWorldPosition(grid.GetWorldBox().min);
       double v = params.get<float>("v");
       FOR_BBOX3(p, ir.faces[0])

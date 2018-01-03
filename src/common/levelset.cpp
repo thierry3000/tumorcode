@@ -703,7 +703,7 @@ struct LevelSetReinit
     H5::Group g = f.createGroup(str(format("out%04i") % iter));
     //H5::Group g = f.root().create_group(str(format("out%04i") % iter));
     //H5::Attribute attr = g.createAttribute("time");
-    writeAttrToGroup<int>(g, "time", iter);
+    writeAttrToH5(g, "time", iter);
     
     //g.attrs().set("time", iter);
     

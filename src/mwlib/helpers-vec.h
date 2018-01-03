@@ -92,7 +92,7 @@ typedef Eigen::Matrix<float, 2, 1> Float2;
 #else
 //typedef Vec<int, dim> Intd;
 //typedef Vec<double, dim> Doubled;
-//typedef Vec<int, 6> Int6;
+typedef Vec<int, 6> Int6;
 typedef Vec<int, 3> Int3;
 typedef Vec<int, 2> Int2;
 typedef Vec<bool, 3> Bool3;

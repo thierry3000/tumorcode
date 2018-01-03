@@ -136,9 +136,9 @@ void run(H5::Group g, const ptree &params, int id, double lambda)
   //observer.g = g = g.require_group(str(format("study%02i") % id));
   observer.g = g = g.createGroup(str(format("study%02i") % id));
   string myString = (string) method_name[method];
-  //writeAttrToGroup<string>(g, string("method"), myString);
-  writeAttrToGroup<string>(g, string("method"),string("euler"));
-  writeAttrToGroup<double>(g, string("dt"), dt);
+  //writeAttrToH5<string>(g, string("method"), myString);
+  writeAttrToH5(g, string("method"),string("euler"));
+  writeAttrToH5(g, string("dt"), dt);
 //   g.attrs().set("method", method_name[method]);
 //   g.attrs().set("dt", dt);
 
@@ -203,7 +203,7 @@ void run()
 //     h5cpp::create_dataset<>(g, "y", ay);
   }
   //f.root().attrs().set("lambda", lambda);
-  writeAttrToGroup<double>(f.openGroup("/"), string("lambda"), lambda);
+  writeAttrToH5(f.openGroup("/"), string("lambda"), lambda);
 
 #if 1
   int id = 0;

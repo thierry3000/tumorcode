@@ -192,7 +192,7 @@ struct Model : public boost::noncopyable
 //     }
     H5::Group ld_group = RequireLatticeDataGroup(f,"field_ld", grid.ld);
     bulktissue_model.writeH5(g, state.tumor_state, t, ld_group);
-    writeAttrToGroup<double>(g, string("tumor_radius"), estimateRadius(state));
+    writeAttrToH5(g, string("tumor_radius"), estimateRadius(state));
     //g.attrs().set("tumor_radius", estimateRadius(state));
     WriteScalarField(g, "oxy", state.o2field[grid.Box()], grid.ld, ld_group);
     if (params.use_o2_source_decay)

@@ -288,7 +288,7 @@ void TestLatticeData()
     ld.MoveSiteRange(Int3(50, 0, 0));
     //ld.SetBox(Move(ld.Box(), Int3(50, 0, 0)));
     ldcc = ld;
-    ldcc.SetCellCentering(Vec<bool,3>(true));
+    ldcc.SetCellCentering(Bool3(true));
 
     cout << "a lattice data" << endl;
     ldcc.print(cout);
@@ -363,7 +363,7 @@ void TestInterpolation()
 {
   LatticeDataQuad3d ld;
   ld.Init(Int3(1, 10, 1), my::mconst::fpi2() * 0.1);
-  ld.SetCellCentering(Vec<bool,3>(true));
+  ld.SetCellCentering(Bool3(true));
   FloatBBox3 wbox = ld.GetWorldBox();
   cout << "world box: " << wbox << endl;
   Array3d<float> field; field.initFromBox(ld.Box());

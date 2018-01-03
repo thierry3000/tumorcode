@@ -783,7 +783,7 @@ void WriteVesselList3d(const VesselList3d &vl, H5::Group vesselgroup, const ptre
     writeDataSetToGroup<std::vector<double>>(vesselgroup, string("nodes/pressure"), arrd);
     //H5::DataSet ds = h5::create_dataset(vesselgroup,"nodes/pressure",arrd);
     //ds.attrs().set("MODE","linear");
-    writeAttrToDataset<string>(vesselgroup.openDataSet(string("nodes/pressure")),string("MODE"), string("linear"));
+    writeAttrToH5(vesselgroup.openDataSet(string("nodes/pressure")),string("MODE"), string("linear"));
 
     //for(int i=0; i<ncnt; ++i) { arrd[i] = vl.GetNode(i)->residual; }
     //ds = h5::create_dataset_range(vesselgroup,"nodes/residual",arrd);
@@ -798,7 +798,7 @@ void WriteVesselList3d(const VesselList3d &vl, H5::Group vesselgroup, const ptre
 {\
   for(int i=0; i<ecnt; ++i) { arr[i] = vl.GetEdge(i)->var; }\
   H5::DataSet ds = writeDataSetToGroup<std::vector<double>>(vesselgroup, string(name), arr);\
-  writeAttrToDataset<string>(ds, string("MODE"), string("const"));\
+  writeAttrToH5(ds, string("MODE"), string("const"));\
 }
   arrf.resize(ecnt);
   arrd.resize(ecnt);

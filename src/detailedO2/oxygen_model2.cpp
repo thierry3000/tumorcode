@@ -1817,7 +1817,7 @@ void TestSaturationCurve()
 //   h5cpp::Dataset ds = h5cpp::create_dataset<double>(root, "p_to_conc", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
 //   h5cpp::Dataset ds = h5cpp::create_dataset<double>(root, "p_to_conc", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
   H5::DataSet ds = writeDataSetToGroup<DynArray<double>>(root, string("p_to_conc"), xy );
-  writeAttrToDataset<double>(ds, string("time"), t_ms);
+  writeAttrToH5(ds, string("time"), t_ms);
   
 //   ds.attrs().set("time", t_ms);
   }
@@ -1837,7 +1837,7 @@ void TestSaturationCurve()
   //h5cpp::Dataset ds = h5cpp::create_dataset(f.root(), "conc_to_p", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
   //ds.attrs().set("time", t_ms);
   H5::DataSet ds = writeDataSetToGroup<DynArray<double>>(root, string("conc_to_p"), xy );
-  writeAttrToDataset<double>(ds, string("time"), t_ms);
+  writeAttrToH5(ds, string("time"), t_ms);
   }
 
   {

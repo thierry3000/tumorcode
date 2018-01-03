@@ -52,13 +52,14 @@ void WriteHdfHistogram( H5::Group g, const string &id, const BasicHistogram1D<fl
   }
   H5::DataSet ds = WriteArray3D(g,id,a);
   //h5::Dataset ds = WriteArray3D(f,id,a);
-  writeAttrToDataset<string>(ds, string("TITLE"), h.name);
-  writeAttrToDataset<decltype(h.info.size_bucket)>(ds, "BUCKED_SIZE", h.info.size_bucket );
-  writeAttrToDataset<string>(ds, "FIELD_0_NAME", h.info.name);
-  writeAttrToDataset<string>(ds,"FIELD_1_NAME", h.name );
+  writeAttrToH5(ds, string("TITLE"), h.name);
+  //writeAttrToH5<decltype(h.info.size_bucket)>(ds, "BUCKED_SIZE", h.info.size_bucket );
+  writeAttrToH5(ds, "BUCKED_SIZE", h.info.size_bucket );
+  writeAttrToH5(ds, "FIELD_0_NAME", h.info.name);
+  writeAttrToH5(ds,"FIELD_1_NAME", h.name );
   if( ue)
   {
-    writeAttrToDataset<string>(ds,"FIELD_2_NAME","rmse" );
+    writeAttrToH5(ds,"FIELD_2_NAME","rmse" );
   }
   //h5::Attributes attrs = ds.attrs();
 //   attrs.set("TITLE",h.name);
@@ -89,7 +90,7 @@ H5::Group DebugOutVessels(const Grower &grower, const string &name)
   H5::Group vesselgrp = grp.createGroup("vessels");
   //since world coordinates this is also needed for proper hdf output
   //vesselgrp.attrs().set<std::string>("CLASS","GRAPH");
-  writeAttrToGroup<string>(vesselgrp, string("CLASS"), string("GRAPH"));
+  writeAttrToH5(vesselgrp, string("CLASS"), string("GRAPH"));
   WriteVesselList3d(vl, vesselgrp, make_ptree("w_all",false)("w_pressure",true)("w_flow",true));
 #if GFFIELD_ENABLE
   {
@@ -147,7 +148,7 @@ void DoOutput(H5::Group root,
     // vessels and stuff
     H5::Group vesselgrp = root.createGroup("vessels");
     // since world coordinates are introduced this is needed for proper hdf output
-    writeAttrToGroup<string>(vesselgrp, string("CLASS"), string("GRAPH"));
+    writeAttrToH5(vesselgrp, string("CLASS"), string("GRAPH"));
     //vesselgrp.attrs().set<std::string>("CLASS","GRAPH");
     WriteVesselList3d(vl, vesselgrp, make_ptree("w_all",false)("w_pressure",true)("w_flow",true));
     {
@@ -167,8 +168,8 @@ void DoOutput(H5::Group root,
     }
     {
       MemUsage memusage = GetMemoryUsage();
-      writeAttrToGroup<uint64>(root, string("mem_vsize"),memusage.vmem_peak );
-      writeAttrToGroup<uint64>(root, string("mem_rss"),memusage.rss_peak );
+      writeAttrToH5(root, string("mem_vsize"),(int)memusage.vmem_peak );
+      writeAttrToH5(root, string("mem_rss"),(int)memusage.rss_peak );
       //a = root.attrs();
 //       a.set<uint64>("mem_vsize", memusage.vmem_peak);
 //       a.set<uint64>("mem_rss", memusage.rss_peak);
@@ -179,7 +180,7 @@ void DoOutput(H5::Group root,
     WriteHdfHistogram(g,"lengths_by_rad",hlenbyrad);
     WriteHdfHistogram(g,"radii_prob",hrad);
     WriteHdfHistogram(g,"num_branches_by_rad",hbranch);
-    writeAttrToGroup<float>(g, string("rBV"), bloodVolume);
+    writeAttrToH5(g, string("rBV"), bloodVolume);
 //     a = g.attrs();
 //     a.set("rBV",bloodVolume);
 //     a.set("SITES_OCCUPIED",num_occ_sites);
@@ -247,7 +248,7 @@ void DoOutput(H5::H5File &file,
 #endif
         {
           //a = root.attrs();
-	  writeAttrToGroup<double>(root, string("real_time"), (my::Time() - additional_data.get<my::Time>("real_start_time")).to_s() );
+	  writeAttrToH5(root, string("real_time"), (my::Time() - additional_data.get<my::Time>("real_start_time")).to_s() );
           //a.set<double>("real_time", (my::Time() - additional_data.get<my::Time>("real_start_time")).to_s());
         }
         // measurement
@@ -265,8 +266,8 @@ void DoOutput(H5::H5File &file,
           }
           H5::DataSet ds = WriteArray3D(g,"rBV_by_iter",t);
           //a = ds.attrs();
-	  writeAttrToDataset<string>(ds, string("FIELD_0_NAME"), string("iter"));
-	  writeAttrToDataset<string>(ds, string("FIELD_1_NAME"), string("rBV"));
+	  writeAttrToH5(ds, string("FIELD_0_NAME"), string("iter"));
+	  writeAttrToH5(ds, string("FIELD_1_NAME"), string("rBV"));
 //           a.set<string>("FIELD_0_NAME","iter");
 //           a.set<string>("FIELD_1_NAME","rBV");
         }
@@ -278,10 +279,10 @@ void DoOutput(H5::H5File &file,
         //h5::Dataset::create_scalar(g, "IN_FILENAME", input_pt.get<string>("input_fn", ""));
         //h5::Dataset::create_scalar(g, "MESSAGE", input_pt.get<string>("message",""));
         //h5::Dataset::create_scalar(g, "ENSEMBLE_INDEX", input_pt.get<int>("ensemble_index", 0));
-	writeAttrToGroup<uint>(g, string("SEED"), input_pt.get<uint>("seed"));
-	writeAttrToGroup<string>(g, string("IN_FILENAME"), input_pt.get<string>("input_fn", ""));
-	writeAttrToGroup<string>(g, string("MESSAGE"), input_pt.get<string>("message",""));
-	writeAttrToGroup<int>(g, string( "ENSEMBLE_INDEX"), input_pt.get<int>("ensemble_index", 0));
+	writeAttrToH5(g, string("SEED"), input_pt.get<int>("seed"));
+	writeAttrToH5(g, string("IN_FILENAME"), input_pt.get<string>("input_fn", ""));
+	writeAttrToH5(g, string("MESSAGE"), input_pt.get<string>("message",""));
+	writeAttrToH5(g, string( "ENSEMBLE_INDEX"), input_pt.get<int>("ensemble_index", 0));
 	
 //         g.attrs().set("SEED", input_pt.get<uint>("seed"));
 //         g.attrs().set("IN_FILENAME", input_pt.get<string>("input_fn", ""));

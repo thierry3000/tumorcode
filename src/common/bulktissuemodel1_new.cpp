@@ -1083,7 +1083,7 @@ and for
 void Model::writeH5(H5::Group g, State &state, double t, H5::Group &ld_group) const
 {
   const OutState &ost = getOutState(state, OutState::ALL);
-  writeAttrToGroup<string>(g, string("TYPE"), string("BulkTissueFormat1"));
+  writeAttrToH5(g, string("TYPE"), string("BulkTissueFormat1"));
   //g.attrs().set("TYPE", "BulkTissueFormat1");
   const BBox3 cellrange = grid->ld.Box();
   WriteScalarField(g, "conc", ost.phi_cells[cellrange], grid->ld, ld_group);
@@ -1111,10 +1111,10 @@ void Model::writeH5(H5::Group g, State &state, double t, H5::Group &ld_group) co
   {
     WriteScalarField(g, "necro", ost.phi_necro[grid->ir.cells], grid->ld, ld_group);
   }
-  writeAttrToGroup<double>(g, "max_dt_diff", (double)max_dt_diff );
-  writeAttrToGroup<double>(g, "max_dt_src", (double)max_dt_src );
-  writeAttrToGroup<double>(g, "max_dt_vel", (double)max_dt_vel );
-  writeAttrToGroup<double>(g, "max_dt_stf", (double)max_dt_stf );
+  writeAttrToH5(g, "max_dt_diff", (double)max_dt_diff );
+  writeAttrToH5(g, "max_dt_src", (double)max_dt_src );
+  writeAttrToH5(g, "max_dt_vel", (double)max_dt_vel );
+  writeAttrToH5(g, "max_dt_stf", (double)max_dt_stf );
 }
 
 const OutState& Model::getOutState(const State &state_, int flags) const

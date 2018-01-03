@@ -277,7 +277,7 @@ void vesselgen_generate_single(H5::Group outgroup, const Int3 &size, const int d
 //     h5cpp::Group g = outgroup.require_group("parameters");
 //     h5cpp::Attributes a = g.attrs();
 //     a.set("dir", dir);
-    writeAttrToGroup<int>(g, "dir", dir);
+    writeAttrToH5(g, "dir", dir);
   }
 }
 void vesselgen_generate_symmetric(const H5::Group outgroup, const int &exponent_of_two, float scale, const BloodFlowParameters &bfparams, const bool &only2D)
