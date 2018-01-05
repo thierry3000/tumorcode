@@ -124,7 +124,8 @@ bool IffDrugApp3d::InitNewState()
   { // read node pressure values
   DynArray<float> press;
   //h5::read_dataset(vesselgroup.open_dataset("nodes/pressure"), press);
-  readDataSetFromGroup<DynArray<float>>(vesselgroup.openGroup("nodes"),string("pressure"), &press);
+  //readDataSetFromGroup<DynArray<float>>(vesselgroup.openGroup("nodes"),string("pressure"), &press);
+  readDataSetFromGroup(vesselgroup.openGroup("nodes"),string("pressure"), press);
   int ncnt = vl->GetNCount();
   for(int i=0; i<ncnt; ++i)
   {
@@ -133,14 +134,16 @@ bool IffDrugApp3d::InitNewState()
   // read edge flow values
   DynArray<double> a;
   //h5::read_dataset(vesselgroup.open_dataset("edges/flow"), a);
-  readDataSetFromGroup<DynArray<double>>(vesselgroup.openGroup("edges"),string("flow"), &a);
+  //readDataSetFromGroup<DynArray<double>>(vesselgroup.openGroup("edges"),string("flow"), &a);
+  readDataSetFromGroup(vesselgroup.openGroup("edges"),string("flow"), a);
   int ecnt = vl->GetECount();
   for(int i=0; i<ecnt; ++i)
   {
     vl->GetEdge(i)->q = a[i];
   }
   //h5::read_dataset(vesselgroup.open_dataset("edges/maturation"), a);
-  readDataSetFromGroup<DynArray<double>>(vesselgroup.openGroup("edges"),string("maturation"), &a);
+  //readDataSetFromGroup<DynArray<double>>(vesselgroup.openGroup("edges"),string("maturation"), &a);
+  readDataSetFromGroup(vesselgroup.openGroup("edges"),string("maturation"), a );
   for(int i=0; i<ecnt; ++i) vl->GetEdge(i)->maturation = a[i];
   }
 
@@ -172,7 +175,8 @@ bool IffDrugApp3d::InitNewState()
   {
     H5::DataSet ds_phi_tumor = tum_grp.openDataSet("tc_density");
     //double radius = tum_grp.attrs().get<double>("TUMOR_RADIUS");
-    double radius = readAttrFromGroup<double>(tum_grp, string("TUMOR_RADIUS"));
+    double radius;
+    readAttrFromH5(tum_grp, string("TUMOR_RADIUS"), radius);
     { 
       LatticeDataQuad3d ld;
       SetupFieldLattice(vl->Ld().GetWorldBox(), 3, 30., -30, ld);
@@ -202,7 +206,8 @@ bool IffDrugApp3d::InitNewState()
 //     h5::Dataset ds_theta_tumor = tum_grp.open_dataset("ptc");
 //     h5::Group ld_group = root.open_group(ds_theta_tumor.attrs().get<string>("LATTICE_PATH"));
     H5::DataSet ds_theta_tumor = tum_grp.openDataSet("ptc");
-    string lattice_path = readAttrFromDataSet<string>(ds_theta_tumor, "LATTICE_PATH");
+    string lattice_path;
+    readAttrFromH5(ds_theta_tumor, "LATTICE_PATH", lattice_path);
     H5::Group ld_group = root.openGroup(lattice_path);
     { 
       LatticeDataQuad3d ld;

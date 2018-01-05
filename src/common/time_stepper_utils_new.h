@@ -288,7 +288,7 @@ struct ObserverOde
   {
     for (int i=0; i<data_names.size(); ++i)
     {
-      H5::DataSet ds = writeDataSetToGroup<DynArray<double>>(g, data_names[i], data[i]);
+      H5::DataSet ds = writeDataSetToGroup(g, data_names[i], data[i]);
       //h5cpp::Dataset ds = h5cpp::create_dataset(g, data_names[i], data[i]);
     }
   }

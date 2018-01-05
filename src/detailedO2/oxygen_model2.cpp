@@ -1728,7 +1728,7 @@ void WriteOutput(H5::Group basegroup,
       }
       //h5cpp::create_dataset(g.open_group("edges"), "topoorder", toposort_indices);
       //h5cpp::create_dataset(g.open_group("edges"), "topoorder", toposort_indices);
-      writeDataSetToGroup<DynArray<int>>(g.openGroup("edges"), string("topoorder"), toposort_indices);
+      writeDataSetToGroup(g.openGroup("edges"), string("topoorder"), toposort_indices);
     }
     if (vesselpo2)
     {
@@ -1739,7 +1739,7 @@ void WriteOutput(H5::Group basegroup,
         avg_po2[i] = isFinite(po2) ? po2 : -1.f;
       }
       //h5cpp::create_dataset(g.open_group("edges"), "avgpo2", avg_po2);
-      writeDataSetToGroup<DynArray<float>>(g.openGroup("edges"), string("avgpo2"), avg_po2);
+      writeDataSetToGroup(g.openGroup("edges"), string("avgpo2"), avg_po2);
     }
 
     if (po2field)
@@ -1816,7 +1816,7 @@ void TestSaturationCurve()
 
 //   h5cpp::Dataset ds = h5cpp::create_dataset<double>(root, "p_to_conc", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
 //   h5cpp::Dataset ds = h5cpp::create_dataset<double>(root, "p_to_conc", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
-  H5::DataSet ds = writeDataSetToGroup<DynArray<double>>(root, string("p_to_conc"), xy );
+  H5::DataSet ds = writeDataSetToGroup(root, string("p_to_conc"), xy );
   writeAttrToH5(ds, string("time"), t_ms);
   
 //   ds.attrs().set("time", t_ms);
@@ -1836,7 +1836,7 @@ void TestSaturationCurve()
 
   //h5cpp::Dataset ds = h5cpp::create_dataset(f.root(), "conc_to_p", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
   //ds.attrs().set("time", t_ms);
-  H5::DataSet ds = writeDataSetToGroup<DynArray<double>>(root, string("conc_to_p"), xy );
+  H5::DataSet ds = writeDataSetToGroup(root, string("conc_to_p"), xy );
   writeAttrToH5(ds, string("time"), t_ms);
   }
 
@@ -1850,7 +1850,7 @@ void TestSaturationCurve()
     xy[i*2+1] = pback;
   }
   //h5cpp::Dataset ds = h5cpp::create_dataset(f.root(), "diff", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
-  H5::DataSet ds = writeDataSetToGroup<DynArray<double>>(root, string("diff"), xy );
+  H5::DataSet ds = writeDataSetToGroup(root, string("diff"), xy );
   }
 
   {
@@ -1864,7 +1864,7 @@ void TestSaturationCurve()
     xy[i*3+2] = ds;
   }
   //h5cpp::Dataset ds = h5cpp::create_dataset(f.root(), "ds", h5cpp::Dataspace::simple_dims(n, 3), get_ptr(xy));
-  H5::DataSet ds = writeDataSetToGroup<DynArray<double>>(root, string("ds"), xy );
+  H5::DataSet ds = writeDataSetToGroup(root, string("ds"), xy );
   }
   
   f.close();

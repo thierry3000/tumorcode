@@ -54,9 +54,8 @@ SetupFieldLattice:
 imports_ = [ f.strip() for f in
     '\
     LatticeData, \
-    read_lattice_data_from_hdf, \
     read_lattice_data_from_hdf_by_filename, \
-    write_lattice_data_to_hdf, \
+    write_lattice_data_to_hdf_by_filename, \
     export_network_for_povray, \
     ClipShape, \
     povray_clip_object_str, \
@@ -104,9 +103,9 @@ locals().update( (f,getattr(libkrebs, f)) for f in imports_)
       ** values are optional
 '''
 calc_vessel_hydrodynamics_Ccode = libkrebs.calc_vessel_hydrodynamics
-read_vessel_positions_from_hdf_ = libkrebs.read_vessel_positions_from_hdf
+#read_vessel_positions_from_hdf_ = libkrebs.read_vessel_positions_from_hdf
 read_vessel_positions_from_hdf_by_filename = libkrebs.read_vessel_positions_from_hdf_by_filename
-read_vessel_positions_from_hdf_edges_ = libkrebs.read_vessel_positions_from_hdf_edges
+#read_vessel_positions_from_hdf_edges_ = libkrebs.read_vessel_positions_from_hdf_edges
 #read_vessel_positions_from_hdf_world_ = libkrebs.read_vessel_positions_from_hdf_world
 flood_fill_ = libkrebs.flood_fill
 distancemap_ = libkrebs.distancemap

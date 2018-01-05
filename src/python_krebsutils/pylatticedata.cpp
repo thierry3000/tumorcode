@@ -158,6 +158,15 @@ void write_lattice_data_to_hdf(py::object py_h5grp, const std::string &name, con
 }
 #endif
 
+void write_lattice_data_to_hdf_by_filename(const string fn, const string path, const PyLd *cpp_py_ld)
+{
+  H5::H5File *writeToFile = new H5::H5File(fn, H5F_ACC_RDWR);
+  H5::Group g = writeToFile->openGroup(path);
+  cpp_py_ld->get().WriteHdf(g);
+  //h5cpp::Group g = PythonToCppGroup(py_h5grp);
+  //h5cpp::Group g_ld = g.create_group(name);
+  //cpp_py_ld->get().WriteHdf(g_ld);
+}
 
 void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float safety_spacing, LatticeDataQuad3d &ld);
 
@@ -259,6 +268,7 @@ void exportLatticeData()
   py::def("read_lattice_data_from_hdf_by_filename", read_lattice_data_from_hdf_by_filename,
           py::return_value_policy<py::manage_new_object>());
 //   py::def("write_lattice_data_to_hdf", write_lattice_data_to_hdf);
+  py::def("write_lattice_data_to_hdf_by_filename", write_lattice_data_to_hdf_by_filename);
   py::def("SetupFieldLattice", PySetupFieldLattice, py::return_value_policy<py::manage_new_object>());
   
   //serialize fuck

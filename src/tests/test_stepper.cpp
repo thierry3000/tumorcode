@@ -197,8 +197,8 @@ void run()
       t += dt;
       if (t > tend + 0.5*dt) break;
     }
-    H5::DataSet dsx = writeDataSetToGroup<DynArray<double>>(g, string("x"), ax);
-    H5::DataSet dsy =writeDataSetToGroup<DynArray<double>>(g, string("y"), ay);
+    H5::DataSet dsx = writeDataSetToGroup(g, string("x"), ax);
+    H5::DataSet dsy =writeDataSetToGroup(g, string("y"), ay);
 //     h5cpp::create_dataset<>(g, "x", ax);
 //     h5cpp::create_dataset<>(g, "y", ay);
   }

@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/python/str.hpp>
 #include <boost/python/call.hpp>
 #include <boost/python/exec.hpp>
+#include <pyerrors.h>
 
 #include <fenv.h>
 #include <map>
@@ -860,13 +861,18 @@ void export_calcflow();
 void export_compute_interpolation_field();
 void export_get_Murray();
 
-
+// see http://www.boost.org/doc/libs/1_66_0/libs/python/doc/html/tutorial/tutorial/exception.html
+// struct PodBayDoorException;
+// void translator(const PodBayDoorException& x) {
+//   PyErr_SetString(PyExc_UserWarning, "I'm sorry Dave...");
+// }
 #ifdef DEBUG
 BOOST_PYTHON_MODULE(libkrebs_d)
 #else
 BOOST_PYTHON_MODULE(libkrebs_)
 #endif
 {
+  //py::register_exception_translator<PodBayDoorException>(&translator);
   Py_Initialize();
 #if BOOST_VERSION>106300
   np::initialize();

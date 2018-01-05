@@ -42,7 +42,7 @@ void WriteHdfPtree(H5::Group f, const ptree &pt, HdfWritePtreeAs storage_mode)
       }
       else
       {
-	writeDataSetToGroup<string>(f,k, v.data());
+	//writeDataSetToGroup(f,k, v.data());
       }
 //         f.attrs().set(k, v.data());
 /*	

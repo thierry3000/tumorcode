@@ -59,7 +59,7 @@ void WriteHdfHistogram( H5::Group g, const string &id, const BasicHistogram1D<fl
   writeAttrToH5(ds,"FIELD_1_NAME", h.name );
   if( ue)
   {
-    writeAttrToH5(ds,"FIELD_2_NAME","rmse" );
+    writeAttrToH5(ds,"FIELD_2_NAME",string("rmse") );
   }
   //h5::Attributes attrs = ds.attrs();
 //   attrs.set("TITLE",h.name);
@@ -117,7 +117,8 @@ H5::Group DebugOutVessels(const Grower &grower, const string &name)
       tmp2[i] = grower.last_remodeling_action(vl.GetNode(i));
     }
     //h5::create_dataset(vesselgrp.open_group("nodes"), "action", tmp2);
-    writeDataSetToGroup<DynArray<uchar>>(vesselgrp.openGroup("nodes"), string("action"), tmp2);
+    //writeDataSetToGroup<DynArray<uchar>>(vesselgrp.openGroup("nodes"), string("action"), tmp2);
+    writeDataSetToGroup(vesselgrp.openGroup("nodes"), string("action"), tmp2);
 #endif
   }
   ++number;
@@ -141,7 +142,7 @@ void DoOutput(H5::Group root,
   MeasureRoot(vl,arad,aflow,arootcnt,vrad,vflow,vrootcnt);
 
   //cout << "ouput -> " << root.get_file().get_file_name() << ":" << root.get_name() << endl;
-  cout << "ouput -> " << root.getFileName() << ":" << getH5Name(root) << endl;
+  cout << "ouput -> " << root.getFileName() << ":" << getH5GroupName(root) << endl;
 
   {
     //h5::Attributes a;
@@ -209,10 +210,10 @@ void DoOutput(H5::Group root,
         flags[i] = e.flags;
       }
       H5::Group gg = g.createGroup("roots");
-      writeDataSetToGroup<DynArray<int>>(gg, string("lattice_pos"), pos);
-      writeDataSetToGroup<DynArray<uchar>>(gg, string("flags"), flags);
-      writeDataSetToGroup<DynArray<int>>(gg, string("len"), len);
-      writeDataSetToGroup<DynArray<char>>(gg, string("dir"), dir);
+      writeDataSetToGroup(gg, string("lattice_pos"), pos);
+      writeDataSetToGroup(gg, string("flags"), flags);
+      writeDataSetToGroup(gg, string("len"), len);
+      writeDataSetToGroup(gg, string("dir"), dir);
 //       h5::create_dataset(gg, "lattice_pos", pos); int
 //       h5::create_dataset(gg, "flags", flags); uchar
 //       h5::create_dataset(gg, "len", len); int
@@ -242,7 +243,7 @@ void DoOutput(H5::H5File &file,
           grower.GetGfAtNodes(tmp);
           //h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
 	  //h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
-	  writeDataSetToGroup<DynArray<float>>(root.openGroup("vessels/nodes"), string("gf"), tmp);
+	  writeDataSetToGroup(root.openGroup("vessels/nodes"), string("gf"), tmp);
           tmp.clear();
         }
 #endif

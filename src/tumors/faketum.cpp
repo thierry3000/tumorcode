@@ -219,8 +219,12 @@ int FakeTum::FakeTumorSim::run()
     cout << "--------------------"<< endl;
 
     H5::Group h5params = file.openGroup("/parameters");
-    params.vesselfile_message = readAttrFromGroup<string>(h5params, string("MESSAGE"));
-    params.vesselfile_ensemble_index = readAttrFromGroup<int>(h5params, string("ENSEMBLE_INDEX"));
+    string message;
+    readAttrFromH5(h5params, string("MESSAGE"),message);
+    params.vesselfile_message = message;
+    int index;
+    readAttrFromH5(h5params, string("ENSEMBLE_INDEX"),index);
+    params.vesselfile_ensemble_index = index;
 //     params.vesselfile_message = file.root().open_group("parameters").attrs().get<string>("MESSAGE");
 //     params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
     

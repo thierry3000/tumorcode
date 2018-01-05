@@ -76,7 +76,8 @@ def CenterTheLattice(f, h5_path):
     ld = krebsutils.read_lattice_data_from_hdf(f[h5_path])   
     del f[h5_path]
     ld = ld.GetCentered()
-    krebsutils.write_lattice_data_to_hdf(f, h5_path, ld)
+    fn=str(f.file.filename)
+    krebsutils.write_lattice_data_to_hdf_by_filename(fn, h5_path, ld)
     
 
 def RunsOnClient(configstring_file, workdir, vesselfilename):

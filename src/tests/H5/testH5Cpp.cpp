@@ -28,10 +28,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
 #include <string>
+# include <boost/random.hpp>
+# include <boost/random/random_device.hpp>  // creates real random number from system functions
 using namespace std;
 
 #include <H5Cpp.h>
 #include <eigen3/Eigen/Core>
+
+//create fake data
+boost::random::random_device dev;         // produces randomness out of thin air
+boost::random::uniform_01<> uni_f;                 // see pseudo-random number generators
+//store fake data
+#include "../../mwlib/dynamicarray.h"
 
 template<class T, int d>
 class Vec : public Eigen::Matrix<T, d, 1>
@@ -67,6 +75,7 @@ class Vec : public Eigen::Matrix<T, d, 1>
 typedef Vec<float, 3> Float3;
 typedef Vec<float, 2> Float2;
 typedef Vec<int,2> Int2;
+typedef Vec<int,2> Int3;
 typedef Vec<int,6> Int6;
 typedef Vec<double,6> Double6;
 typedef Vec<double,2> Double2;
@@ -114,16 +123,20 @@ void writeAttrToH5(H5::Group g, const string &attr_name, const  string &value)
   { 
     // Create new dataspace for attribute
     H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
-
-    // Create new string datatype for attribute
-    H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
-
-    // Set up write buffer for attribute
+    
+    H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
+    
     const H5std_string strwritebuf (value);
-
-    // Create attribute and write to it
-    H5::Attribute myatt_in = g.createAttribute(attr_name, strdatatype, attr_dataspace);
-    myatt_in.write(strdatatype, strwritebuf); 
+    
+    try{
+      H5::Attribute myatt_in = g.createAttribute(attr_name, strdatatype, attr_dataspace);
+      myatt_in.write(strdatatype, strwritebuf);
+    }
+    catch(H5::Exception error)
+    {
+      error.printError();
+    }
+   
   }
 };
 
@@ -287,6 +300,7 @@ void writeAttrToH5(H5::Group h, string attr_name,  Bool3 &value)
 //   }
 //   
 // }
+
 template<class T>
 void readAttrFromH5(H5::Group g, const string &attr_name, T &output_buffer)
 {
@@ -301,8 +315,105 @@ void readAttrFromH5(H5::Group g, const string &attr_name, T &output_buffer)
     error.printError();
   }
 }
+template<>
+void readAttrFromH5<string>(H5::Group g, const string &attr_name, string &output_buffer)
+{ 
+  H5::Attribute att_to_read = g.openAttribute(attr_name);
+  //H5::DataType type = att_to_read.getDataType();
+  
+  // Create new dataspace for attribute
+  H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
 
+  // Create new string datatype for attributeH5T_VARIABLE
+  H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
 
+  // Set up read buffer for attribute
+  H5std_string strreadbuf ("");
+
+  // Create attribute and write to it
+  att_to_read.read(strdatatype, strreadbuf); 
+  output_buffer = strreadbuf;
+  cout << "read string works" << endl;
+}
+template<class T>
+H5::DataType getH5TypeFromCpp()
+{
+  H5::DataType thisWritingType;
+  if(typeid(T) == typeid(float))
+  {
+    thisWritingType = H5::PredType::NATIVE_FLOAT;
+  }
+  else if(typeid(T) == typeid(Float3))
+  {
+    thisWritingType = H5::PredType::NATIVE_FLOAT;
+  }
+  else if(typeid(T) == typeid(int))
+  {
+    thisWritingType = H5::PredType::NATIVE_INT;
+  }
+  else if(typeid(T) == typeid(Int3))
+  {
+    thisWritingType = H5::PredType::NATIVE_INT;
+  }
+  else if(typeid(T) == typeid(bool))
+  {
+    thisWritingType = H5::PredType::NATIVE_CHAR;
+  }
+  else
+  {
+    cout << "unsupported Template type in writeDataSetToGroup!" << endl;
+    exit(1);
+  }
+  return thisWritingType;
+}
+template<class T>
+H5::DataSet writeDataSetToGroup(H5::Group g, const string &dataset_name, DynArray<T> &value)
+{
+  int sizeOfDynArray = value.size();
+  T continousMemoryArrary[sizeOfDynArray];
+  for( int i=0; i<sizeOfDynArray;++i)
+  {
+    continousMemoryArrary[i] = T(value[i]);
+  }
+  int rank = 2;
+  hsize_t dims[rank];
+  dims[0]=sizeOfDynArray;
+  H5::DataType thisWritingType = getH5TypeFromCpp<T>();
+  if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
+  {
+    dims[1] = 3;
+  }
+  else
+  {
+    dims[1] = 1;
+  }
+#ifdef DEBUG
+  cout << "we are writting data of size (" << dims[0] << ", " << dims[1] << "!" <<endl;
+#endif
+  H5::DataSpace dataspace( rank, dims);
+  H5::DataSet ds = g.createDataSet(dataset_name, thisWritingType, dataspace);
+  ds.write(&continousMemoryArrary, thisWritingType, dataspace);
+  return ds;
+}
+
+template <class T>
+void readDataSetFromGroup(H5::Group g, const string &dataset_name, DynArray<T> &readIn)
+{
+  H5::DataSet dset = g.openDataSet(dataset_name);
+  H5::DataSpace dataspace = dset.getSpace();
+  hsize_t dims[dataspace.getSimpleExtentNdims()];
+  cout << dataspace.getSimpleExtentDims(dims) << endl;
+  cout << dims[0] << endl;
+  cout << dims[1] << endl;
+  T arr[dims[0]];
+  H5::DataType thisWritingType = getH5TypeFromCpp<T>();
+  dset.read(&arr, thisWritingType);
+  readIn.resize(dims[0]);
+  for( int i=0;i<dims[0];++i)
+  {
+    readIn[i] = arr[i];
+  }
+}
 
 int main() 
 {
@@ -346,25 +457,64 @@ int main()
     writeAttrToH5(g, string("test myBool3"), myBool3);
     writeAttrToH5(g, string("test myBool"), myBool);
     
-    try{
-      int result;
-      readAttrFromH5(g, string("test int"), result);
-      cout << result << endl;
-      float result2;
-      readAttrFromH5(g, string("test float"), result2);
-      cout << result2 << endl;
-      Float3 result3;
-      readAttrFromH5(g, string("test Float3"), result3);
-      cout << "1: " << result3[0] << endl;
-      cout << "2: " << result3[1] << endl;
-      cout << "3: " << result3[2] << endl;
-    }
-    catch(H5::Exception error)
+    
+    int result;
+    readAttrFromH5(g, string("test int"), result);
+    cout << result << endl;
+    float result2;
+    readAttrFromH5(g, string("test float"), result2);
+    cout << result2 << endl;
+    Float3 result3;
+    readAttrFromH5(g, string("test Float3"), result3);
+    cout << "1: " << result3[0] << endl;
+    cout << "2: " << result3[1] << endl;
+    cout << "3: " << result3[2] << endl;
+    Bool3 result4;
+    readAttrFromH5(g, string("test myBool3"), result4);
+    cout << "1: " << result4[0] << endl;
+    cout << "2: " << result4[1] << endl;
+    cout << "3: " << result4[2] << endl;
+    string readOutString;
+    readAttrFromH5(g, string("test string"), readOutString);
+    cout << "test string: " << readOutString <<endl;
+    
+    H5::Group myDataGroup = f.createGroup("data");
+    
+    const int n=20;
+    DynArray<float> fakeData;
+    DynArray<Float3> fakeData3D;
+    DynArray<int> fakeDataInt;
+    fakeData.resize(n);
+    fakeData3D.resize(n);
+    fakeDataInt.resize(n);
+    float avg =0;
+    for (int i=0; i<n; ++i)
     {
-      error.printError();
+      float b = uni_f(dev);
+      fakeData[i]= b;
+      fakeData3D[i] = Float3(uni_f(dev),uni_f(dev),uni_f(dev));
+      fakeDataInt[i] = (int) 300*uni_f(dev);
+      avg = avg+b;
+      cout << b << endl;
     }
+    cout << avg/n << endl;
+    fakeData3D[10] = Float3(33,22,11);
     
+    writeDataSetToGroup(myDataGroup, string("fakeData"), fakeData);
+    writeDataSetToGroup(myDataGroup, string("fakeData3D"), fakeData3D);
+    writeDataSetToGroup(myDataGroup, string("fakeDataInt"), fakeDataInt);
     
+    DynArray<float> readBack;
+    readDataSetFromGroup(myDataGroup, string("fakeData"), readBack);
+    cout << readBack[5] << endl;
+    
+    DynArray<Float3> readBack3D;
+    readDataSetFromGroup(myDataGroup, string("fakeData3D"), readBack3D);
+    cout << readBack3D[5] << endl;
+    
+    DynArray<int> readBackInt;
+    readDataSetFromGroup(myDataGroup, string("fakeDataInt"), readBackInt);
+    cout << readBackInt[5] << endl;
     
     f.close();
     return 0;

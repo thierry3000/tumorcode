@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "hdfio.h"
 #include "lattice-data-polymorphic.h"
 #include <string>
 
@@ -77,17 +78,19 @@ static std::auto_ptr<LatticeData> ReadHdfLdGeneric(H5::Group g)
 // }
 std::auto_ptr<LatticeData> LatticeData::ReadHdf(H5::Group g)
 {
-  H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
-  H5std_string strreadbuff("");
-  H5::Attribute myatt_out = g.openAttribute("TYPE");
-  myatt_out.read(strdatatype,strreadbuff);
+//   H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
+//   H5std_string strreadbuff("");
+//   H5::Attribute myatt_out = g.openAttribute("TYPE");
+//   myatt_out.read(strdatatype,strreadbuff);
   //const string type = g.attrs().get<string>("TYPE");
-  if (strreadbuff == "QUAD3D")
+  string type;
+  readAttrFromH5(g, string("TYPE"), type);
+  if (type == "QUAD3D")
     return ReadHdfLdGeneric<LatticeDataQuad3d>(g);
-  else if (strreadbuff == "FCC")
+  else if (type == "FCC")
     return ReadHdfLdGeneric<LatticeDataFCC>(g);
   else
-    throw std::runtime_error(boost::str(boost::format("unknown lattice data type %s in hdf file") % strreadbuff));
+    throw std::runtime_error(boost::str(boost::format("unknown lattice data type %s in hdf file") % type));
 }
 
 

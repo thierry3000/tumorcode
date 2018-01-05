@@ -109,10 +109,12 @@ MurrayCoeffs::MurrayCoeffs(CompressedFlowNetwork &fl_,const VesselList3d *vl, co
   }
 }
 //serial working version
-#if 0 // not H5Cpp ready
-static py::object get_Murray_scale(const py::object &vess_grp_obj)
+#if 1 // not H5Cpp ready
+static py::object get_Murray_scale(const string fn, const string path)
 {
-  h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
+  //h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
+  H5::H5File *readInFile = new H5::H5File(fn, H5F_ACC_RDONLY);
+  H5::Group vesselgroup = readInFile->openGroup(path);
   std::auto_ptr<VesselList3d> vl;
   vl = ReadVesselList3d(vesselgroup, make_ptree("filter", true));
   int ncnt = vl.get()->GetNCount();
@@ -427,13 +429,16 @@ static py::object get_Murray2(const py::object &vess_grp_obj)
 #endif
 #endif
 
-#if 0 //not H5Cpp ready
+#if 1 //not H5Cpp ready
 #if BOOST_VERSION>106300
 //try parallel here!!!
-static py::object get_Murray2_p(const py::object &vess_grp_obj)
+
+static py::object get_Murray2_p(const string fn, const string path)
 {
+  H5::H5File *readInFile = new H5::H5File(fn, H5F_ACC_RDONLY);
+  H5::Group vesselgroup = readInFile->openGroup(path);
   //double alpha = py::extract<double>(murrayalpha);
-  h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
+  //h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
   std::auto_ptr<VesselList3d> vl;
   vl = ReadVesselList3d(vesselgroup, make_ptree("filter", true));
   int ncnt = vl.get()->GetNCount();
@@ -496,10 +501,14 @@ static py::object get_Murray2_p(const py::object &vess_grp_obj)
 }
 #else
 //try parallel here!!!
-static py::object get_Murray2_p(const py::object &vess_grp_obj)
+static py::object get_Murray2_p(const string fn, const string path)
 {
+  H5::H5File *readInFile = new H5::H5File(fn, H5F_ACC_RDONLY);
+  H5::Group vesselgroup = readInFile->openGroup(path);
+//static py::object get_Murray2_p(const py::object &vess_grp_obj)
+//{
   //double alpha = py::extract<double>(murrayalpha);
-  h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
+//  h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
   std::auto_ptr<VesselList3d> vl;
   vl = ReadVesselList3d(vesselgroup, make_ptree("filter", true));
   int ncnt = vl.get()->GetNCount();
@@ -684,6 +693,6 @@ void export_get_Murray()
   //py::def("get_Murray2", murray::get_Murray2);
   
   //these 2 were used
-  //py::def("get_Murray2", murray::get_Murray2_p);
-  //py::def("get_Murray_scale", murray::get_Murray_scale);
+  py::def("get_Murray2", murray::get_Murray2_p);
+  py::def("get_Murray_scale", murray::get_Murray_scale);
 }

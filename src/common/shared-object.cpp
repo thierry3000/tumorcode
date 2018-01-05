@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
   //#define DOTIMING 1
-
 #include "shared-objects.h"
 #include "vessels3d.h"
 #include "continuum-flow.h"
@@ -73,7 +72,9 @@ TumorTypes determineTumorType(boost::optional<H5::Group> tumorgroup)
     
     try
     {
-      string detailedTumorDescription = readAttrFromGroup<string>(*tumorgroup, string("TYPE"));
+      string detailedTumorDescription;
+      //now the BUG is here!
+      readAttrFromH5(*tumorgroup, string("TYPE"), detailedTumorDescription);
       if( detailedTumorDescription == "faketumor" )
       {
         tumortype = TumorTypes::FAKE;
@@ -145,7 +146,8 @@ void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDe
   {
     //there is a faketumor group provided
     //double tumor_radius = tumorgroup->attrs().get<double>("TUMOR_RADIUS");
-    double tumor_radius = readAttrFromGroup<double>(*tumorgroup, "TUMOR_RADIUS");
+    double tumor_radius;
+    readAttrFromH5(*tumorgroup, "TUMOR_RADIUS",tumor_radius);
     phases = TissuePhases(3, grid.Box());//consistent labeling problems Tissue is 2 in enumeration
     #pragma omp parallel
     {
@@ -168,7 +170,8 @@ void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDe
     H5::DataSet cell_vol_fraction_ds = tumorgroup->openDataSet("conc");
     H5::DataSet tumor_fraction_ds = tumorgroup->openDataSet("ptc");
     H5::DataSet necro_fraction_ds = tumorgroup->openDataSet("necro");
-    string latticePath = readAttrFromGroup<string>(*tumorgroup, "LATTICE_PATH");
+    string latticePath;
+    readAttrFromH5(*tumorgroup, "LATTICE_PATH", latticePath);
     
     H5::H5File file(tumor_fraction_ds.getFileName(), H5F_ACC_RDONLY);
     H5::Group ldgroup = file.openGroup(latticePath);
@@ -504,20 +507,22 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group vesselgroup, const ptree 
   
   std::auto_ptr<VesselList3d> vl;
   typedef polymorphic_latticedata::LatticeData LatticeData;
-  // Create new string datatype for attribute
-  H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
-  H5std_string strreadbuff("");
-  H5::Attribute myatt_out = vesselgroup.openAttribute("CLASS");
-  myatt_out.read(strdatatype,strreadbuff);
+  string type_of_vessel_network;
+  readAttrFromH5(vesselgroup, string("CLASS"), type_of_vessel_network);
+//   // Create new string datatype for attribute
+//   H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
+//   H5std_string strreadbuff("");
+//   H5::Attribute myatt_out = vesselgroup.openAttribute("CLASS");
+//   myatt_out.read(strdatatype,strreadbuff);
   //std::string myString = vesselgroup.openAttribute("CLASS");
   //h5cpp::Attributes a = vesselgroup.attrs();
 /*
   if(vesselgroup.attrs().get<std::string>("CLASS") == "GRAPH")
     */
-  if(strreadbuff == "GRAPH")
+  if(type_of_vessel_network == "GRAPH")
   {
 #ifdef DEBUG
-    cout << "read vl from: \n " << strreadbuff << endl;
+    cout << "read vl from: \n " << type_of_vessel_network << endl;
 #endif
     //we have a lattice struture->get it, could also produce an error
         /*
@@ -764,8 +769,8 @@ void WriteVesselList3d(const VesselList3d &vl, H5::Group vesselgroup, const ptre
   
   int ecnt = vl.GetECount();
   int ncnt = vl.GetNCount();
-  std::vector<double> arrd;
-  std::vector<float> arrf;
+  DynArray<double> arrd;
+  DynArray<float> arrf;
 
   arrd.resize(ncnt);
 
@@ -780,7 +785,7 @@ void WriteVesselList3d(const VesselList3d &vl, H5::Group vesselgroup, const ptre
     for(int i=0; i<ncnt; ++i) { arrd[i] = vl.GetNode(i)->press; }
     //h5::Dataset ds = h5::create_dataset(vesselgroup,"nodes/pressure",arrd);
     //H5::DataSet ds = vesselgroup.createDataSet("nodes/pressure");
-    writeDataSetToGroup<std::vector<double>>(vesselgroup, string("nodes/pressure"), arrd);
+    writeDataSetToGroup(vesselgroup, string("nodes/pressure"), arrd);
     //H5::DataSet ds = h5::create_dataset(vesselgroup,"nodes/pressure",arrd);
     //ds.attrs().set("MODE","linear");
     writeAttrToH5(vesselgroup.openDataSet(string("nodes/pressure")),string("MODE"), string("linear"));
@@ -797,7 +802,7 @@ void WriteVesselList3d(const VesselList3d &vl, H5::Group vesselgroup, const ptre
 #define _WRITE_STATE_FILL_ARRAY_EDGE(arr,var,name)\
 {\
   for(int i=0; i<ecnt; ++i) { arr[i] = vl.GetEdge(i)->var; }\
-  H5::DataSet ds = writeDataSetToGroup<std::vector<double>>(vesselgroup, string(name), arr);\
+  H5::DataSet ds = writeDataSetToGroup(vesselgroup, string(name), arr);\
   writeAttrToH5(ds, string("MODE"), string("const"));\
 }
   arrf.resize(ecnt);
@@ -824,14 +829,14 @@ void WriteVesselList3d(const VesselList3d &vl, H5::Group vesselgroup, const ptre
     _WRITE_STATE_FILL_ARRAY_EDGE(arrd,timeInTumor,"edges/timeInTumor");
     _WRITE_STATE_FILL_ARRAY_EDGE(arrd,timeSprout,"edges/timeSprout");
   }
-  std::vector<uchar> tmp2;
+  DynArray<uchar> tmp2;
   tmp2.resize(vl.GetNCount());
   //DynArray<uchar> tmp2(vl.GetNCount());
   for (int i=0; i<vl.GetNCount(); ++i)
   {
     tmp2[i] = vl.GetNode(i)->flags;
   }
-  H5::DataSet nodeflags = writeDataSetToGroup<std::vector<uchar>>(vesselgroup, string("nodes/nodeflags"), tmp2);
+  H5::DataSet nodeflags = writeDataSetToGroup(vesselgroup, string("nodes/nodeflags"), tmp2);
   //h5::create_dataset(vesselgroup, "nodes/nodeflags", tmp2);
 }
 

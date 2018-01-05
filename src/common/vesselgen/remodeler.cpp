@@ -1425,8 +1425,10 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
         if (debug_output_every_configuration)
           DebugOutVessels(*this, str(format("after_remodel_%02i_%05i") % hierarchy_level % iteration_number_on_level));
 
-        if (!callback(boost::cref(*this))) break;
-        if (my::checkAbort()) return;
+        if (!callback(boost::cref(*this))) 
+	  break;
+        if (my::checkAbort()) 
+	  return;
       }
 
       HierarchicalGrowth();
@@ -1449,8 +1451,10 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
     if (debug_output_every_configuration)
       DebugOutVessels(*this, str(format("after_remodel_%02i_%05i") % hierarchy_level % iteration_number_on_level));
 
-    if (!callback(boost::cref(*this))) break;
-    if (my::checkAbort()) return;
+    if (!callback(boost::cref(*this))) 
+      break;
+    if (my::checkAbort()) 
+      return;
   }
 
 #if 0

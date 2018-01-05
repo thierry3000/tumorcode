@@ -27,7 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef HDFIO_H
 #define HDFIO_H
-
+#include <H5Cpp.h>
+#include <H5Exception.h>
 
 #include "mwlib/helpers-vec.h"
 
@@ -35,9 +36,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/hdf_wrapper_ptree.h"
 #include "mwlib/field.h"
 
-#include <string>
-#include <H5Cpp.h>
-#include <H5Exception.h>
+
+
 
 
 
@@ -69,47 +69,69 @@ H5::DataSet WriteAveragedFaceVariableField(H5::Group file, const std::string &id
 H5::Group RequireLatticeDataGroup(H5::H5File f, const string &name, const LatticeDataQuad3d &ld);
 H5::Group RequireLatticeDataGroup(H5::Group g, const LatticeDataQuad3d &ld);
 
-template<typename T>
-T readAttrFromGroup(H5::Group g, string attr_name);
 
-template<typename T>
-T readAttrFromDataSet(H5::DataSet g, string attr_name);
 
 /** @brief
- * write attributes to Group 
+ * function switch data type from cpp to H5
  */
-void writeAttrToH5(H5::Group h, const string &attr_name,  const Int6 &value);
-void writeAttrToH5(H5::Group h, const string &attr_name,  const Int3 &value);
-void writeAttrToH5(H5::Group h, const string &attr_name,  const int &value);
-void writeAttrToH5(H5::Group h, const string &attr_name,  const Float3 &value);
-void writeAttrToH5(H5::Group h, const string &attr_name,  const float &value);
-void writeAttrToH5(H5::Group h, const string &attr_name,  const Double3 &value);
-void writeAttrToH5(H5::Group h, const string &attr_name,  const double &value);
-void writeAttrToH5(H5::Group h, const string &attr_name,  const string &value);
-void writeAttrToH5(H5::Group h, const string &attr_name,  const Bool3 &value);
-void writeAttrToH5(H5::Group h, const string &attr_name,  const bool &value);
+template<class T>
+H5::DataType getH5TypeFromCpp();
+
 /** @brief
- * write attributes to DataSet 
+ * reading attributes from 
+ *	either
+ *H5::Group or H5::DataSet, maybe this could be merged in future! 
+ *
  */
-void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Int6 &value);
-void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Int3 &value);
-void writeAttrToH5(H5::DataSet h, const string &attr_name,  const int &value);
-void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Float3 &value);
-void writeAttrToH5(H5::DataSet h, const string &attr_name,  const float &value);
-void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Double3 &value);
-void writeAttrToH5(H5::DataSet h, const string &attr_name,  const double &value);
-void writeAttrToH5(H5::DataSet h, const string &attr_name,  const string &value);
-void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Bool3 &value);
-void writeAttrToH5(H5::DataSet h, const string &attr_name,  const bool &value);
+// template<class T>
+// void readAttrFromH5(H5::Group g, const string &attr_name, T &output_buffer);
+// template<class T>
+// void readAttrFromH5(H5::DataSet g, const string &attr_name, T &output_buffer);
+
+template<class U, class T>
+void readAttrFromH5(U g, const string &attr_name, T &output_buffer);
+
+/** @brief
+ * write attributes to Group or DataSet
+ */
+template <class U, class T>
+void writeAttrToH5(U h, const string &attr_name,  const T &value);
+
+// void writeAttrToH5(H5::Group h, const string &attr_name,  const Int6 &value);
+// void writeAttrToH5(H5::Group h, const string &attr_name,  const Int3 &value);
+// void writeAttrToH5(H5::Group h, const string &attr_name,  const int &value);
+// void writeAttrToH5(H5::Group h, const string &attr_name,  const Float3 &value);
+// void writeAttrToH5(H5::Group h, const string &attr_name,  const float &value);
+// void writeAttrToH5(H5::Group h, const string &attr_name,  const Double3 &value);
+// void writeAttrToH5(H5::Group h, const string &attr_name,  const double &value);
+// void writeAttrToH5(H5::Group h, const string &attr_name,  const string &value);
+// void writeAttrToH5(H5::Group h, const string &attr_name,  const Bool3 &value);
+// void writeAttrToH5(H5::Group h, const string &attr_name,  const bool &value);
+// /** @brief
+//  * write attributes to DataSet 
+//  */
+// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Int6 &value);
+// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Int3 &value);
+// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const int &value);
+// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Float3 &value);
+// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const float &value);
+// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Double3 &value);
+// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const double &value);
+// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const string &value);
+// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Bool3 &value);
+// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const bool &value);
 
 
 
 template<class T>
-H5::DataSet writeDataSetToGroup(H5::Group g, string attr_name, T value);
+H5::DataSet writeDataSetToGroup(H5::Group g, const string &attr_name, DynArray<T> &value);
 
 template<class T>
-void readDataSetFromGroup(H5::Group, string attr_name, T *placeToStore);
+void readDataSetFromGroup(H5::Group, const string &attr_name, DynArray<T> &placeToStore);
 
+/** @brief
+ * returns the location of a hdf object within the file
+ */
 template<class T>
-string getH5Name(T g);
+string getH5GroupName(T g);
 #endif

@@ -46,7 +46,7 @@ H5::DataSet WriteArray3D(H5::Group file, const std::string &DATASET_NAME, const 
 template<class Vector>
 H5::DataSet WriteVectorArray3D(H5::Group  file,const std::string &id, const ConstArray3d<Vector> &a)
 {
-//     const Int3 s = a.size();
+  const Int3 s = a.size();
 //     h5cpp::Dataspace dspace = h5cpp::Dataspace::simple_dims(s[0],s[1],s[2], sizeof(Vector)/sizeof(typename Vector::value_type));
 //     Array3d<Vector> tmp(Int3(s[2],s[1],s[0]));
 //     tmp.swapAxes(0,2);
@@ -86,7 +86,6 @@ void ReadVectorArray3D(H5::DataSet ds, Array3d<Vector> &a)
 //   a.fill(tmp);
 }
 
-
 /*
 #define INSTANTIATE(T)\
   template h5cpp::Dataset WriteArray3D<T>(h5cpp::Group file, const std::string &id, const ConstArray3d<T> &a, const h5cpp::Datatype &disktype);\
@@ -103,5 +102,22 @@ INSTANTIATE(double)
 INSTANTIATE(int)
 INSTANTIATE(char)
 INSTANTIATE_VEC(float)
-INSTANTIATE_VEC(double)*/
+INSTANTIATE_VEC(double)
+*/
 
+#define INSTANTIATE(T)\
+  template H5::DataSet WriteArray3D<T>(H5::Group file, const std::string &id, const ConstArray3d<T> &a);\
+  template void ReadArray3D<T>(H5::DataSet ds, Array3d<T> &a);
+
+#define INSTANTIATE_VEC(T)\
+  template H5::DataSet WriteVectorArray3D<Vec<T,3> >(H5::Group  file,const std::string &id, const ConstArray3d<Vec<T,3> > &a);\
+  template H5::DataSet WriteVectorArray3D<Vec<T,2> >(H5::Group  file,const std::string &id, const ConstArray3d<Vec<T,2> > &a);\
+  template H5::DataSet WriteVectorArray3D<Vec<T,1> >(H5::Group  file,const std::string &id, const ConstArray3d<Vec<T,1> > &a);\
+  template void ReadVectorArray3D<Vec<T,3> >(H5::DataSet ds, Array3d<Vec<T,3> > &a);
+
+INSTANTIATE(float)
+INSTANTIATE(double)
+INSTANTIATE(int)
+INSTANTIATE(char)
+INSTANTIATE_VEC(float)
+INSTANTIATE_VEC(double)

@@ -205,19 +205,19 @@ void exportVectorClassConverters()
 //   mw_py_impl::VecToPy<bool, 3>::Register();
 }
 
-//template<class T>
-// double checkedExtractFromDict(const py::dict &d, const char* name)
-// {
-//   try
-//   {
-//     return py::extract<double>(d.get(name));
-//   }
-//   catch (const py::error_already_set &e) 
-//   {
-//     std::cerr << format("unable to extract parameter '%s': ") % name;
-//     throw e; // don't every try to handle this!
-//   }
-// }
+template<class T>
+double checkedExtractFromDict(const py::dict &d, const char* name)
+{
+  try
+  {
+    return py::extract<double>(d.get(name));
+  }
+  catch (const py::error_already_set &e) 
+  {
+    std::cerr << format("unable to extract parameter '%s': ") % name;
+    throw e; // don't every try to handle this!
+  }
+}
 
 
 }//namespace mw_py_impl

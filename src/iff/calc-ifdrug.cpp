@@ -113,7 +113,7 @@ void Params::assign(const ptree& pt)
 void Params::WriteH5(H5::Group g) const
 {
 //#define SETP(id) g.attrs().set(#id,id)
-#define SETP(id) writeAttrToH5<string>(g, #id, id)
+//#define SETP(id) writeAttrToH5<string>(g, #id, id)
 //#define SETP2(id,val) g.attrs().set(#id,val)
   switch(inject_mode)
   {

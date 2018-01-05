@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "lattice-data-polymorphic.h"
 #include "mwlib/listgraph.h"
-//#include "shared-objects.h"
+#include "shared-objects.h"
 #include "mwlib/mempool.h"
 #include "mwlib/math_ext.h"
 #include "calcflow.h"

@@ -464,10 +464,10 @@ void runLS(const py::str &param_info_str, const py::object &py_ld, const py::dic
   {
     H5::H5File f = observer.openH5File();
     H5::Group g = f.createGroup("gradientmeasure");
-    writeDataSetToGroup<DynArray<double>>(g, string("time"), model.time);
+    writeDataSetToGroup(g, string("time"), model.time);
     //H5::createDataset(g, "time", model.time);
     //h5cpp::create_dataset(g, "gradnorm", model.gradientnorm);
-    writeDataSetToGroup<DynArray<double>>(g, string("gradientmeasure"), model.gradientnorm);
+    writeDataSetToGroup(g, string("gradientmeasure"), model.gradientnorm);
   }
 }
 
@@ -787,8 +787,8 @@ void runSimpleSteppersTest(const std::string &fn_out)
       t += dt;
       if (t > tend + 0.5*dt) break;
     }
-    writeDataSetToGroup<DynArray<double>>(g, string("x"), ax);
-    writeDataSetToGroup<DynArray<double>>(g, string("y"), ay);
+    writeDataSetToGroup(g, string("x"), ax);
+    writeDataSetToGroup(g, string("y"), ay);
 //     h5cpp::create_dataset(g, "x", ax);
 //     h5cpp::create_dataset(g, "y", ay);
   }
