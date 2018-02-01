@@ -175,6 +175,9 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
     print >>f, '#SBATCH --nodes=1'
     print >>f, '#SBATCH --partition=onenode'
     print >>f, '#SBATCH --ntasks-per-node=1'
+    # this is for sparing the nodes with lots of cores
+    #print >>f, '#SBATCH --exclude=leak[57-64]'
+    #print >>f, '#SBATCH --nodelist=leak61'
     #print >>f, 'export OMP_NUM_THREADS=$SLURM_JOB_CPUS_PER_NODE'
     #print >>f, '#SBATCH --resv-ports'
   #MPI
@@ -193,6 +196,9 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
     if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
       raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
     print >>f, '#SBATCH --mem=%s' % mem
+    if num_cpus > 1:
+      mem_per_cpu='8500MB'
+      print >>f, '#SBATCH --mem-per-cpu=%s' % mem_per_cpu
   #if export_env:
   #  print >>f, '#PBS -V'
 

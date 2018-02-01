@@ -43,13 +43,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /** from milotti
  */
 
-#ifdef MILOTTI_MTS
-#define ANN
-  #ifdef ANN
-    #include <ANN/ANN.h>
-  #endif
-  #include <vbl.h>
-#endif
+
 
 #define USE_DETAILED_O2
 
@@ -124,7 +118,8 @@ struct Parameters
   ptree as_ptree() const;
   static void update_ptree(ptree &dst, const ptree &src);
 };
-#ifdef W_timing
+
+//#ifdef W_timing
 //everything in mu seconds
 struct Timing
 {
@@ -162,7 +157,8 @@ struct Timing
     run_mts_main_loop=0;
   };
 };
-#endif
+//#endif
+
 struct FakeTumorSimMTS : public boost::noncopyable
 {
   Timing currentTiming;
@@ -246,7 +242,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
   std::string writeOutput();
   
   //milotti mts
-  vbl::CellsSystem *currentCellsSystem;
+  //vbl::CellsSystem *currentCellsSystem;
   void doMilottiStep();
   //void update_milotti_vessels(vbl::CellsSystem &currentCellSys, VesselList3d &vl, DetailedPO2::VesselPO2Storage &po2Store);
   //void WriteCellsSystemHDF(h5cpp::Group &out_cell_group);

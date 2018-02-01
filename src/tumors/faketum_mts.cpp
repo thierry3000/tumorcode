@@ -18,13 +18,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "faketum_mts.h"
-#include <chrono>
-#include <omp.h>
+#ifdef MILOTTI_MTS
+  #define ANN
+  #ifdef ANN
+    #include <ANN/ANN.h>
+  #endif
+  #include <vbl.h>
+#endif
 
-
-
-
-void initMilotti(vbl::CellsSystem &currentCellsSystem)
+void initMilotti()
 {
     /**   INIT Milotti   */
   int run_type = 1; //command file
@@ -45,26 +47,37 @@ void initMilotti(vbl::CellsSystem &currentCellsSystem)
 //   currentCellsSystem->Set_CellTypeFile( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/CellType.txt" );
 //   currentCellsSystem->Set_CellTypeFileAlt( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/CellType.txt" );
 //   currentCellsSystem->Set_EnvironmentFile( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/Environment.txt" );
-  currentCellsSystem.Set_Commands( "commands.txt" );
-  currentCellsSystem.Set_CellTypeFile( "CellType.txt" );
-  currentCellsSystem.Set_CellTypeFileAlt( "CellType.txt" );
-  currentCellsSystem.Set_EnvironmentFile( "Environment.txt" );
-  currentCellsSystem.InitializeCellsSystem( terminal );
+  vbl::p_to_current_CellsSystem->Set_Commands( "commands.txt" );
+  vbl::p_to_current_CellsSystem->Set_CellTypeFile( "CellType.txt" );
+  vbl::p_to_current_CellsSystem->Set_CellTypeFileAlt( "CellType.txt" );
+  vbl::p_to_current_CellsSystem->Set_EnvironmentFile( "Environment.txt" );
+  vbl::p_to_current_CellsSystem->InitializeCellsSystem( terminal );
   cout << "Initialization milotti completed" << endl;
-  currentCellsSystem.RunDefinition( );// Run number and output directory output directory & output file opening for metabolism
-  currentCellsSystem.Set_nconfiguration( 0 ); // The configuration number is initialized to 0
-  currentCellsSystem.Geometry( );// Initial calculation of cluster geometry
-  currentCellsSystem.Set_time_from_CGAL(0.);	// Timer reset from last call to CGAL
+  vbl::p_to_current_CellsSystem->RunDefinition( );// Run number and output directory output directory & output file opening for metabolism
+  vbl::p_to_current_CellsSystem->Set_nconfiguration( 0 ); // The configuration number is initialized to 0
+  if(vbl::p_to_current_CellsSystem->Get_ncells() > 1)
+  {
+    vbl::p_to_current_CellsSystem->CleanCellsSystem();
+    vbl::p_to_current_CellsSystem->Geometry();
+    
+    vbl::p_to_current_CellsSystem->Set_time_from_CGAL(0.);		// Timer reset from last call to CGAL
+  }
+  else 
+  {
+    vbl::p_to_current_CellsSystem->NoGeometry( );
+  }
+  
+  vbl::p_to_current_CellsSystem->Set_time_from_CGAL(0.);	// Timer reset from last call to CGAL
   if(run_type == 0 || run_type == 1)
-    currentCellsSystem.Print2logfile("Cell status at the end of initialization");
+    vbl::p_to_current_CellsSystem->Print2logfile("Cell status at the end of initialization");
   else if (run_type == 2)
-    currentCellsSystem.Print2logfile("Cell status at restart of simulation");
+    vbl::p_to_current_CellsSystem->Print2logfile("Cell status at restart of simulation");
   
 
-  currentCellsSystem.CPU_timer(vbl::timer_button::Start_timer);		// start del CPU timer (e reset del timer degli intertempi)
-  currentCellsSystem.Timing( true );				// reset del timer
-  currentCellsSystem.StepStat( true );			// reset delle statistiche (azzera anche il vettore convergence_fail)
-  if (currentCellsSystem.Get_alive()==0)
+  vbl::p_to_current_CellsSystem->CPU_timer(vbl::timer_button::Start_timer);		// start del CPU timer (e reset del timer degli intertempi)
+  vbl::p_to_current_CellsSystem->Timing( true );				// reset del timer
+  vbl::p_to_current_CellsSystem->StepStat( true );			// reset delle statistiche (azzera anche il vettore convergence_fail)
+  if (vbl::p_to_current_CellsSystem->Get_alive()==0)
   {
     throw std::runtime_error(" no alive cell present");
   }
@@ -171,7 +184,7 @@ float FakeTumMTS::FakeTumorSimMTS::estimateTumorRadiusFromCells()
    * 1) neglect volume in between cells
    * 2) assume spherical shape
    */ 
-  std::vector<double> allCellVolumina = currentCellsSystem->Get_volume();
+  std::vector<double> allCellVolumina = vbl::p_to_current_CellsSystem->Get_volume();
   double sum = 0;
 #pragma omp parallel for reduction(+:sum)
   for(std::size_t i = 0; i<allCellVolumina.size();i++)
@@ -252,7 +265,9 @@ Float3 FakeTumMTS::FakeTumorSimMTS::getGfGrad(const Float3 &pos) const
 int FakeTumMTS::FakeTumorSimMTS::run()
 {
   //initialize cell system //use memory on heap to not mess up allocation
-  currentCellsSystem = new vbl::CellsSystem();
+  //currentCellsSystem = new vbl::CellsSystem();
+  vbl::p_to_current_CellsSystem = new vbl::CellsSystem();
+  // this is done in declared vbl now ( see p_to_current_CellsSystem)
   // direct cout through log
   cout.rdbuf(my::log().rdbuf());
   {
@@ -360,7 +375,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   
   /* init the cell system */
   try{
-    initMilotti(*currentCellsSystem);
+    initMilotti();
   }
   catch( const std::runtime_error& e)
   {
@@ -475,7 +490,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     ++num_iteration;
   }
 
-  currentCellsSystem->CloseOutputFiles();						// Closing output files
+  vbl::p_to_current_CellsSystem->CloseOutputFiles();						// Closing output files
   return 0;
 }
 
@@ -501,14 +516,14 @@ void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
   /* the tumor time is given in hours 
    * evolve cells until that
    */
-  uint returnValue = currentCellsSystem->runMainLoop( time * 3600 );
+  uint returnValue = vbl::p_to_current_CellsSystem->runMainLoop( time * 3600 );
   
   // for safety reasons we use both output structures
   // this one the the output of milotti, see WriteCellsSystemHDF for the hdf output
-  if ( currentCellsSystem->Get_ready2start() )
+  if ( vbl::p_to_current_CellsSystem->Get_ready2start() )
   {
-    currentCellsSystem->Print2logfile("Cells at the end of the run");
-    currentCellsSystem->WriteCellsSystem( );					// dump of the final configuration
+    vbl::p_to_current_CellsSystem->Print2logfile("Cells at the end of the run");
+    vbl::p_to_current_CellsSystem->WriteCellsSystem( );					// dump of the final configuration
   }
   
   cout << format("finished FakeTumMTS::FakeTumorSimMTS::doMilottiStep(),  mts at tumor time: %f\n" ) % time;
@@ -556,15 +571,15 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   timing_attrs.set("run_doStep", currentTiming.run_doStep);
   timing_attrs.set("run_doMilottiStep", currentTiming.run_doMilottiStep);
   //timing_attrs.set("run_findNearestVessel", currentTiming.run_findNearestVessel);
-  timing_attrs.set("run_vbl_diff", currentCellsSystem->myTiming.diff);
-  timing_attrs.set("run_vbl_diff_loop_1", currentCellsSystem->myTiming.diff_loop_1);
-  timing_attrs.set("run_vbl_diff_loop_2", currentCellsSystem->myTiming.diff_loop_2);
-  timing_attrs.set("run_vbl_diff_loop_3", currentCellsSystem->myTiming.diff_loop_3);
-  timing_attrs.set("run_vbl_dynamics", currentCellsSystem->myTiming.dynamics);
-  timing_attrs.set("run_vbl_geometry", currentCellsSystem->myTiming.geometry);
-  timing_attrs.set("run_vbl_cellEvents", currentCellsSystem->myTiming.cellEvents);
-  timing_attrs.set("run_vbl_writeToFile", currentCellsSystem->myTiming.writeToFile);
-  timing_attrs.set("run_vbl_bico_call", currentCellsSystem->myTiming.bico_call);
+  timing_attrs.set("run_vbl_diff", vbl::p_to_current_CellsSystem->myTiming.diff);
+  timing_attrs.set("run_vbl_diff_loop_1", vbl::p_to_current_CellsSystem->myTiming.diff_loop_1);
+  timing_attrs.set("run_vbl_diff_loop_2", vbl::p_to_current_CellsSystem->myTiming.diff_loop_2);
+  timing_attrs.set("run_vbl_diff_loop_3", vbl::p_to_current_CellsSystem->myTiming.diff_loop_3);
+  timing_attrs.set("run_vbl_dynamics", vbl::p_to_current_CellsSystem->myTiming.dynamics);
+  timing_attrs.set("run_vbl_geometry", vbl::p_to_current_CellsSystem->myTiming.geometry);
+  timing_attrs.set("run_vbl_cellEvents", vbl::p_to_current_CellsSystem->myTiming.cellEvents);
+  timing_attrs.set("run_vbl_writeToFile", vbl::p_to_current_CellsSystem->myTiming.writeToFile);
+  timing_attrs.set("run_vbl_bico_call", vbl::p_to_current_CellsSystem->myTiming.bico_call);
   
   const auto now = std::chrono::system_clock::now();
   const auto epoch   = now.time_since_epoch();
@@ -574,7 +589,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   h5::Group cells_out = gout.create_group("cells");
   /* writes the cell system stuff */
   //WriteCellsSystemHDF(currentCellsSystem, cells_out);
-  if (currentCellsSystem->Get_alive()>0)
+  if (vbl::p_to_current_CellsSystem->Get_alive()>0)
   {
     WriteCellsSystemHDF_with_nearest_vessel_index(cells_out);
   }
@@ -644,16 +659,16 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
     
     // create source field from cells
     //Array3d<float> cell_source;
-    float n_cells = (float) currentCellsSystem->Get_ncells();
+    float n_cells = (float) vbl::p_to_current_CellsSystem->Get_ncells();
     #pragma omp parallel
     {
       BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
       {
-        for(int i=0; i<currentCellsSystem->Get_x().size();++i)
+        for(int i=0; i<vbl::p_to_current_CellsSystem->Get_x().size();++i)
         {
           float offset = 10*15;
           offset = 0.0;
-          Float3 pos(currentCellsSystem->Get_x()[i]+offset,currentCellsSystem->Get_y()[i]+offset,currentCellsSystem->Get_z()[i]+offset);
+          Float3 pos(vbl::p_to_current_CellsSystem->Get_x()[i]+offset,vbl::p_to_current_CellsSystem->Get_y()[i]+offset,vbl::p_to_current_CellsSystem->Get_z()[i]+offset);
           AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)1.0/n_cells);
         }
       }
@@ -778,10 +793,10 @@ void FakeTumMTS::FakeTumorSimMTS::insertGFCoefficients(int box_index, const BBox
 void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index( h5cpp::Group &out_cell_group)
 {
   cout<< "going to write cells to a hdf file" << endl;
-  int numberOfCells = currentCellsSystem->Get_ncells();
-  std::vector<double> x = currentCellsSystem->Get_x();
-  std::vector<double> y = currentCellsSystem->Get_y();
-  std::vector<double> z = currentCellsSystem->Get_z();
+  int numberOfCells = vbl::p_to_current_CellsSystem->Get_ncells();
+  std::vector<double> x = vbl::p_to_current_CellsSystem->Get_x();
+  std::vector<double> y = vbl::p_to_current_CellsSystem->Get_y();
+  std::vector<double> z = vbl::p_to_current_CellsSystem->Get_z();
   DynArray<float> a(3*numberOfCells);
   DynArray<int> index_of_nearest_vessel(numberOfCells);
   DynArray<float> min_distances(numberOfCells);
@@ -812,7 +827,7 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   DynArray<float> buffer(numberOfCells);
   for( int i = 0; i<numberOfCells; ++i)
   {
-    buffer[i] = currentCellsSystem->Get_r()[i];
+    buffer[i] = vbl::p_to_current_CellsSystem->Get_r()[i];
   }
   if(!out_cell_group.exists("cell_radii"))
   {
@@ -821,7 +836,7 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   // glucose extracellular Get_G_extra()
   for( int i = 0; i<numberOfCells; ++i)
   {
-    buffer[i] = currentCellsSystem->Get_G_extra()[i];
+    buffer[i] = vbl::p_to_current_CellsSystem->Get_G_extra()[i];
   }
   if(!out_cell_group.exists("glucose_ex"))
   {
@@ -830,7 +845,7 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   // ph Get_pH
   for( int i = 0; i<numberOfCells; ++i)
   {
-    buffer[i] = currentCellsSystem->Get_pH()[i];
+    buffer[i] = vbl::p_to_current_CellsSystem->Get_pH()[i];
   }
   if(!out_cell_group.exists("pH_ex"))
   {
@@ -839,7 +854,7 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   // oxygen Get_O2
   for( int i = 0; i<numberOfCells; ++i)
   {
-    buffer[i] = currentCellsSystem->Get_O2()[i];
+    buffer[i] = vbl::p_to_current_CellsSystem->Get_O2()[i];
   }
   if(!out_cell_group.exists("o2"))
   {
@@ -848,7 +863,7 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   // lactate Get_AcL_extra
   for( int i = 0; i<numberOfCells; ++i)
   {
-    buffer[i] = currentCellsSystem->Get_AcL_extra()[i];
+    buffer[i] = vbl::p_to_current_CellsSystem->Get_AcL_extra()[i];
   }
   if(!out_cell_group.exists("AcL_ex"))
   {
@@ -1008,11 +1023,11 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
   }
   
   // get positions of the cells
-  int numberOfCells = currentCellsSystem->Get_ncells();
+  int numberOfCells = vbl::p_to_current_CellsSystem->Get_ncells();
   cout << "number of cells : " << numberOfCells << endl;
-  std::vector<double> x = currentCellsSystem->Get_x();
-  std::vector<double> y = currentCellsSystem->Get_y();
-  std::vector<double> z = currentCellsSystem->Get_z();
+  std::vector<double> x = vbl::p_to_current_CellsSystem->Get_x();
+  std::vector<double> y = vbl::p_to_current_CellsSystem->Get_y();
+  std::vector<double> z = vbl::p_to_current_CellsSystem->Get_z();
   
   // resultes are stored on the heap by this vector
   vectorOfnearestVessels.resize(numberOfCells);
@@ -1104,7 +1119,7 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
   cout << "annClose called" << endl;
   //transfere this nice informations to vbl
   //note this could nicely done in parallel
-  currentCellsSystem->clean_BloodVesselVector();
+  vbl::p_to_current_CellsSystem->clean_BloodVesselVector();
   for( int i = 0; i<numberOfCells ;++i)
   {
     Float3 buffer;
@@ -1147,7 +1162,7 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
 
     suggestion.SetBloodVesselAcL( 0. );
     
-    currentCellsSystem->Add_BloodVesselVector(suggestion);
+    vbl::p_to_current_CellsSystem->Add_BloodVesselVector(suggestion);
   }
 }
 // void FakeTumMTS::Timing::calculate_timings()

@@ -1054,6 +1054,7 @@ void IntegrateVesselPO2(const Parameters &params,
  		      )
 {
   if (params.loglevel > 0)
+    //this is the really lame code!!!
     cout << format("Start IntegrateVesselPO2 !") << endl;
   my::Time t_;
   //DynArray<bool> nodal_o2ready(vl.GetNCount(), false);

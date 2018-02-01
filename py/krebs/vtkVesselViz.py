@@ -66,7 +66,7 @@ def getColorTransferFunc(dataspec, bounds):
 
 if __name__ == '__main__':
   fn = sys.argv[1]
-  fn2 = sys.argv[2]
+  
   ren= vtkRenderer()
 
   if True:
@@ -103,7 +103,8 @@ if __name__ == '__main__':
     actor.SetMapper(mapper)
     ren.AddActor(actor)
 
-  if True:
+  if False:
+    fn2 = sys.argv[2]
     fieldreader = vtkDataSetReader()
     fieldreader.SetFileName(fn2)
     fieldreader.Update()
@@ -132,22 +133,22 @@ if __name__ == '__main__':
     
     assign_final_attr = assignedAttribute(cutter.GetOutputPort(), *dataspec)
 
-    colorTransferFunction = getColorTransferFunc(dataspec, bounds)
+  colorTransferFunction = getColorTransferFunc(dataspec, bounds)
 
-    mapper = vtkPolyDataMapper()
-    mapper.SetScalarRange(*bounds)
-    #mapper.CreateDefaultLookupTable ()
-    mapper.SetLookupTable(colorTransferFunction)
-    mapper.SetInputConnection(assign_final_attr.GetOutputPort())
-    mapper.ImmediateModeRenderingOn()
+  mapper = vtkPolyDataMapper()
+  mapper.SetScalarRange(*bounds)
+  #mapper.CreateDefaultLookupTable ()
+  mapper.SetLookupTable(colorTransferFunction)
+  mapper.SetInputConnection(assign_final_attr.GetOutputPort())
+  mapper.ImmediateModeRenderingOn()
 
-    actor = vtkActor()
-    actor.SetMapper(mapper)
-    origin = np.min(vesselbounds, axis=0)
-    origin[0:2] = 0.
-    actor.SetPosition(*origin)
-    
-    ren.AddActor(actor)
+  actor = vtkActor()
+  actor.SetMapper(mapper)
+  origin = np.min(vesselbounds, axis=0)
+  origin[0:2] = 0.
+  actor.SetPosition(*origin)
+  
+  ren.AddActor(actor)
   
   ren.ResetCamera()
   c = ren.GetActiveCamera()
@@ -162,6 +163,6 @@ if __name__ == '__main__':
   iren.SetRenderWindow(renWin)
 
   iren.Start()
-  #renWin.Render()
+  renWin.Render()
 
   
