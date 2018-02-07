@@ -403,10 +403,12 @@ uint GetFlowNetwork(CompressedFlowNetwork &fl,
     }//if boundary
   }//for all nodes
 #ifdef DEBUG
+#ifndef TOTAL_SILENCE
   for(auto bc: fl.bcs)
   {
     printf("first: %i, second: %f\n", bc.first, bc.second.val);
   }
+#endif
 #endif
   //if (!(flags & FLOWNET_NOPROPERTIES))
   {

@@ -223,7 +223,8 @@ struct ObserverPde
     if (stepper)
     {
       H5::H5File f = openH5File();
-      writeAttrToH5(f.openGroup("/"), string("stepper"), *stepper);
+      H5::Group root = f.openGroup("/");
+      writeAttrToH5(root, string("stepper"), *stepper);
       //f.root().attrs().set<string>("stepper", *stepper);
     }
   }

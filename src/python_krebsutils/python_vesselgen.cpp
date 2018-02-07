@@ -27,12 +27,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/hdf_wrapper_ptree.h"
 #include "mwlib/log.h"
 
+#include <Epetra_ConfigDefs.h>
+#ifdef EPETRA_MPI
+  #include "mpi.h"
+#endif
+
 /** @brief Vesselgenerator stuff
  */
 void run_vesselgen(const py::str &param_info_str)
 {
   ptree pt_params = convertInfoStr(param_info_str, ptree());
-  VesselGenerator::run(pt_params);
+  try{
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
+    VesselGenerator::run(pt_params);
+  }
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
 }
 void export_vesselgen()
 {

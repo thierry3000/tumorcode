@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+#include <boost/python/exception_translator.hpp>
 #include "python_helpers.h"
 #include <boost/python/object.hpp>
 #include <boost/python/tuple.hpp>
@@ -862,17 +862,20 @@ void export_compute_interpolation_field();
 void export_get_Murray();
 
 // see http://www.boost.org/doc/libs/1_66_0/libs/python/doc/html/tutorial/tutorial/exception.html
-// struct PodBayDoorException;
-// void translator(const PodBayDoorException& x) {
-//   PyErr_SetString(PyExc_UserWarning, "I'm sorry Dave...");
-// }
+struct VesselGenException : std::exception
+{
+  char const* what() const noexcept { return "One of my exceptions"; }
+};
+void translator(VesselGenException const& x) {
+  PyErr_SetString(PyExc_UserWarning, x.what());
+}
 #ifdef DEBUG
 BOOST_PYTHON_MODULE(libkrebs_d)
 #else
 BOOST_PYTHON_MODULE(libkrebs_)
 #endif
 {
-  //py::register_exception_translator<PodBayDoorException>(&translator);
+  py::register_exception_translator<VesselGenException>(&translator);
   Py_Initialize();
 #if BOOST_VERSION>106300
   np::initialize();
@@ -882,9 +885,10 @@ BOOST_PYTHON_MODULE(libkrebs_)
   
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
   // setup everything to work with threads.
-  my::initMultithreading(0, NULL, 1);
+  //HACK2018
+  //my::initMultithreading(0, NULL, 1);
   // register function to set the number of threads
-  py::def("set_num_threads", my::SetNumThreads);
+  //py::def("set_num_threads", my::SetNumThreads);
   
   mw_py_impl::exportVectorClassConverters();
   mw_py_impl::exportLatticeData();

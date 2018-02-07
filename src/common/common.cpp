@@ -36,131 +36,131 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace my
 {
 
-struct MPPrivate
-{
-  // constructor
-  MPPrivate(int argc, char **argv, int num_threads_) : num_threads(0)
-  {
-#ifdef EPETRA_MPI
-    {
-#ifndef TOTAL_SILENCE
-      printf("\n\nEPETRA_MPI flag is set!\n");
-#endif
-      int mpi_is_initialized = 0;
-      int prov;
-      MPI_Initialized(&mpi_is_initialized);
-      if (!mpi_is_initialized)
-	MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
-	//kind of works with 
-	//MPI_Init(&argc, &argv);
-    }
-#endif
-    SetNumThreads(num_threads_);
-  }
-  MPPrivate(int num_threads_) : num_threads(0)
-  {
-    SetNumThreads(num_threads_);
-  }
-  // destructor
-//   ~MPPrivate()
+// struct MPPrivate
+// {
+//   // constructor
+//   MPPrivate(int argc, char **argv, int num_threads_) : num_threads(0)
 //   {
 // #ifdef EPETRA_MPI
-//     int mpi_is_finalized = 0;
-//     MPI_Finalized(&mpi_is_finalized);
-//     if (!mpi_is_finalized)
-//       MPI_Finalize();
+//     {
+// #ifndef TOTAL_SILENCE
+//       printf("\n\nEPETRA_MPI flag is set!\n");
+// #endif
+//       int mpi_is_initialized = 0;
+//       int prov;
+//       MPI_Initialized(&mpi_is_initialized);
+//       if (!mpi_is_initialized)
+// 	MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+// 	//kind of works with 
+// 	//MPI_Init(&argc, &argv);
+//     }
+// #endif
+//     SetNumThreads(num_threads_);
+//   }
+//   MPPrivate(int num_threads_) : num_threads(0)
+//   {
+//     SetNumThreads(num_threads_);
+//   }
+//   // destructor
+// //   ~MPPrivate()
+// //   {
+// // #ifdef EPETRA_MPI
+// //     int mpi_is_finalized = 0;
+// //     MPI_Finalized(&mpi_is_finalized);
+// //     if (!mpi_is_finalized)
+// //       MPI_Finalize();
+// // #endif
+// //   }
+// 
+//   void SetNumThreads(int n)
+//   {
+//     if (n==0)
+//       n=1;
+//     else if (n <0) 
+//       n = tbb::task_scheduler_init::default_num_threads();
+//     num_threads = n;
+//     tbbinit.terminate();
+//     tbbinit.initialize(num_threads);
+// #if defined( _OPENMP )
+// #ifdef DEBUG
+//     printf("omp num threads <- %i\n", num_threads);
+// #endif
+//     omp_set_num_threads(num_threads);
 // #endif
 //   }
-
-  void SetNumThreads(int n)
-  {
-    if (n==0)
-      n=1;
-    else if (n <0) 
-      n = tbb::task_scheduler_init::default_num_threads();
-    num_threads = n;
-    tbbinit.terminate();
-    tbbinit.initialize(num_threads);
-#if defined( _OPENMP )
-#ifdef DEBUG
-    printf("omp num threads <- %i\n", num_threads);
-#endif
-    omp_set_num_threads(num_threads);
-#endif
-  }
-
-  //members
-  int num_threads;
-  tbb::task_scheduler_init tbbinit;
-};
-
-static std::auto_ptr<MPPrivate> mp;
-
-bool MultiprocessingInitializer_exists()
-{
-  return mp.get();
-}
-
-int GetNumThreads()
-{
-  if (!mp.get()) 
-    throw std::runtime_error("Multiprocessing not initialized! Construct a MultiprocessingInitializer!");
-  return mp->num_threads;
-}
-
-int OmpGetCurrentThread()
-{
-#if defined( _OPENMP )
-    assert(omp_in_parallel() || (omp_get_num_threads() == 1 && omp_get_thread_num()==0));
-    return omp_get_thread_num();
-#else
-    return 0;
-#endif
-}
-
-int OmpGetMaxThreadCount()
-{
-#if defined( _OPENMP )
-    return omp_get_max_threads();
-#else
-    return 1;
-#endif  
-};
-
-
-void SetNumThreads(int n)
-{
-  if (!mp.get()) 
-    throw std::runtime_error("Multiprocessing not initialized! Construct a MultiprocessingInitializer! from SetNumThreads");
-  mp->SetNumThreads(n);
-}
-
-MultiprocessingInitializer::MultiprocessingInitializer(int argc, char **argv, int num_threads)
-{
-  if (mp.get()) 
-    throw std::runtime_error("A MultiprocessingInitializer lives already!");
-  mp.reset(new MPPrivate(argc, argv, num_threads));
-}
-MultiprocessingInitializer::MultiprocessingInitializer(int num_threads)
-{
-  if (mp.get()) 
-    throw std::runtime_error("A MultiprocessingInitializer lives already!");
-  mp.reset(new MPPrivate(num_threads));
-}
-
-MultiprocessingInitializer::~MultiprocessingInitializer()
-{
-  mp.reset(NULL);
-}
-
-void initMultithreading(int argc, char** argv, int num_threads)
-{
-  if (mp.get()) {
-    myAssert(false);
-    throw std::runtime_error("A MultiprocessingInitializer lives already!"); 
-  }
-  mp.reset(new MPPrivate(argc, argv, num_threads));
-}
+// 
+//   //members
+//   int num_threads;
+//   tbb::task_scheduler_init tbbinit;
+// };
+// 
+// static std::auto_ptr<MPPrivate> mp;
+// 
+// bool MultiprocessingInitializer_exists()
+// {
+//   return mp.get();
+// }
+// 
+// int GetNumThreads()
+// {
+//   if (!mp.get()) 
+//     throw std::runtime_error("Multiprocessing not initialized! Construct a MultiprocessingInitializer!");
+//   return mp->num_threads;
+// }
+// 
+// int OmpGetCurrentThread()
+// {
+// #if defined( _OPENMP )
+//     assert(omp_in_parallel() || (omp_get_num_threads() == 1 && omp_get_thread_num()==0));
+//     return omp_get_thread_num();
+// #else
+//     return 0;
+// #endif
+// }
+// 
+// int OmpGetMaxThreadCount()
+// {
+// #if defined( _OPENMP )
+//     return omp_get_max_threads();
+// #else
+//     return 1;
+// #endif  
+// };
+// 
+// 
+// void SetNumThreads(int n)
+// {
+//   if (!mp.get()) 
+//     throw std::runtime_error("Multiprocessing not initialized! Construct a MultiprocessingInitializer! from SetNumThreads");
+//   mp->SetNumThreads(n);
+// }
+// 
+// MultiprocessingInitializer::MultiprocessingInitializer(int argc, char **argv, int num_threads)
+// {
+//   if (mp.get()) 
+//     throw std::runtime_error("A MultiprocessingInitializer lives already!");
+//   mp.reset(new MPPrivate(argc, argv, num_threads));
+// }
+// MultiprocessingInitializer::MultiprocessingInitializer(int num_threads)
+// {
+//   if (mp.get()) 
+//     throw std::runtime_error("A MultiprocessingInitializer lives already!");
+//   mp.reset(new MPPrivate(num_threads));
+// }
+// 
+// MultiprocessingInitializer::~MultiprocessingInitializer()
+// {
+//   mp.reset(NULL);
+// }
+// 
+// void initMultithreading(int argc, char** argv, int num_threads)
+// {
+//   if (mp.get()) {
+//     myAssert(false);
+//     throw std::runtime_error("A MultiprocessingInitializer lives already!"); 
+//   }
+//   mp.reset(new MPPrivate(argc, argv, num_threads));
+// }
 
 
 

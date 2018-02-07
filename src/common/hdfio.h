@@ -95,7 +95,7 @@ void readAttrFromH5(U g, const string &attr_name, T &output_buffer);
  * write attributes to Group or DataSet
  */
 template <class U, class T>
-void writeAttrToH5(U h, const string &attr_name,  const T &value);
+void writeAttrToH5(U &h, const string &attr_name,  const T &value);
 
 // void writeAttrToH5(H5::Group h, const string &attr_name,  const Int6 &value);
 // void writeAttrToH5(H5::Group h, const string &attr_name,  const Int3 &value);

@@ -170,11 +170,12 @@ void readAttrFromH5<H5::Group, string>(H5::Group g, const string &attr_name, str
 }
 
 template <class U, class T>
-void writeAttrToH5(U h, const string &attr_name,  const T &value)
+void writeAttrToH5(U &h, const string &attr_name,  const T &value)
 { 
   H5::DataType thisType = getH5TypeFromCpp<T>();
   const int rank = 2;
   hsize_t dims[rank];
+  dims[0] = 1;
   if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
   {
     dims[1] = 3;
@@ -188,11 +189,18 @@ void writeAttrToH5(U h, const string &attr_name,  const T &value)
     dims[1] = 6;
   }
   H5::DataSpace mspace( rank, dims);
-  H5::Attribute attr_out = h.createAttribute(attr_name, thisType, mspace);
+  H5::Attribute attr_out;
+  try{
+    attr_out = h.createAttribute(attr_name, thisType, mspace);
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
   attr_out.write(thisType, &value);
 };
 template<>
-void writeAttrToH5<H5::Group,string>(H5::Group h, const string &attr_name, const string &value)
+void writeAttrToH5<H5::Group,string>(H5::Group &h, const string &attr_name, const string &value)
 { 
   // Create new dataspace for attribute
   H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
@@ -211,7 +219,7 @@ void writeAttrToH5<H5::Group,string>(H5::Group h, const string &attr_name, const
   }
 };
 template<>
-void writeAttrToH5<H5::DataSet,string>(H5::DataSet h, const string &attr_name, const string &value)
+void writeAttrToH5<H5::DataSet,string>(H5::DataSet &h, const string &attr_name, const string &value)
 { 
   {
     // Create new dataspace for attribute
@@ -290,7 +298,15 @@ void WriteHdfGraph( H5::Group g, const VesselList3d &vl )
   const int ecnt = vl.GetECount();
   myAssert(ncnt>0 && ecnt>0);
   
-  H5::Group gg = g.createGroup("nodes");
+  H5::Group gg;
+  try
+  {
+    gg = g.createGroup("nodes");
+  }
+  catch(H5::Exception e)
+  {
+    gg = g.openGroup("nodes");
+  }
   writeAttrToH5(gg, "COUNT", ncnt);
   //gg.attrs().set("COUNT",ncnt);
   //h5cpp::Attributes attrs = g.attrs();
@@ -1141,7 +1157,7 @@ INSTANTIATE_H5Cpp_read(H5::DataSet, Bool3)
 //INSTANTIATE_H5Cpp_read(H5::DataSet, string)
 
 #define INSTANTIATE_H5Cpp1_write(U,T)\
-  template void writeAttrToH5<U,T>(U h, const string &name, const T &output_buffer);
+  template void writeAttrToH5<U,T>(U &h, const string &name, const T &output_buffer);
 INSTANTIATE_H5Cpp1_write(H5::Group, float)
 INSTANTIATE_H5Cpp1_write(H5::Group, Float3)
 INSTANTIATE_H5Cpp1_write(H5::Group, double)

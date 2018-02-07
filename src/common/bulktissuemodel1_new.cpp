@@ -228,7 +228,9 @@ void Model::init(const ContinuumGrid &grid_, const DomainDecomposition &mtboxes_
   obtain_oxygen_conc = obtain_oxygen_conc_;
   obtain_vessel_volume = obtain_vessel_volume_;
   
-  cout << format("going to use a mt grid subdivision with %i boxes and %i threads") % mtboxes->size() % my::GetNumThreads() << endl;
+  //HACK2018
+  //cout << format("going to use a mt grid subdivision with %i boxes and %i threads") % mtboxes->size() % my::GetNumThreads() << endl;
+  cout << format("going to use a mt grid subdivision with %i boxes and %i threads") % mtboxes->size() % 1 << endl;
   
   pt_params = pt_params_;
   params.assign(pt_params);
@@ -333,7 +335,9 @@ void Model::notify_auxdata_change()
   
   #pragma omp parallel
   {
-    Random rnd(params.random_seed * (my::OmpGetCurrentThread()+1)); // might need it
+    //HACK2018
+    Random rnd(params.random_seed * (1+1)); // might need it
+    //Random rnd(params.random_seed * (my::OmpGetCurrentThread()+1)); // might need it
     Array3df buffer(ExtendForDim(mtboxes->getBoxWithLargestVolume(), grid->dim, 1));
     Array3df vessel_volume_field;
     

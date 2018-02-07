@@ -202,7 +202,8 @@ int FakeTum::FakeTumorSim::run()
 //     // do be done
 //     //this->params.adap_params.radMin_for_kill = this->model.params.radMin;
 // #endif
-    my::SetNumThreads(params.num_threads);
+    //HACK2018
+    //my::SetNumThreads(params.num_threads);
     
     H5::H5File file(params.fn_vessel, H5F_ACC_RDONLY);
     ptree pt;

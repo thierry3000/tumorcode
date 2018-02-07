@@ -218,7 +218,9 @@ struct LevelSetReinit
             is_box_active = true;
         }
         if (is_box_active)
-          mtboxes_active_list.insert(my::OmpGetCurrentThread(), bb);
+	  //HACK2018
+          mtboxes_active_list.insert(1, bb);
+	  //mtboxes_active_list.insert(my::OmpGetCurrentThread(), bb);
       }
     }
   }
@@ -288,7 +290,9 @@ struct LevelSetReinit
         if (is_box_active)
         {
           mutex.lock();
-          mtboxes_active_list.insert(my::OmpGetCurrentThread(), bb);
+	  //HACK2018
+          mtboxes_active_list.insert(1, bb);
+	  //mtboxes_active_list.insert(my::OmpGetCurrentThread(), bb);
           mutex.unlock();
         }
       }

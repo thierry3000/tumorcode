@@ -1430,16 +1430,16 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
         if (my::checkAbort()) 
 	  return;
       }
-
+      cout << "call ing HierarchicalGrowth " << endl;
       HierarchicalGrowth();
-      if (my::checkAbort()) return;
+      
+    if (my::checkAbort()) return;
       
       cout << "growth " << hierarchy_level << " with vessel " << get_ld() << endl;
 #if GFFIELD_ENABLE
       cout << "field " << get_field_ld() << endl;
 #endif
     }
-    //max_num_iter += iteration_number;
   }
 
   cout << "iterating ... " << endl;
@@ -1456,6 +1456,7 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
     if (my::checkAbort()) 
       return;
   }
+  cout << "done iteration_number_on_level"<< endl;
 
 #if 0
   if (max_hierarchy_level > 0)

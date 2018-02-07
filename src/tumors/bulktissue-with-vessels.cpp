@@ -152,8 +152,8 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     Params::update_ptree(all_pt_params, pparams);
     this->params.assign(all_pt_params); // this sets some options based on which parameters are supplied
   }
-
-  my::SetNumThreads(all_pt_params.get<int>("num_threads"));
+  //HACK2018
+  //my::SetNumThreads(all_pt_params.get<int>("num_threads"));
 
   my::log().push(" init: ");
   {

@@ -884,13 +884,14 @@ BOOST_PYTHON_MODULE(libdetailedo2_)
 #endif
 {
   PyEval_InitThreads();
-  if (my::MultiprocessingInitializer_exists())
-  {
-  }
-  else
-  {
-    my::initMultithreading(0, NULL, 1);
-  }
+  //HACK2018
+//   if (my::MultiprocessingInitializer_exists())
+//   {
+//   }
+//   else
+//   {
+//     my::initMultithreading(0, NULL, 1);
+//   }
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   DetailedPO2::export_oxygen_computation();
   //bla

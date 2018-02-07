@@ -217,7 +217,9 @@ DynArray<BBox3> MakeMtBoxGrid(const BBox3 &bb)
 
 DynArray<BBox3> MakeMtBoxGridLarge(const BBox3 &mainbb, int max_size)
 {
-  int num_threads = my::GetNumThreads();
+  //HACK2018
+  int num_threads = 1;
+  //int num_threads = my::GetNumThreads();
   int bs = std::min(max_size, std::max(16, maxCoeff(Size(mainbb)) / (2 * num_threads)));
   Int3 cnt = (Size(mainbb)/bs).cwiseMax(Int3(1));
   int total_cnt = cnt.prod();
@@ -232,7 +234,9 @@ DynArray<BBox3> MakeMtBoxGridLarge(const BBox3 &mainbb, int max_size)
 DomainDecomposition::DomainDecomposition(const DynArray< BBox3 >& boxes_) : largestBox(BBox3(), -1) //, boost::optional< DynArray< double >& > weights)
 {
   //if (weights.is_initialized()) throw std::runtime_error("DomainDecomposition weights not implemented");
-  int n = my::OmpGetMaxThreadCount();
+  //HACK2018
+  //int n = my::OmpGetMaxThreadCount();
+  int n = 1;
   for (int i=0; i<boxes_.size(); ++i)
   {
     int thread_num = i % n;
@@ -255,7 +259,9 @@ void DomainDecomposition::init(const DynArray< BBox3 >& boxes_)
 
 DomainDecomposition::range_type DomainDecomposition::getCurrentThreadRange() const
 {
-  const DynArray<ThreadBox> &ar = by_thread[my::OmpGetCurrentThread()];
+  //HACK2018
+  //const DynArray<ThreadBox> &ar = by_thread[my::OmpGetCurrentThread()];
+  const DynArray<ThreadBox> &ar = by_thread[1];
   return range_type(ar.begin(), ar.end());
 }
 
@@ -276,8 +282,11 @@ const DomainDecomposition::ThreadBox DomainDecomposition::getBoxWithLargestVolum
 
 std::ostream& DomainDecomposition::print(std::ostream &os) const
 {
-  os << format("DomainDecomposition: %i threads\n") % my::OmpGetMaxThreadCount();
-  for (int threadidx=0; threadidx<my::OmpGetMaxThreadCount(); ++threadidx)
+  //HACK2018
+  //os << format("DomainDecomposition: %i threads\n") % my::OmpGetMaxThreadCount();
+  os << format("DomainDecomposition: %i threads\n") % 1;
+  for (int threadidx=0; threadidx<1; ++threadidx)
+  //for (int threadidx=0; threadidx<my::OmpGetMaxThreadCount(); ++threadidx)
   {
     os << format("  thread %i\n  ") % threadidx;
     for (int i=0; i<by_thread[threadidx].size(); ++i)

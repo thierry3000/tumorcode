@@ -595,11 +595,13 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group vesselgroup, const ptree 
 
 #if 1
 #ifdef DEBUG
+#ifndef TOTAL_SILENCE
 //typedef boost::unordered_map<int, FlowBC> BcsMap;
     for(auto bc: vl->GetBCMap())
     {
       printf("first: %i, second: %f\n", bc.first->Index(), bc.second.val);
     }
+#endif
 #endif
 #endif
   
@@ -751,10 +753,12 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group vesselgroup, const ptree 
   }
 #if 1
 #ifdef DEBUG
+#ifndef TOTAL_SILENCE
     for(auto bc: vl->GetBCMap())
     {
       printf("first: %i, second: %f\n", bc.first->Index(), bc.second.val);
     }
+#endif
 #endif
 #endif
 
@@ -788,7 +792,16 @@ void WriteVesselList3d(const VesselList3d &vl, H5::Group vesselgroup, const ptre
     writeDataSetToGroup(vesselgroup, string("nodes/pressure"), arrd);
     //H5::DataSet ds = h5::create_dataset(vesselgroup,"nodes/pressure",arrd);
     //ds.attrs().set("MODE","linear");
-    writeAttrToH5(vesselgroup.openDataSet(string("nodes/pressure")),string("MODE"), string("linear"));
+    H5::DataSet press;
+    try
+    {
+      press = vesselgroup.openDataSet(string("nodes/pressure"));
+    }
+    catch(H5::Exception e)
+    {
+      e.printError();
+    }
+    writeAttrToH5(press,string("MODE"), string("linear"));
 
     //for(int i=0; i<ncnt; ++i) { arrd[i] = vl.GetNode(i)->residual; }
     //ds = h5::create_dataset_range(vesselgroup,"nodes/residual",arrd);
@@ -931,8 +944,9 @@ ptree AddVesselVolumeFraction(const VesselList3d &vl, const LatticeDataQuad3d &f
     #pragma omp atomic
     total_num_samples += thread_sample_cnt;
   }
-
-  cout << format("add vessel volume fraction: time=%f, np=%i, npboxes=%i") % (my::Time()-t__).to_ms() % my::OmpGetMaxThreadCount() % boxes.size() << endl;
+  //HACK2018
+  cout << format("add vessel volume fraction: time=%f, np=%i, npboxes=%i") % (my::Time()-t__).to_ms() % 1 % boxes.size() << endl;
+  //cout << format("add vessel volume fraction: time=%f, np=%i, npboxes=%i") % (my::Time()-t__).to_ms() % my::OmpGetMaxThreadCount() % boxes.size() << endl;
   return make_ptree("num_samples", total_num_samples);
 }
 

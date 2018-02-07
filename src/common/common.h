@@ -47,21 +47,21 @@ using boost::property_tree::make_ptree;
 namespace my
 {
   // ininitalize mpi and multithreading
-  class MultiprocessingInitializer
-  {
-    // usage: construct this at the beginning of the program and keep it alive.
-    // Call Get/SetNumThreads somewhere in your program.
-    public:
-      MultiprocessingInitializer(int argc, char **argv, int num_threads = 1);
-      MultiprocessingInitializer(int num_threads = 1);
-      ~MultiprocessingInitializer();
-  };
-  void initMultithreading(int argc, char **argv, int num_threads = 1);
-  int GetNumThreads();
-  void SetNumThreads(int n);
-  int OmpGetCurrentThread();
-  int OmpGetMaxThreadCount();
-  bool MultiprocessingInitializer_exists();
+//   class MultiprocessingInitializer
+//   {
+//     // usage: construct this at the beginning of the program and keep it alive.
+//     // Call Get/SetNumThreads somewhere in your program.
+//     public:
+//       MultiprocessingInitializer(int argc, char **argv, int num_threads = 1);
+//       MultiprocessingInitializer(int num_threads = 1);
+//       ~MultiprocessingInitializer();
+//   };
+//   void initMultithreading(int argc, char **argv, int num_threads = 1);
+//   int GetNumThreads();
+//   void SetNumThreads(int n);
+//   int OmpGetCurrentThread();
+//   int OmpGetMaxThreadCount();
+//   bool MultiprocessingInitializer_exists();
 }
 
 

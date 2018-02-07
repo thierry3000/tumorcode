@@ -792,7 +792,16 @@ void runSimpleSteppersTest(const std::string &fn_out)
 //     h5cpp::create_dataset(g, "x", ax);
 //     h5cpp::create_dataset(g, "y", ay);
   }
-  writeAttrToH5(f.openGroup("/"), string("lambda"), lambda);
+  H5::Group root;
+  try
+  {
+    root = f.openGroup("/");
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
+  writeAttrToH5(root, string("lambda"), lambda);
   //f.root().attrs().set("lambda", lambda);
 
 #if 1
@@ -1164,7 +1173,9 @@ bool runSTF(const py::str &param_info_str, const py::object &py_ld, const py::di
   Py_BEGIN_ALLOW_THREADS
   NewSteppers::run(doStep, doObserve, params);
   Py_END_ALLOW_THREADS
-  writeAttrToH5(observer.openH5File().openGroup("/"), string("hard_fail"), model.fail_flag);
+  
+  H5::Group root = observer.openH5File().openGroup("/");
+  writeAttrToH5(root, string("hard_fail"), model.fail_flag);
   //observer.openH5File().root().attrs().set("hard_fail", model.fail_flag);
   return !model.fail_flag;
 }

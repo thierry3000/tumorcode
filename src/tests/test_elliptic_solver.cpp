@@ -260,7 +260,8 @@ int main(int argc, char **argv)
   ;
   //throw std::runtime_error("implement parameter handling with boost program options");
 #if 1
-  my::MultiprocessingInitializer mpinit(argc, argv);
+  //HACK 2018
+  //my::MultiprocessingInitializer mpinit(argc, argv);
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   Int3 size(100, 100, 10);
   int repetitions = 1;
@@ -295,7 +296,8 @@ int main(int argc, char **argv)
   {
     cout << "num_threads was not set using 1.\n";
   }
-  my::SetNumThreads(num_threads);
+  //HACK2018
+  //my::SetNumThreads(num_threads);
   cout << "size = " << size << ", " << num_threads << " threads" << endl;
   for (int i=0; i<repetitions; ++i)
   {

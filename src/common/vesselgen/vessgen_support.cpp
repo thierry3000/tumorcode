@@ -111,6 +111,7 @@ H5::Group DebugOutVessels(const Grower &grower, const string &name)
       tmp2[i] = vl.GetNode(i)->flags;
     }
     //h5::create_dataset(vesselgrp.open_group("nodes"), "nodeflags", tmp2);
+    writeDataSetToGroup(vesselgrp.openGroup("nodes"), string("nodeflags"), tmp2);
 #ifdef WRITE_REMODELING_ACTIONS    
     for (int i=0; i<vl.GetNCount(); ++i)
     {
@@ -126,7 +127,7 @@ H5::Group DebugOutVessels(const Grower &grower, const string &name)
 }
 
 
-void DoOutput(H5::Group root,
+void DoOutput(H5::Group &root,
               const VesselList3d &vl,
               const TreeRootList &tree_roots)
 {
@@ -144,25 +145,39 @@ void DoOutput(H5::Group root,
   //cout << "ouput -> " << root.get_file().get_file_name() << ":" << root.get_name() << endl;
   cout << "ouput -> " << root.getFileName() << ":" << getH5GroupName(root) << endl;
 
+  
+  //h5::Attributes a;
+  // vessels and stuff
+  try
   {
-    //h5::Attributes a;
-    // vessels and stuff
-    H5::Group vesselgrp = root.createGroup("vessels");
-    // since world coordinates are introduced this is needed for proper hdf output
-    writeAttrToH5(vesselgrp, string("CLASS"), string("GRAPH"));
+    H5::Group vesselgrp;
+    try
+    {
+      //if this is created for the first time!
+      vesselgrp = root.createGroup("vessels");
+      // since world coordinates are introduced this is needed for proper hdf output
+      writeAttrToH5(vesselgrp, string("CLASS"), string("GRAPH"));
+    }
+    catch(H5::Exception e)
+    {
+      e.dontPrint();
+      vesselgrp = root.openGroup("vessels");
+    }
     //vesselgrp.attrs().set<std::string>("CLASS","GRAPH");
     WriteVesselList3d(vl, vesselgrp, make_ptree("w_all",false)("w_pressure",true)("w_flow",true));
     {
-//       DynArray<uchar> tmp2(vl.GetNCount());
-//       for (int i=0; i<vl.GetNCount(); ++i)
-//       {
-//         tmp2[i] = vl.GetNode(i)->flags;
-//       }
+      DynArray<uchar> tmp2(vl.GetNCount());
+      for (int i=0; i<vl.GetNCount(); ++i)
+      {
+	tmp2[i] = vl.GetNode(i)->flags;
+      }
 //       h5::create_dataset(root.open_group("vessels/nodes"), "nodeflags", tmp2);
+      writeDataSetToGroup(root.openGroup("vessels/nodes"), "nodeflags", tmp2);
+      
       DynArray<int> tmp3(vl.GetECount());
       for (int i=0; i<vl.GetECount(); ++i)
       {
-        tmp3[i] = vl.GetEdge(i)->timeSprout;
+	tmp3[i] = vl.GetEdge(i)->timeSprout;
       }
       //h5::create_dataset(root.open_group("vessels/edges"), "level", tmp3);
       writeDataSetToGroup(root.openGroup("vessels/edges"), string("level"), tmp3);
@@ -182,6 +197,18 @@ void DoOutput(H5::Group root,
     WriteHdfHistogram(g,"radii_prob",hrad);
     WriteHdfHistogram(g,"num_branches_by_rad",hbranch);
     writeAttrToH5(g, string("rBV"), bloodVolume);
+    writeAttrToH5(g, string("SITES_OCCUPIED"), num_occ_sites);
+    writeAttrToH5(g, string("SITES_TOTAL"), num_sites);
+    writeAttrToH5(g, string("MEAN_BRANCH_LENGTH"), mlen.Avg());
+    writeAttrToH5(g, string("MEAN_BRANCH_RADIUS"), mrad.Avg());
+    writeAttrToH5(g, string("ROOT_A_RADIUS"), arad);
+    writeAttrToH5(g, string("ROOT_A_FLOW"), aflow);
+    writeAttrToH5(g, string("ROOT_A_COUNT"), arootcnt);
+    writeAttrToH5(g, string("ROOT_V_RADIUS"), vrad);
+    writeAttrToH5(g, string("ROOT_V_FLOW"), vflow);
+    writeAttrToH5(g, string("ROOT_V_COUNT"), vrootcnt);
+    
+    
 //     a = g.attrs();
 //     a.set("rBV",bloodVolume);
 //     a.set("SITES_OCCUPIED",num_occ_sites);
@@ -203,11 +230,11 @@ void DoOutput(H5::Group root,
       auto it = tree_roots.begin();
       for (int i=0; i<N; ++i, ++it)
       {
-        const TreeRoot &e = it->second;
-        pos[i] = ld.LatticeToSite(e.p);
-        len[i] = e.len;
-        dir[i] = e.dir;
-        flags[i] = e.flags;
+	const TreeRoot &e = it->second;
+	pos[i] = ld.LatticeToSite(e.p);
+	len[i] = e.len;
+	dir[i] = e.dir;
+	flags[i] = e.flags;
       }
       H5::Group gg = g.createGroup("roots");
       writeDataSetToGroup(gg, string("lattice_pos"), pos);
@@ -220,6 +247,11 @@ void DoOutput(H5::Group root,
 //       h5::create_dataset(gg, "dir", dir); char
     }
   }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
+  
 }
 
 
@@ -231,12 +263,13 @@ void DoOutput(H5::H5File &file,
              )
 {
       const VesselList3d::LatticeData &ld = vl.Ld();
-
-      DoOutput(file.openGroup("/"), vl, grower.get_tree_roots());
+      H5::Group root = file.openGroup("/");
+      
+      DoOutput(root, vl, grower.get_tree_roots());
 
       {
         //h5::Attributes a;
-        H5::Group root = file.openGroup("/");
+        
 #if GFFIELD_ENABLE
         {
           DynArray<float> tmp;

@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace VesselGenerator
 {
   
-void vesselgen_generate_grid(const H5::Group outgroup, const Int3 &size, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, const BloodFlowParameters &bfparams)
+void vesselgen_generate_grid( H5::Group &outgroup, const Int3 &size, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, const BloodFlowParameters &bfparams)
 {
   typedef VesselList3d::LatticeData LatticeData;
   std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
@@ -75,7 +75,7 @@ void vesselgen_generate_grid(const H5::Group outgroup, const Int3 &size, float s
   }
 }
 
-void vesselgen_generate_grid_no_flow(const H5::Group outgroup, const Int3 &size, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, const BloodFlowParameters &bfparams)
+void vesselgen_generate_grid_no_flow(H5::Group &outgroup, const Int3 &size, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, const BloodFlowParameters &bfparams)
 {
   typedef VesselList3d::LatticeData LatticeData;
   std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
@@ -132,7 +132,7 @@ enum {
 };
 
 
-void vesselgen_generate_single(H5::Group outgroup, const Int3 &size, const int direction_mode, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, int segment_size, const BloodFlowParameters &bfparams)
+void vesselgen_generate_single(H5::Group &outgroup, const Int3 &size, const int direction_mode, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, int segment_size, const BloodFlowParameters &bfparams)
 {
   typedef VesselList3d::LatticeData LatticeData;
   std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
@@ -280,7 +280,7 @@ void vesselgen_generate_single(H5::Group outgroup, const Int3 &size, const int d
     writeAttrToH5(g, "dir", dir);
   }
 }
-void vesselgen_generate_symmetric(const H5::Group outgroup, const int &exponent_of_two, float scale, const BloodFlowParameters &bfparams, const bool &only2D)
+void vesselgen_generate_symmetric(H5::Group &outgroup, const int &exponent_of_two, float scale, const BloodFlowParameters &bfparams, const bool &only2D)
 {
   typedef VesselList3d::LatticeData LatticeData;
   const int points_per_site = pow(2,exponent_of_two)+1;

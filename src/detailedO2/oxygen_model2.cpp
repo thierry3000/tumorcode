@@ -1309,7 +1309,8 @@ void DetailedP02Sim::init(Parameters &params_,
   world = !vl.HasLattice();
   
   //multithreading
-  my::SetNumThreads(params.num_threads);
+  //HACK2018
+  //my::SetNumThreads(params.num_threads);
   {
     //this worked only for lattices
     //int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
@@ -1352,7 +1353,8 @@ void DetailedP02Sim::init(Parameters &params_,
       grid.ld.print(cout);
       cout << endl;
       cout << "multithreading:" << endl;
-      cout << my::GetNumThreads()<<endl;
+      //HACK2018
+      //cout << my::GetNumThreads()<<endl;
     }
     if (params.loglevel > 0)
     {

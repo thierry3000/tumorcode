@@ -32,10 +32,10 @@ void run(const boost::property_tree::ptree &parameters);
 ptree getDefaultParameters();
 ptree getVariableArgumentCountParameters();
 
-void vesselgen_generate_grid(H5::Group outgroup, const Int3 &size, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, const BloodFlowParameters &bfparams);
-void vesselgen_generate_single(H5::Group outgroup, const Int3 &size, const int direction_mode, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, int segment_size, const BloodFlowParameters &bfparams);
-void vesselgen_generate_grid_no_flow(H5::Group outgroup, const Int3 &size, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, const BloodFlowParameters &bfparams);
-void vesselgen_generate_symmetric(const H5::Group outgroup, const int &exponent_of_two, float scale, const BloodFlowParameters &bfparams, const bool &only2D);
+void vesselgen_generate_grid(H5::Group &outgroup, const Int3 &size, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, const BloodFlowParameters &bfparams);
+void vesselgen_generate_single(H5::Group &outgroup, const Int3 &size, const int direction_mode, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, int segment_size, const BloodFlowParameters &bfparams);
+void vesselgen_generate_grid_no_flow(H5::Group &outgroup, const Int3 &size, float scale, const string &ld_type, float capillary_radius, float press_min, float press_max, const BloodFlowParameters &bfparams);
+void vesselgen_generate_symmetric(H5::Group &outgroup, const int &exponent_of_two, float scale, const BloodFlowParameters &bfparams, const bool &only2D);
 }
 
 #endif

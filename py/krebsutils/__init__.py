@@ -51,6 +51,37 @@ SetupFieldLattice:
     spacing:lattice spacing
     
 '''
+#HACK2018
+#imports_ = [ f.strip() for f in
+#    '\
+#    LatticeData, \
+#    read_lattice_data_from_hdf_by_filename, \
+#    write_lattice_data_to_hdf_by_filename, \
+#    export_network_for_povray, \
+#    ClipShape, \
+#    povray_clip_object_str, \
+#    make_position_field, \
+#    calcBulkTissueSourceTerm, \
+#    make_vessel_volume_fraction_field, \
+#    calc_vessel_boxcounts, \
+#    set_num_threads, \
+#    run_vesselgen, \
+#    vesselgen_generate_grid, \
+#    vesselgen_generate_single, \
+#    vesselgen_generate_symmetric, \
+#    GetHealthyVesselWallThickness, \
+#    CalcRelativeViscosity, \
+#    CalcFahraeusEffect, \
+#    CalcIntervascularInterpolationField_, \
+#    SetupFieldLattice, \
+#    PressureRadiusRelation, \
+#    SumIsoSurfaceIntersectionWithVessels_, \
+#    get_Murray2, \
+#    get_Murray_scale, \
+#    CalcViscosities, \
+#    CalcConductivities'.split(',')
+#]
+
 imports_ = [ f.strip() for f in
     '\
     LatticeData, \
@@ -63,7 +94,6 @@ imports_ = [ f.strip() for f in
     calcBulkTissueSourceTerm, \
     make_vessel_volume_fraction_field, \
     calc_vessel_boxcounts, \
-    set_num_threads, \
     run_vesselgen, \
     vesselgen_generate_grid, \
     vesselgen_generate_single, \
@@ -80,6 +110,7 @@ imports_ = [ f.strip() for f in
     CalcViscosities, \
     CalcConductivities'.split(',')
 ]
+
 # CalcRelativeViscosityByTable, \
 # load functions from libkrebs_ into local namespace
 locals().update( (f,getattr(libkrebs, f)) for f in imports_)

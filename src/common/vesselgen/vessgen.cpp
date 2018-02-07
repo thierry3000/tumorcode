@@ -173,9 +173,20 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
   if (finished_countdown > 0 && last_iter_data.get<float>("rBV")>last_saved_quality && grower.hierarchy_level>=grower.max_hierarchy_level)
   {
     iter_data.put<my::Time>("real_start_time", real_start_time);
-    H5::H5File file(outfilename+".h5", H5F_ACC_RDWR);
+    try{
+	// new way  H5F_ACC_RDWR
+       //H5::H5File *readInFile = new H5::H5File(fn, H5F_ACC_RDONLY );
+      //H5::H5File file(outfilename+".h5", H5F_ACC_RDWR);H5F_ACC_EXCL
+      
+      H5::H5File file = H5::H5File(outfilename + ".h5", H5F_ACC_TRUNC);
+      DoOutput(file, grower.get_vl(), grower, iter_data, input_pt);
+    }
+    catch(H5::Exception e)
+    {
+      e.printError();
+    }
     //CalcFlow(grower.get_vl(),);
-    DoOutput(file, grower.get_vl(), grower, iter_data, input_pt);
+    
   }
   
   return finished_countdown < quality_buff_size;
@@ -190,7 +201,7 @@ void VessGenApp::run(const ptree &input_pt_)
     quality_buff_size = input_pt.get<int>("max_num_iter") / 10;
     //TF: I think vessel gen should be single threaded
     //my::SetNumThreads(input_pt.get<int>("num_threads", 1));
-    my::SetNumThreads(1);
+    //my::SetNumThreads(1);
     
     Grower grower;
     grower.Run(input_pt, boost::bind(&VessGenApp::Callback, this, _1));

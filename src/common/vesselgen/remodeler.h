@@ -257,7 +257,7 @@ void MeasureBranchNumbers( const VesselList3d &vl,  Histo &hbranch );
 void MeasureRoot( const VesselList3d &vl, double &arad, double &aflow, double &arootcnt, double &vrad, double &vflow, double &vrootcnt );
 const my::Averaged<float> MeasureShearDistribution( const VesselList3d& vl, Histo &hshear, Histo &byrad );
 
-void DoOutput(H5::Group root,
+void DoOutput(H5::Group &root,
               const VesselList3d &vl,
               const TreeRootList &tree_roots);
 
