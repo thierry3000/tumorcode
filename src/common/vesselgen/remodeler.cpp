@@ -1242,18 +1242,22 @@ void Grower::SanityCheck()
 void Grower::UpscaleTrees()
 {
   // first get vessels on subdivided lattice
-  std::auto_ptr<LatticeData> oldld(vl->Ld().Clone());
-  //hope this wont end too bad
+  //std::auto_ptr<LatticeData> oldld(vl->Ld().Clone());
+  
+  std::cout << "cloning finished" << std::endl;
+  //hope this wont end too bad, it ended bad TF 16.02.2018
   //std::auto_ptr<LatticeData> oldld(vl->Ld()->get());
-  std::auto_ptr<VesselList3d> vl_new = GetSubdivided(vl, 2, oldld->Scale(), 0);
-  vl = vl_new;
-  const LatticeData &ld = vl->Ld();
-
+//   std::auto_ptr<VesselList3d> vl_new = GetSubdivided(vl, 2, oldld->Scale(), 0);
+//   vl = vl_new;
+  //const LatticeData &ld = vl->Ld();
+  vl = GetSubdivided(vl, 2, vl->Ld().Scale(), 0);
+  //const LatticeData &ld = vl->Ld();
+  
   VESSGEN_MAXDBG(vl->IntegrityCheck();)
 
   // extend roots to the lattice boundary
   int reverse_dir[32];
-  GetReverseDir(ld, reverse_dir);
+  GetReverseDir(vl->Ld(), reverse_dir);
 
   TreeRootList new_roots; // with updated lattice index keys
   BOOST_FOREACH(auto it, tree_roots)
@@ -1262,7 +1266,8 @@ void Grower::UpscaleTrees()
     int d = reverse_dir[root.dir];
     myAssert(!dir_is_forbidden[d]);
     
-    root.p = oldld->GetLatticeIndexOnRefinedGrid(root.p, 1); // the root position on refined lattice. This is the starting point to pick a different position closer the boundary of the lattice
+    //root.p = oldld->GetLatticeIndexOnRefinedGrid(root.p, 1); // the root position on refined lattice. This is the starting point to pick a different position closer the boundary of the lattice
+    root.p = vl->Ld().GetLatticeIndexOnRefinedGrid(root.p, 1); // the root position on refined lattice. This is the starting point to pick a different position closer the boundary of the lattice
     
     VesselNode* previousRoot = vl->FindNode(root.p);
     myAssert(previousRoot && (previousRoot->flags & BOUNDARY)); // there should be a node, because it is the original root site (just copied to the refined lattice)
@@ -1271,8 +1276,8 @@ void Grower::UpscaleTrees()
       VesselNode* vc = previousRoot;
       while (true)
       {
-        Int3 q = ld.NbLattice(root.p, d); // move one bound
-        if (!ld.IsInsideLattice(q)) break;
+        Int3 q = vl->Ld().NbLattice(root.p, d); // move one bound
+        if (!vl->Ld().IsInsideLattice(q)) break;
         if (vl->FindNode(q)) break;  
         // add a vascular segment
         vcnew = vl->InsertNode(q);
@@ -1302,8 +1307,8 @@ void Grower::UpscaleTrees()
     new_roots.insert(std::make_pair(root.p, root));
   }
   tree_roots = new_roots;
-
   VESSGEN_MAXDBG(vl->IntegrityCheck();)
+  std::cout << "subdivided" << std::endl;
 }
 
 
@@ -1316,6 +1321,7 @@ void Grower::HierarchicalGrowth()
     DebugOutVessels(*this, str(format("without_capillaries_hit_%i") % hierarchy_level));
   
   UpscaleTrees();
+  std::cout << "splitting" << std::endl;
   SplitSegmentsToOneLatticeBond(*vl);
 
   // obtain new terminal branches for random growth

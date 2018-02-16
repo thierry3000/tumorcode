@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define PYTHON_HELPERS_H
 
 
-
+#include <boost/version.hpp>
 #include <boost/python.hpp>
 #include <boost/python/tuple.hpp>
 

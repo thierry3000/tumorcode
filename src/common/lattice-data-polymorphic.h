@@ -130,7 +130,7 @@ public:
   Derived(const Ld &ld) : ld(ld) { }
   Derived(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
   Derived(const Derived &other) : ld(other.ld) {}
-  //~Derived() { }
+  ~Derived() { }
   //Ld& get() { return ld; }
   Ld get() const { return ld; }
 

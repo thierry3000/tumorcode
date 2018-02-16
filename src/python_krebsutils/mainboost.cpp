@@ -17,6 +17,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <boost/version.hpp>
+#include <boost/preprocessor/stringize.hpp>
+
 #include <boost/python/exception_translator.hpp>
 #include "python_helpers.h"
 #include <boost/python/object.hpp>
@@ -49,7 +52,8 @@ enum Mode {
   DATA_CONST = 0,
   DATA_LINEAR = 4,
 };
-#if BOOST_VERSION>106300
+#pragma message("BOOST_VERSION=" BOOST_PP_STRINGIZE(BOOST_VERSION))
+#if ((BOOST_VERSION/100)%1000) < 63
 py::object read_vessel_positions_from_hdf_by_filename(const string fn, const string groupname)
 {
   //h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
@@ -131,7 +135,6 @@ py::object read_vessel_positions_from_hdf_by_filename(const string fn, const str
     
   }
   readInFile.close();
-  vl.reset();
   //return wp.getObject();
   return py::make_tuple(py_x, py_y, py_z);
 }
@@ -258,7 +261,7 @@ template<class T> inline  void op_logical_or(T &a, const T &b) { a |= b; }
 template<> inline void op_logical_or<double>(double &a, const double &T) {}
 template<> inline void op_logical_or<float>(float &a, const float &T) {}
 
-#if BOOST_VERSION>106300
+#if ((BOOST_VERSION/100)%1000) > 63
 template<class T>
 np::ndarray edge_to_node_property_t(int num_nodes, const np::ndarray &edges, const np::ndarray &prop, const int combinefunc_id)
 {
@@ -418,7 +421,7 @@ np::arraytbase edge_to_node_property_t(int num_nodes, const np::arrayt<int> &edg
 }
 #endif
 
-#if BOOST_VERSION>106300
+#if ((BOOST_VERSION/100)%1000) > 63
 py::object flood_fill(const np::ndarray &py_field, const Int3 &startpos)
 {
 //   np::arrayt<uchar> field(py_field);
@@ -486,7 +489,7 @@ py::object flood_fill(const nm::array &py_field, const Int3 &startpos)
 #endif
 
 
-#if BOOST_VERSION>106300
+#if ((BOOST_VERSION/100)%1000) > 63
 py::object distancemap(const np::ndarray &py_field)
 {
   //np::arrayt<uchar> field(py_field);
@@ -557,7 +560,7 @@ py::object distancemap(const nm::array &py_field)
 }
 #endif
 
-#if BOOST_VERSION>106300
+#if ((BOOST_VERSION/100)%1000) > 63
 template<class T>
 py::object diff_field(np::ndarray py_field, int axis, double prefactor)
 {
@@ -631,7 +634,7 @@ py::object diff_field(np::arrayt<T> py_field, int axis, double prefactor)
 #endif
 
 
-#if BOOST_VERSION>106300
+#if ((BOOST_VERSION/100)%1000) > 63
 py::object SumIsoSurfaceIntersectionWithVessels(float level, np::ndarray py_edgelist, np::ndarray py_pressure, np::ndarray py_flags, np::ndarray py_nodalLevel, np::ndarray py_datavalue)
 {
 //   np::arrayt<int> edges(py_edgelist);
@@ -731,7 +734,7 @@ py::object SumIsoSurfaceIntersectionWithVessels(float level, nm::array py_edgeli
 /* computes c(r) = <a(x)*y(x+r)>_{x,|r|}, where |r| is a fixed parameter argument.
  * The averaging is done over all points x, and concentric shells around it of radius |r|.
  */
-#if BOOST_VERSION>106300
+#if ((BOOST_VERSION/100)%1000) > 63
 #else
 template<class T>
 py::tuple radial_correlation(np::arrayt<T> py_field1, np::arrayt<T> py_field2, Int3 distance, int super_samples, bool subtract_avg, py::object &py_obj_mask)
@@ -942,10 +945,10 @@ BOOST_PYTHON_MODULE(libkrebs_)
   py::def("diff_field_"#T, diff_field<T>);
   DEFINE_diff_field_t(float)
   DEFINE_diff_field_t(double)
-#define DEFINE_radial_correlation_t(T)\
-  py::def("radial_correlation_"#T, radial_correlation<T>);
-  DEFINE_radial_correlation_t(float)
-  DEFINE_radial_correlation_t(double)
+// #define DEFINE_radial_correlation_t(T)\
+//   py::def("radial_correlation_"#T, radial_correlation<T>);
+//   DEFINE_radial_correlation_t(float)
+//   DEFINE_radial_correlation_t(double)
   
   export_povray_export();
   export_samplevessels();

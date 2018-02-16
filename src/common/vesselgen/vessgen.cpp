@@ -182,6 +182,7 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
       
       H5::H5File file = H5::H5File(outfilename + ".h5", H5F_ACC_TRUNC);
       DoOutput(file, grower.get_vl(), grower, iter_data, input_pt);
+      file.close();
     }
     catch(H5::Exception e)
     {

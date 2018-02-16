@@ -298,9 +298,9 @@ void DoOutput(H5::H5File &file,
           DynArray<float> tmp;
           grower.GetGfAtNodes(tmp);
           //h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
-	  //h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
-	  H5::Group h5_nodes= root.openGroup("vessels/nodes");
-	  writeDataSetToGroup(h5_nodes, string("gf"), tmp);
+          //h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
+          H5::Group h5_nodes= root.openGroup("vessels/nodes");
+          writeDataSetToGroup(h5_nodes, string("gf"), tmp);
           tmp.clear();
         }
 #endif
