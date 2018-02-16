@@ -491,6 +491,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   }
 
   vbl::p_to_current_CellsSystem->CloseOutputFiles();						// Closing output files
+  delete vbl::p_to_current_CellsSystem;
   return 0;
 }
 
@@ -580,12 +581,22 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   timing_attrs.set("run_vbl_cellEvents", vbl::p_to_current_CellsSystem->myTiming.cellEvents);
   timing_attrs.set("run_vbl_writeToFile", vbl::p_to_current_CellsSystem->myTiming.writeToFile);
   timing_attrs.set("run_vbl_bico_call", vbl::p_to_current_CellsSystem->myTiming.bico_call);
+  timing_attrs.set("geometry_neighborhood", vbl::p_to_current_CellsSystem->myTiming.geometry_neighborhood);
   
   const auto now = std::chrono::system_clock::now();
   const auto epoch   = now.time_since_epoch();
   const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(epoch);
   timing_attrs.set("secondsSinceEpoch", (int)seconds.count());
   
+  
+  h5::Group memory = gout.create_group("memory");
+  h5::Attributes memory_attrs = memory.attrs();
+  /** vmem, vmem_peak, rss, rss_peak */
+  MemUsage m = GetMemoryUsage_();
+  memory_attrs.set("vmem", m.vmem);
+  memory_attrs.set("vmem_peak", m.vmem);
+  memory_attrs.set("rss", m.vmem);
+  memory_attrs.set("rss_peak", m.vmem);
   h5::Group cells_out = gout.create_group("cells");
   /* writes the cell system stuff */
   //WriteCellsSystemHDF(currentCellsSystem, cells_out);

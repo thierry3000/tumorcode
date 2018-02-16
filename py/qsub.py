@@ -177,8 +177,9 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
     print >>f, '#SBATCH --ntasks-per-node=1'
     # this is for sparing the nodes with lots of cores
     #print >>f, '#SBATCH --exclude=leak[57-64]'
-    #print >>f, '#SBATCH --nodelist=leak61'
-    #print >>f, 'export OMP_NUM_THREADS=$SLURM_JOB_CPUS_PER_NODE'
+    #print >>f, '#SBATCH --nodelist=leak62'
+    
+    
     #print >>f, '#SBATCH --resv-ports'
   #MPI
   if num_cpus > 1 and goodArgumentsQueue.mpi:
@@ -397,6 +398,9 @@ def submit_slurm(obj, submission_program, **slurmopts):
   f = cStringIO.StringIO()
   print >>f, first_line
   write_directives_slurm_(f, **slurmopts)
+  print >>f, 'import os'
+  print >>f, 'os.environ["OMP_NUM_THREADS"]=os.environ["SLURM_JOB_CPUS_PER_NODE"]'
+  print >>f, 'print(os.environ["OMP_NUM_THREADS"])'
   old=True
   if old:
     print >>f,obj.generate_script(slurmopts)
