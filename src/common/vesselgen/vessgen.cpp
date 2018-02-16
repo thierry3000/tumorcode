@@ -27,6 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 //void WriteHdfHistogram( h5::Group f, const string &id, const BasicHistogram1D<float> &h );
+
+/* forward declaration, defined in vessgen_support.cpp */
 void DoOutput(H5::H5File &file,
               const VesselList3d &vl,
               const Grower &grower,
@@ -228,7 +230,7 @@ ptree getDefaultParameters()
   pt.put("lattice_size", Int3(100, 100, 100));
   DOPT(lattice_spacing, 150.);
   DOPT(seed, 0);
-  DOPT(lattice_type, "fcc");
+  DOPT(lattice_type, "FCC");
   DOPT(o2.diffusion_range, 90.);
   DOPT(max_sprout_radius_artery, 5.);
   DOPT(max_sprout_radius_vein, 15.); // was 6 for both

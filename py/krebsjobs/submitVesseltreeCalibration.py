@@ -108,7 +108,7 @@ if not qsub.is_client:
        num_points = options.pop('num_points')
        scale      = options.pop('scale')
        hiter      = options.pop('hiter')
-       vd = VD(shape=(num_points, num_points, num_points), scale=scale, latticetype='fcc', num_hierarchical_iterations=hiter, ensemble_index=i, **options)
+       vd = VD(shape=(num_points, num_points, num_points), scale=scale, latticetype='FCC', num_hierarchical_iterations=hiter, ensemble_index=i, **options)
        vd = fix_worldsize(vd)
        vd.name        = options.get('name', filename)  #this goes into the message attribute of the output file, default to filename
        vd.outfilename = filename

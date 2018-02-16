@@ -147,8 +147,8 @@ def make_any_color_arrays(vesselgraph, data_name):
     unmapped_range = (p0, p1)
     cm = matplotlib.cm.ScalarMappable(cmap=cm_redblue)
     cm.set_clim(p0, p1)
-    edgecolors[mask] = colors(edgedata[mask])
-    nodecolors[nmask] = colors(nodedata[nmask])
+    edgecolors[mask[:,0]] = colors(edgedata[mask])
+    nodecolors[nmask[:,0]] = colors(nodedata[nmask])
   elif data_name == 'shearforce':
     mask = mask & (edgedata>0)
     nmask = nmask & (nodedata>0)
@@ -161,8 +161,8 @@ def make_any_color_arrays(vesselgraph, data_name):
     p1 = -1#np.amax(edgedata)
     cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.spectral)
     cm.set_clim(p0, p1)
-    edgecolors[mask] = colors(edgedata)
-    nodecolors[nmask] = colors(nodedata)
+    edgecolors[mask[:,0]] = colors(edgedata)
+    nodecolors[nmask[:,0]] = colors(nodedata)
   elif data_name == 'S_tot':
     #mask = mask & (edgedata>0)
     #nmask = nmask & (nodedata>0)
@@ -195,8 +195,8 @@ def make_any_color_arrays(vesselgraph, data_name):
     p1 = np.ceil(np.amax(edgedata))
     cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.jet)
     cm.set_clim(p0, p1)
-    edgecolors[mask] = colors(edgedata)
-    nodecolors[nmask] = colors(nodedata)
+    edgecolors[mask[:,0]] = colors(edgedata)
+    nodecolors[nmask[:,0]] = colors(nodedata)
   elif data_name == 'conductivitySignal':
     edgedata = edgedata[mask]
     nodedata = nodedata[nmask]
@@ -303,8 +303,12 @@ def ComputeBoundingBox(vesselgroup, vesselgraph):
     #wbbox = krebsutils.read_lattice_data_from_hdf(vess_ldgroup).worldBox
     fn=str(vess_ldgroup.file.filename)
     path=str(vess_ldgroup.name)
+    print("reading bounding box from file: %s at %s" %(fn,path))
+    
     Pyld = krebsutils.read_lattice_data_from_hdf_by_filename(fn, path)
     wbbox = Pyld.worldBox
+    del(Pyld)
+    print(wbbox)
   else:
     pos = vesselgraph['position']
     minval = np.amin(pos, axis=0)
@@ -312,6 +316,13 @@ def ComputeBoundingBox(vesselgroup, vesselgraph):
     wbbox = np.vstack((minval, maxval)).transpose().ravel()  # xmin ,xmax, ymin, ymax, zmin ,zmax ...
     print 'WBBOX = ', wbbox
   return wbbox
+  
+#  pos = vesselgraph['position']
+#  minval = np.amin(pos, axis=0)
+#  maxval = np.amax(pos, axis=0)
+#  wbbox = np.vstack((minval, maxval)).transpose().ravel()  # xmin ,xmax, ymin, ymax, zmin ,zmax ...
+#  print 'WBBOX = ', wbbox
+#  return wbbox
 
 
 def renderScene(vesselgroup, imagefn, **kwargs):

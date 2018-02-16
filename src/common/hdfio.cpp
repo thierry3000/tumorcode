@@ -46,6 +46,10 @@ H5::DataType getH5TypeFromCpp()
   {
     thisWritingType = H5::PredType::NATIVE_DOUBLE;
   }
+  else if(typeid(T) == typeid(Bool3))
+  {
+    thisWritingType = H5::PredType::NATIVE_CHAR;
+  }
   else if(typeid(T) == typeid(int))
   {
     thisWritingType = H5::PredType::NATIVE_INT;
@@ -73,6 +77,10 @@ H5::DataType getH5TypeFromCpp()
   else if(typeid(T) == typeid(long))
   {
     thisWritingType = H5::PredType::NATIVE_LONG;
+  }
+  else if(typeid(T) == typeid(int64))
+  {
+    thisWritingType = H5::PredType::NATIVE_INT64;
   }
   else
   {
@@ -103,12 +111,14 @@ H5::DataType getH5TypeFromCpp()
 // }
 
 template<class U,class T>
-void readAttrFromH5(U g, const string &attr_name, T &output_buffer)
+void readAttrFromH5(U &g, const string &attr_name, T &output_buffer)
 {
-  H5::Attribute att_to_read = g.openAttribute(attr_name);
-  H5::DataType type = att_to_read.getDataType();
+  H5::Attribute att_to_read;
+  H5::DataType type; 
   try
   {
+    att_to_read = g.openAttribute(attr_name);
+    type = att_to_read.getDataType();
     att_to_read.read(type, &output_buffer);
   }
   catch(H5::Exception error)
@@ -117,7 +127,7 @@ void readAttrFromH5(U g, const string &attr_name, T &output_buffer)
   }
 }
 template<>
-void readAttrFromH5<H5::DataSet, string>(H5::DataSet g, const string &attr_name, string &output_buffer)
+void readAttrFromH5<H5::DataSet, string>(H5::DataSet &g, const string &attr_name, string &output_buffer)
 { 
   H5::Attribute att_to_read = g.openAttribute(attr_name);
   //H5::DataType type = att_to_read.getDataType();
@@ -143,7 +153,7 @@ void readAttrFromH5<H5::DataSet, string>(H5::DataSet g, const string &attr_name,
   output_buffer = strreadbuf;
 }
 template<>
-void readAttrFromH5<H5::Group, string>(H5::Group g, const string &attr_name, string &output_buffer)
+void readAttrFromH5<H5::Group, string>(H5::Group &g, const string &attr_name, string &output_buffer)
 { 
   H5::Attribute att_to_read = g.openAttribute(attr_name);
   //H5::DataType type = att_to_read.getDataType();
@@ -188,7 +198,7 @@ void writeAttrToH5(U &h, const string &attr_name,  const T &value)
   {
     dims[1] = 6;
   }
-  H5::DataSpace mspace( rank, dims);
+  H5::DataSpace mspace = H5::DataSpace( rank, dims);
   H5::Attribute attr_out;
   try{
     attr_out = h.createAttribute(attr_name, thisType, mspace);
@@ -240,7 +250,7 @@ void writeAttrToH5<H5::DataSet,string>(H5::DataSet &h, const string &attr_name, 
   }
 };
 
-H5::Group RequireLatticeDataGroup(H5::H5File f, const string &name, const LatticeDataQuad3d &ld)
+H5::Group RequireLatticeDataGroup(H5::H5File &f, const string &name, const LatticeDataQuad3d &ld)
 {
   bool had_ld_group = false;
   H5::Group ld_group;
@@ -254,7 +264,8 @@ H5::Group RequireLatticeDataGroup(H5::H5File f, const string &name, const Lattic
   catch( H5::GroupIException not_found_error )
   {
       cout << " Lattice group not found in hdf, we create it." << endl;
-      WriteHdfLd(ld_group, ld);
+      //WriteHdfLd(ld_group, ld);
+      ld.WriteHdfLd(ld_group);
   }
 //   H5::Group ld_group = g.createGroup()
 //   h5cpp::Group ld_group = g.require_group(name, &had_ld_group);
@@ -263,7 +274,7 @@ H5::Group RequireLatticeDataGroup(H5::H5File f, const string &name, const Lattic
   return ld_group;
 }
 
-H5::Group RequireLatticeDataGroup(H5::Group g, const LatticeDataQuad3d &ld)
+H5::Group RequireLatticeDataGroup(H5::Group &g, const LatticeDataQuad3d &ld)
 {
   //"field_ld"
   bool had_ld_group = false;
@@ -278,7 +289,8 @@ H5::Group RequireLatticeDataGroup(H5::Group g, const LatticeDataQuad3d &ld)
   catch( H5::GroupIException not_found_error )
   {
       cout << " Lattice group not found in hdf, we create it." << endl;
-      WriteHdfLd(ld_group, ld);
+      //WriteHdfLd(ld_group, ld);
+      ld.WriteHdfLd(ld_group);
   }
 //   H5::Group ld_group = g.createGroup()
 //   h5cpp::Group ld_group = g.require_group(name, &had_ld_group);
@@ -289,25 +301,26 @@ H5::Group RequireLatticeDataGroup(H5::Group g, const LatticeDataQuad3d &ld)
 
 
 
-void WriteHdfGraph( H5::Group g, const VesselList3d &vl )
+void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
 {
 #ifdef DEBUG
   printf("Starting to write hdf\n");
 #endif
-  const int ncnt = vl.GetNCount();
-  const int ecnt = vl.GetECount();
+  int ncnt = vl.GetNCount();
+  int ecnt = vl.GetECount();
   myAssert(ncnt>0 && ecnt>0);
   
-  H5::Group gg;
+  H5::Group h5_nodes;
   try
   {
-    gg = g.createGroup("nodes");
+    h5_nodes = g.createGroup("nodes");
   }
   catch(H5::Exception e)
   {
-    gg = g.openGroup("nodes");
+    e.printError();
+    h5_nodes = g.openGroup("nodes");
   }
-  writeAttrToH5(gg, "COUNT", ncnt);
+  //writeAttrToH5(h5_nodes, string("COUNT"), ncnt);
   //gg.attrs().set("COUNT",ncnt);
   //h5cpp::Attributes attrs = g.attrs();
 //   H5::Group gg = g.createGroup("nodes");
@@ -338,14 +351,17 @@ void WriteHdfGraph( H5::Group g, const VesselList3d &vl )
     //lattice stuff is writen to hdf
     H5::Group lattice_group = g.createGroup("lattice");
     //vl.Ld().WriteHdf(g.create_group("lattice"));
-    vl.Ld().WriteHdf(lattice_group);
+    //vl.Ld().WriteHdf(lattice_group);
     const VesselList3d::LatticeData &ld = vl.Ld();
+    ld.Lattice2Hdf(lattice_group);
+    //ld.writeToHdf(lattice_group);
+    //vl.Ld().WriteHdf(lattice_group);
     DynArray<int> a(ncnt);
     for(int i=0; i<ncnt; ++i) 
     {
       a[i] = ld.LatticeToSite(vl.GetNode(i)->lpos);
     }
-    H5::DataSet dataset = writeDataSetToGroup(gg, string("lattice_pos"), a);
+    H5::DataSet dataset = writeDataSetToGroup(h5_nodes, string("lattice_pos"), a);
     //h5cpp::Dataset ds = h5cpp::create_dataset<int>(gg,  "lattice_pos", a);
 //       hsize_t dims[2] = {1,ncnt};
 //       int RANK = 2;
@@ -391,7 +407,7 @@ void WriteHdfGraph( H5::Group g, const VesselList3d &vl )
     
     try{
       //DataSet dataset = file.openDataSet(DATASET_NAME);
-      H5::DataSet ds = gg.openDataSet("world_pos");
+      H5::DataSet ds = h5_nodes.openDataSet("world_pos");
       //grp=h5file.openGroup("A");
     } catch(H5::Exception& e){
       /* group does not exists, create it */
@@ -399,7 +415,7 @@ void WriteHdfGraph( H5::Group g, const VesselList3d &vl )
       const int	 RANK = 2;
       hsize_t dims[2] = {3, ncnt};
       H5::DataSpace dataspace(RANK, dims);
-      H5::DataSet ds = gg.createDataSet("world_pos", H5::PredType::NATIVE_FLOAT, dataspace);
+      H5::DataSet ds = h5_nodes.createDataSet("world_pos", H5::PredType::NATIVE_FLOAT, dataspace);
       ds.write(&a, H5::PredType::NATIVE_FLOAT);
     }
 //     if(!gg.exists("world_pos"))
@@ -416,19 +432,22 @@ void WriteHdfGraph( H5::Group g, const VesselList3d &vl )
     if(vl.GetNode(i)->IsBoundary())
       roots.push_back(i);
   }
+  H5::DataSet ds;
   try{
       //DataSet dataset = file.openDataSet(DATASET_NAME);
-      H5::DataSet ds = gg.openDataSet("roots");
+      ds = h5_nodes.openDataSet("roots");
       //grp=h5file.openGroup("A");
     } catch(H5::Exception& e){
       /* group does not exists, create it */
       //grp=h5file.createGroup("A");
-      const int	 RANK = 2;
-      hsize_t dims[2] = {1, 16};
-      H5::DataSpace dataspace(RANK, dims);
-      H5::DataSet ds = gg.createDataSet("roots", H5::PredType::NATIVE_INT, dataspace);
-      ds.write(&roots, H5::PredType::NATIVE_INT);
-      writeDataSetToGroup(gg,"roots", roots);
+      //const int	 RANK = 2;
+      //hsize_t dims[2] = {1, 16};
+      //H5::DataSpace dataspace(RANK, dims);
+      //H5::DataSet ds = gg.createDataSet("roots", H5::PredType::NATIVE_INT, dataspace);
+      //ds.write(&roots, H5::PredType::NATIVE_INT);
+      H5::DataSet h5_dataset_roots = writeDataSetToGroup(h5_nodes, string("roots"), roots);
+      //ds = gg.createDataSet("roots")
+      //writeDataSetToGroup(ds,"roots", roots);
     }
 //   if(!gg.exists("roots"))
 //   {
@@ -463,10 +482,10 @@ void WriteHdfGraph( H5::Group g, const VesselList3d &vl )
 	bc_conductivity_value.push_back(0);
       }
     }
-    writeDataSetToGroup(gg, string("bc_node_index"), bc_node_index);
-    writeDataSetToGroup(gg, string("bc_type"), bctyp_index);
-    writeDataSetToGroup(gg, string("bc_value"), values_of_bcs);
-    writeDataSetToGroup(gg, string("bc_conductivity_value"), bc_conductivity_value);
+    writeDataSetToGroup(h5_nodes, string("bc_node_index"), bc_node_index);
+    writeDataSetToGroup(h5_nodes, string("bc_type"), bctyp_index);
+    writeDataSetToGroup(h5_nodes, string("bc_value"), values_of_bcs);
+    writeDataSetToGroup(h5_nodes, string("bc_conductivity_value"), bc_conductivity_value);
 //     h5cpp::create_dataset<int>(gg,  "bc_node_index", bc_node_index);
 //     h5cpp::create_dataset<int>(gg,  "bc_type", bctyp_index);
 //     h5cpp::create_dataset<float>(gg,  "bc_value", values_of_bcs);
@@ -474,8 +493,8 @@ void WriteHdfGraph( H5::Group g, const VesselList3d &vl )
   }
   }//for interrupt 
 
-  gg = g.createGroup("edges");
-  writeAttrToH5(gg,string("COUNT"), ecnt);
+  H5::Group h5_edges = g.createGroup("edges");
+  writeAttrToH5(h5_edges,string("COUNT"), ecnt);
   //gg.attrs().set("COUNT",ecnt);
   
   {//Write edge stuff
@@ -489,11 +508,11 @@ void WriteHdfGraph( H5::Group g, const VesselList3d &vl )
       flags[i] = v->flags; 
       float_radius[i] = v->r; 
     }
-    writeDataSetToGroup(gg, string("node_a_index"), va);
-    writeDataSetToGroup(gg, string("node_b_index"), vb);
-    writeDataSetToGroup(gg, string("flags"), flags);
-    writeDataSetToGroup(gg, string("radius"), float_radius);
-    writeAttrToH5(gg, string("MODE"), string("const"));
+    writeDataSetToGroup(h5_edges, string("node_a_index"), va);
+    writeDataSetToGroup(h5_edges, string("node_b_index"), vb);
+    writeDataSetToGroup(h5_edges, string("flags"), flags);
+    writeDataSetToGroup(h5_edges, string("radius"), float_radius);
+    writeAttrToH5(h5_edges, string("MODE"), string("const"));
     
    
 //     h5cpp::create_dataset<int>( gg, "node_a_index", va);
@@ -504,7 +523,7 @@ void WriteHdfGraph( H5::Group g, const VesselList3d &vl )
   }
 }
 
-void ReadHdfGraph( H5::Group g, VesselList3d *vl )
+void ReadHdfGraph( H5::Group &g, VesselList3d *vl )
 {
   H5::Group gnodes = g.openGroup("nodes");
   H5::Group gedges = g.openGroup("edges");
@@ -707,7 +726,7 @@ void ReadHdfGraph( H5::Group g, VesselList3d *vl )
 }
 
 template<class T>
-H5::DataSet WriteScalarField(H5::Group g, const string &name, ConstArray3d<T> arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup)
+H5::DataSet WriteScalarField(H5::Group &g, const string &name, ConstArray3d<T> arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup)
 {
   arr = arr[ld.Box()];
   //h5cpp::Dataset ds = WriteArray3D<T>(g, name, arr, disktype);
@@ -722,7 +741,7 @@ H5::DataSet WriteScalarField(H5::Group g, const string &name, ConstArray3d<T> ar
 }
 
 template<class Vector>
-H5::DataSet WriteVectorField(H5::Group g, const string &name, ConstArray3d<Vector> arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup)
+H5::DataSet WriteVectorField(H5::Group &g, const string &name, ConstArray3d<Vector> arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup)
 {
   arr = arr[ld.Box()];
   H5::DataSet ds = WriteVectorArray3D<Vector>(g, name, arr);
@@ -736,7 +755,7 @@ H5::DataSet WriteVectorField(H5::Group g, const string &name, ConstArray3d<Vecto
 
 
 template<class T, int mydim>
-H5::DataSet WriteAveragedFaceVariables(H5::Group file, const string &id, const ConstArray3d<T> *face_fields)
+H5::DataSet WriteAveragedFaceVariables(H5::Group &file, const string &id, const ConstArray3d<T> *face_fields)
 {
   BBox3 bb = face_fields[0].getBox(); --bb.max[0];
   Array3d<Vec<T, mydim> > tmp(bb);
@@ -755,7 +774,7 @@ H5::DataSet WriteAveragedFaceVariables(H5::Group file, const string &id, const C
 
 
 template<class T>
-H5::DataSet WriteAveragedFaceVariables(H5::Group file, const string &id, int dim, const ConstArray3d<T> *face_fields)
+H5::DataSet WriteAveragedFaceVariables(H5::Group &file, const string &id, int dim, const ConstArray3d<T> *face_fields)
 {
   switch(dim)
   {
@@ -768,7 +787,7 @@ H5::DataSet WriteAveragedFaceVariables(H5::Group file, const string &id, int dim
 }
 
 template<class T>
-H5::DataSet WriteAveragedFaceVariableField(H5::Group file, const string &id, int dim, const ConstArray3d<T> *face_fields, const LatticeDataQuad3d &ld, const H5::Group ldgroup)
+H5::DataSet WriteAveragedFaceVariableField(H5::Group &file, const string &id, int dim, const ConstArray3d<T> *face_fields, const LatticeDataQuad3d &ld, const H5::Group ldgroup)
 {
   LatticeIndexRanges ir = LatticeIndexRanges::FromCellRange(ld.Box(), dim);
   ConstArray3d<T> my_fields[3];
@@ -890,7 +909,7 @@ template string getH5GroupName<H5::DataSet>(H5::DataSet g);
 // }
 
 template <class T>
-void readDataSetFromGroup(H5::Group g, string ds_name, T *placeToStore)
+void readDataSetFromGroup(H5::Group &g, string ds_name, T *placeToStore)
 {
   H5::DataSet dset = g.openDataSet(ds_name);
   H5::DataSpace dspace = dset.getSpace();
@@ -911,7 +930,7 @@ void readDataSetFromGroup(H5::Group g, string ds_name, T *placeToStore)
 
 
 template<class T>
-H5::DataSet writeDataSetToGroup(H5::Group g, const string &dataset_name, DynArray<T> &value)
+H5::DataSet writeDataSetToGroup(H5::Group &g, const string &dataset_name, DynArray<T> &value)
 {
   int sizeOfDynArray = value.size();
   T continousMemoryArrary[sizeOfDynArray];
@@ -941,11 +960,24 @@ H5::DataSet writeDataSetToGroup(H5::Group g, const string &dataset_name, DynArra
 }
 
 template <class T>
-void readDataSetFromGroup(H5::Group g, const string &dataset_name, DynArray<T> &readIn)
+void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> &readIn)
 {
-  H5::DataSet dset = g.openDataSet(dataset_name);
-  H5::DataSpace dataspace = dset.getSpace();
+  H5::DataSet dset;
+  H5::DataSpace dataspace;
+  
+  try{
+    dset = g.openDataSet(dataset_name);
+    dataspace = dset.getSpace();
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
   hsize_t dims[dataspace.getSimpleExtentNdims()];
+  cout << dataspace.getSimpleExtentDims(dims) << endl;
+  cout << dims[0] << endl;
+  cout << dims[1] << endl;
+  
   /* here is an error, if I uncomment this: every thing runs smoothly,
    * after commenting, it breaks! but why?
    */
@@ -954,7 +986,7 @@ void readDataSetFromGroup(H5::Group g, const string &dataset_name, DynArray<T> &
 //   cout << dims[1] << endl;
   T arr[dims[0]];
   H5::DataType thisWritingType = getH5TypeFromCpp<T>();
-#pragma omp critial
+//#pragma omp critial
   dset.read(&arr, thisWritingType);
   readIn.resize(dims[0]);
   for( int i=0;i<dims[0];++i)
@@ -964,58 +996,60 @@ void readDataSetFromGroup(H5::Group g, const string &dataset_name, DynArray<T> &
 }
 
 ////// from hdf_wrapper 
+// template<class LD>
+// void WriteHdfLdGenericPart_(H5::Group g, const LD &ld)
+// {
+//   writeAttrToH5(g,"SIZEX", ld.Size()[0]);
+//   writeAttrToH5(g,"SIZEY", ld.Size()[1]);
+//   writeAttrToH5(g,"SIZEZ", ld.Size()[2]);
+//   writeAttrToH5(g, "SIZE", ld.Size());
+//   //H5::Attribute attrs = g.attrs();
+// //   attrs.set("SIZEX",ld.Size()[0]);
+// //   attrs.set("SIZEY",ld.Size()[1]);
+// //   attrs.set("SIZEZ",ld.Size()[2]);
+// //   set_array(attrs, "SIZE", ld.Size());
+//   BBox3 bb = ld.Box();
+//   // box is stored in a 6 component vector, xxyyzz, must match python code
+//   Int6 bv;
+//   //Int6 bv;
+//   for (int i=0; i<3; ++i)
+//   {
+//     bv[i*2  ] = bb.min[i];
+//     bv[i*2+1] = bb.max[i];
+//   }
+//   writeAttrToH5(g, string("BOX"), bv);
+//   writeAttrToH5(g, string("WORLD_OFFSET"),ld.GetOriginPosition() );
+//   //set_array(attrs, "BOX", bv);
+//   //attrs.set("SCALE",ld.Scale());
+//   //set_array(attrs, "WORLD_OFFSET", ld.GetOriginPosition());
+// }
+
+// void WriteHdfLd( H5::Group &g, const LatticeDataQuad3d &ld )
+// {
+//   //writeAttrToH5<Bool3>(g, "CENTERING", ld.GetCellCentering().cast<int>());
+//   Bool3 centering = ld.GetCellCentering();
+//   writeAttrToH5(g, "CENTERING", centering);
+//   writeAttrToH5(g, "TYPE", string("QUAD3D"));
+// //   h5cpp::Attributes attrs = g.attrs();
+// //   attrs.set("TYPE","QUAD3D");
+//   //auto buffer = ld.GetCellCentering().cast<int>();
+//   //set_array<int,3>(attrs, "CENTERING", ld.GetCellCentering().cast<int>());
+//   WriteHdfLdGenericPart_(g, ld);
+// }
+
+// void WriteHdfLd( H5::Group &g, const LatticeDataFCC &ld )
+// {
+// //   h5cpp::Attributes attrs = g.attrs();
+// //   attrs.set("TYPE","FCC");
+//   writeAttrToH5(g, "TYPE", string("FCC"));
+//   WriteHdfLdGenericPart_(g, ld);
+// }
+
+
+
+
 template<class LD>
-void WriteHdfLdGenericPart_(H5::Group g, const LD &ld)
-{
-  writeAttrToH5(g,"SIZEX", ld.Size()[0]);
-  writeAttrToH5(g,"SIZEY", ld.Size()[1]);
-  writeAttrToH5(g,"SIZEZ", ld.Size()[2]);
-  writeAttrToH5(g, "SIZE", ld.Size());
-  //H5::Attribute attrs = g.attrs();
-//   attrs.set("SIZEX",ld.Size()[0]);
-//   attrs.set("SIZEY",ld.Size()[1]);
-//   attrs.set("SIZEZ",ld.Size()[2]);
-//   set_array(attrs, "SIZE", ld.Size());
-  BBox3 bb = ld.Box();
-  // box is stored in a 6 component vector, xxyyzz, must match python code
-  Int6 bv;
-  //Int6 bv;
-  for (int i=0; i<3; ++i)
-  {
-    bv[i*2  ] = bb.min[i];
-    bv[i*2+1] = bb.max[i];
-  }
-  writeAttrToH5(g, string("BOX"), bv);
-  writeAttrToH5(g, string("WORLD_OFFSET"),ld.GetOriginPosition() );
-  //set_array(attrs, "BOX", bv);
-  //attrs.set("SCALE",ld.Scale());
-  //set_array(attrs, "WORLD_OFFSET", ld.GetOriginPosition());
-}
-
-void WriteHdfLd( H5::Group g, const LatticeDataQuad3d &ld )
-{
-  //writeAttrToH5<Bool3>(g, "CENTERING", ld.GetCellCentering().cast<int>());
-  writeAttrToH5(g, "CENTERING", ld.GetCellCentering());
-  writeAttrToH5(g, "TYPE", string("QUAD3D"));
-//   h5cpp::Attributes attrs = g.attrs();
-//   attrs.set("TYPE","QUAD3D");
-//   set_array<int,3>(attrs, "CENTERING", ld.GetCellCentering().cast<int>());
-  WriteHdfLdGenericPart_(g, ld);
-}
-
-void WriteHdfLd( H5::Group g, const LatticeDataFCC &ld )
-{
-//   h5cpp::Attributes attrs = g.attrs();
-//   attrs.set("TYPE","FCC");
-  writeAttrToH5(g, "TYPE", string("FCC"));
-  WriteHdfLdGenericPart_(g, ld);
-}
-
-
-
-
-template<class LD>
-void ReadHdfLdGenericPart_(H5::Group g, LD &ld)
+void ReadHdfLdGenericPart_(H5::Group &g, LD &ld)
 {
   //h5cpp::Attributes attrs = g.attrs();
   BBox3 bb; float scale;
@@ -1079,7 +1113,7 @@ void ReadHdfLdGenericPart_(H5::Group g, LD &ld)
 //   ReadHdfLdGenericPart_(g, ld);
 // }
 
-void ReadHdfLd( H5::Group g, LatticeDataQuad3d &ld )
+void ReadHdfLd( H5::Group &g, LatticeDataQuad3d &ld )
 {
   //h5cpp::Attributes attrs = g.attrs();
   
@@ -1094,7 +1128,7 @@ void ReadHdfLd( H5::Group g, LatticeDataQuad3d &ld )
 }
 
 
-void ReadHdfLd( H5::Group g, LatticeDataFCC &ld )
+void ReadHdfLd( H5::Group &g, LatticeDataFCC &ld )
 {
   //h5cpp::Attributes attrs = g.attrs();
   // __cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEvT_RKS7_RT0_
@@ -1110,15 +1144,15 @@ void ReadHdfLd( H5::Group g, LatticeDataFCC &ld )
 }
 ////// end hdf_wrapper 
 #define INSTANTIATE(T)\
-  template H5::DataSet WriteScalarField<T>(H5::Group g, const string &name, ConstArray3d<T> arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup);
-
+  template H5::DataSet WriteScalarField<T>(H5::Group &g, const string &name, ConstArray3d<T> arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup);
 INSTANTIATE(float)
 INSTANTIATE(double)
 INSTANTIATE(int)
 INSTANTIATE(char)
+#undef INSTANTIATE
 
 #define INSTANTIATE2(T)\
-  template H5::DataSet writeDataSetToGroup<T>(H5::Group g, const string &name, DynArray<T> &value);
+  template H5::DataSet writeDataSetToGroup<T>(H5::Group &g, const string &name, DynArray<T> &value);
 INSTANTIATE2(float)
 INSTANTIATE2(double)
 INSTANTIATE2(int)
@@ -1130,8 +1164,10 @@ INSTANTIATE2(char)
 INSTANTIATE2(uchar)
 INSTANTIATE2(long)
 
+#undef INSTANTIATE2
+
 #define INSTANTIATE_H5Cpp_read(U,T)\
-  template void readAttrFromH5<U, T>(U g, const string &name, T &output_buffer);
+  template void readAttrFromH5<U, T>(U &g, const string &name, T &output_buffer);
 INSTANTIATE_H5Cpp_read(H5::Group, float)
 INSTANTIATE_H5Cpp_read(H5::Group, Float3)
 INSTANTIATE_H5Cpp_read(H5::Group, double)
@@ -1155,6 +1191,7 @@ INSTANTIATE_H5Cpp_read(H5::DataSet, bool)
 INSTANTIATE_H5Cpp_read(H5::DataSet, uchar)
 INSTANTIATE_H5Cpp_read(H5::DataSet, Bool3)
 //INSTANTIATE_H5Cpp_read(H5::DataSet, string)
+#undef INSTANTIATE_H5Cpp_read
 
 #define INSTANTIATE_H5Cpp1_write(U,T)\
   template void writeAttrToH5<U,T>(U &h, const string &name, const T &output_buffer);
@@ -1182,13 +1219,120 @@ INSTANTIATE_H5Cpp1_write(H5::DataSet, bool)
 INSTANTIATE_H5Cpp1_write(H5::DataSet, uchar)
 INSTANTIATE_H5Cpp1_write(H5::DataSet, Bool3)
 //INSTANTIATE_H5Cpp1_write(H5::DataSet, string)
+#undef INSTANTIATE_H5Cpp1_write
 
 #define INSTANTIATE_VEC(T)\
-  template H5::DataSet WriteAveragedFaceVariableField<T>(H5::Group file, const string &id, int dim, const ConstArray3d<T> *face_fields, const LatticeDataQuad3d &ld, const H5::Group ldgroup);\
-  template H5::DataSet WriteVectorField<Vec<T,3> >(H5::Group g, const string &name, ConstArray3d<Vec<T,3> > arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup);\
-  template H5::DataSet WriteVectorField<Vec<T,2> >(H5::Group g, const string &name, ConstArray3d<Vec<T,2> > arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup);\
-  template H5::DataSet WriteVectorField<Vec<T,1> >(H5::Group g, const string &name, ConstArray3d<Vec<T,1> > arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup);\
-  template H5::DataSet WriteAveragedFaceVariables<T>(H5::Group file, const string &id, int dim, const ConstArray3d<T> *face_fields);
+  template H5::DataSet WriteAveragedFaceVariableField<T>(H5::Group &file, const string &id, int dim, const ConstArray3d<T> *face_fields, const LatticeDataQuad3d &ld, const H5::Group ldgroup);\
+  template H5::DataSet WriteVectorField<Vec<T,3> >(H5::Group &g, const string &name, ConstArray3d<Vec<T,3> > arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup);\
+  template H5::DataSet WriteVectorField<Vec<T,2> >(H5::Group &g, const string &name, ConstArray3d<Vec<T,2> > arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup);\
+  template H5::DataSet WriteVectorField<Vec<T,1> >(H5::Group &g, const string &name, ConstArray3d<Vec<T,1> > arr, const LatticeDataQuad3d &ld, const H5::Group ldgroup);\
+  template H5::DataSet WriteAveragedFaceVariables<T>(H5::Group &file, const string &id, int dim, const ConstArray3d<T> *face_fields);
 
+INSTANTIATE_VEC(float)
+INSTANTIATE_VEC(double)
+#undef INSTANTIATE_VEC
+
+/** from hdf_wrapper_array3d.cpp
+ */
+template<class T>
+H5::DataSet WriteArray3D(H5::Group &file, const std::string &DATASET_NAME, const ConstArray3d<T> &a)
+{
+  
+  const Int3 s = a.size();
+  const int rank = 3;
+  hsize_t     dims[rank];       // dataset dimensions
+  dims[0] = s[0];
+  dims[1] = s[1];
+  dims[2] = s[2];
+  H5::DataSpace dspace = H5::DataSpace( rank, dims);
+  H5::DataSet dataset = file.createDataSet(DATASET_NAME, H5::PredType::NATIVE_FLOAT,dspace);
+  // Write the data to the dataset using default memory space, file
+	// space, and transfer properties.
+  dataset.write(&a, H5::PredType::NATIVE_FLOAT);
+  return dataset;
+//     h5cpp::Dataspace dspace = h5cpp::Dataspace::simple_dims(s[0],s[1],s[2]);
+//     Array3d<T> tmp(Int3(s[2],s[1],s[0]));
+//     tmp.swapAxes(0,2);
+//     tmp.fill(a);
+//     return h5cpp::create_dataset<T>(file, id, dspace, tmp.getPtr(), h5cpp::CREATE_DS_COMPRESSED);
+}
+
+
+template<class Vector>
+H5::DataSet WriteVectorArray3D(H5::Group  &file,const std::string &id, const ConstArray3d<Vector> &a)
+{
+  const Int3 s = a.size();
+//     h5cpp::Dataspace dspace = h5cpp::Dataspace::simple_dims(s[0],s[1],s[2], sizeof(Vector)/sizeof(typename Vector::value_type));
+//     Array3d<Vector> tmp(Int3(s[2],s[1],s[0]));
+//     tmp.swapAxes(0,2);
+//     tmp.fill(a);
+//     return h5cpp::create_dataset(file, id, dspace, (typename Vector::value_type const*)tmp.getPtr(), h5cpp::CREATE_DS_COMPRESSED);
+}
+
+
+
+template<class T>
+void ReadArray3D(H5::DataSet &ds, Array3d<T> &a)
+{
+//   h5cpp::Dataspace sp = ds.get_dataspace();
+//   hsize_t dims[H5S_MAX_RANK];
+//   int r = sp.get_dims(dims);
+//   if (r != 3) throw h5cpp::Exception("ReadArray3d expected Dataset of Rank 3!");
+//   Array3d<T> tmp(Int3(dims[2], dims[1], dims[0]));
+//   tmp.swapAxes(0,2);
+//   ds.read<>(tmp.getPtr());
+//   a = Array3d<T>(tmp.size());
+//   a.fill(tmp);
+}
+
+
+template<class Vector>
+void ReadVectorArray3D(H5::DataSet &ds, Array3d<Vector> &a)
+{
+//   h5cpp::Dataspace sp = ds.get_dataspace();
+//   hsize_t dims[H5S_MAX_RANK];
+//   int r = sp.get_dims(dims);
+//   if (r != 4) throw h5cpp::Exception("ReadVectorArray3d expected Dataset of Rank 4.");
+//   if (dims[3] != Vector::SizeAtCompileTime) throw h5cpp::Exception("ReadVectorArray3d expected Dataset dimension 3 to be the same size as the Vector type.");
+//   Array3d<Vector> tmp(Int3(dims[2], dims[1], dims[0]));
+//   tmp.swapAxes(0,2);
+//   ds.read<>((typename Vector::value_type*)tmp.getPtr());
+//   a = Array3d<Vector>(tmp.size());
+//   a.fill(tmp);
+}
+
+/*
+#define INSTANTIATE(T)\
+  template h5cpp::Dataset WriteArray3D<T>(h5cpp::Group file, const std::string &id, const ConstArray3d<T> &a, const h5cpp::Datatype &disktype);\
+  template void ReadArray3D<T>(h5cpp::Dataset ds, Array3d<T> &a);
+
+#define INSTANTIATE_VEC(T)\
+  template h5cpp::Dataset WriteVectorArray3D<Vec<T,3> >(h5cpp::Group  file,const std::string &id, const ConstArray3d<Vec<T,3> > &a);\
+  template h5cpp::Dataset WriteVectorArray3D<Vec<T,2> >(h5cpp::Group  file,const std::string &id, const ConstArray3d<Vec<T,2> > &a);\
+  template h5cpp::Dataset WriteVectorArray3D<Vec<T,1> >(h5cpp::Group  file,const std::string &id, const ConstArray3d<Vec<T,1> > &a);\
+  template void ReadVectorArray3D<Vec<T,3> >(h5cpp::Dataset ds, Array3d<Vec<T,3> > &a);
+
+INSTANTIATE(float)
+INSTANTIATE(double)
+INSTANTIATE(int)
+INSTANTIATE(char)
+INSTANTIATE_VEC(float)
+INSTANTIATE_VEC(double)
+*/
+
+#define INSTANTIATE(T)\
+  template H5::DataSet WriteArray3D<T>(H5::Group &file, const std::string &id, const ConstArray3d<T> &a);\
+  template void ReadArray3D<T>(H5::DataSet &ds, Array3d<T> &a);
+
+#define INSTANTIATE_VEC(T)\
+  template H5::DataSet WriteVectorArray3D<Vec<T,3> >(H5::Group  &file,const std::string &id, const ConstArray3d<Vec<T,3> > &a);\
+  template H5::DataSet WriteVectorArray3D<Vec<T,2> >(H5::Group  &file,const std::string &id, const ConstArray3d<Vec<T,2> > &a);\
+  template H5::DataSet WriteVectorArray3D<Vec<T,1> >(H5::Group  &file,const std::string &id, const ConstArray3d<Vec<T,1> > &a);\
+  template void ReadVectorArray3D<Vec<T,3> >(H5::DataSet &ds, Array3d<Vec<T,3> > &a);
+
+INSTANTIATE(float)
+INSTANTIATE(double)
+INSTANTIATE(int)
+INSTANTIATE(char)
 INSTANTIATE_VEC(float)
 INSTANTIATE_VEC(double)

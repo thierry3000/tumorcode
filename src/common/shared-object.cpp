@@ -499,7 +499,7 @@ int FindDistanceToJunction( const Vessel* vstart, int posOnVess, const VesselNod
 }
 
 
-std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group vesselgroup, const ptree &params)
+std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params)
 {
   float grid_scale = params.get<float>("scale subdivide", -1.);
   bool filter_uncirculated = params.get<bool>("filter", false);
@@ -766,7 +766,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group vesselgroup, const ptree 
 }
 
 
-void WriteVesselList3d(const VesselList3d &vl, H5::Group vesselgroup, const ptree &params)
+void WriteVesselList3d(const VesselList3d &vl, H5::Group &vesselgroup, const ptree &params)
 {
   WriteHdfGraph(vesselgroup,vl);
 

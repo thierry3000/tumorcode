@@ -88,15 +88,23 @@ py::object read_vessel_positions_from_hdf_by_filename(const string fn, const str
 py::object read_vessel_positions_from_hdf_by_filename(const string fn, const string groupname)
 {
   //h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
-  H5::H5File *readInFile = new H5::H5File(fn, H5F_ACC_RDONLY );
+  H5::H5File readInFile = H5::H5File(fn, H5F_ACC_RDONLY );
   //h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname)); // groupname should end by vesselgroup
-  H5::Group g_vess = readInFile->openGroup(groupname); // groupname should end by vesselgroup
+  H5::Group g_vess = readInFile.openGroup(groupname); // groupname should end by vesselgroup
   std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   Py_ssize_t ndims[] = { 3, vl->GetNCount() };
-
+  std::vector<float> x; x.resize(vl->GetNCount());
+  std::vector<float> y; y.resize(vl->GetNCount());
+  std::vector<float> z; z.resize(vl->GetNCount());
+  py::list py_x;
+  py::list py_y;
+  py::list py_z;
+//   py::object iter = get_iter(x);
+//   py::list py_x(iter);
+  
   // create numpy array
-  np::arrayt<float> wp = np::zeros(2, ndims, np::getItemtype<float>());
+  //np::arrayt<float> wp = np::zeros(2, ndims, np::getItemtype<float>());
 
 //   cout << ld << endl;
   Float3 p;
@@ -112,12 +120,20 @@ py::object read_vessel_positions_from_hdf_by_filename(const string fn, const str
       myAssert(vl->Ld().IsInsideLattice(nd->lpos));
       p = vl->Ld().LatticeToWorld(nd->lpos);
     }
-    for (int j=0; j<3; ++j)
-    {
-      wp(j, i) = p[j];
-    }
+    py_x.append(p[0]);
+    py_y.append(p[1]);
+    py_z.append(p[2]);
+   
+//     for (int j=0; j<3; ++j)
+//     {
+//       wp(j, i) = p[j];
+//     }
+    
   }
-  return wp.getObject();
+  readInFile.close();
+  vl.reset();
+  //return wp.getObject();
+  return py::make_tuple(py_x, py_y, py_z);
 }
 #endif
 
@@ -849,7 +865,7 @@ namespace mw_py_impl
 {
   void exportLatticeData();
   void exportVectorClassConverters();
-  void exportH5Converters();
+  //void exportH5Converters();
 }
 void export_povray_export();
 void export_samplevessels();
@@ -892,7 +908,7 @@ BOOST_PYTHON_MODULE(libkrebs_)
   
   mw_py_impl::exportVectorClassConverters();
   mw_py_impl::exportLatticeData();
-  mw_py_impl::exportH5Converters();
+  //mw_py_impl::exportH5Converters();
   
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
 

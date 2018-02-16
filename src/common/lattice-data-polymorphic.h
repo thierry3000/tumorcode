@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "mwlib/lattice-data.h"
 #include "H5Cpp.h"
+#include "hdfio.h"
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -29,13 +30,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/graph/graph_concepts.hpp>
 
-
-// forward declaration, their location may change
-
-void WriteHdfLd( H5::Group f, const LatticeDataQuad3d &ld );
-void ReadHdfLd( H5::Group f, LatticeDataQuad3d &ld );
-void WriteHdfLd( H5::Group f, const LatticeDataFCC &ld );
-void ReadHdfLd( H5::Group f, LatticeDataFCC &ld );
 
 namespace polymorphic_latticedata{
 template<class Ld>
@@ -107,8 +101,9 @@ class LatticeData : boost::noncopyable
     static std::auto_ptr<LatticeData> Make(const char* ldtype, const BBox3 &bb, float scale);
 
     // hdf 5 support
-    static std::auto_ptr<LatticeData> ReadHdf(H5::Group g);
-    virtual void WriteHdf(H5::Group g) const {};
+    static std::auto_ptr<LatticeData> ReadHdf(H5::Group &g);
+    virtual void Lattice2Hdf(H5::Group &g) const {};
+    
 };
 
 template<class Ld>
@@ -124,7 +119,6 @@ struct fwd_cell_centering<LatticeDataQuad3d> {
 
 template<class LD>
 Int3 WorldToLatticeWrapper(const LD &ld, const Float3 &p);
-
 
 template<class Ld>
 class Derived : public LatticeData
@@ -167,7 +161,7 @@ public:
 
   virtual void print(std::ostream &os) const { ld.print(os); }
   // hdf5 support
-  virtual void WriteHdf(H5::Group g) const { WriteHdfLd(g, ld); }
+  void Lattice2Hdf(H5::Group &g) const;
 };
 
 inline std::ostream& operator<<(std::ostream &os, const LatticeData &ld)

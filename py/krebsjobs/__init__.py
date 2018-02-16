@@ -22,10 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 from copy import deepcopy
 from os.path import join,splitext, basename
-import h5files
+#import h5files
+import h5py
 
 def MakeVesselFilenamePart(fn):
-  with h5files.open(fn, mode='a') as f:
+  with h5py.File(fn, mode='a') as f:
     if 'parameters' in f:
       if 'MESSAGE' in f['parameters'].attrs:
         msg = f['parameters'].attrs['MESSAGE']

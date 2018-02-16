@@ -133,7 +133,7 @@ bool FindHemodynamicBounds( const VesselList3d *vl, HemodynamicBounds &hb, bool 
  * "calcflow"
  * "filter"
  */
-std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group vesselgroup, const ptree &params);
+std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params);
 /* WriteVesselList3dVolume - parameters
  * w_all
  * w_pressure
@@ -141,7 +141,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group vesselgroup, const ptree 
  * -----------------
  * this function writes nodes/, and edges/ subgroups and adds datasets into them
  */
-void WriteVesselList3d(const VesselList3d& vl, H5::Group vesselgroup, const ptree& params = ptree());
+void WriteVesselList3d(const VesselList3d& vl, H5::Group &vesselgroup, const ptree& params = ptree());
 
 void CenterVesselListAndSetupFieldLattice(VesselList3d &vl, int dim, float spacing, LatticeDataQuad3d &field_ld);
 void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float safety_spacing, LatticeDataQuad3d &ld);

@@ -146,7 +146,7 @@ if (not qsub.is_client) and __name__=="__main__":
    def real_factory(i):
      options = copy.deepcopy(options_)
      name = '%s-%s' % (name_, type)
-     vd = VD(shape=shape, scale=options.pop('scale'), latticetype='fcc', num_hierarchical_iterations=hiter, name=name, ensemble_index=i, **options)
+     vd = VD(shape=shape, scale=options.pop('scale'), latticetype='FCC', num_hierarchical_iterations=hiter, name=name, ensemble_index=i, **options)
      vd = fix_worldsize(vd)
      vd.outfilename = 'vessels-'+make_fn(vd)
      vd.num_threads = num_threads

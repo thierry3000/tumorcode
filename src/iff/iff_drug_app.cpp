@@ -114,8 +114,8 @@ bool IffDrugApp3d::InitNewState()
 //     tumorIsPresent=false;
 //   }
   
-
-  std::auto_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(root.openGroup(h5_path_lattice));
+  H5::Group h5_lattice = root.openGroup(h5_path_lattice);
+  std::auto_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(h5_lattice);
   vl.reset(new VesselList3d(ldp));
   vl->Init(*ldp);
   H5::Group vesselgroup = root.openGroup(h5_path_vessel);
@@ -125,7 +125,8 @@ bool IffDrugApp3d::InitNewState()
   DynArray<float> press;
   //h5::read_dataset(vesselgroup.open_dataset("nodes/pressure"), press);
   //readDataSetFromGroup<DynArray<float>>(vesselgroup.openGroup("nodes"),string("pressure"), &press);
-  readDataSetFromGroup(vesselgroup.openGroup("nodes"),string("pressure"), press);
+  H5::Group h5_nodes = vesselgroup.openGroup("nodes");
+  readDataSetFromGroup(h5_nodes,string("pressure"), press);
   int ncnt = vl->GetNCount();
   for(int i=0; i<ncnt; ++i)
   {
@@ -135,7 +136,8 @@ bool IffDrugApp3d::InitNewState()
   DynArray<double> a;
   //h5::read_dataset(vesselgroup.open_dataset("edges/flow"), a);
   //readDataSetFromGroup<DynArray<double>>(vesselgroup.openGroup("edges"),string("flow"), &a);
-  readDataSetFromGroup(vesselgroup.openGroup("edges"),string("flow"), a);
+  H5::Group h5_edges = vesselgroup.openGroup("edges");
+  readDataSetFromGroup(h5_edges,string("flow"), a);
   int ecnt = vl->GetECount();
   for(int i=0; i<ecnt; ++i)
   {
@@ -143,7 +145,7 @@ bool IffDrugApp3d::InitNewState()
   }
   //h5::read_dataset(vesselgroup.open_dataset("edges/maturation"), a);
   //readDataSetFromGroup<DynArray<double>>(vesselgroup.openGroup("edges"),string("maturation"), &a);
-  readDataSetFromGroup(vesselgroup.openGroup("edges"),string("maturation"), a );
+  readDataSetFromGroup(h5_edges,string("maturation"), a );
   for(int i=0; i<ecnt; ++i) vl->GetEdge(i)->maturation = a[i];
   }
 

@@ -298,8 +298,8 @@ LatticeData.GetCentered = LatticeDataGetCentered
 LatticeData.__eq__ = LatticeDataEqual
 #LatticeData.__hash__ = LatticeDataHash
 
-LatticeDataQuad3d = lambda *args : LatticeData('quad',*args)
-LatticeDataFCC    = lambda *args : LatticeData('fcc',*args)
+LatticeDataQuad3d = lambda *args : LatticeData('QUAD3D',*args)
+LatticeDataFCC    = lambda *args : LatticeData('FCC',*args)
 
 
 #----------------------------------------------------------------------------------#
@@ -463,7 +463,16 @@ def vessels_require_(vesselgroup, g, name):
       #pos = read_vessel_positions_from_hdf_(vesselgroup).transpose()
       fn=str(vesselgroup.file.filename)
       path = str(vesselgroup.name)
-      pos = read_vessel_positions_from_hdf_by_filename(fn, path).transpose()
+      pos_x, pos_y, pos_z = read_vessel_positions_from_hdf_by_filename(fn, path)
+      pos = np.asarray([pos_x, pos_y, pos_z])
+      print("before:")
+      print(pos.shape)
+      print(pos)
+      pos = pos.transpose()
+      print("after:")
+      print(pos.shape)
+      print(pos)
+      
       g.nodes['position'] = pos  
     else:
       print("WARNING")
@@ -915,7 +924,7 @@ def GetWorldBox(vesselgroup):
       #ld = read_lattice_data_from_hdf(vesselgroup['lattice'])
       fn=str(vesselgroup.file.filename)
       path=str(vesselgroup.name)
-      ld = read_lattice_data_from_hdf_by_filename(fn, path)
+      #ld = read_lattice_data_from_hdf_by_filename(fn, path)
       worldbox = ld.worldBox
       #worldbox = read_lattice_data_from_hdf(vesselgroup['lattice']).GetWorldBox()
     if( vesselgroup.attrs['CLASS'] == 'REALWORLD'):

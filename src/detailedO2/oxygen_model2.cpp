@@ -1718,6 +1718,7 @@ void WriteOutput(H5::Group basegroup,
 //     h5cpp::File f(fn,"w");
 //     h5cpp::Group basegroup = grpname.empty() ? f.root() : f.root().create_group(grpname);
     H5::Group g = basegroup.createGroup("vessels");
+    H5::Group h5_edges= g.openGroup("edges");
     WriteVesselList3d(vl, g, make_ptree("w_all",false)("w_pressure",true));
 
     if (sorted_vessels)
@@ -1730,7 +1731,7 @@ void WriteOutput(H5::Group basegroup,
       }
       //h5cpp::create_dataset(g.open_group("edges"), "topoorder", toposort_indices);
       //h5cpp::create_dataset(g.open_group("edges"), "topoorder", toposort_indices);
-      writeDataSetToGroup(g.openGroup("edges"), string("topoorder"), toposort_indices);
+      writeDataSetToGroup(h5_edges, string("topoorder"), toposort_indices);
     }
     if (vesselpo2)
     {
@@ -1741,7 +1742,7 @@ void WriteOutput(H5::Group basegroup,
         avg_po2[i] = isFinite(po2) ? po2 : -1.f;
       }
       //h5cpp::create_dataset(g.open_group("edges"), "avgpo2", avg_po2);
-      writeDataSetToGroup(g.openGroup("edges"), string("avgpo2"), avg_po2);
+      writeDataSetToGroup(h5_edges, string("avgpo2"), avg_po2);
     }
 
     if (po2field)

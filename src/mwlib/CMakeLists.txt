@@ -6,3 +6,4 @@ PROJECT(mwlib)
 file(GLOB mwLibFiles "*.cpp")
 
 add_library(mwlib STATIC ${mwLibFiles})
+target_link_libraries(mwlib common)

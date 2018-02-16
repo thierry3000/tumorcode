@@ -108,9 +108,9 @@ void Grower::Init(const ptree &settings)
   double scale = settings.get<double>("lattice_spacing");
   uint seed = settings.get<uint>("seed");
   string ld_type = settings.get<string>("lattice_type");
-  if (ld_type == "fcc")
+  if (ld_type == "FCC")
     lattice_type_id = LATTICE_TYPE_FCC;
-  else if (ld_type == "quad")
+  else if (ld_type == "QUAD3D")
     lattice_type_id = LATTICE_TYPE_QUAD;
   else
     throw std::invalid_argument(str(format("invalid lattice type string %s") % ld_type));

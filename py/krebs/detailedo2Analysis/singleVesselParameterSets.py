@@ -151,7 +151,7 @@ moschandreou_extra_long.paramsTube['pgrad'] = PressureGradientFromFlowRate(3.3e6
 
 moschandreou_diag_base = deepcopy(moschandreou_base_case)
 moschandreou_diag_base.paramsTube['size'] = (401, 401, 85)
-moschandreou_diag_base.paramsTube['ld_type'] = 'fcc'
+moschandreou_diag_base.paramsTube['ld_type'] = 'FCC'
 moschandreou_diag_base.paramsTube['pgrad'] = PressureGradientFromFlowRate(3.3e6, 13.5, _paramsbf)
 moschandreou_diag_base.paramsTube['r'] = 13.5
 
@@ -196,7 +196,7 @@ thierry_case.paramspo2['conductivity_coeff3'] = 0
 
 
 test_straight = deepcopy(basecase)
-test_straight.paramsTube['ld_type'] = 'fcc'
+test_straight.paramsTube['ld_type'] = 'FCC'
 test_straight.paramsTube['size'] = (401, 401, 41)
 
 test_diag = deepcopy(test_straight)
@@ -243,6 +243,6 @@ hseriesbase1_.paramspo2.update(
 MakeGridSizeSeries(hseriesbase1_, 'hseries1', isDiag = False)
 
 hseriesbase1diag_ = deepcopy(hseriesbase1_)
-hseriesbase1diag_.paramsTube['ld_type'] = 'fcc'
+hseriesbase1diag_.paramsTube['ld_type'] = 'FCC'
 hseriesbase1diag_.paramsTube['direction_mode'] = 1
 MakeGridSizeSeries(hseriesbase1diag_, 'hseries1diag', isDiag = True)

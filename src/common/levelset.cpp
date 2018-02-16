@@ -714,7 +714,10 @@ struct LevelSetReinit
     WriteScalarField(g, "ls", state.phi[ld.Box()], ld, ld_group);
     WriteArray3D<float>(g, "ls_full", state.phi[ExtendForDim(ld.Box(), dim, 3)]);
     if (iter == 0)
-      WriteArray3D<char>(f.openGroup("/"), "active", active[ld.Box()]);
+    {
+      H5::Group root = f.openGroup("/");
+      WriteArray3D<char>(root, "active", active[ld.Box()]);
+    }
   }
 };
 

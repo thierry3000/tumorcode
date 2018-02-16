@@ -27,6 +27,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "Epetra_CrsMatrix.h"
 #include <boost/unordered_map.hpp>
 
+#include <Epetra_ConfigDefs.h>
+#ifdef EPETRA_MPI
+  #include "mpi.h"
+#endif
+
 
 typedef double FlReal;
 class VesselList3d;

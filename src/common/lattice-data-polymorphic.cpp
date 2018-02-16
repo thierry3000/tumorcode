@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "hdfio.h"
+
 #include "lattice-data-polymorphic.h"
 #include <string>
 
@@ -26,9 +26,11 @@ namespace polymorphic_latticedata
 
 std::auto_ptr< LatticeData > LatticeData::Make(const char* ldtype, const BBox3& bb, float scale)
 {
-  if (strcmp(ldtype, "quad")==0)
+  //if (strcmp(ldtype, "quad")==0)
+  if (strcmp(ldtype, "QUAD3D")==0)
     return std::auto_ptr<LatticeData>(new Derived<LatticeDataQuad3d>(bb, scale));
-  if (strcmp(ldtype, "fcc")==0)
+  //if (strcmp(ldtype, "fcc")==0)
+  if (strcmp(ldtype, "FCC")==0)
     return std::auto_ptr<LatticeData>(new Derived<LatticeDataFCC>(bb, scale));
   throw std::invalid_argument(boost::str(boost::format("LatticeData::Make got ldtype %s") % ldtype));
 }
@@ -51,38 +53,18 @@ template Int3 WorldToLatticeWrapper(const LatticeDataQuad3d &ld, const Float3 &p
 template Int3 WorldToLatticeWrapper(const LatticeDataFCC &ld, const Float3 &p); // needs explicit instantiation. It doesn't work automatically for some reason.
 
 
-// template<class LD>
-// static std::auto_ptr<LatticeData> ReadHdfLdGeneric(h5cpp::Group g)
-// {
-//   LD ld;
-//   ReadHdfLd(g, ld);
-//   return std::auto_ptr<LatticeData>(new Derived<LD>(ld));
-// }
+
 template<class LD>
-static std::auto_ptr<LatticeData> ReadHdfLdGeneric(H5::Group g)
+static std::auto_ptr<LatticeData> ReadHdfLdGeneric(H5::Group &g)
 {
   LD ld;
   ReadHdfLd(g, ld);
   return std::auto_ptr<LatticeData>(new Derived<LD>(ld));
 }
 
-// std::auto_ptr<LatticeData> LatticeData::ReadHdf(h5cpp::Group g)
-// {
-//   const string type = g.attrs().get<string>("TYPE");
-//   if (type == "QUAD3D")
-//     return ReadHdfLdGeneric<LatticeDataQuad3d>(g);
-//   else if (type == "FCC")
-//     return ReadHdfLdGeneric<LatticeDataFCC>(g);
-//   else
-//     throw std::runtime_error(boost::str(boost::format("unknown lattice data type %s in hdf file") % type));
-// }
-std::auto_ptr<LatticeData> LatticeData::ReadHdf(H5::Group g)
+
+std::auto_ptr<LatticeData> LatticeData::ReadHdf(H5::Group &g)
 {
-//   H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
-//   H5std_string strreadbuff("");
-//   H5::Attribute myatt_out = g.openAttribute("TYPE");
-//   myatt_out.read(strdatatype,strreadbuff);
-  //const string type = g.attrs().get<string>("TYPE");
   string type;
   readAttrFromH5(g, string("TYPE"), type);
   if (type == "QUAD3D")
@@ -93,6 +75,11 @@ std::auto_ptr<LatticeData> LatticeData::ReadHdf(H5::Group g)
     throw std::runtime_error(boost::str(boost::format("unknown lattice data type %s in hdf file") % type));
 }
 
+template <class Ld>
+void Derived<Ld>::Lattice2Hdf(H5::Group& g) const
+{
+  ld.WriteHdfLd(g);
+}
 
 
 }//polymorphic_latticedata

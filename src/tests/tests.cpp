@@ -400,7 +400,7 @@ void TestInterpolation()
 
 void TestVesselList()
 {
-  std::auto_ptr<LatticeData> ldp(LatticeData::Make("fcc", BBox3(0,0,0,10,10,10), 30.));
+  std::auto_ptr<LatticeData> ldp(LatticeData::Make("FCC", BBox3(0,0,0,10,10,10), 30.));
   Vessel *v, *v2;
   VesselNode *vc2;
   VesselList3d vl(ldp);

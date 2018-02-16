@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "lattice-data.h"
+#include "common/hdfio.h"
+
 #include <float.h>
 
 #include "math_ext.h"
@@ -473,4 +475,52 @@ bool operator==( const LatticeDataQuad3d& a, const LatticeDataQuad3d& b )
 bool operator==( const LatticeDataFCC& a, const LatticeDataFCC& b )
 {
   return a.Box()==b.Box() && a.Scale()==b.Scale() && a.LatticeToSite(a.Box().min) == b.LatticeToSite(b.Box().min);
+}
+
+void LatticeDataFCC::WriteHdfLd(H5::Group& g) const
+{
+  //string latticeType = getType();
+  writeAttrToH5(g, "TYPE", getType());
+  writeAttrToH5(g,"SIZEX", Size()[0]);
+  writeAttrToH5(g,"SIZEY", Size()[1]);
+  writeAttrToH5(g,"SIZEZ", Size()[2]);
+  writeAttrToH5(g, "SIZE", Size());
+
+  BBox3 bb = Box();
+  // box is stored in a 6 component vector, xxyyzz, must match python code
+  Int6 bv;
+  //Int6 bv;
+  for (int i=0; i<3; ++i)
+  {
+    bv[i*2  ] = bb.min[i];
+    bv[i*2+1] = bb.max[i];
+  }
+  writeAttrToH5(g, string("BOX"), bv);
+  writeAttrToH5(g, string("WORLD_OFFSET"),GetOriginPosition() );
+  writeAttrToH5(g, string("SCALE"), Scale());
+}
+
+void LatticeDataQuad3d::WriteHdfLd(H5::Group& g) const
+{
+  Bool3 centering = GetCellCentering();
+  writeAttrToH5(g, "CENTERING", centering);
+  
+  writeAttrToH5(g, "TYPE", getType());
+  writeAttrToH5(g,"SIZEX", Size()[0]);
+  writeAttrToH5(g,"SIZEY", Size()[1]);
+  writeAttrToH5(g,"SIZEZ", Size()[2]);
+  writeAttrToH5(g, "SIZE", Size());
+
+  BBox3 bb = Box();
+  // box is stored in a 6 component vector, xxyyzz, must match python code
+  Int6 bv;
+  //Int6 bv;
+  for (int i=0; i<3; ++i)
+  {
+    bv[i*2  ] = bb.min[i];
+    bv[i*2+1] = bb.max[i];
+  }
+  writeAttrToH5(g, string("BOX"), bv);
+  writeAttrToH5(g, string("WORLD_OFFSET"),GetOriginPosition() );
+  writeAttrToH5(g, string("SCALE"), Scale());
 }

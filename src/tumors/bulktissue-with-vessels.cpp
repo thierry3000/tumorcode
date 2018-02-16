@@ -163,7 +163,8 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     pt.put("scale subdivide", 10.);
     pt.put("scale override", params.override_scale);
     //pt.put("filter", true); // does not help, is also filtered in oxygen model
-    std::auto_ptr<VesselList3d> vl = ReadVesselList3d(file.openGroup("/vessels"),pt);
+    H5::Group h5_vessels = file.openGroup("/vessels");
+    std::auto_ptr<VesselList3d> vl = ReadVesselList3d(h5_vessels,pt);
     // adjust vessel list ld
     const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
     vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
@@ -598,12 +599,14 @@ void BulkTissue::NewTumorSim::writeOutput(double time)
 //   a.set<uint64>("mem_rss", memusage.rss_peak);
   bool has_grp;
   // vessels
-  WriteVesselList3d(*state.vessels, gout.createGroup("vessels"));
+  H5::Group h5_vessels = gout.createGroup("vessels");
+  WriteVesselList3d(*state.vessels, h5_vessels);
   // tumor
   //H5::Group ld_group_tum = f.root().require_group("field_ld", &has_grp);
   H5::Group ld_group_tum = f.openGroup("field_ld");
   if (!has_grp)
-    WriteHdfLd(ld_group_tum, grid.ld);
+    //WriteHdfLd(ld_group_tum, grid.ld);
+    grid.ld.WriteHdfLd(ld_group_tum);
   g = gout.createGroup("tumor");
   tumor_model.writeH5(g, state.tumor, time, ld_group_tum);
   // chem fields

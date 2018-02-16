@@ -58,7 +58,7 @@ def TestBasics():
 def generate_unitcell(type):
   if type == 'cubic':
     l = list(np.ndindex(2,2,2))
-  elif type == 'fcc':
+  elif type == 'FCC':
     l = list(np.ndindex(2,2,2))
     l += [(1,0.5,0.5),(0,0.5,0.5),
 	  (0.5,1,0.5),(0.5,0,0.5),

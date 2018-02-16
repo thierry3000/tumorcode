@@ -88,6 +88,7 @@ H5::Group DebugOutVessels(const Grower &grower, const string &name)
   //h5::File f("dbgvessels.h5", number==0 ? "w" : "a");
   H5::Group grp = f.createGroup(str(format("%s") % name));
   H5::Group vesselgrp = grp.createGroup("vessels");
+  H5::Group h5_nodes = vesselgrp.openGroup("nodes");
   //since world coordinates this is also needed for proper hdf output
   //vesselgrp.attrs().set<std::string>("CLASS","GRAPH");
   writeAttrToH5(vesselgrp, string("CLASS"), string("GRAPH"));
@@ -97,11 +98,14 @@ H5::Group DebugOutVessels(const Grower &grower, const string &name)
     DynArray<float> gf;
     grower.GetGfAtNodes(gf);
     //h5::create_dataset(vesselgrp.open_group("nodes"), "gf", gf);
-    writeDataSetToGroup(vesselgrp.openGroup("nodes"), string("gf"), gf);
+    
+    writeDataSetToGroup(h5_nodes, string("gf"), gf);
     //h5::create_dataset(vesselgrp.open_group("nodes"), "gf", gf);
   }
   H5::Group field_ld_grp = grp.createGroup("field_ld");
-  WriteHdfLd(field_ld_grp, grower.get_field_ld());
+  //WriteHdfLd(field_ld_grp, grower.get_field_ld());
+  //grower.get_field_ld().Lattice2Hdf(field_ld_grp);
+  grower.get_field_ld().WriteHdfLd(field_ld_grp);
   WriteScalarField(grp, "gf", grower.GetGf(), grower.get_field_ld(), field_ld_grp);
 #endif
   {
@@ -111,7 +115,7 @@ H5::Group DebugOutVessels(const Grower &grower, const string &name)
       tmp2[i] = vl.GetNode(i)->flags;
     }
     //h5::create_dataset(vesselgrp.open_group("nodes"), "nodeflags", tmp2);
-    writeDataSetToGroup(vesselgrp.openGroup("nodes"), string("nodeflags"), tmp2);
+    writeDataSetToGroup(h5_nodes, string("nodeflags"), tmp2);
 #ifdef WRITE_REMODELING_ACTIONS    
     for (int i=0; i<vl.GetNCount(); ++i)
     {
@@ -119,7 +123,7 @@ H5::Group DebugOutVessels(const Grower &grower, const string &name)
     }
     //h5::create_dataset(vesselgrp.open_group("nodes"), "action", tmp2);
     //writeDataSetToGroup<DynArray<uchar>>(vesselgrp.openGroup("nodes"), string("action"), tmp2);
-    writeDataSetToGroup(vesselgrp.openGroup("nodes"), string("action"), tmp2);
+    writeDataSetToGroup(h5_nodes, string("action"), tmp2);
 #endif
   }
   ++number;
@@ -172,15 +176,33 @@ void DoOutput(H5::Group &root,
 	tmp2[i] = vl.GetNode(i)->flags;
       }
 //       h5::create_dataset(root.open_group("vessels/nodes"), "nodeflags", tmp2);
-      writeDataSetToGroup(root.openGroup("vessels/nodes"), "nodeflags", tmp2);
+      H5::Group h5_nodes;
+      try{
+	h5_nodes = root.openGroup("vessels/nodes");
+      }
+      catch( H5::Exception e)
+      {
+	e.printError();
+	h5_nodes = root.createGroup("vessels/nodes");
+      }
+      writeDataSetToGroup(h5_nodes, "nodeflags", tmp2);
       
       DynArray<int> tmp3(vl.GetECount());
       for (int i=0; i<vl.GetECount(); ++i)
       {
 	tmp3[i] = vl.GetEdge(i)->timeSprout;
       }
+      H5::Group h5_edges;
+      try{
+	h5_edges = root.openGroup("vessels/edges");
+      }
+      catch( H5::Exception e)
+      {
+	e.printError();
+	h5_edges = root.createGroup("vessels/edges");
+      }
       //h5::create_dataset(root.open_group("vessels/edges"), "level", tmp3);
-      writeDataSetToGroup(root.openGroup("vessels/edges"), string("level"), tmp3);
+      writeDataSetToGroup(h5_edges, string("level"), tmp3);
     }
     {
       MemUsage memusage = GetMemoryUsage();
@@ -224,7 +246,8 @@ void DoOutput(H5::Group &root,
     // roots
     {
       int N = tree_roots.size();
-      DynArray<int> pos(N), len(N);
+      DynArray<int64> pos(N);
+      DynArray<int> len(N);
       DynArray<char> dir(N);
       DynArray<uchar> flags(N);
       auto it = tree_roots.begin();
@@ -276,7 +299,8 @@ void DoOutput(H5::H5File &file,
           grower.GetGfAtNodes(tmp);
           //h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
 	  //h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
-	  writeDataSetToGroup(root.openGroup("vessels/nodes"), string("gf"), tmp);
+	  H5::Group h5_nodes= root.openGroup("vessels/nodes");
+	  writeDataSetToGroup(h5_nodes, string("gf"), tmp);
           tmp.clear();
         }
 #endif
@@ -286,7 +310,7 @@ void DoOutput(H5::H5File &file,
           //a.set<double>("real_time", (my::Time() - additional_data.get<my::Time>("real_start_time")).to_s());
         }
         // measurement
-        H5::Group g = root.createGroup("data");
+        H5::Group h5_data = root.createGroup("data");
         {
           const int n = additional_data.get<int>("num_iter");
           Array3d<float> t(Int3(3,n,1));
@@ -298,7 +322,7 @@ void DoOutput(H5::H5File &file,
             t(2,i,0) = vv.second.get<int>("sites");
             ++i;
           }
-          H5::DataSet ds = WriteArray3D(g,"rBV_by_iter",t);
+          H5::DataSet ds = WriteArray3D(h5_data,"rBV_by_iter",t);
           //a = ds.attrs();
 	  writeAttrToH5(ds, string("FIELD_0_NAME"), string("iter"));
 	  writeAttrToH5(ds, string("FIELD_1_NAME"), string("rBV"));
@@ -308,15 +332,15 @@ void DoOutput(H5::H5File &file,
 
         // parameters
         //g = root.require_group("parameters");
-	g = root.createGroup("parameters");
+	H5::Group h5_param = root.createGroup("parameters");
         //h5::Dataset::create_scalar(g, "SEED", input_pt.get<uint>("seed"));
         //h5::Dataset::create_scalar(g, "IN_FILENAME", input_pt.get<string>("input_fn", ""));
         //h5::Dataset::create_scalar(g, "MESSAGE", input_pt.get<string>("message",""));
         //h5::Dataset::create_scalar(g, "ENSEMBLE_INDEX", input_pt.get<int>("ensemble_index", 0));
-	writeAttrToH5(g, string("SEED"), input_pt.get<int>("seed"));
-	writeAttrToH5(g, string("IN_FILENAME"), input_pt.get<string>("input_fn", ""));
-	writeAttrToH5(g, string("MESSAGE"), input_pt.get<string>("message",""));
-	writeAttrToH5(g, string( "ENSEMBLE_INDEX"), input_pt.get<int>("ensemble_index", 0));
+	writeAttrToH5(h5_param, string("SEED"), input_pt.get<int>("seed"));
+	writeAttrToH5(h5_param, string("IN_FILENAME"), input_pt.get<string>("input_fn", ""));
+	writeAttrToH5(h5_param, string("MESSAGE"), input_pt.get<string>("message",""));
+	writeAttrToH5(h5_param, string( "ENSEMBLE_INDEX"), input_pt.get<int>("ensemble_index", 0));
 	
 //         g.attrs().set("SEED", input_pt.get<uint>("seed"));
 //         g.attrs().set("IN_FILENAME", input_pt.get<string>("input_fn", ""));
@@ -328,10 +352,11 @@ void DoOutput(H5::H5File &file,
         parameter_pt.erase("message");
         parameter_pt.erase("ensemble_index");
         parameter_pt.erase("roots"); 
-        WriteHdfPtree(g, parameter_pt, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+        WriteHdfPtree(h5_param, parameter_pt, HDF_WRITE_PTREE_AS_ATTRIBUTE);
 #if GFFIELD_ENABLE
         H5::Group field_ld_grp = root.createGroup("field_ld");
-        WriteHdfLd(field_ld_grp, grower.get_field_ld());
+        //WriteHdfLd(field_ld_grp, grower.get_field_ld());
+	grower.get_field_ld().WriteHdfLd(field_ld_grp);
         WriteScalarField(root, "gf", grower.GetGf(), grower.get_field_ld(), field_ld_grp);
         WriteScalarField(root, "gfsources", grower.ComputeGfSources(), grower.get_field_ld(), field_ld_grp);
 #endif

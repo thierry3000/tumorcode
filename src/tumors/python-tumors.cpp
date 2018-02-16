@@ -266,8 +266,22 @@ void run_fakeTumor(const py::str &param_info_str)
   //printPtree(defaultParams.as_ptree());
   
   //printPtree(faketumSettings);
-  
-  int returnCode = s.run();
+    try{
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
+    int returnCode = s.run();
+  }
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
   //return returnCode;
 }
 void export_faketum()

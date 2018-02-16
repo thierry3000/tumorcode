@@ -47,71 +47,71 @@ ptree convertInfoStr(const py::str &param_info_str, const ptree &defaults)
 
 namespace mw_py_impl
 {
-
-template<class Details>
-struct H5FromPy : public Details
-{
-  static void Register()
-  {
-    boost::python::converter::registry::push_back(
-      &convertible,
-      &construct,
-      boost::python::type_id<typename Details::ResultType>());
-  }
-
-  static void* convertible(PyObject* obj_ptr)
-  {
-    py::object h5py = boost::python::import("h5py"); // not very efficient ...
-    py::object cls = py::getattr(h5py, Details::ResultPyClass());
-    py::object o(py::handle<>(py::borrowed(obj_ptr)));
-    if (PyObject_IsInstance(o.ptr(), cls.ptr()))
-      return obj_ptr;
-    else
-      return NULL;
-  }
-
-  static void construct(
-    PyObject* obj_ptr,
-    boost::python::converter::rvalue_from_python_stage1_data* data)
-  {
-    py::object o(py::handle<>(py::borrowed(obj_ptr)));
-
-    py::object id_obj1 = py::getattr(o, "id");
-    py::object id_obj2 = py::getattr(id_obj1, "id");
-    int id = py::extract<int>(id_obj2);
-
-    typedef typename Details::ResultType Result;
-    // Grab pointer to memory into which to construct the new QString
-    void* storage = ((boost::python::converter::rvalue_from_python_storage<Result>*)data)->storage.bytes;
-    //new (storage) Result(id);
-    Details::Construct(storage, id);
-    // Stash the memory chunk pointer for later use by boost.python
-    data->convertible = storage;
-  }
-};
-
-
-// this is a bit more general than needed, but still ...
-struct H5DetailFile
-{
-  typedef H5::H5File ResultType;
-  static const char* ResultPyClass() { return "File"; }
-  static void Construct(void* storage, int id) { new (storage) H5::H5File(id); }
-};
-
-struct H5DetailGroup
-{
-  typedef H5::Group ResultType;
-  static const char* ResultPyClass() { return "Group"; }
-  static void Construct(void* storage, int id) { new (storage) H5::Group(id); }
-};
-
-struct H5DetailDataset
-{
-  typedef H5::DataSet ResultType;
-  static const char* ResultPyClass() { return "Dataset"; }
-  static void Construct(void* storage, int id) { new (storage) H5::DataSet(id); }
-};
+// 
+// template<class Details>
+// struct H5FromPy : public Details
+// {
+//   static void Register()
+//   {
+//     boost::python::converter::registry::push_back(
+//       &convertible,
+//       &construct,
+//       boost::python::type_id<typename Details::ResultType>());
+//   }
+// 
+//   static void* convertible(PyObject* obj_ptr)
+//   {
+//     py::object h5py = boost::python::import("h5py"); // not very efficient ...
+//     py::object cls = py::getattr(h5py, Details::ResultPyClass());
+//     py::object o(py::handle<>(py::borrowed(obj_ptr)));
+//     if (PyObject_IsInstance(o.ptr(), cls.ptr()))
+//       return obj_ptr;
+//     else
+//       return NULL;
+//   }
+// 
+//   static void construct(
+//     PyObject* obj_ptr,
+//     boost::python::converter::rvalue_from_python_stage1_data* data)
+//   {
+//     py::object o(py::handle<>(py::borrowed(obj_ptr)));
+// 
+//     py::object id_obj1 = py::getattr(o, "id");
+//     py::object id_obj2 = py::getattr(id_obj1, "id");
+//     int id = py::extract<int>(id_obj2);
+// 
+//     typedef typename Details::ResultType Result;
+//     // Grab pointer to memory into which to construct the new QString
+//     void* storage = ((boost::python::converter::rvalue_from_python_storage<Result>*)data)->storage.bytes;
+//     //new (storage) Result(id);
+//     Details::Construct(storage, id);
+//     // Stash the memory chunk pointer for later use by boost.python
+//     data->convertible = storage;
+//   }
+// };
+// 
+// 
+// // this is a bit more general than needed, but still ...
+// struct H5DetailFile
+// {
+//   typedef H5::H5File ResultType;
+//   static const char* ResultPyClass() { return "File"; }
+//   static void Construct(void* storage, int id) { new (storage) H5::H5File(id); }
+// };
+// 
+// struct H5DetailGroup
+// {
+//   typedef H5::Group ResultType;
+//   static const char* ResultPyClass() { return "Group"; }
+//   static void Construct(void* storage, int id) { new (storage) H5::Group(id); }
+// };
+// 
+// struct H5DetailDataset
+// {
+//   typedef H5::DataSet ResultType;
+//   static const char* ResultPyClass() { return "Dataset"; }
+//   static void Construct(void* storage, int id) { new (storage) H5::DataSet(id); }
+// };
 
 
 
@@ -184,12 +184,12 @@ struct VecFromPy
 // };
 
 
-void exportH5Converters()
-{
-  mw_py_impl::H5FromPy<H5DetailDataset>::Register();
-  mw_py_impl::H5FromPy<H5DetailFile>::Register();
-  mw_py_impl::H5FromPy<H5DetailGroup>::Register();
-}
+// void exportH5Converters()
+// {
+//   mw_py_impl::H5FromPy<H5DetailDataset>::Register();
+//   mw_py_impl::H5FromPy<H5DetailFile>::Register();
+//   mw_py_impl::H5FromPy<H5DetailGroup>::Register();
+// }
 
 
 void exportVectorClassConverters()
