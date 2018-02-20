@@ -164,7 +164,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     pt.put("scale override", params.override_scale);
     //pt.put("filter", true); // does not help, is also filtered in oxygen model
     H5::Group h5_vessels = file.openGroup("/vessels");
-    std::auto_ptr<VesselList3d> vl = ReadVesselList3d(h5_vessels,pt);
+    std::unique_ptr<VesselList3d> vl = ReadVesselList3d(h5_vessels,pt);
     // adjust vessel list ld
     const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
     vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);

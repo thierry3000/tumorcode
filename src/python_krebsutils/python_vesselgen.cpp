@@ -38,7 +38,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 void run_vesselgen(const py::str &param_info_str)
 {
   ptree pt_params = convertInfoStr(param_info_str, ptree());
-  try{
+  
 #ifdef EPETRA_MPI
     std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
     int mpi_is_initialized = 0;
@@ -48,12 +48,14 @@ void run_vesselgen(const py::str &param_info_str)
       //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
       MPI_Init_thread(0, NULL, 1,&prov);
 #endif
+  try{
     VesselGenerator::run(pt_params);
   }
   catch(std::exception &ex)
   {
     std::cout << ex.what();
   }
+  std::cout << "py run_vesselgen finished" << std::endl;
 }
 void export_vesselgen()
 {

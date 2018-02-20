@@ -29,7 +29,7 @@ enum HdfWritePtreeAs {
   HDF_WRITE_PTREE_AS_DATASETS
 };
 
-void WriteHdfPtree(H5::Group f, const boost::property_tree::ptree &pt, HdfWritePtreeAs storage_mode = HDF_WRITE_PTREE_AS_ATTRIBUTE);
+void WriteHdfPtree(H5::Group &f, const boost::property_tree::ptree &pt, HdfWritePtreeAs storage_mode = HDF_WRITE_PTREE_AS_ATTRIBUTE);
 
 
 

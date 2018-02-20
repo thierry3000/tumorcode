@@ -59,31 +59,39 @@ float Vessel::WorldLength( const polymorphic_latticedata::LatticeData &ld ) cons
 //   this->bclist.reset(new BCList);
 // }
 /* a forced constructor */
-VesselList3d::VesselList3d(std::auto_ptr< VesselList3d::LD > this_ld)
+// VesselList3d::VesselList3d(std::unique_ptr< VesselList3d::LD > &this_ld)
+// {
+//   this->bclist.clear();
+//   this->m_ld = std::move(this_ld);
+//   this->Flush();
+//   this->lookup_site.Init(*m_ld);
+//   this->lookup_bond.Init(*m_ld);
+//   this->g.Reserve( 1024 );
+// }
+VesselList3d::VesselList3d::VesselList3d()
 {
-  this->bclist.clear();
-  this->m_ld = this_ld;
-  this->Flush();
-  this->lookup_site.Init(*m_ld);
-  this->lookup_bond.Init(*m_ld);
-  this->g.Reserve( 1024 );
 }
+
 // std::auto_ptr< polymorphic_latticedata::LatticeData > VesselList3d::getLD() const
 // {
 //   return m_ld;
 // }
 
+void VesselList3d::ClearLattice()
+{
+  delete m_ld.get();
+}
 
 
-std::auto_ptr< VesselList3d > VesselList3d::Clone()
+std::unique_ptr< VesselList3d > VesselList3d::Clone()
 {
   #ifdef DEBUG
   cout << "this lattice data will be passed to: " << endl;
   this->m_ld->print(cout);
   #endif
-  std::auto_ptr<VesselList3d> my_return_list(new VesselList3d(this->m_ld));
+  std::unique_ptr<VesselList3d> my_return_list(new VesselList3d());
   //my_return_list.reset(new VesselList3d);
-  //my_return_list->Init(this->Ld());
+  my_return_list->Init(this->Ld());
   //my_return_list->bclist.reset(new BCList);
   #ifdef DEBUG
   cout << "recognized: " << endl;
@@ -120,9 +128,9 @@ std::auto_ptr< VesselList3d > VesselList3d::Clone()
 
 void VesselList3d::Init( const LD &_ld )
 {
-    //this->bclist.clear();
+    this->bclist.clear();
     this->Flush();
-    //this->m_ld = _ld.Clone();
+    this->m_ld = _ld.Clone();
     //this->m_ld.reset(&_ld);
     this->lookup_site.Init(*m_ld);
     this->lookup_bond.Init(*m_ld);
@@ -593,12 +601,12 @@ void HemodynamicBounds::Add(const VesselList3d *vl, bool bClear)
 // }
 
 
-std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary)
+void GetSubdivided( std::unique_ptr<VesselList3d> &vl, int multi, float newscale, int safety_boundary)
 {
   typedef VesselList3d::LatticeData LatticeData;
   const LatticeData &ld = vl.get()->Ld();
-  
-  if(multi == 1) return vl;
+  std::cout << " in GetSubdivided" << std::endl;
+  //if(multi == 1) return vl;
 
   int ecnt = vl->GetECount();
   int ncnt = vl->GetNCount();
@@ -612,10 +620,11 @@ std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int m
   }
   newbox.Extend(safety_boundary);
 
-  std::auto_ptr<LatticeData> newldp(ld.Clone());
+  std::unique_ptr<LatticeData> newldp = LatticeData::Make("FCC", vl->Ld().Box(), vl->Ld().Scale());
+  //std::unique_ptr<LatticeData> newldp(ld.Clone());
   newldp.get()->Init(newbox,  newscale);
 
-  std::auto_ptr<VesselList3d> vlnew( new VesselList3d(newldp) );
+  std::unique_ptr<VesselList3d> vlnew( new VesselList3d() );
   vlnew->Init(*newldp);
 
   // insert new nodes into empty new vessellist
@@ -635,21 +644,31 @@ std::auto_ptr<VesselList3d> GetSubdivided( std::auto_ptr<VesselList3d> vl, int m
     Vessel* newv = vlnew->InsertVessel(vlnew->GetNode(a), vlnew->GetNode(b));
     *(VData*)newv = *(VData*)v;
   }
-
+  std::cout << "start adding vl->GetBCMap() : " << vl->GetBCMap().size() << std::endl;
   for (auto it = vl->GetBCMap().begin(); it != vl->GetBCMap().end(); ++it)
   {
     FlowBC aCondition = FlowBC(it->second.typeOfInstance, it->second.val);
     vlnew->SetBC(vlnew->GetNode(it->first->Index()), aCondition);
+    std::cout << "added condition: " << aCondition.val << " at " << it->first->Index() << std::endl;
   }
-  
-  return vlnew;
+  //vl->ClearLattice();
+  vl = std::move(vlnew);
+  std::cout << "moved" << std::endl;
+  //return vlnew;
 }
 
 
-std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, float scale)
+void GetSubdivided(std::unique_ptr<VesselList3d> &vl, float scale)
 {
   const int multi = std::max(int( my::round( vl->Ld().Scale()/scale ) ),1);
-  return GetSubdivided(vl, multi, scale);
+  if( multi == 1)
+  {
+    //return vl;
+  }
+  else
+  {
+    GetSubdivided(vl, multi, scale);
+  }
 }
 
 

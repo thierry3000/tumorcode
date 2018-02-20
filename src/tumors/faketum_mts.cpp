@@ -19,7 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "faketum_mts.h"
 
-
+#ifdef MILOTTI_MTS
+#define ANN
+  #ifdef ANN
+    #include <ANN/ANN.h>
+  #endif
+  #include <vbl.h>
+#endif
 
 
 
@@ -255,9 +261,14 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   cout.rdbuf(my::log().rdbuf());
   {
     /* setup basic things */
-    my::SetNumThreads(params.num_threads);
+    //my::SetNumThreads(params.num_threads);
     /* open hdf5 file containing the vessels */
-    h5cpp::File file(params.fn_vessel, "r");
+    //h5cpp::File file(params.fn_vessel, "r");
+    H5::H5File f;
+    f= H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
+    H5::Group root,h5_vessels;
+    root = f.openGroup("/");
+    h5_vessels = root.openGroup("vessels");
     /* instructions on how to read the vessels */
     ptree pt;
     pt.put("scale subdivide", 10.); //subdivide lattice by factor 10
@@ -265,7 +276,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
      * n.b. this file is keep open during the complete simulation
      * an all our vessels are pointer to that file. this keep ram at minimum
      */
-    vl = ReadVesselList3d(file.root().open_group("vessels"), pt);
+    vl = ReadVesselList3d(h5_vessels, pt);
     
     /*
      * this test worked, know we try to find the closest vessel for every cell in a similar fashion
@@ -308,9 +319,11 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     cout << "Vessel Lattice is: " << endl;
     vl->Ld().print(cout); cout    << endl;
     cout << "--------------------"<< endl;
-
-    params.vesselfile_message = file.root().open_group("parameters").attrs().get<string>("MESSAGE");
-    params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
+    H5::Group h5_params = root.openGroup("parameters");
+    readAttrFromH5(h5_params, string("MESSAGE"), params.vesselfile_message);
+    readAttrFromH5(h5_params, string("ENSEMBLE_INDEX"), params.vesselfile_ensemble_index);
+    //params.vesselfile_message = root.openGroup("parameters").attrs().get<string>("MESSAGE");
+    //params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
     
     /* define callback providing information about the simulation */
     VesselModel1::Callbacks callbacks;
@@ -337,7 +350,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   double next_adaption_time = 0.;
   
   // this is needed to pass tumor information to the DetailedPO2 simulation
-  boost::optional<h5cpp::Group> lastTumorGroupWrittenByFakeTum;
+  boost::optional<H5::Group> lastTumorGroupWrittenByFakeTum;
   std::string lastTumorGroupWrittenByFakeTumName;
 
   
@@ -421,8 +434,10 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       update_milotti_vessels(currentCellsSystem, *vl);
 #endif
       lastTumorGroupWrittenByFakeTumName = writeOutput();//detailedO2 should be calculated prior to this call
-      h5::File f(params.fn_out + ".h5", "a");
-      lastTumorGroupWrittenByFakeTum = f.root().open_group(lastTumorGroupWrittenByFakeTumName+"/tumor");
+      H5::H5File f;
+      f= H5::H5File(params.fn_out + ".h5", H5F_ACC_TRUNC);
+      //h5::File f(params.fn_out + ".h5", "a");
+      lastTumorGroupWrittenByFakeTum = f.openGroup("/"+lastTumorGroupWrittenByFakeTumName+"/tumor");
       
       //provide addition information about the tissue phases to the diffusion solver
       // this is where we need the information about the tissue state
@@ -500,34 +515,41 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   //if this is the first output, we have to create the file, otherwise we append
-  h5::File f(params.fn_out + ".h5", output_num==0 ? "w" : "a");
-  h5::Group g, root = f.root();
-  h5::Group g_o2;
+  H5::H5File f;
+  f = H5::H5File(params.fn_out + ".h5", output_num==0 ? H5F_ACC_RDWR : H5F_ACC_TRUNC);
+  //h5::File f(params.fn_out + ".h5", output_num==0 ? "w" : "a");
+  H5::Group g, root, g_o2, gout, cells_out, h5_vessels;
+  root = f.openGroup("/");
 
-  h5::Attributes a = root.attrs();
+  //h5::Attributes a = root.attrs();
   
   if (output_num == 0)
   {
     // write the simulation parameters to file
-    a.set("MESSAGE",params.message);
-    a.set("VESSELTREEFILE",params.fn_vessel);
-    a.set("OUTPUT_NAME", params.fn_out);
-    a.set("VESSELFILE_MESSAGE", params.vesselfile_message);
-    a.set("VESSELFILE_ENSEMBLE_INDEX", params.vesselfile_ensemble_index);
-    g = root.create_group("parameters");
-    WriteHdfPtree(g.create_group("vessels"), model.params.as_ptree());
-    WriteHdfPtree(g.create_group("o2_params"), o2_params.as_ptree());
-    WriteHdfPtree(g.create_group("calcflow"), bfparams.as_ptree());
-    WriteHdfPtree(g.create_group("faketumorMTS"), params.as_ptree());
+    //TODO
+//     a.set("MESSAGE",params.message);
+//     a.set("VESSELTREEFILE",params.fn_vessel);
+//     a.set("OUTPUT_NAME", params.fn_out);
+//     a.set("VESSELFILE_MESSAGE", params.vesselfile_message);
+//     a.set("VESSELFILE_ENSEMBLE_INDEX", params.vesselfile_ensemble_index);
+//     g = root.create_group("parameters");
+//     WriteHdfPtree(g.create_group("vessels"), model.params.as_ptree());
+//     WriteHdfPtree(g.create_group("o2_params"), o2_params.as_ptree());
+//     WriteHdfPtree(g.create_group("calcflow"), bfparams.as_ptree());
+//     WriteHdfPtree(g.create_group("faketumorMTS"), params.as_ptree());
   }
   
   /* create time slices */
   std::string tumOutName = str(format("out%04i") % output_num);
-  h5::Group gout = root.create_group(tumOutName);
-  a = gout.attrs();
-  a.set("time", time);
-  a.set("OUTPUT_NUM",output_num);
-  h5::Group cells_out = gout.create_group("cells");
+  //h5::Group gout = root.create_group(tumOutName);
+  gout = root.createGroup(tumOutName);
+  writeAttrToH5(gout, string("time"), time);
+  writeAttrToH5(gout, string("OUTPUT_NUM"), output_num);
+  cells_out = gout.createGroup("cells");
+//   a = gout.attrs();
+//   a.set("time", time);
+//   a.set("OUTPUT_NUM",output_num);
+  //h5::Group cells_out = gout.create_group("cells");
   /* writes the cell system stuff */
   //WriteCellsSystemHDF(currentCellsSystem, cells_out);
   if (currentCellsSystem->Get_alive()>0)
@@ -535,7 +557,8 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
     WriteCellsSystemHDF_with_nearest_vessel_index(cells_out);
   }
   /* writes the vessel list */
-  WriteVesselList3d(*vl, gout.create_group("vessels"));
+  h5_vessels = gout.createGroup("vessels");
+  WriteVesselList3d(*vl, h5_vessels);
   {
     /* write continuous fields */
     Array3d<float> tum_field(grid.ld.Box());
@@ -544,13 +567,16 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
       float t = getTumorDens(grid.ld.LatticeToWorld(p));
       tum_field(p) = t;
     }
-
-    h5::Group field_ld_group = root.require_group("field_ld");
-    if (output_num==0) WriteHdfLd(field_ld_group, grid.ld);
-
-    h5::Group gtum = gout.create_group("tumor");
-    gtum.attrs().set("TYPE", "faketumor");
-    gtum.attrs().set("TUMOR_RADIUS", tumor_radius);
+    //TODO
+    H5::Group field_ld_group;// = root.require_group("field_ld");
+    //h5::Group field_ld_group = root.require_group("field_ld");
+    if (output_num==0) grid.ld.WriteHdfLd(field_ld_group);
+    H5::Group gtum = gout.createGroup("tumor");
+    //h5::Group gtum = gout.create_group("tumor");
+//     gtum.attrs().set("TYPE", "faketumor");
+//     gtum.attrs().set("TUMOR_RADIUS", tumor_radius);
+    writeAttrToH5(gtum, string("TYPE"), "faketumorMTS");
+    writeAttrToH5(gtum, string("TUMOR_RADIUS"), tumor_radius);
     WriteScalarField(gtum, "tc_density", tum_field, grid.ld, field_ld_group);
 //     WriteScalarField(gtum, "fieldGf", state.gffield, grid.ld, field_ld_group);
     WriteScalarField(gtum, "fieldGlucose", state.glucoseField, grid.ld, field_ld_group);
@@ -564,13 +590,18 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
 #ifdef USE_DETAILED_O2
     // copied from python-oxygen2.cpp
     // write the detailed o2 stuff necessary for the cells
-    h5cpp::Group po2outputGroup = gout.create_group("po2");
-    h5cpp::Group ldgroup = po2outputGroup.create_group("field_ld");
-    WriteHdfLd(ldgroup, o2_sim.grid.ld);
+    H5::Group po2outputGroup;
+    po2outputGroup = gout.createGroup("po2");
+    H5::Group ldgroup;
+    ldgroup = po2outputGroup.createGroup("field_ld");
+    o2_sim.grid.ld.WriteHdfLd(ldgroup);
+    //WriteHdfLd(ldgroup, o2_sim.grid.ld);
     WriteScalarField<float>(po2outputGroup, "po2field", o2_sim.po2field, o2_sim.grid.ld, ldgroup);
-    h5cpp::create_dataset<float>(po2outputGroup, "po2vessels", h5cpp::Dataspace::simple_dims(o2_sim.po2vessels.size(), 2), (float*)o2_sim.po2vessels[0].data(), h5cpp::CREATE_DS_COMPRESSED); // FIX ME: transpose the array!
-    h5::Attributes ab = po2outputGroup.attrs();
-    ab.set("simType", "MTS");
+    //TODO
+    //h5cpp::create_dataset<float>(po2outputGroup, "po2vessels", h5cpp::Dataspace::simple_dims(o2_sim.po2vessels.size(), 2), (float*)o2_sim.po2vessels[0].data(), h5cpp::CREATE_DS_COMPRESSED); // FIX ME: transpose the array!
+    //h5::Attributes ab = po2outputGroup.attrs();
+    //ab.set("simType", "MTS");
+    writeAttrToH5(po2outputGroup, string("simType"), string("MTS"));
     WriteHdfPtree(po2outputGroup, o2_sim.metadata, HDF_WRITE_PTREE_AS_DATASETS);
 #else
     int ecnt = currentCellsSystem->Get_nbv();
@@ -582,12 +613,14 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
       po2[2*i+0] = bfvessels[i].GetBloodVesselO2start();
       po2[2*i+1] = bfvessels[i].GetBloodVesselO2end();
     }
-    h5cpp::Dataset ds = h5cpp::create_dataset<float>(gout.create_group("detailedPo2"), "po2_vessels", h5cpp::Dataspace::simple_dims(ecnt,2), &po2[0]);
+    //h5cpp::Dataset ds = h5cpp::create_dataset<float>(gout.create_group("detailedPo2"), "po2_vessels", h5cpp::Dataspace::simple_dims(ecnt,2), &po2[0]);
+    H5::Group h5_detailedPo2 = gout.createGroup("detailedPo2");
+    writeDataSetToGroup(detailedPo2, string("po2_vessels"), po2);
     //WriteScalarField(gtum, "fieldOxy", state.o2field, grid.ld, field_ld_group);
 #endif
   }
   ++output_num;
-  f.flush();
+  //f.flush();
   f.close();
   cout << format("files %s flushed and closed")  % params.fn_out << endl;
   return tumOutName;
@@ -776,7 +809,7 @@ void FakeTumMTS::FakeTumorSimMTS::insertGlucoseCoefficients(int box_index, const
   }
 }
 
-void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index( h5cpp::Group &out_cell_group)
+void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index( H5::Group &out_cell_group)
 {
   cout<< "going to write cells to a hdf file" << endl;
   int numberOfCells = currentCellsSystem->Get_ncells();
@@ -797,18 +830,18 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   }
   if(!out_cell_group.exists("index_of_nearest_vessel"))
   {
-//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_center_pos", h5cpp::Dataspace::simple_dims(a.size()/3,3), &a[0]);
-    h5cpp::Dataset ds = h5cpp::create_dataset<int>(out_cell_group, "index_of_nearest_vessel", h5cpp::Dataspace::simple_dims(numberOfCells,1), &index_of_nearest_vessel[0]);
+    //h5cpp::Dataset ds = h5cpp::create_dataset<int>(out_cell_group, "index_of_nearest_vessel", h5cpp::Dataspace::simple_dims(numberOfCells,1), &index_of_nearest_vessel[0]);
+    writeDataSetToGroup(out_cell_group, string("index_of_nearest_vessel"), index_of_nearest_vessel);
   }
   if(!out_cell_group.exists("distance_to_nearest_vessel"))
   {
-//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_center_pos", h5cpp::Dataspace::simple_dims(a.size()/3,3), &a[0]);
-    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "distance_to_nearest_vessel", h5cpp::Dataspace::simple_dims(numberOfCells,1), &min_distances[0]);
+    //h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "distance_to_nearest_vessel", h5cpp::Dataspace::simple_dims(numberOfCells,1), &min_distances[0]);
+    writeDataSetToGroup(out_cell_group, string("distance_to_nearest_vessel"), min_distances);
   }
   if(!out_cell_group.exists("cell_center_pos"))
   {
-//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_center_pos", h5cpp::Dataspace::simple_dims(a.size()/3,3), &a[0]);
-    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "cell_center_pos", h5cpp::Dataspace::simple_dims(numberOfCells,3), &a[0]);
+    //h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "cell_center_pos", h5cpp::Dataspace::simple_dims(numberOfCells,3), &a[0]);
+    writeDataSetToGroup(out_cell_group, string("cell_center_pos"), a);
   }
   DynArray<float> buffer(numberOfCells);
   for( int i = 0; i<numberOfCells; ++i)
@@ -817,7 +850,8 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   }
   if(!out_cell_group.exists("cell_radii"))
   {
-    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "cell_radii", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
+    //h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "cell_radii", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
+    writeDataSetToGroup(out_cell_group, string("cell_radii"), buffer);
   }
   // glucose extracellular Get_G_extra()
   for( int i = 0; i<numberOfCells; ++i)
@@ -826,7 +860,7 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   }
   if(!out_cell_group.exists("glucose_ex"))
   {
-    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "glucose_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
+    //h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "glucose_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
   }
   // ph Get_pH
   for( int i = 0; i<numberOfCells; ++i)
@@ -835,7 +869,7 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   }
   if(!out_cell_group.exists("pH_ex"))
   {
-    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "pH_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
+    //h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "pH_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
   }
   // oxygen Get_O2
   for( int i = 0; i<numberOfCells; ++i)
@@ -844,7 +878,7 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   }
   if(!out_cell_group.exists("o2"))
   {
-    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "o2", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
+    //h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "o2", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
   }
   // lactate Get_AcL_extra
   for( int i = 0; i<numberOfCells; ++i)
@@ -853,7 +887,7 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   }
   if(!out_cell_group.exists("AcL_ex"))
   {
-    h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "AcL_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
+    //h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "AcL_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
   }
   cout<< "finished writting cells to hdf" << endl;
 }

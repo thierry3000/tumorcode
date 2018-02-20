@@ -179,7 +179,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   // this was fn
   const string fn = py::extract<string>(py_parameters.get("output_file_name", "None"));
   //h5cpp::File *o2File = new h5cpp::File(fn,"a");
-  std::auto_ptr<VesselList3d> vl;
+  std::unique_ptr<VesselList3d> vl;
   try
    {
       /*

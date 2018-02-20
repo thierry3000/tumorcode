@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using boost::property_tree::ptree;
 
-void WriteHdfPtree(H5::Group f, const ptree &pt, HdfWritePtreeAs storage_mode)
+void WriteHdfPtree(H5::Group &f, const ptree &pt, HdfWritePtreeAs storage_mode)
 {
   typedef ptree::const_iterator I;
   for (I it = pt.begin(); it != pt.end(); ++it)
@@ -51,6 +51,9 @@ void WriteHdfPtree(H5::Group f, const ptree &pt, HdfWritePtreeAs storage_mode)
     }
     // recurse
     if (v.begin() != v.end())
-      WriteHdfPtree(f.createGroup(k), v, storage_mode);
+    {
+      H5::Group h5_group = f.createGroup(k);
+      WriteHdfPtree(h5_group, v, storage_mode);
+    }
   }
 }

@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/foreach.hpp>
 #include <boost/property_tree/info_parser.hpp>
+#include <boost/optional.hpp>
 
 #include "../hdfio.h"
 #include "remodeler.h"
@@ -285,6 +286,7 @@ void DoOutput(H5::H5File &file,
               const ptree &input_pt
              )
 {
+      std::cout << "DoOutput" << std::endl;
       const VesselList3d::LatticeData &ld = vl.Ld();
       H5::Group root = file.openGroup("/");
       
@@ -306,7 +308,7 @@ void DoOutput(H5::H5File &file,
 #endif
         {
           //a = root.attrs();
-	  writeAttrToH5(root, string("real_time"), (my::Time() - additional_data.get<my::Time>("real_start_time")).to_s() );
+          writeAttrToH5(root, string("real_time"), (my::Time() - additional_data.get<my::Time>("real_start_time")).to_s() );
           //a.set<double>("real_time", (my::Time() - additional_data.get<my::Time>("real_start_time")).to_s());
         }
         // measurement
@@ -322,37 +324,73 @@ void DoOutput(H5::H5File &file,
             t(2,i,0) = vv.second.get<int>("sites");
             ++i;
           }
-          H5::DataSet ds = WriteArray3D(h5_data,"rBV_by_iter",t);
+          H5::DataSet ds = WriteArray3D(h5_data,string("rBV_by_iter"),t);
           //a = ds.attrs();
-	  writeAttrToH5(ds, string("FIELD_0_NAME"), string("iter"));
-	  writeAttrToH5(ds, string("FIELD_1_NAME"), string("rBV"));
+          writeAttrToH5(ds, string("FIELD_0_NAME"), string("iter"));
+          writeAttrToH5(ds, string("FIELD_1_NAME"), string("rBV"));
 //           a.set<string>("FIELD_0_NAME","iter");
 //           a.set<string>("FIELD_1_NAME","rBV");
         }
 
         // parameters
         //g = root.require_group("parameters");
-	H5::Group h5_param = root.createGroup("parameters");
+        
+        H5::Group h5_param = root.createGroup("parameters");
+        
+        ptree parameter_pt = input_pt;// removes definitions since we already got those
+        
+        
+        
+        //parameter_pt.erase("roots");
         //h5::Dataset::create_scalar(g, "SEED", input_pt.get<uint>("seed"));
         //h5::Dataset::create_scalar(g, "IN_FILENAME", input_pt.get<string>("input_fn", ""));
         //h5::Dataset::create_scalar(g, "MESSAGE", input_pt.get<string>("message",""));
         //h5::Dataset::create_scalar(g, "ENSEMBLE_INDEX", input_pt.get<int>("ensemble_index", 0));
-	writeAttrToH5(h5_param, string("SEED"), input_pt.get<int>("seed"));
-	writeAttrToH5(h5_param, string("IN_FILENAME"), input_pt.get<string>("input_fn", ""));
-	writeAttrToH5(h5_param, string("MESSAGE"), input_pt.get<string>("message",""));
-	writeAttrToH5(h5_param, string( "ENSEMBLE_INDEX"), input_pt.get<int>("ensemble_index", 0));
+        boost::optional<int> seed = input_pt.get_optional<int>("seed");
+        if(seed)
+        {
+          writeAttrToH5(h5_param, string("SEED"), seed.get());
+          parameter_pt.erase("seed"); 
+        }
+        boost::optional<string> in_filename = input_pt.get_optional<string>("input_fn");
+        if( in_filename)
+        {
+          writeAttrToH5(h5_param, string("IN_FILENAME"), in_filename.get());
+          parameter_pt.erase("input_fn");
+        }
+        else
+        {
+          writeAttrToH5(h5_param, string("IN_FILENAME"), string(""));
+        }
+        boost::optional<string> message = input_pt.get_optional<string>("message");
+        if( message)
+        {
+          writeAttrToH5(h5_param, string("MESSAGE"), message.get());
+          parameter_pt.erase("message");
+        }
+        else
+        {
+          writeAttrToH5(h5_param, string("MESSAGE"), string(""));
+        }
+        boost::optional<int> ensemble_index = input_pt.get_optional<int>("ensemble_index");
+        if( ensemble_index)
+        {
+          writeAttrToH5(h5_param, string( "ENSEMBLE_INDEX"), ensemble_index.get());
+          parameter_pt.erase("ensemble_index");
+        }
+        else
+        {
+          writeAttrToH5(h5_param, string( "ENSEMBLE_INDEX"), 0);
+        }
 	
 //         g.attrs().set("SEED", input_pt.get<uint>("seed"));
 //         g.attrs().set("IN_FILENAME", input_pt.get<string>("input_fn", ""));
 //         g.attrs().set("MESSAGE", input_pt.get<string>("message",""));
 //         g.attrs().set( "ENSEMBLE_INDEX", input_pt.get<int>("ensemble_index", 0));
-        ptree parameter_pt = input_pt;
-        parameter_pt.erase("seed"); // removes definitions since we already got those
-        parameter_pt.erase("input_fn");
-        parameter_pt.erase("message");
-        parameter_pt.erase("ensemble_index");
-        parameter_pt.erase("roots"); 
+        
+        
         WriteHdfPtree(h5_param, parameter_pt, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+        std::cout << "after write Ptree" << std::endl;std::cout.flush();
 #if GFFIELD_ENABLE
         H5::Group field_ld_grp = root.createGroup("field_ld");
         //WriteHdfLd(field_ld_grp, grower.get_field_ld());
@@ -361,6 +399,7 @@ void DoOutput(H5::H5File &file,
         WriteScalarField(root, "gfsources", grower.ComputeGfSources(), grower.get_field_ld(), field_ld_grp);
 #endif
       }
+      std::cout << "exit DoOutput" << std::endl;
 }
 
 

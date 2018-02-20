@@ -191,7 +191,7 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
     //CalcFlow(grower.get_vl(),);
     
   }
-  
+  std::cout << "before return in callback" << std::endl;
   return finished_countdown < quality_buff_size;
 }
 
@@ -208,6 +208,7 @@ void VessGenApp::run(const ptree &input_pt_)
     
     Grower grower;
     grower.Run(input_pt, boost::bind(&VessGenApp::Callback, this, _1));
+    std::cout << "grower.Run finished!" << std::endl;
 }
 
 
@@ -269,6 +270,7 @@ void run(const ptree &parameters)
 {
   VessGenApp app;
   app.run(parameters);
+  std::cout << "VessGenApp.run finished " << std::endl;
 }
 
 }

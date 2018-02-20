@@ -499,13 +499,13 @@ int FindDistanceToJunction( const Vessel* vstart, int posOnVess, const VesselNod
 }
 
 
-std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params)
+std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params)
 {
   float grid_scale = params.get<float>("scale subdivide", -1.);
   bool filter_uncirculated = params.get<bool>("filter", false);
   
   
-  std::auto_ptr<VesselList3d> vl;
+  std::unique_ptr<VesselList3d> vl;
   typedef polymorphic_latticedata::LatticeData LatticeData;
   string type_of_vessel_network;
   readAttrFromH5(vesselgroup, string("CLASS"), type_of_vessel_network);
@@ -546,15 +546,15 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree
 //     h5cpp::Group ldgroup = vesselgroup.open_group("lattice");//may not be there
 
     
-    std::auto_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(ldgroup);
+    std::unique_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(ldgroup);
 #ifdef DEBUG
     cout << "ReadVesselList3d read " << endl;
     ldp->print(cout);
 #endif
-    std::auto_ptr<VesselList3d> vl_local;
-    vl_local.reset(new VesselList3d(ldp));
+    //std::unique_ptr<VesselList3d> vl_local;
+    //vl_local.reset(new VesselList3d(ldp));
     //vl_local->Init(*ldp);
-    vl=vl_local;
+    vl->Init(*ldp);
   
     
 #ifdef DEBUG
@@ -576,7 +576,8 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree
       double scale_of_vessel_data = vl->Ld().Scale();
       // check whether subdivision makes sense
       myAssert(scale_of_vessel_data/grid_scale - int(scale_of_vessel_data/grid_scale) < 1.e-3  && scale_of_vessel_data/grid_scale > 1.);
-      vl = GetSubdivided( vl, grid_scale);
+      //vl = std::move(GetSubdivided( vl, grid_scale));
+      GetSubdivided( vl, grid_scale);
 
     #ifdef DEBUG
       VESSEL_INTEGRITY_CHECK_SWITCH(vl->IntegrityCheck();)
@@ -587,9 +588,10 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree
   {
     //null!!!! 
     //world no lattice data needed
-    std::auto_ptr<LatticeData> ldp;
-    std::auto_ptr<VesselList3d> vl_local(new VesselList3d(ldp));
-    vl=vl_local;
+    std::unique_ptr<LatticeData> ldp;
+    std::unique_ptr<VesselList3d> vl_local(new VesselList3d());
+    vl_local->Init(*ldp);
+    vl=std::move(vl_local);
     ReadHdfGraph(vesselgroup, vl.get());
   }
 

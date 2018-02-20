@@ -36,7 +36,7 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
   H5::H5File *readInFile = new H5::H5File(fn, H5F_ACC_RDONLY);
   //h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
   H5::Group g_vess = readInFile->openGroup(vesselgroup_path); // groupname should end by vesselgroup
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
+  std::unique_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   Py_ssize_t num_nodes = vl->GetNCount();
   Py_ssize_t num_edges = vl->GetECount();

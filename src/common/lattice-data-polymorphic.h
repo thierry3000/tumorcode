@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/graph/graph_concepts.hpp>
 
+#include <memory> // std::unique_ptr
 
 namespace polymorphic_latticedata{
 template<class Ld>
@@ -67,11 +68,13 @@ class LatticeData : boost::noncopyable
     
     //virtual ~LatticeData() = default;
     virtual ~LatticeData() {}
-    virtual std::auto_ptr<LatticeData> Clone() const {};
+    virtual std::unique_ptr<LatticeData> Clone() const {};
+    
     virtual void Init(const BBox3 &bb, float scale) {};
 
     virtual float Scale() const {};
     virtual void SetScale(float s) {};
+    virtual string GetType() const {};
     
     virtual BBox3 Box() const {};
 
@@ -98,10 +101,10 @@ class LatticeData : boost::noncopyable
     /*
      * ldtype = quad or fcc
      */
-    static std::auto_ptr<LatticeData> Make(const char* ldtype, const BBox3 &bb, float scale);
+    static std::unique_ptr<LatticeData> Make(const char* ldtype, const BBox3 &bb, float scale);
 
     // hdf 5 support
-    static std::auto_ptr<LatticeData> ReadHdf(H5::Group &g);
+    static std::unique_ptr<LatticeData> ReadHdf(H5::Group &g);
     virtual void Lattice2Hdf(H5::Group &g) const {};
     
 };
@@ -130,14 +133,15 @@ public:
   Derived(const Ld &ld) : ld(ld) { }
   Derived(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
   Derived(const Derived &other) : ld(other.ld) {}
-  ~Derived() { }
+  //~Derived() { }
   //Ld& get() { return ld; }
   Ld get() const { return ld; }
 
-  std::auto_ptr<LatticeData> Clone() const { return std::auto_ptr<LatticeData>(new Derived(*this)); }
+  std::unique_ptr<LatticeData> Clone() const { return std::unique_ptr<LatticeData>(new Derived(*this)); }
   virtual void Init(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
 
   virtual float Scale() const { return ld.Scale(); }
+  virtual string GetType() const { return ld.getType(); }
   virtual void SetScale(float s) { ld.Scale(s); }
   virtual BBox3 Box() const { return ld.Box(); }
 

@@ -133,7 +133,7 @@ bool FindHemodynamicBounds( const VesselList3d *vl, HemodynamicBounds &hb, bool 
  * "calcflow"
  * "filter"
  */
-std::auto_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params);
+std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params);
 /* WriteVesselList3dVolume - parameters
  * w_all
  * w_pressure

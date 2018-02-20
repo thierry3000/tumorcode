@@ -95,7 +95,7 @@ py::object read_vessel_positions_from_hdf_by_filename(const string fn, const str
   H5::H5File readInFile = H5::H5File(fn, H5F_ACC_RDONLY );
   //h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname)); // groupname should end by vesselgroup
   H5::Group g_vess = readInFile.openGroup(groupname); // groupname should end by vesselgroup
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
+  std::unique_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   Py_ssize_t ndims[] = { 3, vl->GetNCount() };
   std::vector<float> x; x.resize(vl->GetNCount());

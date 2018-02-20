@@ -131,6 +131,7 @@ void LatticeDataQuad3d::Init( const Int3 &l_, float scale_)
 
 void LatticeDataQuad3d::Init(const BBox3 &bb, float scale_)
 {
+  type = string("QUAD3D");
   myAssert(!bb.IsEmpty());
   myAssert(scale_ > 0.);
 
@@ -214,6 +215,7 @@ Int3 LatticeDataFCC::vnb[2][3][LatticeDataFCC::DIR_CNT];
 
 void LatticeDataFCC::Init(const BBox3 &bb, float scale_)
 {
+  type = string("FCC");
   myAssert(!bb.IsEmpty());
   myAssert(scale_ > 0.);
 

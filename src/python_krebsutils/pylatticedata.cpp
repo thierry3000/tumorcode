@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 class PyLd : public PyObject
 {
   typedef polymorphic_latticedata::LatticeData LatticeData;
-  std::auto_ptr<LatticeData> ld;
+  std::unique_ptr<LatticeData> ld;
   PyLd() {}
 public:
   const LatticeData& get() const { return *ld; }

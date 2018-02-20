@@ -320,7 +320,7 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
     e.printError();
     h5_nodes = g.openGroup("nodes");
   }
-  //writeAttrToH5(h5_nodes, string("COUNT"), ncnt);
+  writeAttrToH5(h5_nodes, string("COUNT"), ncnt);
   //gg.attrs().set("COUNT",ncnt);
   //h5cpp::Attributes attrs = g.attrs();
 //   H5::Group gg = g.createGroup("nodes");
