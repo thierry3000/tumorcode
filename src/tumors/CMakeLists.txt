@@ -28,7 +28,7 @@ if(USE_MILOTTI_MTS)
   find_package(CGAL REQUIRED)
   if(CGAL_FOUND)
     message("Found CGAL_LIBRARY: ${CGAL_LIBRARY})")
-    set(myLibs "${myLibs};${CGAL_LIBRARY}" )
+    #set(myLibs "${myLibs};${CGAL_LIBRARY}" )
   endif()
 
   ### GMP
@@ -71,7 +71,7 @@ target_link_libraries(tumors_ detailedo2_)
 if(USE_MILOTTI_MTS)
   target_link_libraries(tumors_ vbl)
   #target_link_libraries(tumors_ gmp)
-  #target_link_libraries(tumors_ CGAL)
+  target_link_libraries(tumors_ CGAL)
   #target_link_libraries(tumors_ ANN)
 endif()
 
