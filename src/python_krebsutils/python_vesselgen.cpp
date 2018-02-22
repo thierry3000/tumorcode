@@ -22,6 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "vesselgen/vesselgen.h"
 #include "calcflow.h"
 #include <boost/property_tree/info_parser.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
 
 #include <fenv.h>
 #include "mwlib/hdf_wrapper_ptree.h"
@@ -38,7 +40,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 void run_vesselgen(const py::str &param_info_str)
 {
   ptree pt_params = convertInfoStr(param_info_str, ptree());
-  
+  boost::mutex vesselgen_lock;
 #ifdef EPETRA_MPI
     std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
     int mpi_is_initialized = 0;
@@ -49,6 +51,7 @@ void run_vesselgen(const py::str &param_info_str)
       MPI_Init_thread(0, NULL, 1,&prov);
 #endif
   try{
+    boost::mutex::scoped_lock lock(vesselgen_lock);
     VesselGenerator::run(pt_params);
   }
   catch(std::exception &ex)
