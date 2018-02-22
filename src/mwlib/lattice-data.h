@@ -237,10 +237,22 @@ struct LatticeDataQuad3d : public LatticeIndexing<3, int64, int64>, public Latti
   };    
   
   LatticeDataQuad3d();
-  ~LatticeDataQuad3d(){};
-  LatticeDataQuad3d(const LatticeDataQuad3d &ld) : LI(), LWT() { CopyMem(&ld, this, 1); type="QUAD3D";}
-  LatticeDataQuad3d(const Int3 &l, float scale=1.0f ) { Init(l, scale); type="QUAD3D"; }
-  LatticeDataQuad3d(const BBox3 &bb, float scale=1.0f ) { Init(bb, scale); type= "QUAD3D";}
+  ~LatticeDataQuad3d();
+  LatticeDataQuad3d(const LatticeDataQuad3d &ld) : LI(), LWT() 
+  { 
+    CopyMem(&ld, this, 1);
+    //type=string("QUAD3D");
+  }
+  LatticeDataQuad3d(const Int3 &l, float scale=1.0f ) 
+  { 
+    Init(l, scale); 
+    //type=string("QUAD3D"); 
+  }
+  LatticeDataQuad3d(const BBox3 &bb, float scale=1.0f ) 
+  { 
+    Init(bb, scale); 
+    //type= string("QUAD3D");
+  }
 
   void Init( const Int3 &l, float scale=1.0f);
   void Init( const BBox3 &bb, float scale=1.0);
@@ -270,8 +282,10 @@ protected:
   int nb[DIR_CNT];
   static Int3 vnb[DIR_CNT];
   //string type = "quad";
-  string type;
+  
   //float scale, scale_inv; // lattice spacing and 1/spacing
+public:
+  string type;
 };
 
 
@@ -283,9 +297,20 @@ struct LatticeDataFCC : public LatticeIndexing<3, int64, int64>, public LatticeW
   typedef int64 SiteType;
   enum { DIR_CNT = 12 };
 
-  LatticeDataFCC() { ClearMem( this, 1 ); type="FCC"; }
-  LatticeDataFCC(const LatticeDataFCC &ld) { CopyMem(&ld, this, 1); type="FCC";}
-  LatticeDataFCC(const BBox3 &bb, float scale=1.0f ) { Init(bb, scale); type="FCC";}
+  LatticeDataFCC() 
+  { 
+    ClearMem( this, 1 );
+    type=string("FCC"); 
+  }
+  LatticeDataFCC(const LatticeDataFCC &ld) 
+  { 
+    CopyMem(&ld, this, 1); 
+    type=string("FCC");
+  }
+  LatticeDataFCC(const BBox3 &bb, float scale=1.0f ) 
+  { 
+    Init(bb, scale); 
+    type=string("FCC");}
   void Init( const BBox3 &bb, float scale=1.0);
 
   void SetOriginPosition(const Float3 &pos) { wo = pos; }

@@ -31,12 +31,12 @@ public:
   
   PyLd(const std::string &type, const py::object &bbox, float scale)
   {
-    ld = LatticeData::Make(type.c_str(), BBoxFromPy<int,3>(bbox), scale);
+    ld = polymorphic_latticedata::Make_ld(type.c_str(), BBoxFromPy<int,3>(bbox), scale);
   }
   
   PyLd(const std::string &type, const BBox3 &bbox, float scale)
   {
-    ld = LatticeData::Make(type.c_str(), bbox, scale);
+    ld = polymorphic_latticedata::Make_ld(type.c_str(), bbox, scale);
   }
 
   PyLd(const PyLd &other)

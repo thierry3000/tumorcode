@@ -503,13 +503,13 @@ static py::object get_Murray2_p(const string fn, const string path)
 //try parallel here!!!
 static py::object get_Murray2_p(const string fn, const string path)
 {
-  H5::H5File *readInFile = new H5::H5File(fn, H5F_ACC_RDONLY);
-  H5::Group vesselgroup = readInFile->openGroup(path);
+  H5::H5File readInFile = H5::H5File(fn, H5F_ACC_RDONLY);
+  H5::Group vesselgroup = readInFile.openGroup(path);
 //static py::object get_Murray2_p(const py::object &vess_grp_obj)
 //{
   //double alpha = py::extract<double>(murrayalpha);
 //  h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
-  std::auto_ptr<VesselList3d> vl;
+  std::unique_ptr<VesselList3d> vl;
   vl = ReadVesselList3d(vesselgroup, make_ptree("filter", true));
   int ncnt = vl.get()->GetNCount();
 

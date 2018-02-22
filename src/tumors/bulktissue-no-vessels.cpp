@@ -111,7 +111,8 @@ struct Model : public boost::noncopyable
       ld.Init(size, scale);
       ld.SetCellCentering(Bool3(true, ndims_>1, ndims_>2));
       ld.SetOriginPosition(-ld.GetWorldBox().max * 0.5); // set origin = lower left side
-      grid.init(ld, ndims_);
+      //grid.init(ld, ndims_);
+      grid = ContinuumGrid(ld, ndims_);
     }
     //this is for the multithreading
     mtboxes.init(MakeMtBoxGrid(grid.Box(), pt_params.get<Int3>("mtboxsize")));

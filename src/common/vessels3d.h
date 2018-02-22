@@ -212,7 +212,8 @@ public:
 
   void Flush();
   void Reset();
-  void Init( const LD &ld );
+  //void Init( const LD &ld );
+  void Init( std::unique_ptr<LD> & ldp );
   inline const LD& Ld() const { return *m_ld; }
   inline bool HasLattice() const { return m_ld.get() != nullptr; }
   Graphtype& Graph() { return g; } 

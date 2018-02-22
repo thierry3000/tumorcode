@@ -120,12 +120,14 @@ Int3 LatticeDataQuad3d::vnb[LatticeDataQuad3d::DIR_CNT];
 LatticeDataQuad3d::LatticeDataQuad3d()
 {
   ClearMem( this, 1 );
+  type= string("QUAD3D");
 }
 
 
 void LatticeDataQuad3d::Init( const Int3 &l_, float scale_)
 {
   Init(BBox3(Int3(0), l_-Int3(1)), scale_);
+  type= string("QUAD3D");
 }
 
 

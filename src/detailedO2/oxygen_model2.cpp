@@ -1345,7 +1345,8 @@ void DetailedP02Sim::init(Parameters &params_,
         SetupFieldLattice(vl.Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
       }
     }
-    grid.init(ld, dim);
+    //grid.init(ld, dim);
+    grid = ContinuumGrid(ld, dim);
     mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
     if (params.loglevel > 0)
     {

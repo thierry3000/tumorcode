@@ -554,7 +554,7 @@ std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptr
     //std::unique_ptr<VesselList3d> vl_local;
     //vl_local.reset(new VesselList3d(ldp));
     //vl_local->Init(*ldp);
-    vl->Init(*ldp);
+    vl->Init(ldp);
   
     
 #ifdef DEBUG
@@ -590,7 +590,7 @@ std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptr
     //world no lattice data needed
     std::unique_ptr<LatticeData> ldp;
     std::unique_ptr<VesselList3d> vl_local(new VesselList3d());
-    vl_local->Init(*ldp);
+    vl_local->Init(ldp);
     vl=std::move(vl_local);
     ReadHdfGraph(vesselgroup, vl.get());
   }

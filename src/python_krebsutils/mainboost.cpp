@@ -52,43 +52,9 @@ enum Mode {
   DATA_CONST = 0,
   DATA_LINEAR = 4,
 };
-#pragma message("BOOST_VERSION=" BOOST_PP_STRINGIZE(BOOST_VERSION))
-#if ((BOOST_VERSION/100)%1000) < 63
-py::object read_vessel_positions_from_hdf_by_filename(const string fn, const string groupname)
-{
-  //h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
-  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
-  h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname)); // groupname should end by vesselgroup
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
+//#pragma message("BOOST_VERSION=" BOOST_PP_STRINGIZE(BOOST_VERSION))
+//#if ((BOOST_VERSION/100)%1000) < 63
 
-//   Py_ssize_t ndims[] = { 3, vl->GetNCount() };
-// 
-//   // create numpy array
-//   np::arrayt<float> wp = np::zeros(2, ndims, np::getItemtype<float>());
-  np::ndarray wp = np::zeros(py::make_tuple(3,vl->GetNCount()), np::dtype::get_builtin<float>());
-
-//   cout << ld << endl;
-  Float3 p;
-  for (int i=0; i<vl->GetNCount(); ++i)
-  {
-    VesselNode *nd = vl->GetNode(i);
-    if( !vl->HasLattice() )
-    {
-      p = nd->worldpos;
-    }
-    else
-    {
-      myAssert(vl->Ld().IsInsideLattice(nd->lpos));
-      p = vl->Ld().LatticeToWorld(nd->lpos);
-    }
-    for (int j=0; j<3; ++j)
-    {
-      wp[j][i] = p[j];
-    }
-  }
-  return wp;
-}
-#else
 py::object read_vessel_positions_from_hdf_by_filename(const string fn, const string groupname)
 {
   //h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
@@ -138,7 +104,7 @@ py::object read_vessel_positions_from_hdf_by_filename(const string fn, const str
   //return wp.getObject();
   return py::make_tuple(py_x, py_y, py_z);
 }
-#endif
+
 
 #if 0 
 //depricted since H5Cpp

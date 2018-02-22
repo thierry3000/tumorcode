@@ -101,13 +101,14 @@ class LatticeData : boost::noncopyable
     /*
      * ldtype = quad or fcc
      */
-    static std::unique_ptr<LatticeData> Make(const char* ldtype, const BBox3 &bb, float scale);
 
     // hdf 5 support
     static std::unique_ptr<LatticeData> ReadHdf(H5::Group &g);
     virtual void Lattice2Hdf(H5::Group &g) const {};
     
 };
+
+std::unique_ptr<LatticeData> Make_ld(const char* ldtype, const BBox3 &bb, float scale);
 
 template<class Ld>
 struct fwd_cell_centering {

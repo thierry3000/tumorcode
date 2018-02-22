@@ -194,7 +194,8 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     field_ld.Init(params.lattice_size, params.lattice_scale);
     field_ld.SetCellCentering(centering);
     field_ld.SetOriginPosition(-field_ld.GetWorldBox().max.cwiseProduct(centering.cast<float>()) * 0.5); // set origin = lower left side
-    grid.init(field_ld, dim);
+    //grid.init(field_ld, dim);
+    grid = ContinuumGrid(field_ld, dim);
     mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
     
     cout << "--------------------"<< endl;

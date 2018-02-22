@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace polymorphic_latticedata
 {
 
-std::unique_ptr< LatticeData > LatticeData::Make(const char* ldtype, const BBox3& bb, float scale)
+std::unique_ptr< LatticeData > Make_ld(const char* ldtype, const BBox3& bb, float scale)
 {
   //if (strcmp(ldtype, "quad")==0)
   if (strcmp(ldtype, "QUAD3D")==0)

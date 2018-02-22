@@ -47,6 +47,7 @@ ContinuumGrid::ContinuumGrid(const LatticeDataQuad3d &ld_, int dim_) :
 
 void ContinuumGrid::init(const LatticeDataQuad3d& ld_, int dim_)
 {
+  //TF 22.02.2018
   Destruct(*this);
   new (this) ContinuumGrid(ld_, dim_);
 }

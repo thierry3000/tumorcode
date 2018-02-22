@@ -91,7 +91,8 @@ std::unique_ptr< VesselList3d > VesselList3d::Clone()
   #endif
   std::unique_ptr<VesselList3d> my_return_list(new VesselList3d());
   //my_return_list.reset(new VesselList3d);
-  my_return_list->Init(this->Ld());
+//   my_return_list->Init(this->Ld());
+  my_return_list->Init(m_ld);
   //my_return_list->bclist.reset(new BCList);
   #ifdef DEBUG
   cout << "recognized: " << endl;
@@ -126,11 +127,21 @@ std::unique_ptr< VesselList3d > VesselList3d::Clone()
   return my_return_list;
 }
 
-void VesselList3d::Init( const LD &_ld )
+// void VesselList3d::Init( const LD &_ld )
+// {
+//     this->bclist.clear();
+//     this->Flush();
+//     this->m_ld = _ld.Clone();
+//     //this->m_ld.reset(&_ld);
+//     this->lookup_site.Init(*m_ld);
+//     this->lookup_bond.Init(*m_ld);
+//     this->g.Reserve( 1024 );
+// }
+void VesselList3d::Init( std::unique_ptr<LD> &_ld )
 {
     this->bclist.clear();
     this->Flush();
-    this->m_ld = _ld.Clone();
+    this->m_ld = std::move(_ld);
     //this->m_ld.reset(&_ld);
     this->lookup_site.Init(*m_ld);
     this->lookup_bond.Init(*m_ld);
@@ -620,12 +631,13 @@ void GetSubdivided( std::unique_ptr<VesselList3d> &vl, int multi, float newscale
   }
   newbox.Extend(safety_boundary);
 
-  std::unique_ptr<LatticeData> newldp = LatticeData::Make("FCC", vl->Ld().Box(), vl->Ld().Scale());
+  std::unique_ptr<LatticeData> newldp = polymorphic_latticedata::Make_ld("FCC", vl->Ld().Box(), vl->Ld().Scale());
   //std::unique_ptr<LatticeData> newldp(ld.Clone());
   newldp.get()->Init(newbox,  newscale);
 
   std::unique_ptr<VesselList3d> vlnew( new VesselList3d() );
-  vlnew->Init(*newldp);
+  //vlnew->Init(*newldp);
+  vlnew->Init(newldp);
 
   // insert new nodes into empty new vessellist
   for (int i=0; i<ncnt; ++i)

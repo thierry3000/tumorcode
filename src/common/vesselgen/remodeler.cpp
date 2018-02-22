@@ -139,11 +139,11 @@ void Grower::Init(const ptree &settings)
     seed = 7731 * my::Time().to_ms();
   rand.Init(seed);
 
-  std::unique_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
+  std::unique_ptr<LatticeData> ldp = polymorphic_latticedata::Make_ld(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
   //vl.reset( new VesselList3d(ldp) );
   vl = std::unique_ptr<VesselList3d>(new VesselList3d());
-  vl->Init(*ldp);
+  vl->Init(ldp);
 
   cout << "vesselgen init ..." << endl;
   cout << "  size " << size << " scale " << scale << endl;
@@ -166,7 +166,8 @@ void Grower::Init(const ptree &settings)
 #if GFFIELD_ENABLE
 void Grower::InitGfDistrib()
 {
-  const LatticeData &ld = get_ld();
+  //const LatticeData &ld = get_ld();
+  const LatticeData &ld = vl->Ld();
   
   const float cellsize = 50.;
   Float3 domain_size = Size(ld.GetWorldBox());
@@ -186,7 +187,8 @@ void Grower::InitGfDistrib()
   field_ld.Init(bb, cellsize);
   field_ld.SetCellCentering(Bool3(true, true, dim()==3));
   field_ld.SetOriginPosition(ld.GetWorldBox().min);
-  grid.init(field_ld, dim());
+  //grid.init(field_ld, dim());
+  grid = ContinuumGrid(field_ld, dim());
   mtboxes.insert(0, field_ld.Box());
   cout << "field lattice:  " << field_ld << endl;
   ptree pt = make_ptree("rGf", gf_range);
@@ -1256,7 +1258,7 @@ void Grower::UpscaleTrees()
   std::cout << "former lattice type: " << former_lattice_type << std::endl;
   
   //allocates new memory
-  std::unique_ptr<LatticeData> oldld = LatticeData::Make("FCC", vl->Ld().Box(), vl->Ld().Scale());
+  std::unique_ptr<LatticeData> oldld = polymorphic_latticedata::Make_ld("FCC", vl->Ld().Box(), vl->Ld().Scale());
 //   std::auto_ptr<VesselList3d> vl_new = GetSubdivided(vl, 2, oldld->Scale(), 0);
   //std::unique_ptr<VesselList3d> vl_new = GetSubdivided(vl, 2, oldld->Scale(), 0);
   std::cout << vl->Ld().Scale();
@@ -1454,7 +1456,8 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
   {
     for (hierarchy_level=0; hierarchy_level<max_hierarchy_level; ++hierarchy_level)
     {
-      for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
+      //for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
+      for (iteration_number_on_level = 0; iteration_number_on_level<20; ++iteration_number_on_level)
       {
         RemodelTrees();
 
@@ -1484,7 +1487,8 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
 
   cout << "iterating ... " << endl;
 
-  for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
+  //for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
+  for (iteration_number_on_level = 0; iteration_number_on_level<20; ++iteration_number_on_level)
   {
     RemodelTrees();
     cout << "done remodel trees" << endl;

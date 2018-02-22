@@ -40,7 +40,8 @@ static void InitGrid(const Int3 &size, ContinuumGrid &grid, DomainDecomposition 
   LatticeDataQuad3d ld;
   ld.Init(Int3(size), 1.);
   ld.SetOriginPosition(-ld.GetWorldBox().max*0.5);
-  grid.init(ld, size[2]>1 ? 3 : size[1]>1 ? 2 : 1);
+  //grid.init(ld, size[2]>1 ? 3 : size[1]>1 ? 2 : 1);
+  grid = ContinuumGrid(ld, size[2]>1 ? 3 : size[1]>1 ? 2 : 1);
   mtboxes.init(MakeMtBoxGrid(ld.Box(), Int3(64, 32, 32)));
 }
 
