@@ -178,8 +178,10 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   //h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
   // this was fn
   const string fn = py::extract<string>(py_parameters.get("output_file_name", "None"));
+  const string out_grp_path = py::extract<string>(py_parameters.get("output_group_path", "None"));
   //h5cpp::File *o2File = new h5cpp::File(fn,"a");
   std::unique_ptr<VesselList3d> vl;
+  H5::H5File o2File;
   try
    {
       /*
@@ -190,120 +192,19 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
       /*
        * Open the specified file and the specified dataset in the file.
        */
-      H5::H5File o2File( fn, H5F_ACC_RDONLY );
-//       DataSet dataset = file.openDataSet( DATASET_NAME );
-//       /*
-//        * Get the class of the datatype that is used by the dataset.
-//        */
-//       H5T_class_t type_class = dataset.getTypeClass();
-//       /*
-//        * Get class of datatype and print message if it's an integer.
-//        */
-//       if( type_class == H5T_INTEGER )
-//       {
-//      cout << "Data set has INTEGER type" << endl;
-//          /*
-//       * Get the integer datatype
-//           */
-//      IntType intype = dataset.getIntType();
-//          /*
-//           * Get order of datatype and print message if it's a little endian.
-//           */
-//      H5std_string order_string;
-//          H5T_order_t order = intype.getOrder( order_string );
-//      cout << order_string << endl;
-//          /*
-//           * Get size of the data element stored in file and print it.
-//           */
-//          size_t size = intype.getSize();
-//          cout << "Data size is " << size << endl;
-//       }
-//       /*
-//        * Get dataspace of the dataset.
-//        */
-//       DataSpace dataspace = dataset.getSpace();
-//       /*
-//        * Get the number of dimensions in the dataspace.
-//        */
-//       int rank = dataspace.getSimpleExtentNdims();
-//       /*
-//        * Get the dimension size of each dimension in the dataspace and
-//        * display them.
-//        */
-//       hsize_t dims_out[2];
-//       int ndims = dataspace.getSimpleExtentDims( dims_out, NULL);
-//       cout << "rank " << rank << ", dimensions " <<
-//           (unsigned long)(dims_out[0]) << " x " <<
-//           (unsigned long)(dims_out[1]) << endl;
-//       /*
-//        * Define hyperslab in the dataset; implicitly giving strike and
-//        * block NULL.
-//        */
-//       hsize_t      offset[2];   // hyperslab offset in the file
-//       hsize_t      count[2];    // size of the hyperslab in the file
-//       offset[0] = 1;
-//       offset[1] = 2;
-//       count[0]  = NX_SUB;
-//       count[1]  = NY_SUB;
-//       dataspace.selectHyperslab( H5S_SELECT_SET, count, offset );
-//       /*
-//        * Define the memory dataspace.
-//        */
-//       hsize_t     dimsm[3];              /* memory space dimensions */
-//       dimsm[0] = NX;
-//       dimsm[1] = NY;
-//       dimsm[2] = NZ ;
-//       DataSpace memspace( RANK_OUT, dimsm );
-//       /*
-//        * Define memory hyperslab.
-//        */
-//       hsize_t      offset_out[3];   // hyperslab offset in memory
-//       hsize_t      count_out[3];    // size of the hyperslab in memory
-//       offset_out[0] = 3;
-//       offset_out[1] = 0;
-//       offset_out[2] = 0;
-//       count_out[0]  = NX_SUB;
-//       count_out[1]  = NY_SUB;
-//       count_out[2]  = 1;
-//       memspace.selectHyperslab( H5S_SELECT_SET, count_out, offset_out );
-//       /*
-//        * Read data from hyperslab in the file into the hyperslab in
-//        * memory and display the data.
-//        */
-//       dataset.read( data_out, PredType::NATIVE_INT, memspace, dataspace );
-//       for (j = 0; j < NX; j++)
-//       {
-//     for (i = 0; i < NY; i++)
-//        cout << data_out[j][i][0] << " ";
-//     cout << endl;
-//       }
-      /*
-       * 0 0 0 0 0 0 0
-       * 0 0 0 0 0 0 0
-       * 0 0 0 0 0 0 0
-       * 3 4 5 6 0 0 0
-       * 4 5 6 7 0 0 0
-       * 5 6 7 8 0 0 0
-       * 0 0 0 0 0 0 0
-       */
+      o2File = H5::H5File( fn, H5F_ACC_RDWR );
+
       string vesselgroup_path = py::extract<string>(py_parameters.get("vessel_group_path", "None"));
       vesselgroup_path = "/" + vesselgroup_path;
       H5::Group vesselgroup = o2File.openGroup(vesselgroup_path);
       vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
-      //h5cpp::Group *vesselgroup = new h5cpp::Group(o2File->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
    }  // end of try block
       // catch failure caused by the H5File operations
    catch( H5::FileIException error )
    {
       error.printError();
    }
-   
-  
-  //std::auto_ptr<VesselList3d> vl = ReadVesselList3d(*vesselgroup, make_ptree("filter",false));
-  
-  
-  
-  
+    
   // THIIIIRYYYYY, filter muss = false sein sonst stimmt in der Ausgabe in der Hdf5 Datei die Anzahl der Vessels nicht mehr mit den daten im recomputed_flow Verzeichnis ueberein!
   
   double grid_lattice_const               = py::extract<double>(py_parameters.get("grid_lattice_const", 30.));
@@ -328,23 +229,6 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   boost::optional<Array3df> previous_po2field;
   boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels;
   //h5cpp::Group   *tumorgroup = new h5cpp::Group();
-  DetailedP02Sim s;
-//   if (!py_tumorgroup.is_none())
-//   {
-//     tumorgroup = PythonToCppGroup(py_tumorgroup);
-//   }
-  
-//   if (tumorgroup_path != "not_found_tumor")
-//   {
-//     h5cpp::Group tumorgroup = h5cpp::Group(readInFile->root().open_group(tumorgroup_path));
-//   }
-  
-  s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels);
-//   else
-//   {
-//     tumorgroup = nullptr;
-//   }
-  
   
   
   { //ReleaseGIL unlock(); // allow the python interpreter to do things while this is running
@@ -352,7 +236,50 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
    * MOST IMPORTANT CALL
    * grid is conitnuum grid, mtboxes is decomposition into threads
    */
-  s.run(*vl);
+  try{
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
+    DetailedP02Sim s;
+    s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels);
+    s.run(*vl);
+    
+    /* OUTPUT */
+    H5::Group outputgroup = o2File.createGroup(out_grp_path);
+    
+    writeAttrToH5(outputgroup, string("SOURCE_VESSELS_FILE"), fn);
+    writeAttrToH5(outputgroup, string("SOURCE_VESSELS_PATH"), out_grp_path);
+    writeAttrToH5(outputgroup, string("SOURCE_TISSUE_FILE"), string("none"));
+    writeAttrToH5(outputgroup, string("SOURCE_TISSUE_PATH"), string("none"));
+    H5::Group h5_o2_lattice = outputgroup.createGroup("field_ld");
+    s.grid.ld.WriteHdfLd(h5_o2_lattice);
+    WriteScalarField(outputgroup, string("po2field"), s.po2field, s.grid.ld, h5_o2_lattice);
+    writeDataSetToGroup(outputgroup, string("po2vessels"), s.po2vessels);
+    //WriteHdfPtree(outputgroup, s.metadata, HDF_WRITE_PTREE_AS_DATASETS);
+    WriteHdfPtree(outputgroup, s.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+    H5::Group h5_params = outputgroup.createGroup("parameters");
+    H5::Group h5_meta_data = h5_params.createGroup("metadata");
+    WriteHdfPtree(h5_meta_data, s.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+    H5::Group h5_o2_params = h5_params.createGroup("o2");
+    WriteHdfPtree(h5_o2_params, s.params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
+    H5::Group h5_bf_params = h5_params.createGroup("calcflow");
+    WriteHdfPtree(h5_bf_params, s.bfparams.as_ptree());
+    
+  }
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
   //DetailedPO2::ComputePO2(params, *vl, grid, mtboxes, po2field, po2vessels, phases, metadata, world);
   }
   if (PyErr_Occurred() != NULL) return; // don't save stuff
@@ -366,27 +293,22 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   
   return py::make_tuple(py_po2vessels, py_ld, py_po2field);
 #endif
-  {
+  
 //    readInFile->close();
 //    h5cpp::File *outputFile = new h5cpp::File(fn,"a");
-//h5cpp::Group outputGroup = readInFile->open_group("po2");
-    //h5cpp::File outputFile("someOutput.h5","w");
-//     try
-//     {
-// 	/*
-// 	* Turn off the auto-printing when failure occurs so that we can
-// 	* handle the errors appropriately
-// 	*/
-// 	H5::Exception::dontPrint();
-// 	/*
-// 	* Open the specified file and the specified dataset in the file.
-// 	*/
-// 	H5::H5File o2File( fn, H5F_ACC_RDONLY );
-//     }
-//     catch( H5::FileIException error )
-//     {
-// 	error.printError();
-//     }
+//    try{
+//     H5::Group outputgroup = o2File.createGroup();
+//     H5::Group h5_o2_lattice = outputgroup.createGroup("field_ld");
+//     s.grid.ld.WriteHdfLd(h5_o2_lattice);
+//     WriteScalarField(outputgroup, "po2field", s.po2field, s.grid.ld, ldgroup);
+//     WriteHdfPtree(outputgroup, s.metadata, HDF_WRITE_PTREE_AS_DATASETS);
+//     //WriteHdfLd(h5_o2_lattice, s.
+//    }
+//    catch(H5::Exception e)
+//    {
+//      e.printError();
+//    }
+
 //     h5cpp::Group root = o2File->root();
 //     h5cpp::Group gout = root.create_group("data");
 //     h5cpp::Group g_o2;
@@ -406,7 +328,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
 //      h5cpp::create_dataset<float>(outputGroup, "po2vessels", h5cpp::Dataspace::simple_dims(s.po2vessels.size(), 2), (float*)s.po2vessels[0].data(), h5cpp::CREATE_DS_COMPRESSED); // FIX ME: transpose the array!
 //      WriteHdfPtree(outputGroup, s.metadata, HDF_WRITE_PTREE_AS_DATASETS);
     //outputFile.close();
-  }
+  
 }
 
 #if BOOST_VERSION>106300

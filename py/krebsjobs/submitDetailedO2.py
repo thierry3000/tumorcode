@@ -27,7 +27,7 @@ import qsub
 import dicttoinfo
 import krebsutils
 import myutils
-import h5files
+import h5py
 import itertools
 import copy
 
@@ -39,10 +39,7 @@ from krebs import detailedo2Analysis
 
 def worker_on_client(fn, pattern, o2params):
   print 'detailedo2 on %s / %s' % (fn, pattern)
-  h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
-  #no, this is not working!!!!, hand num_threads over to the cpp side
-  #num_threads = o2params.pop('num_threads')
-  #krebsutils.set_num_threads(num_threads)
+  
   o2_refs = detailedo2.doit(fn, pattern, (o2params, o2params['name']))
   if 0: #this is for data analysis on the clusters
     for ref in o2_refs:
@@ -89,7 +86,7 @@ def run(parameter_set_name, filenames, grp_pattern, systemsize):
 
   dirs = set()
   for fn in filenames:
-    with h5files.open(fn, 'r') as f:
+    with h5py.File(fn, 'r') as f:
       d = myutils.walkh5(f, grp_pattern)
       assert len(d), 'you fucked up, pattern "%s" not found in "%s"!' % (grp_pattern, fn)
       dirs =set.union(dirs, d)

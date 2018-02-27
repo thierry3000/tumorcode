@@ -170,7 +170,6 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
   else
     finished_countdown = 0;
   
-  //if (grower.hierarchy_level < grower.max_hierarchy_level) return true;
 
   if (finished_countdown > 0 && last_iter_data.get<float>("rBV")>last_saved_quality && grower.hierarchy_level>=grower.max_hierarchy_level)
   {

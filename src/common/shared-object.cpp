@@ -546,7 +546,7 @@ std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptr
 //     h5cpp::Group ldgroup = vesselgroup.open_group("lattice");//may not be there
 
     
-    std::unique_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(ldgroup);
+    std::unique_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::ReadHdf(ldgroup);
 #ifdef DEBUG
     cout << "ReadVesselList3d read " << endl;
     ldp->print(cout);
@@ -554,6 +554,7 @@ std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptr
     //std::unique_ptr<VesselList3d> vl_local;
     //vl_local.reset(new VesselList3d(ldp));
     //vl_local->Init(*ldp);
+    vl = std::unique_ptr<VesselList3d> (new VesselList3d());
     vl->Init(ldp);
   
     
@@ -946,9 +947,7 @@ ptree AddVesselVolumeFraction(const VesselList3d &vl, const LatticeDataQuad3d &f
     #pragma omp atomic
     total_num_samples += thread_sample_cnt;
   }
-  //HACK2018
-  cout << format("add vessel volume fraction: time=%f, np=%i, npboxes=%i") % (my::Time()-t__).to_ms() % 1 % boxes.size() << endl;
-  //cout << format("add vessel volume fraction: time=%f, np=%i, npboxes=%i") % (my::Time()-t__).to_ms() % my::OmpGetMaxThreadCount() % boxes.size() << endl;
+  cout << format("add vessel volume fraction: time=%f, np=%i, npboxes=%i") % (my::Time()-t__).to_ms() % omp_get_max_threads() % boxes.size() << endl;
   return make_ptree("num_samples", total_num_samples);
 }
 

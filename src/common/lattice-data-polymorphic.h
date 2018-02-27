@@ -103,11 +103,11 @@ class LatticeData : boost::noncopyable
      */
 
     // hdf 5 support
-    static std::unique_ptr<LatticeData> ReadHdf(H5::Group &g);
+    
     virtual void Lattice2Hdf(H5::Group &g) const {};
     
 };
-
+std::unique_ptr<LatticeData> ReadHdf(H5::Group &g);
 std::unique_ptr<LatticeData> Make_ld(const char* ldtype, const BBox3 &bb, float scale);
 
 template<class Ld>
@@ -131,7 +131,7 @@ class Derived : public LatticeData
 public:
   // trivially forward all calls
   Derived() = default;
-  Derived(const Ld &ld) : ld(ld) { }
+  Derived(const Ld &ld);// : ld(ld) { }
   Derived(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
   Derived(const Derived &other) : ld(other.ld) {}
   //~Derived() { }

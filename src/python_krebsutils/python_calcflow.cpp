@@ -33,9 +33,18 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
   
   const BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
 
-  H5::H5File *readInFile = new H5::H5File(fn, H5F_ACC_RDONLY);
+  H5::H5File readInFile;
+  H5::Group g_vess;
+  try{
+    readInFile = H5::H5File(fn, H5F_ACC_RDONLY);
+    g_vess = readInFile.openGroup(vesselgroup_path); // groupname should end by vesselgroup
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
   //h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
-  H5::Group g_vess = readInFile->openGroup(vesselgroup_path); // groupname should end by vesselgroup
+  
   std::unique_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   Py_ssize_t num_nodes = vl->GetNCount();
@@ -47,7 +56,22 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
 //   if (simple)
 //     CalcFlowSimple(*vl, bfparams, true);
 //   else
+  try{
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
   CalcFlow(*vl, bfparams);
+  }
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
   
   if( storeCalculationInHDF )
   {

@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "continuum-grid.h"
+#include <omp.h>
 
 LatticeIndexRanges LatticeIndexRanges::FromCellRange(const BBox3 &b, int ndim)
 {
@@ -218,9 +219,7 @@ DynArray<BBox3> MakeMtBoxGrid(const BBox3 &bb)
 
 DynArray<BBox3> MakeMtBoxGridLarge(const BBox3 &mainbb, int max_size)
 {
-  //HACK2018
-  int num_threads = 1;
-  //int num_threads = my::GetNumThreads();
+  int num_threads = omp_get_max_threads();
   int bs = std::min(max_size, std::max(16, maxCoeff(Size(mainbb)) / (2 * num_threads)));
   Int3 cnt = (Size(mainbb)/bs).cwiseMax(Int3(1));
   int total_cnt = cnt.prod();
@@ -232,12 +231,10 @@ DynArray<BBox3> MakeMtBoxGridLarge(const BBox3 &mainbb, int max_size)
 }
 
 
-DomainDecomposition::DomainDecomposition(const DynArray< BBox3 >& boxes_) : largestBox(BBox3(), -1) //, boost::optional< DynArray< double >& > weights)
-{
-  //if (weights.is_initialized()) throw std::runtime_error("DomainDecomposition weights not implemented");
-  //HACK2018
-  //int n = my::OmpGetMaxThreadCount();
-  int n = 1;
+DomainDecomposition::DomainDecomposition(const DynArray< BBox3 >& boxes_) : largestBox(BBox3(), -1) 
+{ 
+  int n = omp_get_max_threads();
+  
   for (int i=0; i<boxes_.size(); ++i)
   {
     int thread_num = i % n;
@@ -260,9 +257,7 @@ void DomainDecomposition::init(const DynArray< BBox3 >& boxes_)
 
 DomainDecomposition::range_type DomainDecomposition::getCurrentThreadRange() const
 {
-  //HACK2018
-  //const DynArray<ThreadBox> &ar = by_thread[my::OmpGetCurrentThread()];
-  const DynArray<ThreadBox> &ar = by_thread[1];
+  const DynArray<ThreadBox> &ar = by_thread[omp_get_thread_num()];
   return range_type(ar.begin(), ar.end());
 }
 
@@ -283,11 +278,9 @@ const DomainDecomposition::ThreadBox DomainDecomposition::getBoxWithLargestVolum
 
 std::ostream& DomainDecomposition::print(std::ostream &os) const
 {
-  //HACK2018
-  //os << format("DomainDecomposition: %i threads\n") % my::OmpGetMaxThreadCount();
-  os << format("DomainDecomposition: %i threads\n") % 1;
-  for (int threadidx=0; threadidx<1; ++threadidx)
-  //for (int threadidx=0; threadidx<my::OmpGetMaxThreadCount(); ++threadidx)
+  os << format("DomainDecomposition: %i threads\n") % omp_get_max_threads();
+  
+  for (int threadidx=0; threadidx<omp_get_max_threads(); ++threadidx)
   {
     os << format("  thread %i\n  ") % threadidx;
     for (int i=0; i<by_thread[threadidx].size(); ++i)

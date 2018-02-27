@@ -28,7 +28,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'
 from os.path import basename
 import os,sys
 import h5py
-import h5files
+
 import numpy as np
 import extensions # for hdf5 support in np.asarray
 import myutils
@@ -251,10 +251,12 @@ def computePO2(parameters):
   tumorgroup = None
   output_buffer_name = basename(parameters['output_file_name']).rsplit('.h5')[0]
   parameters['output_file_name'] = "%s-%s.h5" % (output_buffer_name, parameters['input_group_path'])
-  f_out = h5files.open(parameters['output_file_name'], 'a', search = False)
+  #f_out = h5files.open(parameters['output_file_name'], 'a', search = False)
+  f_out = h5py.File(parameters['output_file_name'], 'w')
   parameters['vessel_group_path'] = "recomputed_flow"
+  parameters['output_group_path'] = "/po2/" + "vessels"
       
-  caching = False;
+  caching = True;
   if caching:
     #  if not isinstance(f, h5py.File):
     #    f = h5files.open(f, 'r+', search = False)  # we open with r+ because the cachelocation might be this file so we need to be able to write to it
@@ -301,15 +303,21 @@ def computePO2(parameters):
       return myutils.H5FileReference(gmeasure.file.filename, gmeasure.name)
   
     def write2(gmeasure, name):
-      gdst = gmeasure.create_group(name)
+      #gdst = gmeasure.create_group(name)
       #myutils.buildLink(gdst, 'SOURCE', group)
       #computePO2_(gdst, vesselgroup2, tumorgroup, parameters)
       #computePO2_(gdst, f_out['recomputed_flow'], tumorgroup, parameters)
-      pickDetailedO2Library(parameters).computePO2(parameters, parameters.get('calcflow'))
+      f_out.create_group("po2")
+      
+      #srcVessels = myutils.H5FileReference(po2group.attrs['SOURCE_VESSELS_FILE'],po2group.attrs['SOURCE_VESSELS_PATH'])
+      #srcTissue  = myutils.H5FileReference(po2group.attrs['SOURCE_TISSUE_FILE'],po2group.attrs['SOURCE_TISSUE_PATH'])
+      detailedo2current.computePO2(parameters, parameters.get('calcflow')) 
+      
   #
   #  #==== execute reading or computing and writing =====#
-    f_out_bla = h5files.open("blub.h5", 'a', search = False)
-    o2data_ref = myutils.hdf_data_caching(read2, write2, f_out_bla, ('po2'), (0,1))
+    with h5py.File(parameters['output_file_name'], 'a') as f_out:
+      #f_out_bla = h5files.open("blub.h5", 'a', search = False)
+      o2data_ref = myutils.hdf_data_caching(read2, write2, f_out, ('po2'), (0,1))
     #  #=== return filename and path to po2 data ====#
     #  #return o2data_re
   else:
@@ -358,9 +366,9 @@ def doit(fn, pattern, (parameters, parameters_name)):
 
   output_links = []
 
-  f_in_doit = h5files.open(fn, 'r')
-  dirs = myutils.walkh5(f_in_doit['.'], pattern)
-  f_in_doit.close()  
+  with h5py.File(fn, 'r') as f_in_doit:
+    dirs = myutils.walkh5(f_in_doit['.'], pattern)
+  
   for group_path in dirs:
     #cachelocation = (outfn_no_ext+'.h5', group_path+'_'+parameters_name)
     #output_file_name = 'o2_' + fnbase+'_'+parameters_name+'.h5'

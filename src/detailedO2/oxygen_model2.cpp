@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "oxygen_model2.h"
 #include <exception>
+#include <omp.h>
 
 
 #define APPROXIMATE_FEM_TRANSVASCULAR_EXCHANGE_TERMS 1
@@ -1356,6 +1357,7 @@ void DetailedP02Sim::init(Parameters &params_,
       cout << "multithreading:" << endl;
       //HACK2018
       //cout << my::GetNumThreads()<<endl;
+      cout << omp_get_max_threads() <<endl;
     }
     if (params.loglevel > 0)
     {
@@ -1495,7 +1497,7 @@ int DetailedP02Sim::run(VesselList3d &vl)
     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
     {
       //h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
-      H5::H5File f(params.debug_fn,iteration_num==0 ? H5F_ACC_RDWR : H5F_ACC_TRUNC);
+      H5::H5File f(params.debug_fn,iteration_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
       WriteOutput(f.createGroup(str(format("out%04i-a") % iteration_num)),
                   vl, 
 		  params,
@@ -1524,7 +1526,7 @@ int DetailedP02Sim::run(VesselList3d &vl)
     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
     {
       //h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
-      H5::H5File f(params.debug_fn,iteration_num==0 ? H5F_ACC_RDWR : H5F_ACC_TRUNC);
+      H5::H5File f(params.debug_fn,iteration_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
       WriteOutput(f.createGroup(str(format("out%04i-b") % iteration_num)),
                   vl, 
 		  params,

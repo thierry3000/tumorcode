@@ -74,8 +74,10 @@ public:
     ld->SetOriginPosition(pos);
   }
   
-  Float3 GetOriginPosition() {
-    return ld->GetOriginPosition();
+  py::tuple GetOriginPosition() {
+    py::tuple return_tuple = py::make_tuple(ld->GetOriginPosition()[0],ld->GetOriginPosition()[1],ld->GetOriginPosition()[2]);
+    //return ld->GetOriginPosition();
+    return return_tuple;
   }
   
   py::object GetWorldBox() const {
@@ -184,9 +186,17 @@ struct LdFromPy
 PyLd* read_lattice_data_from_hdf_by_filename(const string fn, const string path)
 {
   //h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
-  H5::H5File readInFile = H5::H5File(fn, H5F_ACC_RDONLY);
-  //h5cpp::Group g_ld = h5cpp::Group(readInFile->root().open_group(path));
-  H5::Group g_ld = readInFile.openGroup(path);
+  H5::H5File readInFile;
+  H5::Group g_ld;
+  try{
+    readInFile = H5::H5File(fn, H5F_ACC_RDONLY);
+    //h5cpp::Group g_ld = h5cpp::Group(readInFile->root().open_group(path));
+    g_ld = readInFile.openGroup(path);
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
   string type;
   readAttrFromH5(g_ld, "TYPE", type);
   float scale;

@@ -35,7 +35,7 @@ import copy
 
 
 def addBulkTissueTumor(epv, tumorgroup, trafo, options):
-    ld = krebsutils.read_lattice_data_from_hdf(tumorgroup.file[tumorgroup['conc'].attrs['LATTICE_PATH']])
+    ld = krebsutils.read_lattice_data_from_hdf_by_filename(str(tumorgroup.file.filename), str(tumorgroup['conc'].attrs['LATTICE_PATH']))
     ld = transform_ld(trafo, ld)
 
     ds_necro    = np.asarray(tumorgroup['necro'])
@@ -81,13 +81,13 @@ def addBulkTissueTumor(epv, tumorgroup, trafo, options):
 def renderScene(vesselgroup, tumorgroup, imagefn, options):
     if vesselgroup is not None:
       vgrp = vesselgroup['lattice']
-      wbbox = krebsutils.read_lattice_data_from_hdf(vgrp).worldBox
+      wbbox = krebsutils.read_lattice_data_from_hdf_by_filename(str(vgrp.file.filename), str(vgrp.name)).worldBox
     else:
       wbbox = krebsutils.read_lattice_data_from_hdf(tumorgroup.file['field_ld']).worldBox
     trafo = calc_centering_normalization_trafo(wbbox)
     zsize = (wbbox[5]-wbbox[4])
     
-    vessel_ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])  
+    vessel_ld = krebsutils.read_lattice_data_from_hdf_by_filename(str(vesselgroup.file.filename), str(vesselgroup.name) +'/lattice')  
     options.wbbox = vessel_ld.GetWorldBox()     
 
     with EasyPovRayRender(options) as epv:

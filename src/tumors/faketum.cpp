@@ -276,8 +276,7 @@ int FakeTum::FakeTumorSim::run()
 //   {
 //     writeVesselsafter_initial_adaption = true;
 //   }
-  //while (true)
-  for(int i=0;i<3;i++)
+  while (true)
   {
 #ifdef USE_ADAPTION
 #if 1
@@ -359,7 +358,7 @@ void FakeTum::FakeTumorSim::writeOutput()
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   H5::H5File f;
-  H5::Group root, gout, h5_parameters, h5_vessel_parameters;
+  H5::Group root, gout, h5_tum, h5_parameters, h5_vessel_parameters;
   H5::Attribute a;
   try{
     f = H5::H5File(params.fn_out, output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
@@ -406,39 +405,17 @@ void FakeTum::FakeTumorSim::writeOutput()
       float t = getTumorDens(ld.LatticeToWorld(p));
       tum_field(p) = t;
     }
+    h5_tum = gout.createGroup("tumor");
+    writeAttrToH5(h5_tum, string("TYPE"), string("faketumor"));
+    writeAttrToH5(h5_tum, string("TUMOR_RADIUS"), tumor_radius);
+    // could be done, but since it is a sphere, you can easily calculate the tc_density from the radius
+    //WriteScalarField(h5_tum, string("tc_density"), tum_field, ld, field_ld_group);
   }
   catch(H5::Exception e)
   {
     e.printError();
   }
-// 
-//   h5::Group gout = root.create_group(str(format("out%04i") % output_num));
-//   a = gout.attrs();
-//   a.set("time", time);
-//   a.set("OUTPUT_NUM",output_num);
-//   
-//   WriteVesselList3d(*vl, gout.create_group("vessels"));
-//   {
-//     LatticeDataQuad3d ld;
-//     SetupFieldLattice(vl->Ld().GetWorldBox(), 3, 100., 0.1 * vl->Ld().Scale(), ld);
-//     Array3d<float> tum_field(ld.Box());
-//     FOR_BBOX3(p, ld.Box())
-//     {
-//       float t = getTumorDens(ld.LatticeToWorld(p));
-//       tum_field(p) = t;
-//     }
-// 
-//     h5::Group gtum = gout.create_group("tumor");
-//     gtum.attrs().set("TYPE", "faketumor");
-//     gtum.attrs().set("TUMOR_RADIUS", tumor_radius);
-//     /*contains also the critical call 
-//       * somewhere down from here simple_dims, is called.
-//       * I think by set_array
-//       * on snowden I have the error 
-//       * "nd dataspace with rank 0 not permitted, use create_scalar()"
-//       */
-//     //WriteScalarField(gtum, "tc_density", tum_field, ld, field_ld_group);
-//   }
+  
   f.close();
   ++output_num;
 }

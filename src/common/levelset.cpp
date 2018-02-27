@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "time_stepper_utils_new.h"
 
 #include <boost/foreach.hpp>
+#include <omp.h>
 
 
 using boost::property_tree::ptree;
@@ -218,9 +219,7 @@ struct LevelSetReinit
             is_box_active = true;
         }
         if (is_box_active)
-	  //HACK2018
-          mtboxes_active_list.insert(1, bb);
-	  //mtboxes_active_list.insert(my::OmpGetCurrentThread(), bb);
+	  mtboxes_active_list.insert(omp_get_thread_num(), bb);
       }
     }
   }
@@ -290,9 +289,7 @@ struct LevelSetReinit
         if (is_box_active)
         {
           mutex.lock();
-	  //HACK2018
-          mtboxes_active_list.insert(1, bb);
-	  //mtboxes_active_list.insert(my::OmpGetCurrentThread(), bb);
+	  mtboxes_active_list.insert(omp_get_thread_num(), bb);
           mutex.unlock();
         }
       }

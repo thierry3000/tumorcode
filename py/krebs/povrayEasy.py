@@ -107,7 +107,12 @@ def transform_position(trafo, p):
 
 def transform_ld(trafo, ld):
   ld = ld.Copy()
-  ld.SetOriginPosition(ld.worldBox.reshape(3,2)[:,0] - trafo.center)
+  #arrange bounding box in 3by 2 manner
+  bbox = ld.worldBox.reshape(3,2)
+  #move bbox
+  moved_bbox = bbox[:,0] - trafo.center
+  
+  ld.SetOriginPosition(moved_bbox)
   ld.Rescale(trafo.w)
   return ld
 

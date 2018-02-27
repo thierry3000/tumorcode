@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hdf_wrapper_ptree.h"
 #include "hdf_wrapper_vec.h"
 #include "../common/hdfio.h"
+#include "dynamicarray.h"
+#include <iostream>
 
 using boost::property_tree::ptree;
 
@@ -38,11 +40,17 @@ void WriteHdfPtree(H5::Group &f, const ptree &pt, HdfWritePtreeAs storage_mode)
     {
       if (storage_mode == HDF_WRITE_PTREE_AS_ATTRIBUTE)
       {
+	std::cout << "print k: "<< k << "v: " << v.data() << std::endl; 
 	writeAttrToH5(f, k, v.data());
       }
       else
       {
-	//writeDataSetToGroup(f,k, v.data());
+	DynArray<string> this_data;
+	for( auto entry: v.data())
+	{
+	  this_data.push_back(&entry);
+	}
+	writeDataSetToGroup(f,k, this_data);
       }
 //         f.attrs().set(k, v.data());
 /*	

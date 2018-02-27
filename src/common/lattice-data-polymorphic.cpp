@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "lattice-data-polymorphic.h"
 #include <string>
+#include <iostream>
 
 namespace polymorphic_latticedata
 {
@@ -55,15 +56,17 @@ template Int3 WorldToLatticeWrapper(const LatticeDataFCC &ld, const Float3 &p); 
 
 
 template<class LD>
-static std::unique_ptr<LatticeData> ReadHdfLdGeneric(H5::Group &g)
+std::unique_ptr<LatticeData> ReadHdfLdGeneric(H5::Group &g)
 {
   LD ld;
   ReadHdfLd(g, ld);
-  return std::unique_ptr<LatticeData>(new Derived<LD>(ld));
+  auto returner = std::unique_ptr<Derived<LD>>(new Derived<LD>(ld));
+  returner->print(std::cout);
+  return returner;
 }
 
 
-std::unique_ptr<LatticeData> LatticeData::ReadHdf(H5::Group &g)
+std::unique_ptr<LatticeData> ReadHdf(H5::Group &g)
 {
   string type;
   readAttrFromH5(g, string("TYPE"), type);
@@ -79,6 +82,12 @@ template <class Ld>
 void Derived<Ld>::Lattice2Hdf(H5::Group& g) const
 {
   ld.WriteHdfLd(g);
+}
+
+template <class Ld>
+Derived<Ld>::Derived(const Ld& _ld): ld(_ld)
+{
+  ld.print(std::cout);
 }
 
 

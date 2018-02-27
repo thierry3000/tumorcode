@@ -66,7 +66,9 @@ def filter_tumorvessels1(e,kw):
 def make_pressure_color_arrays(vesselgraph):
     edges = vesselgraph.edgelist
     flags = vesselgraph.edges['flags']
+    flags = flags[:,0]
     data = vesselgraph.nodes['pressure']
+    data = data[:,0]
     num_nodes = len(vesselgraph.nodes['position'])
     nflags = krebsutils.edge_to_node_property(num_nodes, edges, flags, 'or')
 

@@ -187,8 +187,8 @@ void Grower::InitGfDistrib()
   field_ld.Init(bb, cellsize);
   field_ld.SetCellCentering(Bool3(true, true, dim()==3));
   field_ld.SetOriginPosition(ld.GetWorldBox().min);
-  //grid.init(field_ld, dim());
-  grid = ContinuumGrid(field_ld, dim());
+  grid.init(field_ld, dim());
+  //grid = ContinuumGrid(field_ld, dim());
   mtboxes.insert(0, field_ld.Box());
   cout << "field lattice:  " << field_ld << endl;
   ptree pt = make_ptree("rGf", gf_range);
@@ -1456,8 +1456,9 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
   {
     for (hierarchy_level=0; hierarchy_level<max_hierarchy_level; ++hierarchy_level)
     {
-      //for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
-      for (iteration_number_on_level = 0; iteration_number_on_level<20; ++iteration_number_on_level)
+      for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
+      // this is for hardcore debugging, force only 20 iterations per level
+      //for (iteration_number_on_level = 0; iteration_number_on_level<20; ++iteration_number_on_level)
       {
         RemodelTrees();
 
@@ -1487,8 +1488,9 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
 
   cout << "iterating ... " << endl;
 
-  //for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
-  for (iteration_number_on_level = 0; iteration_number_on_level<20; ++iteration_number_on_level)
+  for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
+  // this is for hardcore debugging, force only 20 iterations per level
+  //for (iteration_number_on_level = 0; iteration_number_on_level<20; ++iteration_number_on_level)
   {
     RemodelTrees();
     cout << "done remodel trees" << endl;

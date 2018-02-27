@@ -295,47 +295,63 @@ void run_bulktissue_no_vessels(const py::str &param_info_str)
 {
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   /* Prameter Handling */
-    // construct default parameters
-    BulkTissueWithoutVessels::SimulationParameters sparams;
-    NewBulkTissueModel::Params pparams;
-    BloodFlowParameters bfparams;
-    VesselModel1::Params vessel_params;
-    O2Model::SimpleO2Params prezO2params;
-    //Adaption::Parameters adaption_params;
-    
-    ptree all_pt_params;
-    all_pt_params = sparams.as_ptree();
-    all_pt_params.put_child("tumor", pparams.as_ptree());
-    all_pt_params.put_child("calcflow", bfparams.as_ptree());
-    all_pt_params.put_child("vessels", vessel_params.as_ptree());
-    all_pt_params.put_child("simple_o2", prezO2params.as_ptree());
-    //all_pt_params.put_child("adaption", adaption_params.as_ptree());
-    cout.rdbuf(my::log().rdbuf());
-    {
-    //boost::optional<ptree> read_params = pt_params;
-    //boost::optional<ptree> read_params = HandleSimulationProgramArguments(all_pt_params, argc, argv);
-    //if (!read_params) 
-    //  return 0;
-    /** get the read params*/
-    ptree pt_params = convertInfoStr(param_info_str, all_pt_params);
-    BulkTissueWithoutVessels::SimulationParameters::update_ptree(all_pt_params, pt_params);
-    
-    all_pt_params.put<Int3>("lattice_size", Int3(200,1,1));
-    sparams.assign(all_pt_params);
-    //boost::property_tree::update(params, BulkTissueWithoutVessels::Params().as_ptree());
-    
-    all_pt_params.put_child("tumor", NewBulkTissueModel::Params().as_ptree());
-    { 
-  #ifdef DEBUG
-      cout << "read params in main are: ";
-      boost::property_tree::write_info(cout, all_pt_params);
-      cout << endl;
-  #endif
-    }
+  // construct default parameters
+  BulkTissueWithoutVessels::SimulationParameters sparams;
+  NewBulkTissueModel::Params pparams;
+  BloodFlowParameters bfparams;
+  VesselModel1::Params vessel_params;
+  O2Model::SimpleO2Params prezO2params;
+  //Adaption::Parameters adaption_params;
+  
+  ptree all_pt_params;
+  all_pt_params = sparams.as_ptree();
+  all_pt_params.put_child("tumor", pparams.as_ptree());
+  all_pt_params.put_child("calcflow", bfparams.as_ptree());
+  all_pt_params.put_child("vessels", vessel_params.as_ptree());
+  all_pt_params.put_child("simple_o2", prezO2params.as_ptree());
+  //all_pt_params.put_child("adaption", adaption_params.as_ptree());
+  cout.rdbuf(my::log().rdbuf());
+  {
+  //boost::optional<ptree> read_params = pt_params;
+  //boost::optional<ptree> read_params = HandleSimulationProgramArguments(all_pt_params, argc, argv);
+  //if (!read_params) 
+  //  return 0;
+  /** get the read params*/
+  ptree pt_params = convertInfoStr(param_info_str, all_pt_params);
+  BulkTissueWithoutVessels::SimulationParameters::update_ptree(all_pt_params, pt_params);
+  
+  all_pt_params.put<Int3>("lattice_size", Int3(200,1,1));
+  sparams.assign(all_pt_params);
+  //boost::property_tree::update(params, BulkTissueWithoutVessels::Params().as_ptree());
+  
+  all_pt_params.put_child("tumor", NewBulkTissueModel::Params().as_ptree());
+  { 
+#ifdef DEBUG
+    cout << "read params in main are: ";
+    boost::property_tree::write_info(cout, all_pt_params);
+    cout << endl;
+#endif
+  }
 
-    }//end cout.buffer
+  }//end cout.buffer
   /* start */
+  try
+  {
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
     BulkTissueWithoutVessels::run(all_pt_params);
+  }
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
 }
 void export_bulktissue_no_vessels()
 {
@@ -355,7 +371,26 @@ void run_bulktissue_with_vessels(const py::str &param_info_str)
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
    
   BulkTissue::NewTumorSim theBulkTissueSim;
-  theBulkTissueSim.run(pt_params);
+  try{
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
+    theBulkTissueSim.run(pt_params);
+  }
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
   //return 0;
 }
 

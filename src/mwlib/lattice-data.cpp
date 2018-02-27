@@ -31,6 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LatticeWorldTransform_TEMPL_ARG1 template<int dim_>
 #define LatticeWorldTransform_CLASS LatticeWorldTransform<dim_>
 
+struct LatticeDataQuad3d;
+
 LatticeWorldTransform_TEMPL_ARG1
 void LatticeWorldTransform_CLASS::Init(float scale_)
 {
@@ -116,12 +118,66 @@ template struct LatticeWorldTransform<3>;
 
 volatile bool LatticeDataQuad3d::nbs_init = false;
 Int3 LatticeDataQuad3d::vnb[LatticeDataQuad3d::DIR_CNT];
-
+void LatticeDataQuad3d::setType()
+{
+  type = "QUAD3D";
+}
+/* CONSTRUCTORS AND DESTRUCTORS */
 LatticeDataQuad3d::LatticeDataQuad3d()
 {
   ClearMem( this, 1 );
-  type= string("QUAD3D");
+  this->setType();
 }
+LatticeDataQuad3d::~LatticeDataQuad3d()
+{
+  ClearMem( this, 1 );
+  std::cout << "destruct LatticeDataQuad3d" << std::endl;
+}
+
+LatticeDataQuad3d::LatticeDataQuad3d(const LatticeDataQuad3d& ld): LI(), LWT()
+{
+  CopyMem(&ld, this, 1);
+}
+
+LatticeDataQuad3d::LatticeDataQuad3d(const Int3& l, float scale): LatticeWorldTransform< int(3) >(scale)
+{
+  Init(l, scale); 
+}
+
+LatticeDataQuad3d::LatticeDataQuad3d(const BBox3& bb, float scale): LatticeWorldTransform< int(3) >(scale)
+{
+  Init(bb, scale); 
+}
+
+void LatticeDataFCC::setType()
+{
+  type="FCC";
+}
+LatticeDataFCC::LatticeDataFCC()
+{
+  ClearMem(this, 1);
+  this->setType();
+}
+LatticeDataFCC::~LatticeDataFCC()
+{
+  ClearMem( this, 1 );
+  std::cout << "destruct LatticeDataFCC" << std::endl;
+}
+
+LatticeDataFCC::LatticeDataFCC(const LatticeDataFCC& ld)
+{
+  ld.print(std::cout);
+  //ClearMem( this, 1);
+  CopyMem(&ld, this, 1);
+  this->setType();
+}
+
+LatticeDataFCC::LatticeDataFCC(const BBox3& bb, float scale): LatticeWorldTransform< int(3) >(scale)
+{
+  Init(bb, scale);
+  this->setType();
+}
+
 
 
 void LatticeDataQuad3d::Init( const Int3 &l_, float scale_)
@@ -214,6 +270,7 @@ Int3 LatticeDataQuad3d::GetLatticeIndexOnRefinedGrid(const Int3& pos, int refine
 
 volatile bool LatticeDataFCC::nbs_init = false;
 Int3 LatticeDataFCC::vnb[2][3][LatticeDataFCC::DIR_CNT];
+
 
 void LatticeDataFCC::Init(const BBox3 &bb, float scale_)
 {

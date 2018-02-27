@@ -296,8 +296,6 @@ int main(int argc, char **argv)
   {
     cout << "num_threads was not set using 1.\n";
   }
-  //HACK2018
-  //my::SetNumThreads(num_threads);
   cout << "size = " << size << ", " << num_threads << " threads" << endl;
   for (int i=0; i<repetitions; ++i)
   {
