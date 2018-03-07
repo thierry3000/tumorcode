@@ -1246,7 +1246,7 @@ void ComputePo2Field(const Parameters &params,
     }
   }
   
-  RCP<Epetra_Vector> lhs= rcp(new Epetra_Vector(mb.rhs->Map()));
+  Teuchos::RCP<Epetra_Vector> lhs= Teuchos::RCP<Epetra_Vector>(new Epetra_Vector(mb.rhs->Map()));
   #pragma omp parallel
   {
     BOOST_FOREACH(const BBox3 bbox, mtboxes.getCurrentThreadRange())
@@ -1265,20 +1265,27 @@ void ComputePo2Field(const Parameters &params,
                                     ("max_resid",1.e-8)
                                     ("keep_preconditioner", keep_preconditioner);
 
+  int solverReturn;
+  int solverReturn2;
   try {
-    EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
-    solver.solve(lhs);
+    //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
+    EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
+    //solver.init(mb.m, mb.rhs, solver_params);
+    solverReturn = solver.solve(lhs);
   }
   catch (const ConvergenceFailureException &e)
   {
       if (e.reason == ConvergenceFailureException::MAX_ITERATIONS)
       {
         solver_params.put("keep_preconditioner", false);
-        EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
-        solver.solve(lhs);
+        //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
+        EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
+        //solver.init(mb.m, mb.rhs, solver_params);
+        solverReturn2 = solver.solve(lhs);
       }
       else throw e;
   }
+  
   /** @brief write back the results from matrix solve */
   #pragma omp parallel
   {
@@ -1290,7 +1297,16 @@ void ComputePo2Field(const Parameters &params,
       }
     }
   }
-
+  if( solverReturn > 0)
+  {
+    cout<< "solver broken 1 " << endl;
+    cout.flush();
+  }
+  if( solverReturn2 > 0)
+  {
+    cout<< "solver broken 2 " << endl;
+    cout.flush();
+  }
   if (params.loglevel > 0)
     cout << format("Po2Field: %s in  %f ms") % po2field.valueStatistics() % (my::Time()-t_).to_ms() << endl;
 }

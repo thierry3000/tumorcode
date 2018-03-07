@@ -93,7 +93,7 @@ void doit(const Int3 size)
   
   mb.m->Scale(scaling);
   mb.rhs->Scale(scaling);
-  Teuchos::RCP<Epetra_Vector> lhs = Teuchos::rcp(new Epetra_Vector(mb.rhs->Map()));
+  Teuchos::RCP<Epetra_Vector> lhs = Teuchos::RCP<Epetra_Vector>(new Epetra_Vector(mb.rhs->Map()));
   
   boost::property_tree::ptree pt;
   pt.put("output", 1);

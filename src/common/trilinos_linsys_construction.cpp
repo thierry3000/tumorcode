@@ -34,12 +34,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <Tpetra_Version.hpp>
 #include <BelosTpetraAdapter.hpp>
 //#include <Ifpack2_Factory.hpp>
-#include <AztecOO.h>
 #include <EpetraExt_RowMatrixOut.h>
 #include <EpetraExt_VectorOut.h>
 #include <Ifpack.h>
 #include <Ifpack_IC.h>
 #include <Ifpack_ILU.h>
+
+EllipticEquationSolver::EllipticEquationSolver(Teuchos::RCP<Epetra_CrsMatrix> &_matrix, Teuchos::RCP<Epetra_Vector> &_rhs, const boost::property_tree::ptree& _params):sys_matrix(_matrix), rhs(_rhs), params(_params)
+{
+  init();
+}
 
 /**
  * @brief Set up system with 7 point stencil
@@ -361,12 +365,12 @@ enum EllipticSolveOutputLevel
 };
 
 #if 1
-EllipticEquationSolver::EllipticEquationSolver(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vector> &_rhs, const ptree& _params):
-sys_matrix(_matrix), rhs(_rhs), params(_params)
-{
-  int success = init(sys_matrix,rhs,params);
-}
-int EllipticEquationSolver::init(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vector> &_rhs, const ptree& _params)
+// EllipticEquationSolver::EllipticEquationSolver(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vector> &_rhs, const ptree& _params):
+// sys_matrix(_matrix), rhs(_rhs), params(_params)
+// {
+//   int success = init(sys_matrix,rhs,params);
+// }
+int EllipticEquationSolver::init()
 {
 #ifdef EPETRA_MPI
   int MyPID = 0;
@@ -386,7 +390,7 @@ int EllipticEquationSolver::init(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vect
   Epetra_SerialComm Comm;
 #endif
   
-  ifpackList = Teuchos::rcp (new Teuchos::ParameterList ("my Teuchos List"));
+  ifpackList = Teuchos::RCP<Teuchos::ParameterList> (new Teuchos::ParameterList ("my Teuchos List"));
   
   bool verbose = false;
   bool success = true;
@@ -420,7 +424,7 @@ int EllipticEquationSolver::init(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vect
     int OverlapLevel = 0; // must be >= 0. If Comm.NumProc() == 1,
     // it is ignored.
     // create ifpack preconditioner
-    if(sys_matrix.get() && PrecType=="multigrid" && (!keep_preconditioner || !ml_prec.get()))
+    if(&sys_matrix && PrecType=="multigrid" && (!keep_preconditioner || !ml_prec.get()))
     {
 #ifdef DEBUG
       cout<<"EllipticEquationSolver::init"<<endl;
@@ -447,15 +451,18 @@ int EllipticEquationSolver::init(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vect
         ml_output = 10;
       mllist.set("ML output", ml_output);
       
-      try {
-        ml_prec = Teuchos::rcp(new ML_Epetra::MultiLevelPreconditioner(*sys_matrix,mllist,true));
-    } catch (std::exception& e) {
-      std::ostringstream os;
-      os << "ML preconditioner construction threw an exception: "
-         << e.what ();
-      TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error, os.str ());
-    }
-    Teuchos::RCP<Belos::EpetraPrecOp> belosPrec = Teuchos::rcp (new Belos::EpetraPrecOp (ml_prec));
+      try 
+      {
+        ml_prec = Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner>(new ML_Epetra::MultiLevelPreconditioner(*sys_matrix,mllist,true));
+      } 
+      catch (std::exception& e) 
+      {
+        std::ostringstream os;
+        os << "ML preconditioner construction threw an exception: "
+          << e.what ();
+        TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error, os.str ());
+      }
+    Teuchos::RCP<Belos::EpetraPrecOp> belosPrec = Teuchos::RCP<Belos::EpetraPrecOp> (new Belos::EpetraPrecOp (ml_prec));
     this->belos_Prec = belosPrec;
     }
 //     else if(sys_matrix && prec_name=="ic" && (!keep_preconditioner || !ifpack_prec.get()))
@@ -470,9 +477,13 @@ int EllipticEquationSolver::init(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vect
 //       ifpack_Prec->Initialize();
 //       ifpack_Prec->Compute();
 //     }
-    try {
-      ifpack_Prec = Teuchos::rcp (Factory.Create (PrecType, sys_matrix.get(), OverlapLevel));
-    } catch (std::exception& e) {
+    try 
+    {
+      //ifpack_Prec = Teuchos::RCP<Ifpack_Preconditioner> ifpack_Prec (Factory.Create (PrecType, sys_matrix.get(), OverlapLevel));
+      ifpack_Prec = Teuchos::RCP<Ifpack_Preconditioner>(Factory.Create (PrecType, sys_matrix.get(), OverlapLevel));
+    } 
+    catch (std::exception& e)
+    {
       std::ostringstream os;
       os << "Ifpack preconditioner construction threw an exception: "
          << e.what ();
@@ -498,14 +509,14 @@ int EllipticEquationSolver::init(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vect
     //
     // Create parameter list for the Belos solver
     //
-    const int NumGlobalElements = _rhs->GlobalLength ();
+    const int NumGlobalElements = rhs->GlobalLength ();
     if (maxiters == -1) {
       maxiters = NumGlobalElements - 1; // maximum number of iterations to run
     }
     
     
     //Will be the arguments for the belos Solver
-    Teuchos::RCP<Teuchos::ParameterList> belosList = Teuchos::rcp (new Teuchos::ParameterList ("Belos"));
+    Teuchos::RCP<Teuchos::ParameterList> belosList = Teuchos::RCP<Teuchos::ParameterList> (new Teuchos::ParameterList ("Belos"));
     belosList->set ("Maximum Iterations", maxiters);
     belosList->set ("Convergence Tolerance", tol);
     if (numrhs > 1) {
@@ -532,19 +543,21 @@ int EllipticEquationSolver::init(RCP<Epetra_CrsMatrix> &_matrix, RCP<Epetra_Vect
 #endif
 }
 
-int EllipticEquationSolver::solve ( RCP<Epetra_Vector> _lhs )
+int EllipticEquationSolver::solve ( Teuchos::RCP<Epetra_Vector> &_lhs )
 {
-  bool verbose = false;
+  bool verbose = true;
   bool success = true;
-  try {
+  cout << "in solver solve" << endl;
+  cout.flush();
+  try 
+  {
     //
     // Construct a preconditioned linear problem
     // i think this should move to solve
     //
     bool leftprec = false;     // left preconditioning or right.
     bool proc_verbose = true;
-    RCP<Belos::LinearProblem<double,MV,OP> > problem
-      = rcp (new Belos::LinearProblem<double,MV,OP> (sys_matrix, _lhs, rhs));
+    Teuchos::RCP<Belos::LinearProblem<double,MV,OP> > problem = Teuchos::RCP<Belos::LinearProblem<double,MV,OP> >(new Belos::LinearProblem<double,MV,OP> (sys_matrix, _lhs, rhs));
     if (leftprec) {
       problem->setLeftPrec (belos_Prec);
     }
@@ -552,8 +565,10 @@ int EllipticEquationSolver::solve ( RCP<Epetra_Vector> _lhs )
       problem->setRightPrec (belos_Prec);
     }
     bool set = problem->setProblem ();
-    if (! set) {
-      if (proc_verbose) {
+    if (! set) 
+    {
+      if (proc_verbose) 
+      {
         cout << endl << "ERROR:  Belos::LinearProblem failed to set up correctly!" << endl;
       }
       return -1;
@@ -562,7 +577,7 @@ int EllipticEquationSolver::solve ( RCP<Epetra_Vector> _lhs )
     // Create a Belos solver.
     //note: BiCGStabSolMgr is not present in earlier versions of trilinos
     //RCP<Belos::SolverManager<double,MV,OP> > solver = rcp (new Belos::BiCGStabSolMgr<double,MV,OP> (problem, belosList));
-    RCP<Belos::SolverManager<double,MV,OP> > solver = rcp (new Belos::BlockCGSolMgr<double,MV,OP> (problem, belosList));
+    Teuchos::RCP<Belos::SolverManager<double,MV,OP> > solver = Teuchos::RCP<Belos::SolverManager<double,MV,OP> >(new Belos::BlockCGSolMgr<double,MV,OP> (problem, belosList));
 //     if (proc_verbose) {
 //       cout << endl << endl;
 //       cout << "Dimension of matrix: " << NumGlobalElements << endl;
@@ -572,19 +587,25 @@ int EllipticEquationSolver::solve ( RCP<Epetra_Vector> _lhs )
 //       cout << endl;
 //     }
     // Ask Belos to solve the linear system.
+    cout << "before asking" << endl;
+    cout.flush();
     Belos::ReturnType ret = solver->solve();
+    cout << "after asking" << endl;
+    cout.flush();
     //vector_print(*_lhs);
   }
   TEUCHOS_STANDARD_CATCH_STATEMENTS(verbose, std::cerr, success)
-
+  return( success ? 0 : 1 );
 }
 #endif
 
 
 #if 1
-int SolveEllipticEquation(Teuchos::RCP<Epetra_CrsMatrix> &matrix, Teuchos::RCP<Epetra_Vector> &rhs, Teuchos::RCP<Epetra_Vector> &lhs, const boost::property_tree::ptree &params)
+int SolveEllipticEquation( Teuchos::RCP <Epetra_CrsMatrix> &matrix, Teuchos::RCP<Epetra_Vector> &rhs, Teuchos::RCP<Epetra_Vector> &lhs, const boost::property_tree::ptree &params)
 {
   EllipticEquationSolver solver(matrix, rhs, params);
+  //EllipticEquationSolver solver;
+  //solver.init(matrix, rhs, params);
   solver.solve(lhs);
 }
 #endif
@@ -717,7 +738,7 @@ int SolveEllipticEquation(Teuchos::RCP<Epetra_CrsMatrix> _matrix, Teuchos::RCP<E
 //   //AztecOO solver(const_cast<Epetra_CrsMatrix*>(&matrix), &lhs, const_cast<Epetra_Vector*>(&rhs));
 //   typedef Belos::LinearProblem<BelosScalarType, BelosMultiVector, BelosOperator> BelosLinearProblem;
 //   Teuchos::RCP<BelosLinearProblem> linear_problem = Teuchos::rcp(
-//     //new BelosLinearProblem(Teuchos::rcp(const_cast<Epetra_CrsMatrix*>(&matrix),false),Teuchos::rcp(&lhs,false),Teuchos::rcp(&rhs,false)));
+//     //new (Teuchos::rcp(const_cast<Epetra_CrsMatrix*>(&matrix),false),Teuchos::rcp(&lhs,false),Teuchos::rcp(&rhs,false)));
 //     new BelosLinearProblem(Teuchos::rcp(&matrix,false),Teuchos::rcp(&lhs,false),Teuchos::rcp(&rhs,false)));
 //   const bool success = linear_problem->setProblem();
 //   
@@ -820,7 +841,7 @@ void StationaryDiffusionSolve(const LatticeDataQuad3d &ld,
   }
 
   //Epetra_Vector lhs(mb.rhs->Map());
-  Teuchos::RCP<Epetra_Vector> lhs = Teuchos::rcp(new Epetra_Vector(mb.rhs->Map()));
+  Teuchos::RCP<Epetra_Vector> lhs = Teuchos::RCP<Epetra_Vector>(new Epetra_Vector(mb.rhs->Map()));
   
 
 //   if (pt_params.get<bool>("try_without_multigrid", false))
@@ -887,7 +908,7 @@ void StationaryDiffusionSolve(const ContinuumGrid &grid,
   }
 
 //   Epetra_Vector lhs(mb.rhs->Map());
-  Teuchos::RCP<Epetra_Vector> lhs = Teuchos::rcp(new Epetra_Vector(mb.rhs->Map()));
+  Teuchos::RCP<Epetra_Vector> lhs = Teuchos::RCP<Epetra_Vector>(new Epetra_Vector(mb.rhs->Map()));
 
 //   SolveEllipticEquation(*mb.m, *mb.rhs, lhs, pt_params);
   SolveEllipticEquation(mb.m, mb.rhs, lhs, pt_params);

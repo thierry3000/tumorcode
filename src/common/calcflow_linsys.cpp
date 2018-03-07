@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // is include in trilinos_linsys_construction.h
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_LinearProblem.h>
-//#include <AztecOO.h>
+
 #include <ml_epetra_preconditioner.h>
 #include <EpetraExt_RowMatrixOut.h>
 #include <EpetraExt_VectorOut.h>
@@ -38,6 +38,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using boost::property_tree::ptree;
 using boost::property_tree::make_ptree;
 
+Linsys::Linsys()
+{
+}
 void Linsys::initialize_pattern(int num_vertices, const std::vector< my::eqpair< int > >& edges)
 {
     std::vector<int> column_cnt(num_vertices, 1);
@@ -72,10 +75,13 @@ void Linsys::initialize_pattern(int num_vertices, const std::vector< my::eqpair<
     sp.FillComplete();
     sp.OptimizeStorage();
 
-    sys.reset(new Epetra_CrsMatrix(Copy, sp));
-    rhs.reset(new Epetra_Vector(epetra_map));
-    lhs.reset(new Epetra_Vector(epetra_map));
-    //scaling_const = 1.;
+//     sys.reset(new Epetra_CrsMatrix(Copy, sp));
+//     rhs.reset(new Epetra_Vector(epetra_map));
+//     lhs.reset(new Epetra_Vector(epetra_map));
+    sys = Teuchos::RCP<Epetra_CrsMatrix>(new Epetra_CrsMatrix(Copy, sp));
+    rhs = Teuchos::RCP<Epetra_Vector>(new Epetra_Vector(epetra_map));
+    lhs = Teuchos::RCP<Epetra_Vector>(new Epetra_Vector(epetra_map));
+    scaling_const = 1.;
 }
 void Linsys::sys_add(int a, int b, double val)
 {

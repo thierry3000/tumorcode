@@ -12,4 +12,5 @@ target_link_libraries(PrecBiCGStabExFile ${myLibs})
 install(TARGETS PrecBiCGStabExFile RUNTIME DESTINATION bin)
 
 add_executable(IfpackBelos2 IfpackBelos2.cpp)
-target_link_libraries(IfpackBelos2 ${myLibs})
+target_link_libraries(IfpackBelos2 ${myLibs} galeri-epetra)
+install(TARGETS IfpackBelos2 RUNTIME DESTINATION bin)

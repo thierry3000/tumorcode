@@ -108,5 +108,6 @@ if (MPI_NEEDED)
   #moste trilinos test deal with mpi
   add_subdirectory(trilinos)
 endif()
+#add_subdirectory(trilinos)
 
 add_subdirectory(boost_graph_library)

@@ -30,7 +30,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // is include in trilinos_linsys_construction.h
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_LinearProblem.h>
-#include <AztecOO.h>
 #include <ml_epetra_preconditioner.h>
 #include <EpetraExt_RowMatrixOut.h>
 #include <EpetraExt_VectorOut.h>
@@ -42,18 +41,19 @@ using boost::property_tree::make_ptree;
 struct Linsys
 {
   typedef Epetra_CrsGraph SparsityPattern;
-  typedef Epetra_CrsMatrix Matrix;
-  typedef Epetra_Vector Vector;
+  //typedef Epetra_CrsMatrix Matrix;
+  //typedef Epetra_Vector Vector;
 
   typedef std::vector<my::eqpair<int> > EdgeRange;
   typedef EdgeRange::const_iterator EdgeIter;
   typedef boost::unordered_map<int, FlowBC> BcsMap;
 
-  Teuchos::RCP<Matrix> sys;
-  Teuchos::RCP<Vector> rhs, lhs;
+  Teuchos::RCP <Epetra_CrsMatrix> sys;
+  Teuchos::RCP <Epetra_Vector> rhs, lhs;
   double scaling_const;
 
-  Linsys() : scaling_const(0.) {}
+  Linsys();
+  //Linsys(){} // void constructor make sure you initialize everything in initialize_pattern
   
   void initialize_pattern(int num_vertices, const std::vector<my::eqpair<int> > &edges);
 

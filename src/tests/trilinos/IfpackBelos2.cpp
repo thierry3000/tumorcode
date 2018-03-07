@@ -29,7 +29,6 @@ main (int argc, char *argv[])
   using std::endl;
   using Teuchos::ParameterList;
   using Teuchos::RCP;
-  using Teuchos::rcp;
 
 #ifdef HAVE_MPI
   MPI_Init(&argc,&argv);
@@ -47,11 +46,11 @@ main (int argc, char *argv[])
   GaleriList.set("nx", nx);
   GaleriList.set("ny", nx);
   RCP<Epetra_Map> Map = 
-    rcp (Galeri::CreateMap("Linear", Comm, GaleriList));
+    RCP<Epetra_Map> (Galeri::CreateMap("Linear", Comm, GaleriList));
   // "&*Map" turns an RCP<Map> into a raw pointer, which is what
   // Galeri::CreateCrsMatrix() wants.
   RCP<Epetra_RowMatrix> A = 
-    rcp (Galeri::CreateCrsMatrix("Laplace2D", &*Map, GaleriList));
+    RCP<Epetra_RowMatrix> (Galeri::CreateCrsMatrix("Laplace2D", &*Map, GaleriList));
   TEUCHOS_TEST_FOR_EXCEPTION(A == Teuchos::null, std::runtime_error,
 		     "Galeri returned a null operator A.");
 
@@ -72,7 +71,7 @@ main (int argc, char *argv[])
                         // it is ignored.
 
   RCP<Ifpack_Preconditioner> Prec = 
-    rcp (Factory.Create (PrecType, &*A, OverlapLevel));
+    RCP<Ifpack_Preconditioner> (Factory.Create (PrecType, &*A, OverlapLevel));
   TEUCHOS_TEST_FOR_EXCEPTION(Prec == Teuchos::null, std::runtime_error,
 		     "IFPACK failed to create a preconditioner of type \"" 
 		     << PrecType << "\" with overlap level " 
@@ -104,7 +103,7 @@ main (int argc, char *argv[])
   // Create the Belos preconditioned operator from the Ifpack preconditioner.
   // NOTE:  This is necessary because Belos expects an operator to apply the
   //        preconditioner with Apply() NOT ApplyInverse().
-  RCP<Belos::EpetraPrecOp> belosPrec = rcp (new Belos::EpetraPrecOp (Prec));
+  RCP<Belos::EpetraPrecOp> belosPrec = RCP<Belos::EpetraPrecOp>(new Belos::EpetraPrecOp (Prec));
 
   // =================================================== //
   // E N D   O F   I F P A C K   C O N S T R U C T I O N //
@@ -116,8 +115,8 @@ main (int argc, char *argv[])
   // Define the left-hand side (the solution / initial guess vector)
   // and right-hand side.  The solution is in the domain of the
   // operator A, and the right-hand side is in the range of A. 
-  RCP<Epetra_MultiVector> LHS = rcp (new Epetra_MultiVector (A->OperatorDomainMap (), 1));
-  RCP<Epetra_MultiVector> RHS = rcp (new Epetra_MultiVector (A->OperatorDomainMap (), 1));
+  RCP<Epetra_MultiVector> LHS = RCP<Epetra_MultiVector> (new Epetra_MultiVector (A->OperatorDomainMap (), 1));
+  RCP<Epetra_MultiVector> RHS = RCP<Epetra_MultiVector>(new Epetra_MultiVector (A->OperatorDomainMap (), 1));
 
   // Make the exact solution a vector of all ones.
   LHS->PutScalar(1.0);
@@ -131,7 +130,7 @@ main (int argc, char *argv[])
   typedef Epetra_MultiVector                MV;
   typedef Epetra_Operator                   OP;    
   RCP<Belos::LinearProblem<double,MV,OP> > problem
-    = rcp (new Belos::LinearProblem<double,MV,OP>(A, LHS, RHS));
+    = RCP<Belos::LinearProblem<double,MV,OP> > (new Belos::LinearProblem<double,MV,OP>(A, LHS, RHS));
 
   // Set the IFPACK preconditioner.
   //
@@ -148,7 +147,7 @@ main (int argc, char *argv[])
 		      "*** Belos::LinearProblem failed to set up correctly! ***");
 
   // Create a parameter list to define the Belos solver.
-  RCP<ParameterList> belosList = rcp (new ParameterList ());
+  RCP<ParameterList> belosList = RCP<ParameterList> (new ParameterList ());
   belosList->set ("Block Size", 1);              // Blocksize to be used by iterative solver
   belosList->set ("Maximum Iterations", 1550);   // Maximum number of iterations allowed
   belosList->set ("Convergence Tolerance", 1e-8);// Relative convergence tolerance requested

@@ -44,7 +44,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <Epetra_BasicRowMatrix.h>
 #include <ml_epetra_preconditioner.h>
 #include <Ifpack.h>
-#include <AztecOO.h>
 
 #include <Tpetra_CrsMatrix.hpp>
 #include <Tpetra_DefaultPlatform.hpp>
@@ -58,11 +57,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 typedef double BelosScalarType;
 typedef Epetra_MultiVector BelosMultiVector;
 typedef Epetra_Operator BelosOperator;
-using Teuchos::ParameterList;
-using Teuchos::RCP;
-using Teuchos::rcp;
-using std::cout;
-using std::endl;
 typedef double                            ST;
 typedef Teuchos::ScalarTraits<ST>        SCT;
 typedef SCT::magnitudeType                MT;
@@ -416,9 +410,9 @@ class EllipticEquationSolver : boost::noncopyable
 //   const Epetra_RowMatrix *sys_matrix;
 //   const Epetra_Operator *sys_operator;
 //   const Epetra_Vector *rhs;
-  RCP<Epetra_CrsMatrix> sys_matrix;
-  RCP<Epetra_Operator> sys_operator;
-  RCP<Epetra_Vector> rhs;
+  Teuchos::RCP<Epetra_CrsMatrix> sys_matrix;
+  //Epetra_Operator sys_operator;
+  Teuchos::RCP<Epetra_Vector> rhs;
   //boost::scoped_ptr<AztecOO> solver_impl;
   //boost::scoped_ptr<Belos::SolverFactory<BelosScalarType,BelosMultiVector,BelosOperator>> solver_impl;
   typedef Tpetra::MultiVector<scalar_type, local_ordinal_type, global_ordinal_type, node_type> vec_type;
@@ -435,29 +429,30 @@ class EllipticEquationSolver : boost::noncopyable
   typedef Belos::LinearProblem<BelosScalarType, BelosMultiVector, BelosOperator> BelosLinearProblem;
   Teuchos::RCP<BelosLinearProblem> problem;
   //boost::scoped_ptr<Ifpack_Preconditioner> ifpackprec;
-  RCP<Ifpack_Preconditioner> ifpack_Prec;
-  RCP<Belos::EpetraPrecOp> belos_Prec;
-  RCP<ML_Epetra::MultiLevelPreconditioner> ml_prec;
-  RCP<ParameterList> belosList;
-  RCP<ParameterList> ifpackList;
+  Teuchos::RCP<Ifpack_Preconditioner> ifpack_Prec;
+  Teuchos::RCP<Belos::EpetraPrecOp> belos_Prec;
+  Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> ml_prec;
+  Teuchos::RCP<Teuchos::ParameterList> belosList;
+  Teuchos::RCP<Teuchos::ParameterList> ifpackList;
   ptree params;
   //boost::scoped_ptr<ML_Epetra::MultiLevelPreconditioner> prec;
   bool keep_preconditioner;
 public:
-  EllipticEquationSolver(RCP<Epetra_CrsMatrix> &matrix, RCP<Epetra_Vector> &rhs, const boost::property_tree::ptree &params);
-  EllipticEquationSolver(){};
-  int init(RCP<Epetra_CrsMatrix> &matrix, RCP<Epetra_Vector> &rhs, const boost::property_tree::ptree &params);
-  int solve(RCP<Epetra_Vector> lhs);
+  //EllipticEquationSolver(RCP<Epetra_CrsMatrix> &matrix, RCP<Epetra_Vector> &rhs, const boost::property_tree::ptree &params);
+  EllipticEquationSolver(Teuchos::RCP<Epetra_CrsMatrix> &_matrix, Teuchos::RCP<Epetra_Vector> &_rhs, const boost::property_tree::ptree &_params);
+  int solve(Teuchos::RCP<Epetra_Vector> &lhs);
   double time_precondition, time_iteration;
   int iteration_count;
   bool convergent;
   double residual;
+private:
+  int init();
 };
 #endif
 
 //void SolveEllipticEquation(const Epetra_Operator &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params = boost::property_tree::ptree());
 //int SolveEllipticEquation(const Epetra_CrsMatrix &matrix, const Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params);
-int SolveEllipticEquation(Teuchos::RCP<Epetra_CrsMatrix> &matrix, Teuchos::RCP<Epetra_Vector> &rhs, Teuchos::RCP<Epetra_Vector> &lhs, const boost::property_tree::ptree &params);
+int SolveEllipticEquation(Teuchos::RCP <Epetra_CrsMatrix> &matrix, Teuchos::RCP<Epetra_Vector> &rhs, Teuchos::RCP<Epetra_Vector> &lhs, const boost::property_tree::ptree &params);
 
 /*------------------------------------------------------
 ------------------------------------------------------*/

@@ -452,14 +452,23 @@ int FakeTumMTS::FakeTumorSimMTS::run()
 
     /* do a vessel model remodeling step */
     cout << boost::format("start vessel remodel step! \n");
+    cout << boost::format("changed something! \n");
 #ifdef W_timing
     currentTiming.begin_doStep = std::chrono::steady_clock::now();
+    
+#ifdef debugSnowden
+    cout << "currentTiming.begin" << endl;
+#endif
+    
 #endif
     doStep(params.dt);
 #ifdef W_timing
     currentTiming.end_doStep = std::chrono::steady_clock::now();
     currentTiming.time_diff = currentTiming.end_doStep-currentTiming.begin_doStep;
     currentTiming.run_doStep = currentTiming.run_doStep + currentTiming.time_diff.count();
+#ifdef debugSnowden
+    cout << "timing ended" << endl;
+#endif
 #endif
     
     cout << boost::format("finished vessel remodel step! \n");
@@ -501,12 +510,28 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
 {
   cout << format("step %i, t=%f") % num_iteration % time << endl;
   CalcFlow(*vl, bfparams);
+#ifdef debugSnowden
+    cout << "CalcFlow done" << endl;
+    cout.flush();
+#endif
   /* do not use adaptation stuff for mts*/
   vessel_model.DoStep(dt, &bfparams);
+#ifdef debugSnowden
+    cout << "vessel_model. DoStep done" << endl;
+    cout.flush();
+#endif
   
   /* this calculates the simple diffusion of substances */
   calcChemFields();
+#ifdef debugSnowden
+    cout << "calcChemFields done" << endl;
+    cout.flush();
+#endif
   tumor_radius += dt * params.tumor_speed;
+#ifdef debugSnowden
+    cout << "changed tumor radius" << endl;
+    cout.flush();
+#endif
 }
 
 
