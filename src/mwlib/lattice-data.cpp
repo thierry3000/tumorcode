@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "lattice-data.h"
+#include "common/hdfio.h"
+
 #include <float.h>
 
 #include "math_ext.h"
@@ -28,6 +30,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define LatticeWorldTransform_TEMPL_ARG1 template<int dim_>
 #define LatticeWorldTransform_CLASS LatticeWorldTransform<dim_>
+
+struct LatticeDataQuad3d;
 
 LatticeWorldTransform_TEMPL_ARG1
 void LatticeWorldTransform_CLASS::Init(float scale_)
@@ -114,21 +118,78 @@ template struct LatticeWorldTransform<3>;
 
 volatile bool LatticeDataQuad3d::nbs_init = false;
 Int3 LatticeDataQuad3d::vnb[LatticeDataQuad3d::DIR_CNT];
-
+void LatticeDataQuad3d::setType()
+{
+  type = "QUAD3D";
+}
+/* CONSTRUCTORS AND DESTRUCTORS */
 LatticeDataQuad3d::LatticeDataQuad3d()
 {
   ClearMem( this, 1 );
+  this->setType();
 }
+LatticeDataQuad3d::~LatticeDataQuad3d()
+{
+  ClearMem( this, 1 );
+  std::cout << "destruct LatticeDataQuad3d" << std::endl;
+}
+
+LatticeDataQuad3d::LatticeDataQuad3d(const LatticeDataQuad3d& ld): LI(), LWT()
+{
+  CopyMem(&ld, this, 1);
+}
+
+LatticeDataQuad3d::LatticeDataQuad3d(const Int3& l, float scale): LatticeWorldTransform< int(3) >(scale)
+{
+  Init(l, scale); 
+}
+
+LatticeDataQuad3d::LatticeDataQuad3d(const BBox3& bb, float scale): LatticeWorldTransform< int(3) >(scale)
+{
+  Init(bb, scale); 
+}
+
+void LatticeDataFCC::setType()
+{
+  type="FCC";
+}
+LatticeDataFCC::LatticeDataFCC()
+{
+  ClearMem(this, 1);
+  this->setType();
+}
+LatticeDataFCC::~LatticeDataFCC()
+{
+  ClearMem( this, 1 );
+  std::cout << "destruct LatticeDataFCC" << std::endl;
+}
+
+LatticeDataFCC::LatticeDataFCC(const LatticeDataFCC& ld)
+{
+  ld.print(std::cout);
+  //ClearMem( this, 1);
+  CopyMem(&ld, this, 1);
+  this->setType();
+}
+
+LatticeDataFCC::LatticeDataFCC(const BBox3& bb, float scale): LatticeWorldTransform< int(3) >(scale)
+{
+  Init(bb, scale);
+  this->setType();
+}
+
 
 
 void LatticeDataQuad3d::Init( const Int3 &l_, float scale_)
 {
   Init(BBox3(Int3(0), l_-Int3(1)), scale_);
+  type= string("QUAD3D");
 }
 
 
 void LatticeDataQuad3d::Init(const BBox3 &bb, float scale_)
 {
+  type = string("QUAD3D");
   myAssert(!bb.IsEmpty());
   myAssert(scale_ > 0.);
 
@@ -210,8 +271,10 @@ Int3 LatticeDataQuad3d::GetLatticeIndexOnRefinedGrid(const Int3& pos, int refine
 volatile bool LatticeDataFCC::nbs_init = false;
 Int3 LatticeDataFCC::vnb[2][3][LatticeDataFCC::DIR_CNT];
 
+
 void LatticeDataFCC::Init(const BBox3 &bb, float scale_)
 {
+  type = string("FCC");
   myAssert(!bb.IsEmpty());
   myAssert(scale_ > 0.);
 
@@ -473,4 +536,52 @@ bool operator==( const LatticeDataQuad3d& a, const LatticeDataQuad3d& b )
 bool operator==( const LatticeDataFCC& a, const LatticeDataFCC& b )
 {
   return a.Box()==b.Box() && a.Scale()==b.Scale() && a.LatticeToSite(a.Box().min) == b.LatticeToSite(b.Box().min);
+}
+
+void LatticeDataFCC::WriteHdfLd(H5::Group& g) const
+{
+  //string latticeType = getType();
+  writeAttrToH5(g, "TYPE", getType());
+  writeAttrToH5(g,"SIZEX", Size()[0]);
+  writeAttrToH5(g,"SIZEY", Size()[1]);
+  writeAttrToH5(g,"SIZEZ", Size()[2]);
+  writeAttrToH5(g, "SIZE", Size());
+
+  BBox3 bb = Box();
+  // box is stored in a 6 component vector, xxyyzz, must match python code
+  Int6 bv;
+  //Int6 bv;
+  for (int i=0; i<3; ++i)
+  {
+    bv[i*2  ] = bb.min[i];
+    bv[i*2+1] = bb.max[i];
+  }
+  writeAttrToH5(g, string("BOX"), bv);
+  writeAttrToH5(g, string("WORLD_OFFSET"),GetOriginPosition() );
+  writeAttrToH5(g, string("SCALE"), Scale());
+}
+
+void LatticeDataQuad3d::WriteHdfLd(H5::Group& g) const
+{
+  Bool3 centering = GetCellCentering();
+  writeAttrToH5(g, "CENTERING", centering);
+  
+  writeAttrToH5(g, "TYPE", getType());
+  writeAttrToH5(g,"SIZEX", Size()[0]);
+  writeAttrToH5(g,"SIZEY", Size()[1]);
+  writeAttrToH5(g,"SIZEZ", Size()[2]);
+  writeAttrToH5(g, "SIZE", Size());
+
+  BBox3 bb = Box();
+  // box is stored in a 6 component vector, xxyyzz, must match python code
+  Int6 bv;
+  //Int6 bv;
+  for (int i=0; i<3; ++i)
+  {
+    bv[i*2  ] = bb.min[i];
+    bv[i*2+1] = bb.max[i];
+  }
+  writeAttrToH5(g, string("BOX"), bv);
+  writeAttrToH5(g, string("WORLD_OFFSET"),GetOriginPosition() );
+  writeAttrToH5(g, string("SCALE"), Scale());
 }

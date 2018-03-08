@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include "helpers-vec.h"
 #include "helpers-mem.h"
+//#include "H5Cpp.h"
+#include "common/hdfio.h"
 
 template<int d, class SiteType = int, class StrideType = SiteType>
 class LatticeIndexing // Uniform lattice -> integer type index or pointer
@@ -235,10 +237,10 @@ struct LatticeDataQuad3d : public LatticeIndexing<3, int64, int64>, public Latti
   };    
   
   LatticeDataQuad3d();
-  ~LatticeDataQuad3d(){};
-  LatticeDataQuad3d(const LatticeDataQuad3d &ld) : LI(), LWT() { CopyMem(&ld, this, 1); }
-  LatticeDataQuad3d(const Int3 &l, float scale=1.0f ) { Init(l, scale); }
-  LatticeDataQuad3d(const BBox3 &bb, float scale=1.0f ) { Init(bb, scale); }
+  ~LatticeDataQuad3d();
+  LatticeDataQuad3d(const LatticeDataQuad3d &ld);
+  LatticeDataQuad3d(const Int3 &l, float scale=1.0f );
+  LatticeDataQuad3d(const BBox3 &bb, float scale=1.0f );
 
   void Init( const Int3 &l, float scale=1.0f);
   void Init( const BBox3 &bb, float scale=1.0);
@@ -257,7 +259,10 @@ struct LatticeDataQuad3d : public LatticeIndexing<3, int64, int64>, public Latti
   Int3 GetLatticeIndexOnRefinedGrid(const Int3 &pos, int refinement_subdivision) const;
 
   void print(std::ostream &os) const;
-
+  void setType();
+  void WriteHdfLd( H5::Group &g) const;
+  const string& getType() const { return type; }
+  string type;
 protected:
   // i dont bother with thread safety. If two LatticeDatas happen to
   // be constructed at the same time, they will just initialize this
@@ -265,21 +270,26 @@ protected:
   static volatile bool nbs_init;
   int nb[DIR_CNT];
   static Int3 vnb[DIR_CNT];
+  //string type = "quad";
+  
   //float scale, scale_inv; // lattice spacing and 1/spacing
+
 };
 
 
 
-struct LatticeDataFCC : public LatticeIndexing<3, int64, int64>
+struct LatticeDataFCC : public LatticeIndexing<3, int64, int64>, public LatticeWorldTransform<3>
 {
   typedef LatticeIndexing<3,int64> Base;
   typedef Int3 LatticeIndexType;
   typedef int64 SiteType;
   enum { DIR_CNT = 12 };
 
-  LatticeDataFCC() { ClearMem( this, 1 ); }
-  LatticeDataFCC(const LatticeDataFCC &ld) { CopyMem(&ld, this, 1); }
-  LatticeDataFCC(const BBox3 &bb, float scale=1.0f ) { Init(bb, scale); }
+  LatticeDataFCC();
+  ~LatticeDataFCC();
+  LatticeDataFCC(const LatticeDataFCC &ld) ;
+  LatticeDataFCC(const BBox3 &bb, float scale=1.0f );
+
   void Init( const BBox3 &bb, float scale=1.0);
 
   void SetOriginPosition(const Float3 &pos) { wo = pos; }
@@ -300,7 +310,12 @@ struct LatticeDataFCC : public LatticeIndexing<3, int64, int64>
 
   
   void print(std::ostream &os) const;
+  void WriteHdfLd( H5::Group &g) const;
+  
   Float3 wo; // world coordinate offset, added in lattice -> world
+  const string& getType() const { return type; }
+  string type;
+  void setType();
 
 protected:
   static volatile bool nbs_init;
@@ -308,6 +323,7 @@ protected:
   int nb[2][3][DIR_CNT];
   static Int3 vnb[2][3][DIR_CNT];
   float scale, scale_inv; // lattice spacing and 1/spacing
+  
 };
 
 

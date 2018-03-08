@@ -21,6 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common.h"
 #include "time_stepper_utils_new.h"
 
+#include "hdfio.h"
+
 using namespace NewSteppers;
 
 
@@ -120,7 +122,7 @@ typedef Factory::StepperType MyStepper;
 // }
 
 
-void run(h5cpp::Group g, const ptree &params, int id, double lambda)
+void run(H5::Group g, const ptree &params, int id, double lambda)
 {
   double y0 = 1.;
 
@@ -131,9 +133,14 @@ void run(h5cpp::Group g, const ptree &params, int id, double lambda)
   const int method = params.get<int>("method");
   const double dt = params.get<double>("out_intervall");
 
-  observer.g = g = g.require_group(str(format("study%02i") % id));
-  g.attrs().set("method", method_name[method]);
-  g.attrs().set("dt", dt);
+  //observer.g = g = g.require_group(str(format("study%02i") % id));
+  observer.g = g = g.createGroup(str(format("study%02i") % id));
+  string myString = (string) method_name[method];
+  //writeAttrToH5<string>(g, string("method"), myString);
+  writeAttrToH5(g, string("method"),string("euler"));
+  writeAttrToH5(g, string("dt"), dt);
+//   g.attrs().set("method", method_name[method]);
+//   g.attrs().set("dt", dt);
 
   std::string name;
   switch(method)
@@ -176,10 +183,10 @@ void run()
   double lambda = -1./2;
   
   string fn_out = p.get<string>("fn_out")+".h5";
-  h5cpp::File f(fn_out.c_str(), "w");
+  H5::H5File f(fn_out.c_str(), H5F_ACC_RDWR);
 
   { // store exact solution
-    h5cpp::Group g = f.root().create_group("exact");
+    H5::Group g = f.createGroup("exact");
     double t = 0., dt = 0.1;
     DynArray<double> ax, ay;
     while (true)
@@ -190,10 +197,13 @@ void run()
       t += dt;
       if (t > tend + 0.5*dt) break;
     }
-    h5cpp::create_dataset<>(g, "x", ax);
-    h5cpp::create_dataset<>(g, "y", ay);
+    H5::DataSet dsx = writeDataSetToGroup(g, string("x"), ax);
+    H5::DataSet dsy =writeDataSetToGroup(g, string("y"), ay);
+//     h5cpp::create_dataset<>(g, "x", ax);
+//     h5cpp::create_dataset<>(g, "y", ay);
   }
-  f.root().attrs().set("lambda", lambda);
+  //f.root().attrs().set("lambda", lambda);
+  writeAttrToH5(f.openGroup("/"), string("lambda"), lambda);
 
 #if 1
   int id = 0;
@@ -203,7 +213,7 @@ void run()
     {
       p.put("method", j);
       p.put("out_intervall", out_intervall[i]);
-      run(f.root(), p, id++, lambda);
+      run(f.openGroup("/"), p, id++, lambda);
     }
   }
 #else

@@ -108,9 +108,9 @@ void Grower::Init(const ptree &settings)
   double scale = settings.get<double>("lattice_spacing");
   uint seed = settings.get<uint>("seed");
   string ld_type = settings.get<string>("lattice_type");
-  if (ld_type == "fcc")
+  if (ld_type == "FCC")
     lattice_type_id = LATTICE_TYPE_FCC;
-  else if (ld_type == "quad")
+  else if (ld_type == "QUAD3D")
     lattice_type_id = LATTICE_TYPE_QUAD;
   else
     throw std::invalid_argument(str(format("invalid lattice type string %s") % ld_type));
@@ -139,10 +139,11 @@ void Grower::Init(const ptree &settings)
     seed = 7731 * my::Time().to_ms();
   rand.Init(seed);
 
-  std::auto_ptr<LatticeData> ldp = LatticeData::Make(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
+  std::unique_ptr<LatticeData> ldp = polymorphic_latticedata::Make_ld(ld_type.c_str(), BBox3().Add(Int3(0)).Add(size-Int3(1)), scale);
 
-  vl.reset( new VesselList3d(ldp) );
-  vl->Init(*ldp);
+  //vl.reset( new VesselList3d(ldp) );
+  vl = std::unique_ptr<VesselList3d>(new VesselList3d());
+  vl->Init(ldp);
 
   cout << "vesselgen init ..." << endl;
   cout << "  size " << size << " scale " << scale << endl;
@@ -165,7 +166,8 @@ void Grower::Init(const ptree &settings)
 #if GFFIELD_ENABLE
 void Grower::InitGfDistrib()
 {
-  const LatticeData &ld = get_ld();
+  //const LatticeData &ld = get_ld();
+  const LatticeData &ld = vl->Ld();
   
   const float cellsize = 50.;
   Float3 domain_size = Size(ld.GetWorldBox());
@@ -186,6 +188,7 @@ void Grower::InitGfDistrib()
   field_ld.SetCellCentering(Bool3(true, true, dim()==3));
   field_ld.SetOriginPosition(ld.GetWorldBox().min);
   grid.init(field_ld, dim());
+  //grid = ContinuumGrid(field_ld, dim());
   mtboxes.insert(0, field_ld.Box());
   cout << "field lattice:  " << field_ld << endl;
   ptree pt = make_ptree("rGf", gf_range);
@@ -881,7 +884,7 @@ void Grower::AddRandomElement( const OpenEnd &end, OpenEnds *ends, bool useGfGra
     const VesselNode* attachnode = vl->FindNode( end.p );
     myAssert( attachnode );
     const uchar avflags = attachnode->flags&(ARTERY|VEIN);//the node knows wether its a Artery or a vein
-
+    //std::cout << attachnode << std::endl;
     DynArray<std::pair<int,int> > config;
     DynArray<double> probs;
     
@@ -906,7 +909,7 @@ void Grower::AddRandomElement( const OpenEnd &end, OpenEnds *ends, bool useGfGra
 #endif
       }
       else prob = 1.;
-      
+      //std::cout << prob << std::endl;
       int num_test_elems = GetNumTrialElements(dir, et[ielem]);
       for (int index=0; index<num_test_elems; ++index)
       {
@@ -1241,19 +1244,44 @@ void Grower::SanityCheck()
 
 void Grower::UpscaleTrees()
 {
-  // first get vessels on subdivided lattice
-  std::auto_ptr<LatticeData> oldld(vl->Ld().Clone());
-  //hope this wont end too bad
-  //std::auto_ptr<LatticeData> oldld(vl->Ld()->get());
-  std::auto_ptr<VesselList3d> vl_new = GetSubdivided(vl, 2, oldld->Scale(), 0);
-  vl = vl_new;
-  const LatticeData &ld = vl->Ld();
-
+  // first get vessels on subdivided lattice 
+  //std::unique_ptr<LatticeData> oldld = vl->Ld().Clone();
+  //auto &the_very_old_lattice =vl->Ld();
+  
+  std::cout << "cloning finished" << std::endl;
+  //hope this wont end too bad, it ended bad TF 16.02.2018
+  //std::unique_ptr<LatticeData> oldld(vl->Ld().get());
+  auto former_lattice_scale = vl->Ld().Scale();
+  auto former_lattice_type = vl->Ld().GetType();
+  
+  std::cout << "former lattice scale: " << former_lattice_scale << std::endl;
+  std::cout << "former lattice type: " << former_lattice_type << std::endl;
+  
+  //allocates new memory
+  std::unique_ptr<LatticeData> oldld = polymorphic_latticedata::Make_ld("FCC", vl->Ld().Box(), vl->Ld().Scale());
+//   std::auto_ptr<VesselList3d> vl_new = GetSubdivided(vl, 2, oldld->Scale(), 0);
+  //std::unique_ptr<VesselList3d> vl_new = GetSubdivided(vl, 2, oldld->Scale(), 0);
+  std::cout << vl->Ld().Scale();
+  std::cout.flush();
+  std::cout << "size of vl->GetBCMap() before subdividing: " << vl->GetBCMap().size() << std::endl;
+  std::cout << " Ld before subdividing" << std::endl;
+  vl->Ld().print(std::cout);
+  GetSubdivided(vl, 2, vl->Ld().Scale(), 0);
+  //vl = std::move(subdivided);
+  //vl = std::move(GetSubdivided(vl, 2, vl->Ld().Scale(), 0));
+  std::cout << " Ld after subdividing" << std::endl;
+  vl->Ld().print(std::cout);
+  std::cout.flush();
+  //vl = std::move(vl_new);
+  //const LatticeData &ld = vl->Ld();
+  //vl = GetSubdivided(vl, 2, vl->Ld().Scale(), 0);
+  //const LatticeData &ld = vl->Ld();
+  
   VESSGEN_MAXDBG(vl->IntegrityCheck();)
 
   // extend roots to the lattice boundary
   int reverse_dir[32];
-  GetReverseDir(ld, reverse_dir);
+  GetReverseDir(vl->Ld(), reverse_dir);
 
   TreeRootList new_roots; // with updated lattice index keys
   BOOST_FOREACH(auto it, tree_roots)
@@ -1262,7 +1290,9 @@ void Grower::UpscaleTrees()
     int d = reverse_dir[root.dir];
     myAssert(!dir_is_forbidden[d]);
     
+    //root.p = the_very_old_lattice.GetLatticeIndexOnRefinedGrid(root.p, 1); // the root position on refined lattice. This is the starting point to pick a different position closer the boundary of the lattice
     root.p = oldld->GetLatticeIndexOnRefinedGrid(root.p, 1); // the root position on refined lattice. This is the starting point to pick a different position closer the boundary of the lattice
+    //root.p = vl->Ld().GetLatticeIndexOnRefinedGrid(root.p, 1); // the root position on refined lattice. This is the starting point to pick a different position closer the boundary of the lattice
     
     VesselNode* previousRoot = vl->FindNode(root.p);
     myAssert(previousRoot && (previousRoot->flags & BOUNDARY)); // there should be a node, because it is the original root site (just copied to the refined lattice)
@@ -1271,8 +1301,8 @@ void Grower::UpscaleTrees()
       VesselNode* vc = previousRoot;
       while (true)
       {
-        Int3 q = ld.NbLattice(root.p, d); // move one bound
-        if (!ld.IsInsideLattice(q)) break;
+        Int3 q = vl->Ld().NbLattice(root.p, d); // move one bound
+        if (!vl->Ld().IsInsideLattice(q)) break;
         if (vl->FindNode(q)) break;  
         // add a vascular segment
         vcnew = vl->InsertNode(q);
@@ -1287,7 +1317,7 @@ void Grower::UpscaleTrees()
     { 
       // set boundary condition to new node
       auto it = vl->GetBCMap().find(previousRoot);
-      myAssert(it != vl->GetBCMap().end());
+      //myAssert(it != vl->GetBCMap().end());
 
       vcnew->flags.AddBits(BOUNDARY);
       if (it != vl->GetBCMap().end())
@@ -1302,8 +1332,10 @@ void Grower::UpscaleTrees()
     new_roots.insert(std::make_pair(root.p, root));
   }
   tree_roots = new_roots;
-
   VESSGEN_MAXDBG(vl->IntegrityCheck();)
+  
+  std::cout << "subdivided" << std::endl;
+  //oldld.reset();
 }
 
 
@@ -1316,23 +1348,27 @@ void Grower::HierarchicalGrowth()
     DebugOutVessels(*this, str(format("without_capillaries_hit_%i") % hierarchy_level));
   
   UpscaleTrees();
+  std::cout << "splitting" << std::endl;
   SplitSegmentsToOneLatticeBond(*vl);
-
+  vl->Ld().print(std::cout);
   // obtain new terminal branches for random growth
   { 
     OpenEnds ends;
     for (int i=0; i<vl->GetNCount(); ++i)
     {
       const VesselNode* vc = vl->GetNode(i);
+      //std::cout << vc->Index() << std::endl;
       if (hasTooMuchNeighborsForAttachment(vc)) continue;
       if (vc->flags.GetBits(ARTERY) && getR(vc) > max_sprout_radius_artery) continue;
       if (vc->flags.GetBits(VEIN) && getR(vc) > max_sprout_radius_vein) continue;
       int dir = GetDirection(vc);
       ends.add(vc->lpos, dir, vc->flags & (ARTERY|VEIN));
     }
-  
+    std::cout << "begin RandomGrowth" << std::endl;
     RandomGrowth(ends, false);
   }
+  std::cout << "finished RandomGrowth" << std::endl;
+  std::cout.flush();
   if (debug_output_every_configuration)
     DebugOutVessels(*this, str(format("after_growth_hit_%i") % hierarchy_level));
   
@@ -1397,6 +1433,7 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
 	 */
     RandomGrowth(ends, true);
   }
+  std::cout<< "finshed inital growth " << std::endl;
 
   if (debug_output_every_configuration)
     DebugOutVessels(*this, "after_initial_growth");
@@ -1412,46 +1449,69 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
 
   if (debug_output_every_configuration)
     DebugOutVessels(*this, "after_initial_calcflow");
-
+  
+  std::cout << "start HierarchicalGrowth" << std::endl;
   if (my::checkAbort()) return;
   if (max_hierarchy_level > 0)
   {
     for (hierarchy_level=0; hierarchy_level<max_hierarchy_level; ++hierarchy_level)
     {
       for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
+      // this is for hardcore debugging, force only 20 iterations per level
+      //for (iteration_number_on_level = 0; iteration_number_on_level<20; ++iteration_number_on_level)
       {
         RemodelTrees();
 
         if (debug_output_every_configuration)
           DebugOutVessels(*this, str(format("after_remodel_%02i_%05i") % hierarchy_level % iteration_number_on_level));
 
-        if (!callback(boost::cref(*this))) break;
-        if (my::checkAbort()) return;
+        if (!callback(boost::cref(*this)))
+        {
+          break;
+        }
+        if (my::checkAbort())
+        {
+          return;
+        }
       }
-
+      cout << "here: " << vl->GetBCMap().size() << endl;
+      cout << "call ing HierarchicalGrowth " << endl;
       HierarchicalGrowth();
-      if (my::checkAbort()) return;
+      cout << "finished HierarchicalGrowth" << endl;
+    if (my::checkAbort()) return;
       
-      cout << "growth " << hierarchy_level << " with vessel " << get_ld() << endl;
 #if GFFIELD_ENABLE
       cout << "field " << get_field_ld() << endl;
 #endif
     }
-    //max_num_iter += iteration_number;
   }
 
   cout << "iterating ... " << endl;
 
   for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
+  // this is for hardcore debugging, force only 20 iterations per level
+  //for (iteration_number_on_level = 0; iteration_number_on_level<20; ++iteration_number_on_level)
   {
     RemodelTrees();
+    cout << "done remodel trees" << endl;
 
     if (debug_output_every_configuration)
       DebugOutVessels(*this, str(format("after_remodel_%02i_%05i") % hierarchy_level % iteration_number_on_level));
 
-    if (!callback(boost::cref(*this))) break;
-    if (my::checkAbort()) return;
+    if (!callback(boost::cref(*this)))
+    {
+      cout << "before break" << endl;
+      cout.flush();
+      break;
+    }
+    if (my::checkAbort())
+    {
+      cout << "before my check abort" << endl;
+      cout.flush();
+      return;
+    }
   }
+  cout << "done iteration_number_on_level"<< endl;
 
 #if 0
   if (max_hierarchy_level > 0)

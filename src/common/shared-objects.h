@@ -31,6 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/function.hpp>
 #include <boost/array.hpp>
 #include <boost/filesystem/convenience.hpp>
+//#include <H5Cpp.h>
+//#include <H5Exception.h>
 
 class  Vessel;
 class  VesselNode;
@@ -70,14 +72,14 @@ struct TissuePhases
   int count;
   Array3df phase_arrays[3];
 };
-void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, boost::optional<h5cpp::Group> tumorgroup);
+void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, boost::optional<H5::Group> tumorgroup);
 enum TumorTypes
 {
   FAKE = 0,
   BULKTISSUE = 1,
   NONE = 3,
 };
-TumorTypes determineTumorType(h5cpp::Group *tumorgroup);
+TumorTypes determineTumorType(H5::Group *tumorgroup);
 /*-----------------------------------------------------------
 -----------------------------------------------------------*/
 
@@ -131,7 +133,7 @@ bool FindHemodynamicBounds( const VesselList3d *vl, HemodynamicBounds &hb, bool 
  * "calcflow"
  * "filter"
  */
-std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptree &params);
+std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params);
 /* WriteVesselList3dVolume - parameters
  * w_all
  * w_pressure
@@ -139,7 +141,7 @@ std::auto_ptr<VesselList3d> ReadVesselList3d(h5cpp::Group vesselgroup, const ptr
  * -----------------
  * this function writes nodes/, and edges/ subgroups and adds datasets into them
  */
-void WriteVesselList3d(const VesselList3d& vl, h5cpp::Group vesselgroup, const ptree& params = ptree());
+void WriteVesselList3d(const VesselList3d& vl, H5::Group &vesselgroup, const ptree& params = ptree());
 
 void CenterVesselListAndSetupFieldLattice(VesselList3d &vl, int dim, float spacing, LatticeDataQuad3d &field_ld);
 void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float safety_spacing, LatticeDataQuad3d &ld);

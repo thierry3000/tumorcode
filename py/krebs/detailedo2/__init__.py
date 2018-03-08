@@ -21,10 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+import os, sys
+from os.path import join, basename, dirname, splitext
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
+
 from os.path import basename
 import os,sys
 import h5py
-import h5files
+
 import numpy as np
 import extensions # for hdf5 support in np.asarray
 import myutils
@@ -120,26 +124,26 @@ def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
   gvndst.create_dataset('pressure'  , data = pressure   , compression = 9)
 
 
-def computePO2_(gdst, vesselgroup, tumorgroup, parameters):
-  myutils.buildLink(gdst, 'SOURCE_VESSELS', vesselgroup)
-  myutils.buildLink(gdst, 'SOURCE_TISSUE', tumorgroup)
-  gdst.attrs['PARAMETER_CHECKSUM'] = myutils.checksum(parameters)
-  gdst.attrs['UUID']               = myutils.uuidstr()
-  #writing parameters as acsii string. but i think it is better to store them as hdf datasets directly
-  #ds = gdst.create_dataset('PARAMETERS_AS_JSON', data = np.string_(json.dumps(parameters, indent=2)))
-  myutils.hdf_write_dict_hierarchy(gdst, 'parameters', parameters)
-  gdst.file.flush()
-  # now we can compute PO2. The c++ routine can a.t.m. only read from hdf so it has to use our new file
-  #pickDetailedO2Library(parameters).computePO2(vesselgroup, tumorgroup, parameters, parameters.get('calcflow'), gdst)
-  fn=str(vesselgroup.file.filename)
-  vessel_path=str(vesselgroup.name)
-  if( not tumorgroup):
-    tumor_path="not_found_tumor"
-  else:
-    tumor_path=str(tumorgroup.name)  
-  pickDetailedO2Library(parameters).computePO2(fn, vessel_path, tumor_path, parameters, parameters.get('calcflow'), gdst)
-  #r = pickDetailedO2Library(parameters).computePO2(vesselgroup, tumorgroup, parameters, parameters.get('calcflow'), gdst)
-  #return r
+#def computePO2_(gdst, vesselgroup, tumorgroup, parameters):
+#  myutils.buildLink(gdst, 'SOURCE_VESSELS', vesselgroup)
+#  myutils.buildLink(gdst, 'SOURCE_TISSUE', tumorgroup)
+#  gdst.attrs['PARAMETER_CHECKSUM'] = myutils.checksum(parameters)
+#  gdst.attrs['UUID']               = myutils.uuidstr()
+#  #writing parameters as acsii string. but i think it is better to store them as hdf datasets directly
+#  #ds = gdst.create_dataset('PARAMETERS_AS_JSON', data = np.string_(json.dumps(parameters, indent=2)))
+#  myutils.hdf_write_dict_hierarchy(gdst, 'parameters', parameters)
+#  gdst.file.flush()
+#  # now we can compute PO2. The c++ routine can a.t.m. only read from hdf so it has to use our new file
+#  #pickDetailedO2Library(parameters).computePO2(vesselgroup, tumorgroup, parameters, parameters.get('calcflow'), gdst)
+#  fn=str(vesselgroup.file.filename)
+#  vessel_path=str(vesselgroup.name)
+#  if( not tumorgroup):
+#    tumor_path="not_found_tumor"
+#  else:
+#    tumor_path=str(tumorgroup.name)  
+#  pickDetailedO2Library(parameters).computePO2(fn, vessel_path, tumor_path, parameters, parameters.get('calcflow'), str("bla"))
+#  #r = pickDetailedO2Library(parameters).computePO2(vesselgroup, tumorgroup, parameters, parameters.get('calcflow'), gdst)
+#  #return r
 
 
 def readParameters(po2group):
@@ -240,53 +244,111 @@ def CopyInputFileInfo_(fdst, fsrc):
         fdst.attrs[n2] = fsrc['parameters'].attrs[n1]
 
 
-def computePO2(f, group_path, parameters, cachelocation):
-  if not isinstance(f, h5py.File):
-    f = h5files.open(f, 'r+', search = False)  # we open with r+ because the cachelocation might be this file so we need to be able to write to it
-    return computePO2(f, group_path, parameters, cachelocation) # recurse
-
-  #==== is this from a tumor sim, or just a vessel network? get hdf group objects =====#
-  group = f[group_path]
+def computePO2(parameters):
+  print("Computing o2 for file: %s" % parameters['input_file_name'])
+  print("at group: %s" % parameters['input_group_path'])
+  print("storing in file: %s" % parameters['output_file_name'])
   tumorgroup = None
-  vesselgroup1 = group
-  if 'vessels' in group:
-    vesselgroup1 = group['vessels']
-    if 'tumor' in group:
-      tumorgroup = group['tumor']
-
-  #====  this is for recomputing flow =====#
-  def read1(gmeasure, name):
-    gmeasure = gmeasure[name]
-    return myutils.H5FileReference(gmeasure.file.filename, gmeasure.name)
-
-  def write1(gmeasure, name):
-    gdst = gmeasure.create_group(name)
-    copyVesselnetworkAndComputeFlow(gdst, vesselgroup1, parameters.get("calcflow"))
-
-  #==== execute reading or computing and writing =====#
-  output_buffer_name = basename(cachelocation[0]).rsplit('.h5')[0]
-  fm = h5files.open("%s-%s.h5"%(output_buffer_name, cachelocation[1]), 'a', search = False) # this is the file where o2 stuff is stored  
+  output_buffer_name = basename(parameters['output_file_name']).rsplit('.h5')[0]
+  parameters['output_file_name'] = "%s-%s.h5" % (output_buffer_name, parameters['input_group_path'])
+  #f_out = h5files.open(parameters['output_file_name'], 'a', search = False)
+  f_out = h5py.File(parameters['output_file_name'], 'w')
+  parameters['vessel_group_path'] = "recomputed_flow"
+  parameters['output_group_path'] = "/po2/" + "vessels"
+      
+  caching = True;
+  if caching:
+    #  if not isinstance(f, h5py.File):
+    #    f = h5files.open(f, 'r+', search = False)  # we open with r+ because the cachelocation might be this file so we need to be able to write to it
+    #    return computePO2(f, group_path, parameters, cachelocation) # recurse
+      
+    
+      #==== is this from a tumor sim, or just a vessel network? get hdf group objects =====#
+    #  group = f[group_path]
+      
+    #  vesselgroup1 = group
+    #  if 'vessels' in group:
+    #    vesselgroup1 = group['vessels']
+    #    if 'tumor' in group:
+    #      tumorgroup = group['tumor']
+     
+    #====  this is for recomputing flow =====#
+    def read1(gmeasure, name):
+      gmeasure = gmeasure[name]
+      return myutils.H5FileReference(gmeasure.file.filename, gmeasure.name)
   
-  CopyInputFileInfo_(fm, f)
-  new_flow_data_ref = myutils.hdf_data_caching(read1, write1, fm, ('recomputed_flow', cachelocation[1]), (0, 1))
-  fv = h5files.open(new_flow_data_ref.fn,'r+', search = False)
-  vesselgroup2 = fv[new_flow_data_ref.path]
-
-  #====  this is for po2 =====#
-  def read2(gmeasure, name):
-    gmeasure = gmeasure[name]
-    return myutils.H5FileReference(gmeasure.file.filename, gmeasure.name)
-
-  def write2(gmeasure, name):
-    gdst = gmeasure.create_group(name)
-    myutils.buildLink(gdst, 'SOURCE', group)
-    computePO2_(gdst, vesselgroup2, tumorgroup, parameters)
-
-  #==== execute reading or computing and writing =====#
-  o2data_ref = myutils.hdf_data_caching(read2, write2, fm, ('po2',cachelocation[1]), (1,1))
-  #=== return filename and path to po2 data ====#
-  return o2data_ref
-
+    def write1(gmeasure, name):
+      gdst = gmeasure.create_group(name)
+      f = h5py.File(parameters['input_file_name'])
+      #f = h5files.open(parameters['input_file_name'], 'r')
+      input_vessel_group = f[parameters['input_group_path']]
+      copyVesselnetworkAndComputeFlow(gdst, input_vessel_group, parameters.get("calcflow"))
+      f.close()
+      
+    #==== execute reading or computing and writing =====#
+    #output_buffer_name = basename(parameters['input_file_name']).rsplit('.h5')[0]
+    #fm = h5files.open("%s-%s.h5"%(output_buffer_name, cachelocation[1]), 'a', search = False) # this is the file where o2 stuff is stored  
+    
+    #CopyInputFileInfo_(fm, f)
+    #new_flow_data_ref = myutils.hdf_data_caching(read1, write1, fm, ('recomputed_flow', cachelocation[1]), (0, 1))
+    new_flow_data_ref = myutils.hdf_data_caching(read1, write1, f_out, ('recomputed_flow'), (0, 1))
+    
+    f_out.close()
+    #fv = h5files.open(new_flow_data_ref.fn,'r+', search = False)
+    #vesselgroup2 = fv[new_flow_data_ref.path]
+  
+  #  #====  this is for po2 =====#
+    def read2(gmeasure, name):
+      gmeasure = gmeasure[name]
+      return myutils.H5FileReference(gmeasure.file.filename, gmeasure.name)
+  
+    def write2(gmeasure, name):
+      #gdst = gmeasure.create_group(name)
+      #myutils.buildLink(gdst, 'SOURCE', group)
+      #computePO2_(gdst, vesselgroup2, tumorgroup, parameters)
+      #computePO2_(gdst, f_out['recomputed_flow'], tumorgroup, parameters)
+      f_out.create_group("po2")
+      
+      #srcVessels = myutils.H5FileReference(po2group.attrs['SOURCE_VESSELS_FILE'],po2group.attrs['SOURCE_VESSELS_PATH'])
+      #srcTissue  = myutils.H5FileReference(po2group.attrs['SOURCE_TISSUE_FILE'],po2group.attrs['SOURCE_TISSUE_PATH'])
+      detailedo2current.computePO2(parameters, parameters.get('calcflow')) 
+      
+  #
+  #  #==== execute reading or computing and writing =====#
+    with h5py.File(parameters['output_file_name'], 'a') as f_out:
+      #f_out_bla = h5files.open("blub.h5", 'a', search = False)
+      o2data_ref = myutils.hdf_data_caching(read2, write2, f_out, ('po2'), (0,1))
+    #  #=== return filename and path to po2 data ====#
+    #  #return o2data_re
+  else:
+    print("no caching!")
+#''' h5py file format'''
+#    f = h5py.File(parameters['input_file_name'])
+#    #f = h5files.open(parameters['input_file_name'], 'r')
+#    input_vessel_group = f[parameters['input_group_path']]
+#    
+#    f_out = h5py.File(parameters['output_file_name'])
+#    gdst = f_out.create_group(parameters['vessel_group_path'])
+#    copyVesselnetworkAndComputeFlow(gdst, input_vessel_group, parameters.get("calcflow"))
+#    f.close()
+#    f_out.close()
+#    pickDetailedO2Library(parameters).computePO2(parameters, parameters.get('calcflow'))
+#''' m welter file format'''
+  
+    with h5py.File('vessels-default-typeI-15x19L130-sample00.h5', 'r') as f:
+      with h5py.File(parameters['output_file_name'], 'a') as f_out:
+      #with h5files.open('vessels-default-typeI-15x19L130-sample00.h5', 'r', search = True) as f:
+      #f = h5files.open(parameters['input_file_name'], 'a')
+        input_vessel_group = f[parameters['input_group_path']]
+      
+        gdst = f_out.create_group(parameters['vessel_group_path'])
+        copyVesselnetworkAndComputeFlow(gdst, input_vessel_group, parameters.get("calcflow"))
+        f_out.flush()
+        #f_out.flush()
+    #f_out.close()
+    #f.close()
+    #f_out.close()
+    detailedo2current.computePO2(parameters, parameters.get('calcflow')) 
 
 ##############################################################################
 
@@ -304,13 +366,26 @@ def doit(fn, pattern, (parameters, parameters_name)):
 
   output_links = []
 
-  f = h5files.open(fn, 'r')
-  dirs = myutils.walkh5(f['.'], pattern)
+  with h5py.File(fn, 'r') as f_in_doit:
+    dirs = myutils.walkh5(f_in_doit['.'], pattern)
+  
   for group_path in dirs:
     #cachelocation = (outfn_no_ext+'.h5', group_path+'_'+parameters_name)
-    cachelocation = ('o2_' + fnbase+'_'+parameters_name+'.h5', group_path)
-    ref = computePO2(f, group_path, parameters, cachelocation)
+    #output_file_name = 'o2_' + fnbase+'_'+parameters_name+'.h5'
+    #vessel_path = group_path
+    parameters['input_file_name'] = fn
+    parameters['input_group_path'] = group_path
+    parameters['output_file_name']='o2_' + fnbase+'_'+parameters_name+'.h5'
+    #cachelocation = ('o2_' + fnbase+'_'+parameters_name+'.h5', group_path)
+    ref = computePO2(parameters)
     print 'computed po2 stored in:', ref
     output_links.append(ref)
   return output_links
+  
+if __name__ == '__main__':
+  o2params = getattr(parameterSetsO2, 'default_o2')
+  o2params['output_file_name'] = 'o2_vessels-default-typeI-15x19L130-sample00_default_o2-vessels.h5'
+  o2params['vessel_group_path'] = 'recomputed_flow'
+#  o2params['output_file_name'] = 'blub42.h5'
+  detailedo2current.computePO2(o2params, o2params.get('calcflow')) 
 

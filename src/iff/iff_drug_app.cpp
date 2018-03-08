@@ -36,7 +36,7 @@ IffDrugApp3d::IffDrugApp3d()
 }
 
 
-void ReadInto(const BBox3 &bb, h5::Dataset ds, Array3d<float> arr)
+void ReadInto(const BBox3 &bb, H5::DataSet ds, Array3d<float> arr)
 {
   Array3d<float> tmp;
   ReadArray3D(ds, tmp);
@@ -89,32 +89,44 @@ bool IffDrugApp3d::InitNewState()
   }
 
   {
-  h5::File file(fn_tumor, "r");
-  h5::Group root = file.root();
-  h5::Group tum_grp;
+  H5::H5File file(fn_tumor, H5F_ACC_RDONLY);
+  H5::Group root = file.openGroup("/");
+  H5::Group tum_grp;
   bool tumorIsPresent = true;
-  if (root.exists(h5_path_tumor))
+  try
   {
-    tum_grp = root.open_group(h5_path_tumor);
-    h5::Attributes tum_attrs = tum_grp.attrs();
-    if (tumor_type_string.empty())
-      tumor_type_string = tum_attrs.get<string>("TYPE");
+    tum_grp = root.openGroup(h5_path_tumor);
   }
-  else
+  catch( H5::Exception )
   {
     tumorIsPresent=false;
   }
   
-
-  std::auto_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::LatticeData::ReadHdf(root.open_group(h5_path_lattice));
-  vl.reset(new VesselList3d(ldp));
-  vl->Init(*ldp);
-  h5::Group vesselgroup = root.open_group(h5_path_vessel);
+//   if (root.exists(h5_path_tumor))
+//   {
+//     tum_grp = root.open_group(h5_path_tumor);
+//     h5::Attributes tum_attrs = tum_grp.attrs();
+//     if (tumor_type_string.empty())
+//       tumor_type_string = tum_attrs.get<string>("TYPE");
+//   }
+//   else
+//   {
+//     tumorIsPresent=false;
+//   }
+  
+  H5::Group h5_lattice = root.openGroup(h5_path_lattice);
+  std::unique_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::ReadHdf(h5_lattice);
+  //vl.reset(new VesselList3d(ldp));
+  vl->Init(ldp);
+  H5::Group vesselgroup = root.openGroup(h5_path_vessel);
   //ReadHdfGraph(vesselgroup, *vesselList);
   ReadHdfGraph(vesselgroup, vl.get());
   { // read node pressure values
   DynArray<float> press;
-  h5::read_dataset(vesselgroup.open_dataset("nodes/pressure"), press);
+  //h5::read_dataset(vesselgroup.open_dataset("nodes/pressure"), press);
+  //readDataSetFromGroup<DynArray<float>>(vesselgroup.openGroup("nodes"),string("pressure"), &press);
+  H5::Group h5_nodes = vesselgroup.openGroup("nodes");
+  readDataSetFromGroup(h5_nodes,string("pressure"), press);
   int ncnt = vl->GetNCount();
   for(int i=0; i<ncnt; ++i)
   {
@@ -122,13 +134,18 @@ bool IffDrugApp3d::InitNewState()
   }
   // read edge flow values
   DynArray<double> a;
-  h5::read_dataset(vesselgroup.open_dataset("edges/flow"), a);
+  //h5::read_dataset(vesselgroup.open_dataset("edges/flow"), a);
+  //readDataSetFromGroup<DynArray<double>>(vesselgroup.openGroup("edges"),string("flow"), &a);
+  H5::Group h5_edges = vesselgroup.openGroup("edges");
+  readDataSetFromGroup(h5_edges,string("flow"), a);
   int ecnt = vl->GetECount();
   for(int i=0; i<ecnt; ++i)
   {
     vl->GetEdge(i)->q = a[i];
   }
-  h5::read_dataset(vesselgroup.open_dataset("edges/maturation"), a);
+  //h5::read_dataset(vesselgroup.open_dataset("edges/maturation"), a);
+  //readDataSetFromGroup<DynArray<double>>(vesselgroup.openGroup("edges"),string("maturation"), &a);
+  readDataSetFromGroup(h5_edges,string("maturation"), a );
   for(int i=0; i<ecnt; ++i) vl->GetEdge(i)->maturation = a[i];
   }
 
@@ -158,8 +175,10 @@ bool IffDrugApp3d::InitNewState()
 
   if (tumor_type_string == "faketumor" and tumorIsPresent)
   {
-    h5::Dataset ds_phi_tumor = tum_grp.open_dataset("tc_density");
-    double radius = tum_grp.attrs().get<double>("TUMOR_RADIUS");
+    H5::DataSet ds_phi_tumor = tum_grp.openDataSet("tc_density");
+    //double radius = tum_grp.attrs().get<double>("TUMOR_RADIUS");
+    double radius;
+    readAttrFromH5(tum_grp, string("TUMOR_RADIUS"), radius);
     { 
       LatticeDataQuad3d ld;
       SetupFieldLattice(vl->Ld().GetWorldBox(), 3, 30., -30, ld);
@@ -186,8 +205,12 @@ bool IffDrugApp3d::InitNewState()
   }
   else if ((tumor_type_string == "BulkTissue" || tumor_type_string == "BulkTissueFormat1") and tumorIsPresent)
   {
-    h5::Dataset ds_theta_tumor = tum_grp.open_dataset("ptc");
-    h5::Group ld_group = root.open_group(ds_theta_tumor.attrs().get<string>("LATTICE_PATH"));
+//     h5::Dataset ds_theta_tumor = tum_grp.open_dataset("ptc");
+//     h5::Group ld_group = root.open_group(ds_theta_tumor.attrs().get<string>("LATTICE_PATH"));
+    H5::DataSet ds_theta_tumor = tum_grp.openDataSet("ptc");
+    string lattice_path;
+    readAttrFromH5(ds_theta_tumor, "LATTICE_PATH", lattice_path);
+    H5::Group ld_group = root.openGroup(lattice_path);
     { 
       LatticeDataQuad3d ld;
       ReadHdfLd(ld_group, ld);
@@ -200,10 +223,19 @@ bool IffDrugApp3d::InitNewState()
     theta_necro = MakeArray3dWithBorder<float>(grid.ld.Box(), dim, 1);
 
     ReadInto(grid.ld.Box(), ds_theta_tumor, theta_tumor);
-    ReadInto(grid.ld.Box(), tum_grp.open_dataset("conc"), phi_cells);
-    ReadInto(grid.ld.Box(), tum_grp.open_dataset("obstacle"), phi_obstacle);
-    if (tum_grp.exists("necro"))
-      ReadInto(grid.ld.Box(), tum_grp.open_dataset("necro"), theta_necro);
+    ReadInto(grid.ld.Box(), tum_grp.openDataSet("conc"), phi_cells);
+    ReadInto(grid.ld.Box(), tum_grp.openDataSet("obstacle"), phi_obstacle);
+//     if (tum_grp.exists("necro"))
+//       ReadInto(grid.ld.Box(), tum_grp.open_dataset("necro"), theta_necro);
+    try
+    {
+      H5::DataSet necro = tum_grp.openDataSet("necro");
+      ReadInto(grid.ld.Box(), necro, theta_necro);
+    }
+    catch( H5::Exception error)
+    {
+      //std::cout << error.printError();
+    }
 
     FOR_BBOX3(p, grid.ld.Box())
     {
@@ -255,8 +287,9 @@ bool IffDrugApp3d::InitNewState()
 }
 
 
-void IffDrugApp3d::MeasureIfFlowState(h5::Group g)
+void IffDrugApp3d::MeasureIfFlowState(H5::Group g)
 {
+#if 0
   g.attrs().set("MESSAGE",message);
   g.attrs().set("INPUTFILE",fn_tumor);
   g.create_group("parameters");
@@ -368,6 +401,7 @@ void IffDrugApp3d::MeasureIfFlowState(h5::Group g)
     org_press.clear();
   }
 #endif
+#endif
 }
 
 
@@ -388,21 +422,30 @@ void IffDrugApp3d::DoIffCalc()
 
 void IffDrugApp3d::WriteDrugOutput(double t, const IfDrug::Calculator::State &conc_field, const IfDrug::Calculator& model, const ptree& params)
 {
-  h5cpp::File f(params.get<string>("fn_out"), "a");
-  if (output_number == 0 && !f.root().exists("parameters/ift"))
-    ift_params.WriteH5(f.root().create_group("parameters/ift"));
+  H5::H5File f(params.get<string>("fn_out"), H5F_ACC_TRUNC);
+  try
+  {
+    H5::Group ift = f.openGroup("parameters/ift");
+  }
+  catch( H5::Exception error)
+  {
+    H5::Group out =f.createGroup("parameters/ift");
+    ift_params.WriteH5(out);
+  }
+//   if (output_number == 0 && !f.root().exists("parameters/ift"))
+//     ift_params.WriteH5(f.root().create_group("parameters/ift"));
 
-  cout << format("drug hdf output t=%f -> %s") % t % f.get_file_name() << endl;
-  h5cpp::Group g = f.root().create_group((format("out%04i") % output_number).str());
+  cout << format("drug hdf output t=%f -> %s") % t % f.getFileName() << endl;
+  H5::Group g = f.createGroup((format("out%04i") % output_number).str());
 
-  g.attrs().set("time", t);
+//   g.attrs().set("time", t);
+// 
+//   g.attrs().set("real_time", (my::Time() - real_start_time).to_s());
+//   MemUsage memusage = GetMemoryUsage();
+//   g.attrs().set<uint64>("mem_vsize", memusage.vmem_peak);
+//   g.attrs().set<uint64>("mem_rss", memusage.rss_peak);
 
-  g.attrs().set("real_time", (my::Time() - real_start_time).to_s());
-  MemUsage memusage = GetMemoryUsage();
-  g.attrs().set<uint64>("mem_vsize", memusage.vmem_peak);
-  g.attrs().set<uint64>("mem_rss", memusage.rss_peak);
-
-  model.writeH5(f, g, conc_field, t, f.root().open_group("field_ld"));
+  model.writeH5(f, g, conc_field, t, f.openGroup("field_ld"));
 
   ++output_number;
 }
@@ -513,8 +556,8 @@ int  IffDrugApp3d::Main(const ptree &read_params, const string &outfilename, py:
   DoIffCalc();
   {
     //write some output
-    h5::File file(fn_out, "w");
-    MeasureIfFlowState(file.root()); 
+    H5::H5File file(fn_out, H5F_ACC_RDWR);
+    MeasureIfFlowState(file.openGroup("/")); 
   } // don't keep file
   
 #ifdef USE_IFDRUGSIM

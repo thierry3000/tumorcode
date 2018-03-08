@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "lattice-data-polymorphic.h"
 #include "mwlib/listgraph.h"
-//#include "shared-objects.h"
+#include "shared-objects.h"
 #include "mwlib/mempool.h"
 #include "mwlib/math_ext.h"
 #include "calcflow.h"
@@ -204,7 +204,7 @@ class VesselList3d
 {
   typedef polymorphic_latticedata::LatticeData LD;
 public:
-  VesselList3d(std::auto_ptr<LD> this_ld);
+  VesselList3d();
   typedef LD LatticeData; // nicer name for the outside
   typedef LD::SiteType SiteType;
   typedef ListGraph<VesselNode,Vessel> Graphtype;
@@ -212,7 +212,8 @@ public:
 
   void Flush();
   void Reset();
-  void Init( const LD &ld );
+  //void Init( const LD &ld );
+  void Init( std::unique_ptr<LD> & ldp );
   inline const LD& Ld() const { return *m_ld; }
   inline bool HasLattice() const { return m_ld.get() != nullptr; }
   Graphtype& Graph() { return g; } 
@@ -253,15 +254,16 @@ public:
   //const BCList& GetBCMap() const { return bclist; }
   void          SetBC(const VesselNode* node, FlowBC &bc);
   void          ClearBC(VesselNode* node);
+  void          ClearLattice();
   std::size_t estimateMemoryUsage() const;
   void        IntegrityCheck(int check_lookup = -1);
   
-  std::auto_ptr<VesselList3d> Clone();
+  std::unique_ptr<VesselList3d> Clone();
   //std::auto_ptr<LD> getLD() const;
   private:
     SiteLookup 			lookup_site;
     BondLookup 			lookup_bond;
-    std::auto_ptr<LD>	m_ld;
+    std::unique_ptr<LD>	m_ld;
     ListGraph<VesselNode,Vessel>g;
     void FillLookup();
     BCList bclist; // boundary conditions
@@ -276,8 +278,10 @@ inline std::size_t estimateMemoryUsage(const VesselList3d &vl) { return vl.estim
 ------------------------------------------------------*/
 
 uint Optimize( VesselList3d *vl );
-std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, int multi, float newscale, int safety_boundary = 1);
-std::auto_ptr<VesselList3d> GetSubdivided(std::auto_ptr<VesselList3d> vl, float scale);
+void GetSubdivided(std::unique_ptr< VesselList3d > &vl, int multi, float newscale, int safety_boundary = 1);
+void GetSubdivided(std::unique_ptr<VesselList3d> &vl, float scale);
+//std::unique_ptr< VesselList3d >& GetSubdivided( VesselList3d  &vl, int multi, float newscale, int safety_boundary = 1);
+//std::unique_ptr<VesselList3d>& GetSubdivided( VesselList3d &vl, float scale);
 /* Make it so that one vessels covers one and only one lattice bonds. 
  * Removes any vessel which is longer than one bond and replaces it with
  * several shorter vessels. VData is copied from the original to the smaller ones.

@@ -51,12 +51,42 @@ SetupFieldLattice:
     spacing:lattice spacing
     
 '''
+#HACK2018
+#imports_ = [ f.strip() for f in
+#    '\
+#    LatticeData, \
+#    read_lattice_data_from_hdf_by_filename, \
+#    write_lattice_data_to_hdf_by_filename, \
+#    export_network_for_povray, \
+#    ClipShape, \
+#    povray_clip_object_str, \
+#    make_position_field, \
+#    calcBulkTissueSourceTerm, \
+#    make_vessel_volume_fraction_field, \
+#    calc_vessel_boxcounts, \
+#    set_num_threads, \
+#    run_vesselgen, \
+#    vesselgen_generate_grid, \
+#    vesselgen_generate_single, \
+#    vesselgen_generate_symmetric, \
+#    GetHealthyVesselWallThickness, \
+#    CalcRelativeViscosity, \
+#    CalcFahraeusEffect, \
+#    CalcIntervascularInterpolationField_, \
+#    SetupFieldLattice, \
+#    PressureRadiusRelation, \
+#    SumIsoSurfaceIntersectionWithVessels_, \
+#    get_Murray2, \
+#    get_Murray_scale, \
+#    CalcViscosities, \
+#    CalcConductivities'.split(',')
+#]
+
 imports_ = [ f.strip() for f in
     '\
     LatticeData, \
-    read_lattice_data_from_hdf, \
     read_lattice_data_from_hdf_by_filename, \
-    write_lattice_data_to_hdf, \
+    write_lattice_data_to_hdf_by_filename, \
     export_network_for_povray, \
     ClipShape, \
     povray_clip_object_str, \
@@ -80,6 +110,7 @@ imports_ = [ f.strip() for f in
     CalcViscosities, \
     CalcConductivities'.split(',')
 ]
+
 # CalcRelativeViscosityByTable, \
 # load functions from libkrebs_ into local namespace
 locals().update( (f,getattr(libkrebs, f)) for f in imports_)
@@ -103,9 +134,9 @@ locals().update( (f,getattr(libkrebs, f)) for f in imports_)
       ** values are optional
 '''
 calc_vessel_hydrodynamics_Ccode = libkrebs.calc_vessel_hydrodynamics
-read_vessel_positions_from_hdf_ = libkrebs.read_vessel_positions_from_hdf
+#read_vessel_positions_from_hdf_ = libkrebs.read_vessel_positions_from_hdf
 read_vessel_positions_from_hdf_by_filename = libkrebs.read_vessel_positions_from_hdf_by_filename
-read_vessel_positions_from_hdf_edges_ = libkrebs.read_vessel_positions_from_hdf_edges
+#read_vessel_positions_from_hdf_edges_ = libkrebs.read_vessel_positions_from_hdf_edges
 #read_vessel_positions_from_hdf_world_ = libkrebs.read_vessel_positions_from_hdf_world
 flood_fill_ = libkrebs.flood_fill
 distancemap_ = libkrebs.distancemap
@@ -267,8 +298,8 @@ LatticeData.GetCentered = LatticeDataGetCentered
 LatticeData.__eq__ = LatticeDataEqual
 #LatticeData.__hash__ = LatticeDataHash
 
-LatticeDataQuad3d = lambda *args : LatticeData('quad',*args)
-LatticeDataFCC    = lambda *args : LatticeData('fcc',*args)
+LatticeDataQuad3d = lambda *args : LatticeData('QUAD3D',*args)
+LatticeDataFCC    = lambda *args : LatticeData('FCC',*args)
 
 
 #----------------------------------------------------------------------------------#
@@ -432,7 +463,16 @@ def vessels_require_(vesselgroup, g, name):
       #pos = read_vessel_positions_from_hdf_(vesselgroup).transpose()
       fn=str(vesselgroup.file.filename)
       path = str(vesselgroup.name)
-      pos = read_vessel_positions_from_hdf_by_filename(fn, path).transpose()
+      pos_x, pos_y, pos_z = read_vessel_positions_from_hdf_by_filename(fn, path)
+      pos = np.asarray([pos_x, pos_y, pos_z])
+      print("before:")
+      print(pos.shape)
+      print(pos)
+      pos = pos.transpose()
+      print("after:")
+      print(pos.shape)
+      print(pos)
+      
       g.nodes['position'] = pos  
     else:
       print("WARNING")
@@ -884,7 +924,7 @@ def GetWorldBox(vesselgroup):
       #ld = read_lattice_data_from_hdf(vesselgroup['lattice'])
       fn=str(vesselgroup.file.filename)
       path=str(vesselgroup.name)
-      ld = read_lattice_data_from_hdf_by_filename(fn, path)
+      #ld = read_lattice_data_from_hdf_by_filename(fn, path)
       worldbox = ld.worldBox
       #worldbox = read_lattice_data_from_hdf(vesselgroup['lattice']).GetWorldBox()
     if( vesselgroup.attrs['CLASS'] == 'REALWORLD'):

@@ -20,29 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HDF_WRAPPER_ARRAY3D_H
 #define HDF_WRAPPER_ARRAY3D_H
 
-#include "hdf_wrapper.h"
-#include "hdf_wrapper_vec.h"
-#include "field.h"
-#include "lattice-data.h"
 
 
-void WriteHdfLd( h5cpp::Group f, const LatticeDataQuad3d &ld );
-void ReadHdfLd( h5cpp::Group f, LatticeDataQuad3d &ld );
-void WriteHdfLd( h5cpp::Group f, const LatticeDataFCC &ld );
-void ReadHdfLd( h5cpp::Group f, LatticeDataFCC &ld );
-
-
-template<class T>
-h5cpp::Dataset WriteArray3D(h5cpp::Group file, const std::string &id, const ConstArray3d<T> &a, const h5cpp::Datatype &disktype = h5cpp::get_disktype<T>());
-
-template<class Vector>
-h5cpp::Dataset WriteVectorArray3D(h5cpp::Group  file,const std::string &id, const ConstArray3d<Vector> &a);
-
-template<class T>
-void ReadArray3D(h5cpp::Dataset ds, Array3d<T> &a);
-
-template<class Vector>
-void ReadVectorArray3D(h5cpp::Dataset ds, Array3d<Vector> &a);
 
 
 

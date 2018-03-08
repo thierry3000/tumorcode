@@ -111,7 +111,8 @@ struct Model : public boost::noncopyable
       ld.Init(size, scale);
       ld.SetCellCentering(Bool3(true, ndims_>1, ndims_>2));
       ld.SetOriginPosition(-ld.GetWorldBox().max * 0.5); // set origin = lower left side
-      grid.init(ld, ndims_);
+      //grid.init(ld, ndims_);
+      grid = ContinuumGrid(ld, ndims_);
     }
     //this is for the multithreading
     mtboxes.init(MakeMtBoxGrid(grid.Box(), pt_params.get<Int3>("mtboxsize")));
@@ -173,17 +174,27 @@ struct Model : public boost::noncopyable
     my::log().pop();
   }//end init
 
-  void writeH5(h5cpp::File f, h5cpp::Group g, BulkTissueWithoutVessels::State &state, double t, int out_num)
+  void writeH5(H5::H5File f, H5::Group g, BulkTissueWithoutVessels::State &state, double t, int out_num)
   {
     myAssert(&state == master_state);
-    if (!f.root().exists("parameters"))
+    try
     {
-      h5cpp::Group gparams = f.root().create_group("parameters");
+      H5::Group gparams = f.openGroup("parameters");
+    }
+    catch( H5::Exception error)
+    {
+      H5::Group gparams = f.createGroup("parameters");
       WriteHdfPtree(gparams, pt_params);
     }
-    h5cpp::Group ld_group = RequireLatticeDataGroup(f.root(),"field_ld", grid.ld);
+//     if (!f.root().exists("parameters"))
+//     {
+//       h5cpp::Group gparams = f.root().create_group("parameters");
+//       WriteHdfPtree(gparams, pt_params);
+//     }
+    H5::Group ld_group = RequireLatticeDataGroup(f,"field_ld", grid.ld);
     bulktissue_model.writeH5(g, state.tumor_state, t, ld_group);
-    g.attrs().set("tumor_radius", estimateRadius(state));
+    writeAttrToH5(g, string("tumor_radius"), estimateRadius(state));
+    //g.attrs().set("tumor_radius", estimateRadius(state));
     WriteScalarField(g, "oxy", state.o2field[grid.Box()], grid.ld, ld_group);
     if (params.use_o2_source_decay)
       WriteScalarField(g, "oxy_sources", state.o2sources[grid.Box()], grid.ld, ld_group);

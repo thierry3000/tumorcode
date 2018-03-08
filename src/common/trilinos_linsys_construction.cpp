@@ -427,7 +427,9 @@ int EllipticEquationSolver::init()
     if(&sys_matrix && PrecType=="multigrid" && (!keep_preconditioner || !ml_prec.get()))
     {
 #ifdef DEBUG
+#ifndef TOTAL_SILENCE
       cout<<"EllipticEquationSolver::init"<<endl;
+#endif
 #endif
       Teuchos::ParameterList mllist;
       ML_Epetra::SetDefaults("SA",mllist);

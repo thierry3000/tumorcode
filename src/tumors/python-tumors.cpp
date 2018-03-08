@@ -17,8 +17,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-//#define mwOMP
-
 #include "../python_krebsutils/python_helpers.h"
 #include "vesselgen/vesselgen.h"
 #include "calcflow.h"
@@ -42,7 +40,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef MILOTTI_MTS
   #include "faketum_mts.h"
-  
   #ifdef USE_DETAILED_O2
     #include "../detailedO2/oxygen_model2.h"
   #endif
@@ -148,7 +145,6 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   ptree detailedO2Settings = s.o2_params.as_ptree();
   ptree bfSettings = s.o2_sim.bfparams.as_ptree();
   ptree fakeTumMTSSettings = s.params.as_ptree();
-  ptree vesselSettings = s.vessel_model.params.as_ptree();
   #ifdef DEBUG
   std::cout << "with detailed params: " << std::endl;
   printPtree(detailedO2Settings);
@@ -158,15 +154,12 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   // update settings with the read in data
   boost::property_tree::update(detailedO2Settings, pt_params.get_child("detailedo2"));
   boost::property_tree::update(bfSettings, detailedO2Settings.get_child("calcflow"));
-  boost::property_tree::update(vesselSettings, pt_params.get_child("vessels"));
   boost::property_tree::update(fakeTumMTSSettings, pt_params);
   #ifdef DEBUG
-  std::cout << "detailedO2 params after update: " << std::endl;
+  std::cout << "detailed params after update: " << std::endl;
   printPtree(detailedO2Settings);
   std::cout << "calcflow params after update: " << std::endl;
   printPtree(bfSettings);
-  std::cout << "fakeTumMTSSettings  after update: " << std::endl;
-  printPtree(fakeTumMTSSettings);
   #endif
   
   // assign o2 parameters to the simulation
@@ -174,7 +167,6 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   // assign bfparams parameters to the simulation
   s.o2_sim.bfparams.assign(bfSettings);
   s.bfparams.assign(bfSettings);
-  s.vessel_model.params.assign(vesselSettings);
   s.params.assign(fakeTumMTSSettings);
   /* 
    * if we are on a cluster, we expect multiple runs
@@ -218,14 +210,28 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   s.params.assign(fakeTumMTSSettings);
   
 #endif
-  { 
     //ReleaseGIL unlock(); // allow the python interpreter to do things while this is running
     /*
      * run major simulation, hopefully all parameters are set correct at this stage
      */
-    int returnCode = s.run();
+  try
+  {
+#ifdef EPETRA_MPI
+  std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+  int mpi_is_initialized = 0;
+  int prov;
+  MPI_Initialized(&mpi_is_initialized);
+  if (!mpi_is_initialized)
+    //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+    MPI_Init_thread(0, NULL, 1,&prov);
+#endif
+  int returnCode = s.run();
   }
-  
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
+
   if (PyErr_Occurred() != NULL) return; // don't save stuff
 }
 void export_faketum_mts()
@@ -274,8 +280,22 @@ void run_fakeTumor(const py::str &param_info_str)
   //printPtree(defaultParams.as_ptree());
   
   //printPtree(faketumSettings);
-  
-  int returnCode = s.run();
+    try{
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
+    int returnCode = s.run();
+  }
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
   //return returnCode;
 }
 void export_faketum()
@@ -289,47 +309,63 @@ void run_bulktissue_no_vessels(const py::str &param_info_str)
 {
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   /* Prameter Handling */
-    // construct default parameters
-    BulkTissueWithoutVessels::SimulationParameters sparams;
-    NewBulkTissueModel::Params pparams;
-    BloodFlowParameters bfparams;
-    VesselModel1::Params vessel_params;
-    O2Model::SimpleO2Params prezO2params;
-    //Adaption::Parameters adaption_params;
-    
-    ptree all_pt_params;
-    all_pt_params = sparams.as_ptree();
-    all_pt_params.put_child("tumor", pparams.as_ptree());
-    all_pt_params.put_child("calcflow", bfparams.as_ptree());
-    all_pt_params.put_child("vessels", vessel_params.as_ptree());
-    all_pt_params.put_child("simple_o2", prezO2params.as_ptree());
-    //all_pt_params.put_child("adaption", adaption_params.as_ptree());
-    cout.rdbuf(my::log().rdbuf());
-    {
-    //boost::optional<ptree> read_params = pt_params;
-    //boost::optional<ptree> read_params = HandleSimulationProgramArguments(all_pt_params, argc, argv);
-    //if (!read_params) 
-    //  return 0;
-    /** get the read params*/
-    ptree pt_params = convertInfoStr(param_info_str, all_pt_params);
-    BulkTissueWithoutVessels::SimulationParameters::update_ptree(all_pt_params, pt_params);
-    
-    all_pt_params.put<Int3>("lattice_size", Int3(200,1,1));
-    sparams.assign(all_pt_params);
-    //boost::property_tree::update(params, BulkTissueWithoutVessels::Params().as_ptree());
-    
-    all_pt_params.put_child("tumor", NewBulkTissueModel::Params().as_ptree());
-    { 
-  #ifdef DEBUG
-      cout << "read params in main are: ";
-      boost::property_tree::write_info(cout, all_pt_params);
-      cout << endl;
-  #endif
-    }
+  // construct default parameters
+  BulkTissueWithoutVessels::SimulationParameters sparams;
+  NewBulkTissueModel::Params pparams;
+  BloodFlowParameters bfparams;
+  VesselModel1::Params vessel_params;
+  O2Model::SimpleO2Params prezO2params;
+  //Adaption::Parameters adaption_params;
+  
+  ptree all_pt_params;
+  all_pt_params = sparams.as_ptree();
+  all_pt_params.put_child("tumor", pparams.as_ptree());
+  all_pt_params.put_child("calcflow", bfparams.as_ptree());
+  all_pt_params.put_child("vessels", vessel_params.as_ptree());
+  all_pt_params.put_child("simple_o2", prezO2params.as_ptree());
+  //all_pt_params.put_child("adaption", adaption_params.as_ptree());
+  cout.rdbuf(my::log().rdbuf());
+  {
+  //boost::optional<ptree> read_params = pt_params;
+  //boost::optional<ptree> read_params = HandleSimulationProgramArguments(all_pt_params, argc, argv);
+  //if (!read_params) 
+  //  return 0;
+  /** get the read params*/
+  ptree pt_params = convertInfoStr(param_info_str, all_pt_params);
+  BulkTissueWithoutVessels::SimulationParameters::update_ptree(all_pt_params, pt_params);
+  
+  all_pt_params.put<Int3>("lattice_size", Int3(200,1,1));
+  sparams.assign(all_pt_params);
+  //boost::property_tree::update(params, BulkTissueWithoutVessels::Params().as_ptree());
+  
+  all_pt_params.put_child("tumor", NewBulkTissueModel::Params().as_ptree());
+  { 
+#ifdef DEBUG
+    cout << "read params in main are: ";
+    boost::property_tree::write_info(cout, all_pt_params);
+    cout << endl;
+#endif
+  }
 
-    }//end cout.buffer
+  }//end cout.buffer
   /* start */
+  try
+  {
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
     BulkTissueWithoutVessels::run(all_pt_params);
+  }
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
 }
 void export_bulktissue_no_vessels()
 {
@@ -349,7 +385,26 @@ void run_bulktissue_with_vessels(const py::str &param_info_str)
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
    
   BulkTissue::NewTumorSim theBulkTissueSim;
-  theBulkTissueSim.run(pt_params);
+  try{
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
+    theBulkTissueSim.run(pt_params);
+  }
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
   //return 0;
 }
 
@@ -370,16 +425,15 @@ BOOST_PYTHON_MODULE(libtumors_)
 #if BOOST_VERSION>106300
   np::initialize();
 #endif
-#ifdef mwOMP
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
-  if (my::MultiprocessingInitializer_exists())
-  {
-  }
-  else
-  {
-    my::initMultithreading(0, NULL, 1);
-  }
-#endif
+//HACK2018
+  //   if (my::MultiprocessingInitializer_exists())
+//   {
+//   }
+//   else
+//   {
+//     my::initMultithreading(0, NULL, 1);
+//   }
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   Tumors::export_faketum();
   Tumors::export_bulktissue_no_vessels();

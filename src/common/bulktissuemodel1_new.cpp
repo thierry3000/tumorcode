@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <Sacado_Fad_SFad.hpp>
 
-
+#include <omp.h>
 
 
 
@@ -228,7 +228,10 @@ void Model::init(const ContinuumGrid &grid_, const DomainDecomposition &mtboxes_
   obtain_oxygen_conc = obtain_oxygen_conc_;
   obtain_vessel_volume = obtain_vessel_volume_;
   
-  cout << format("going to use a mt grid subdivision with %i boxes and %i threads") % mtboxes->size() % my::GetNumThreads() << endl;
+  //HACK2018
+  //cout << format("going to use a mt grid subdivision with %i boxes and %i threads") % mtboxes->size() % my::GetNumThreads() << endl;
+  //omp_set_num_threads(mtboxes->size());
+  cout << format("going to use a mt grid subdivision with %i boxes and %i threads") % mtboxes->size() % omp_get_max_threads() << endl;
   
   pt_params = pt_params_;
   params.assign(pt_params);
@@ -333,7 +336,7 @@ void Model::notify_auxdata_change()
   
   #pragma omp parallel
   {
-    Random rnd(params.random_seed * (my::OmpGetCurrentThread()+1)); // might need it
+    Random rnd(params.random_seed * (omp_get_thread_num()+1));
     Array3df buffer(ExtendForDim(mtboxes->getBoxWithLargestVolume(), grid->dim, 1));
     Array3df vessel_volume_field;
     
@@ -1080,41 +1083,41 @@ and for
  * @param ls level set function
  * @param necro fraction of necrotic cells?
  */
-void Model::writeH5(h5cpp::Group g, State &state, double t, h5cpp::Group &ld_group) const
+void Model::writeH5(H5::Group &g, State &state, double t, H5::Group &ld_group) const
 {
   const OutState &ost = getOutState(state, OutState::ALL);
-  g.attrs().set("TYPE", "BulkTissueFormat1");
+  writeAttrToH5(g, string("TYPE"), string("BulkTissueFormat1"));
+  //g.attrs().set("TYPE", "BulkTissueFormat1");
   const BBox3 cellrange = grid->ld.Box();
-  WriteScalarField(g, "conc", ost.phi_cells[cellrange], grid->ld, ld_group);
-  WriteScalarField(g, "ptc", ost.theta[cellrange], grid->ld, ld_group);
-  WriteScalarField(g, "press", ost.pressure[cellrange], grid->ld, ld_group);
-  WriteScalarField(g, "sources", ost.sources[cellrange], grid->ld, ld_group);
+  WriteScalarField(g, string("conc"), ost.phi_cells[cellrange], grid->ld, ld_group);
+  WriteScalarField(g, string("ptc"), ost.theta[cellrange], grid->ld, ld_group);
+  WriteScalarField(g, string("press"), ost.pressure[cellrange], grid->ld, ld_group);
+  WriteScalarField(g, string("sources"), ost.sources[cellrange], grid->ld, ld_group);
   if (pt_params.get<bool>("write_face_velocities"))
   {
     for (int i=0; i<grid->dim; ++i)
     {
-      h5cpp::Dataset ds = WriteArray3D(g, str(format("vel_%i") % i), ost.velocities[i][grid->ir.faces[i]]);
+      H5::DataSet ds = WriteArray3D(g, str(format("vel_%i") % i), ost.velocities[i][grid->ir.faces[i]]);
     }
   }
   if (pt_params.get<bool>("write_surface_tension_force", false))
   {
-    WriteAveragedFaceVariableField(g, "stf", grid->dim, ost.surface_tension_force.data(), grid->ld, ld_group);
+    WriteAveragedFaceVariableField(g, string("stf"), grid->dim, ost.surface_tension_force.data(), grid->ld, ld_group);
   }
   if (pt_params.get<bool>("write_levelset_function"))
-    WriteScalarField(g, "ls", state.ls.phi[grid->ir.cells], grid->ld, ld_group);
+    WriteScalarField(g, string("ls"), state.ls.phi[grid->ir.cells], grid->ld, ld_group);
   
-  WriteScalarField(g, "obstacle", other_volume[grid->ir.cells], grid->ld, ld_group);
-  WriteAveragedFaceVariableField(g, "vel", grid->dim, ost.velocities.data(), grid->ld, ld_group);
+  WriteScalarField(g, string("obstacle"), other_volume[grid->ir.cells], grid->ld, ld_group);
+  WriteAveragedFaceVariableField(g, string("vel"), grid->dim, ost.velocities.data(), grid->ld, ld_group);
   
   if (params.use_necrotic_regions)
   {
-    WriteScalarField(g, "necro", ost.phi_necro[grid->ir.cells], grid->ld, ld_group);
+    WriteScalarField(g, string("necro"), ost.phi_necro[grid->ir.cells], grid->ld, ld_group);
   }
-  h5cpp::Attributes a = g.attrs();
-  a.set("max_dt_diff", (double)max_dt_diff);
-  a.set("max_dt_src", (double)max_dt_src);
-  a.set("max_dt_vel", (double)max_dt_vel);
-  a.set("max_dt_stf", (double)max_dt_stf);
+  writeAttrToH5(g, string("max_dt_diff"), (double)max_dt_diff );
+  writeAttrToH5(g, string("max_dt_src"), (double)max_dt_src );
+  writeAttrToH5(g, string("max_dt_vel"), (double)max_dt_vel );
+  writeAttrToH5(g, string("max_dt_stf"), (double)max_dt_stf );
 }
 
 const OutState& Model::getOutState(const State &state_, int flags) const

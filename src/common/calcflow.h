@@ -27,6 +27,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "Epetra_CrsMatrix.h"
 #include <boost/unordered_map.hpp>
 
+#include <Epetra_ConfigDefs.h>
+#ifdef EPETRA_MPI
+  #include "mpi.h"
+#endif
+
 
 typedef double FlReal;
 class VesselList3d;
@@ -77,8 +82,6 @@ struct BloodFlowParameters
 ostream& operator<<(ostream &os, const BloodFlowParameters &bfparams);
 
 
-
-typedef double FlReal;
 FlReal CalcRelViscosity( FlReal r, FlReal h, Rheology rheology);
 //FlReal CalcRelViscosityByTable( FlReal r, FlReal h, Rheology rheology);
 FlReal CalcFahraeusEffect(double h, double r, Rheology rheology);

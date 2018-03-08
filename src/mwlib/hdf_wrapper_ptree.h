@@ -22,14 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/property_tree/ptree.hpp>
 
-#include "hdf_wrapper.h"
+#include <H5Cpp.h>
 
 enum HdfWritePtreeAs {
   HDF_WRITE_PTREE_AS_ATTRIBUTE,
   HDF_WRITE_PTREE_AS_DATASETS
 };
 
-void WriteHdfPtree(h5cpp::Group f, const boost::property_tree::ptree &pt, HdfWritePtreeAs storage_mode = HDF_WRITE_PTREE_AS_ATTRIBUTE);
+void WriteHdfPtree(H5::Group &f, const boost::property_tree::ptree &pt, HdfWritePtreeAs storage_mode = HDF_WRITE_PTREE_AS_ATTRIBUTE);
 
 
 

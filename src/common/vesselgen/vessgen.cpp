@@ -20,22 +20,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 
 #include "remodeler.h"
-#include "hdf_wrapper.h"
+
 #include "../calcflow.h"
 #include "../hdfio.h"
 #include <deque>
 
 
-namespace h5 = h5cpp;
-
 //void WriteHdfHistogram( h5::Group f, const string &id, const BasicHistogram1D<float> &h );
-void DoOutput(h5::File &file,
+
+/* forward declaration, defined in vessgen_support.cpp */
+void DoOutput(H5::H5File &file,
               const VesselList3d &vl,
               const Grower &grower,
               const boost::property_tree::atree &additional_data,
               const ptree &input_pt
              );
-h5cpp::Group DebugOutVessels(const Grower &grower, const string &name);
+H5::Group DebugOutVessels(const Grower &grower, const string &name);
 
 
 struct QualityAnalysis
@@ -170,16 +170,27 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
   else
     finished_countdown = 0;
   
-  //if (grower.hierarchy_level < grower.max_hierarchy_level) return true;
 
   if (finished_countdown > 0 && last_iter_data.get<float>("rBV")>last_saved_quality && grower.hierarchy_level>=grower.max_hierarchy_level)
   {
     iter_data.put<my::Time>("real_start_time", real_start_time);
-    h5cpp::File file(outfilename+".h5", "w");
+    try{
+	// new way  H5F_ACC_RDWR
+       //H5::H5File *readInFile = new H5::H5File(fn, H5F_ACC_RDONLY );
+      //H5::H5File file(outfilename+".h5", H5F_ACC_RDWR);H5F_ACC_EXCL
+      
+      H5::H5File file = H5::H5File(outfilename + ".h5", H5F_ACC_TRUNC);
+      DoOutput(file, grower.get_vl(), grower, iter_data, input_pt);
+      file.close();
+    }
+    catch(H5::Exception e)
+    {
+      e.printError();
+    }
     //CalcFlow(grower.get_vl(),);
-    DoOutput(file, grower.get_vl(), grower, iter_data, input_pt);
+    
   }
-  
+  std::cout << "before return in callback" << std::endl;
   return finished_countdown < quality_buff_size;
 }
 
@@ -199,6 +210,7 @@ void VessGenApp::run(const ptree &input_pt_)
     
     Grower grower;
     grower.Run(input_pt, boost::bind(&VessGenApp::Callback, this, _1));
+    std::cout << "grower.Run finished!" << std::endl;
 }
 
 
@@ -222,7 +234,7 @@ ptree getDefaultParameters()
   pt.put("lattice_size", Int3(100, 100, 100));
   DOPT(lattice_spacing, 150.);
   DOPT(seed, 0);
-  DOPT(lattice_type, "fcc");
+  DOPT(lattice_type, "FCC");
   DOPT(o2.diffusion_range, 90.);
   DOPT(max_sprout_radius_artery, 5.);
   DOPT(max_sprout_radius_vein, 15.); // was 6 for both
@@ -260,6 +272,7 @@ void run(const ptree &parameters)
 {
   VessGenApp app;
   app.run(parameters);
+  std::cout << "VessGenApp.run finished " << std::endl;
 }
 
 }

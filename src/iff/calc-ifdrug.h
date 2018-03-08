@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "calc-ifflow.h"
 #include "convection_diffusion_solver.h"
+#include <hdfio.h>
 
 #define USE_IFDRUGSIM
 #ifdef USE_IFDRUGSIM
@@ -32,7 +33,7 @@ namespace IfDrug
 struct Params
 {
   Params();
-  void WriteH5(h5cpp::Group g) const;
+  void WriteH5(H5::Group g) const;
   void assign(const ptree &pt);
   ptree as_ptree() const;
 
@@ -185,7 +186,7 @@ class Calculator
     
     Steppers::StepControl doStep(State &state, const Steppers::StepControl &ctrl);
 
-    void writeH5(h5cpp::File f, h5cpp::Group g, const State &state, double t, h5cpp::Group ld_group) const;
+    void writeH5(H5::H5File f, H5::Group g, const State &state, double t, H5::Group ld_group) const;
 
     enum {
       FLAG_UPTAKE = 1<<0,

@@ -189,10 +189,10 @@ struct Model
     AddAdvection<float>(grid.Box(), conc, velocity_fields.data(), ndims, grid.Scale(), std::min(max_dt, ctrl.dt), slope, params);
   }
 
-  void writeH5(h5cpp::File f, h5cpp::Group g, State &conc, double t, int out_num)
+  void writeH5(H5::H5File f, H5::Group g, State &conc, double t, int out_num)
   {
-    h5cpp::Group ld_group = RequireLatticeDataGroup(f.root(), "field_ld", grid);
-    h5cpp::Dataset ds = WriteScalarField(g, "conc", conc[grid.Box()], grid, ld_group);
+    H5::Group ld_group = RequireLatticeDataGroup(f, "field_ld", grid);
+    H5::DataSet ds = WriteScalarField(g, "conc", conc[grid.Box()], grid, ld_group);
   }
 
   void appendToImages(State &conc, std::vector<Image> &images)
@@ -393,15 +393,16 @@ public:
     #endif
   }
 
-  void writeH5(h5cpp::File f, h5cpp::Group g, State &state, double t, int out_num)
+  void writeH5(H5::H5File f, H5::Group g, State &state, double t, int out_num)
   {
-    h5cpp::Group ld_group = RequireLatticeDataGroup(f.root(), "field_ld", grid);
+    H5::Group ld_group = RequireLatticeDataGroup(f, "field_ld", grid);
     WriteScalarField(g, "ls", state.phi, grid, ld_group);
     Array3d<float> theta; theta.initFromBox(grid.Box());
     state.ToHeaviside(theta, grid.Box(), grid.Scale());
     WriteScalarField(g, "theta", theta, grid, ld_group);
     float mass = theta.valueStatistics().Sum() * std::pow(grid.Scale(), ndims);
-    g.attrs().set("mass", mass);
+    writeAttrToH5(g, string("mass"), mass);
+    //g.attrs().set("mass", mass);
   }
 
   void appendToImages(State &state, std::vector<Image> &images) const
@@ -461,10 +462,12 @@ void runLS(const py::str &param_info_str, const py::object &py_ld, const py::dic
   NewSteppers::run(doStep, doObserve, params);
 
   {
-    h5cpp::File f = observer.openH5File();
-    h5cpp::Group g = f.root().create_group("gradientmeasure");
-    h5cpp::create_dataset(g, "time", model.time);
-    h5cpp::create_dataset(g, "gradnorm", model.gradientnorm);
+    H5::H5File f = observer.openH5File();
+    H5::Group g = f.createGroup("gradientmeasure");
+    writeDataSetToGroup(g, string("time"), model.time);
+    //H5::createDataset(g, "time", model.time);
+    //h5cpp::create_dataset(g, "gradnorm", model.gradientnorm);
+    writeDataSetToGroup(g, string("gradientmeasure"), model.gradientnorm);
   }
 }
 
@@ -703,7 +706,7 @@ static  const char* method_name[] = {
 };
 
 
-void run(h5cpp::Group g, const ptree &params, int id, double lambda)
+void run(H5::Group g, const ptree &params, int id, double lambda)
 {
   double y0 = 1.;
 
@@ -714,9 +717,12 @@ void run(h5cpp::Group g, const ptree &params, int id, double lambda)
   const int method = params.get<int>("method");
   const double dt = params.get<double>("out_intervall");
 
-  observer.g = g = g.require_group(str(format("study%02i") % id));
-  g.attrs().set("method", method_name[method]);
-  g.attrs().set("dt", dt);
+  //observer.g = g = g.require_group(str(format("study%02i") % id));
+  observer.g = g = g.openGroup(str(format("study%02i") % id));
+  writeAttrToH5(g, string("method"), string(method_name[method]));
+  writeAttrToH5(g, string("dt"), dt);
+//   g.attrs().set("method", method_name[method]);
+//   g.attrs().set("dt", dt);
 
   std::string name;
   switch(method)
@@ -767,10 +773,10 @@ void runSimpleSteppersTest(const std::string &fn_out)
   double out_intervall[N_INTERVALLS] = { 0.01, 0.05, 0.1, 0.5, 1., 5. , 10., 15. };
   double lambda = -1./2;
 
-  h5cpp::File f(fn_out.c_str(), "w");
+  H5::H5File f(fn_out.c_str(), H5F_ACC_RDWR);
 
   { // store exact solution
-    h5cpp::Group g = f.root().create_group("exact");
+    H5::Group g = f.createGroup("exact");
     double t = 0., dt = 0.1;
     DynArray<double> ax, ay;
     while (true)
@@ -781,10 +787,22 @@ void runSimpleSteppersTest(const std::string &fn_out)
       t += dt;
       if (t > tend + 0.5*dt) break;
     }
-    h5cpp::create_dataset(g, "x", ax);
-    h5cpp::create_dataset(g, "y", ay);
+    writeDataSetToGroup(g, string("x"), ax);
+    writeDataSetToGroup(g, string("y"), ay);
+//     h5cpp::create_dataset(g, "x", ax);
+//     h5cpp::create_dataset(g, "y", ay);
   }
-  f.root().attrs().set("lambda", lambda);
+  H5::Group root;
+  try
+  {
+    root = f.openGroup("/");
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
+  writeAttrToH5(root, string("lambda"), lambda);
+  //f.root().attrs().set("lambda", lambda);
 
 #if 1
   int id = 0;
@@ -794,7 +812,7 @@ void runSimpleSteppersTest(const std::string &fn_out)
     {
       p.put("method", j);
       p.put("out_intervall", out_intervall[i]);
-      run(f.root(), p, id++, lambda);
+      run(f.openGroup("/"), p, id++, lambda);
     }
   }
 #else
@@ -1081,28 +1099,37 @@ public:
     #endif
   }
 
-  void writeH5(h5cpp::File f, h5cpp::Group g, const State &state, double t, int out_num)
+  void writeH5(H5::H5File f, H5::Group g, const State &state, double t, int out_num)
   {
     auto& levelset  = state.ls;
     auto& rho       = state.rho;
     
-    h5cpp::Group ld_group = RequireLatticeDataGroup(f.root(), "field_ld", grid.ld);
+    //h5cpp::Group ld_group = RequireLatticeDataGroup(f.root(), "field_ld", grid.ld);
+    H5::Group ld_group = RequireLatticeDataGroup(f, "field_ld", grid.ld);
     WriteScalarField(g, "ls", levelset.phi, grid.ld, ld_group);
     Array3d<float> theta; theta.initFromBox(grid.ld.Box());
     levelset.ToHeaviside(theta, grid.ld.Box(), grid.ld.Scale());
-    g.attrs().set("area", theta.valueStatistics().Sum()*std::pow(grid.ld.Scale(), grid.dim));
+    writeAttrToH5(g, string("area"),  theta.valueStatistics().Sum()*std::pow(grid.ld.Scale(), grid.dim));
+    //g.attrs().set("area", theta.valueStatistics().Sum()*std::pow(grid.ld.Scale(), grid.dim));
     theta *= rho;
     my::Averaged<double> stats = theta.valueStatistics();
-    g.attrs().set("mass", stats.Sum() * std::pow(grid.ld.Scale(), grid.dim));
-    g.attrs().set("rho_min", stats.Min());
-    g.attrs().set("rho_max", stats.Max());
-    g.attrs().set("max_dt_diffusion", max_dt_diffusion);
-    g.attrs().set("max_dt_velocity", max_dt_velocity);
+//     g.attrs().set("mass", stats.Sum() * std::pow(grid.ld.Scale(), grid.dim));
+//     g.attrs().set("rho_min", stats.Min());
+//     g.attrs().set("rho_max", stats.Max());
+//     g.attrs().set("max_dt_diffusion", max_dt_diffusion);
+//     g.attrs().set("max_dt_velocity", max_dt_velocity);
+    
+    writeAttrToH5(g, string("mass"), stats.Sum() * std::pow(grid.ld.Scale(), grid.dim));
+    writeAttrToH5(g, string("rho_min"), stats.Min());
+    writeAttrToH5(g, string("rho_max"), stats.Max());
+    writeAttrToH5(g, string("max_dt_diffusion"),  max_dt_diffusion);
+    writeAttrToH5(g, string("max_dt_velocity"), max_dt_velocity);
+    
     WriteScalarField(g, "rho", rho, grid.ld, ld_group);
     for (int axis=0; axis<grid.dim; ++axis)
     {
       LatticeDataQuad3d ldface = CellLdToFaceLd(grid.ld, grid.dim, axis);
-      h5cpp::Group ldf_group = RequireLatticeDataGroup(f.root(), str(format("face_ld_%i") % axis), ldface);
+      H5::Group ldf_group = RequireLatticeDataGroup(f, str(format("face_ld_%i") % axis), ldface);
       WriteScalarField(g, str(format("vel_%i") % axis), velocity_fields[axis], ldface, ldf_group);
       WriteScalarField(g, str(format("force_%i") % axis), force_fields[axis], ldface, ldf_group);
     }
@@ -1146,7 +1173,10 @@ bool runSTF(const py::str &param_info_str, const py::object &py_ld, const py::di
   Py_BEGIN_ALLOW_THREADS
   NewSteppers::run(doStep, doObserve, params);
   Py_END_ALLOW_THREADS
-  observer.openH5File().root().attrs().set("hard_fail", model.fail_flag);
+  
+  H5::Group root = observer.openH5File().openGroup("/");
+  writeAttrToH5(root, string("hard_fail"), model.fail_flag);
+  //observer.openH5File().root().attrs().set("hard_fail", model.fail_flag);
   return !model.fail_flag;
 }
 

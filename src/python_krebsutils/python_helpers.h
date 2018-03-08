@@ -21,9 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define PYTHON_HELPERS_H
 
 
-
+#include <boost/version.hpp>
 #include <boost/python.hpp>
 #include <boost/python/tuple.hpp>
+
+#include <H5Cpp.h>
 #if BOOST_VERSION>106300
   #include <boost/python/numpy.hpp>
 #else
@@ -34,9 +36,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <fenv.h>
 
 #include "mwlib/helpers-vec.h"
-#include "hdf_wrapper.h"
 #include "mwlib/math_ext.h"
 #include "mwlib/ptree_ext.h"
+
+#include <iostream> // std::cerr
 
 namespace py = boost::python;
 namespace np = boost::python::numpy;//either defined by numpycpp-> welter or boost
@@ -229,7 +232,7 @@ static void _CheckArray3(const py::object &obj, int dim1, int dim2, int dim3, co
  * solved:
  * this was due to extraction of 32bit int as type, now size_t is used
  */
-h5cpp::Group PythonToCppGroup(const py::object &op_);
+//h5cpp::Group PythonToCppGroup(const py::object &op_);
 
 #include "mwlib/field.h"
 

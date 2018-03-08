@@ -32,6 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 #include "common/vesselmodel1.h"
 #include "common/growthfactor_model.h"
+#include "common/hdfio.h"
 
 #include "mwlib/log.h"
 
@@ -40,7 +41,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "trilinos_linsys_construction.h"
 
-#define debugSnowden
+#ifdef MILOTTI_MTS
+#define ANN
+  #ifdef ANN
+    #include <ANN/ANN.h>
+  #endif
+  #include <vbl.h>
+#endif
+
+/** from milotti
+ */
 
 
 
@@ -55,7 +65,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef W_timing
   #include <chrono>
 #endif
-namespace h5 = h5cpp;
+//namespace h5 = h5cpp;
 
 namespace FakeTumMTS{
   
@@ -161,7 +171,7 @@ struct Timing
 struct FakeTumorSimMTS : public boost::noncopyable
 {
   Timing currentTiming;
-  std::auto_ptr<VesselList3d> vl;
+  std::unique_ptr<VesselList3d> vl;
   // ANN stuff
 //   ANNkd_tree* kd_tree_of_vl;        // ann kd tree structurs
   const int ANN_dim = 3;            // space dimension
@@ -241,11 +251,12 @@ struct FakeTumorSimMTS : public boost::noncopyable
   std::string writeOutput();
   
   //milotti mts
-  //vbl::CellsSystem *currentCellsSystem;
+  vbl::CellsSystem *tumorcode_pointer_to_currentCellsSystem;
   void doMilottiStep();
+  void initMilotti();
   //void update_milotti_vessels(vbl::CellsSystem &currentCellSys, VesselList3d &vl, DetailedPO2::VesselPO2Storage &po2Store);
   //void WriteCellsSystemHDF(h5cpp::Group &out_cell_group);
-  void WriteCellsSystemHDF_with_nearest_vessel_index(h5cpp::Group &out_cell_group);
+  void WriteCellsSystemHDF_with_nearest_vessel_index(H5::Group &out_cell_group);
   //void fillKdTreeFromVl();
   void findNearestVessel( DetailedPO2::VesselPO2Storage &po2Store);
   float estimateTumorRadiusFromCells();

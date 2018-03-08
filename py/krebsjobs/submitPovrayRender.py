@@ -34,7 +34,7 @@ from os.path import basename, splitext, join
 import sys, os
 import posixpath
 import h5py
-import h5files
+#import h5files
 import numpy
 import krebsutils
 from mystruct import Struct
@@ -66,8 +66,8 @@ def estimateRuntimeAndMemory(g):
 
 
 class RenderJob(object):
-  def __init__(self, f, group_name, postfix, params):
-    self.fn = f.filename
+  def __init__(self, filename, group_name, postfix, params):
+    self.fn = filename
     self.postfix = postfix
     self.group_name = group_name
     if identifycluster.getname() == 'snowden':
@@ -95,7 +95,7 @@ class RenderJob(object):
 
   def render(self):
     """ run povray. This should be called on the computing node. """
-    with h5files.open(self.fn,'a') as f:
+    with h5py.File(self.fn,'r') as f:
       if 'po2vessels' in f[self.group_name]:
         from krebs.povrayRenderOxygenDetailed import renderScene
         renderScene(f[self.group_name],
@@ -207,13 +207,13 @@ if __name__ == '__main__':
   jobs = []
   a = jobs.append
   for fn in filenames:
-    with h5files.open(fn,'r') as f:
+    with h5py.File(fn,'r') as f:
       paths = myutils.walkh5(f, pattern)
       if goodArguments.plot_auc:
         path = myutils.walkh5(f, 'out0000')
-        j = RenderJob(f, path[0], postfix, goodArguments)
+        j = RenderJob(f.filename, path[0], postfix, goodArguments)
       for path in paths:
-        j = RenderJob(f, path, postfix, goodArguments)
+        j = RenderJob(f.filename, path, postfix, goodArguments)
         a(j)
 
   for job in jobs:

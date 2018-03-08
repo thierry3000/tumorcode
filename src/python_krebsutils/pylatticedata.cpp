@@ -21,17 +21,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "pylatticedata.h"
 #include "lattice-data-polymorphic.h"
 
-class PyLd
+class PyLd : public PyObject
 {
   typedef polymorphic_latticedata::LatticeData LatticeData;
-  std::auto_ptr<LatticeData> ld;
+  std::unique_ptr<LatticeData> ld;
   PyLd() {}
 public:
   const LatticeData& get() const { return *ld; }
   
   PyLd(const std::string &type, const py::object &bbox, float scale)
   {
-    ld = LatticeData::Make(type.c_str(), BBoxFromPy<int,3>(bbox), scale);
+    ld = polymorphic_latticedata::Make_ld(type.c_str(), BBoxFromPy<int,3>(bbox), scale);
+  }
+  
+  PyLd(const std::string &type, const BBox3 &bbox, float scale)
+  {
+    ld = polymorphic_latticedata::Make_ld(type.c_str(), bbox, scale);
   }
 
   PyLd(const PyLd &other)
@@ -39,12 +44,19 @@ public:
     ld = other.ld->Clone();
   }
 
-  virtual ~PyLd() {}
+  //virtual ~PyLd() {}
+//   ~PyLd() 
+//   {
+//     auto manual_ptr = ld.release();
+//     delete manual_ptr;
+//   }
 
   // takes ownership of the pointer
-  PyLd(LatticeData *ld_) : ld(ld_)
-  {
-  }
+//   PyLd(std::auto_ptr<LatticeData> ld_)
+//   {
+//     ld = ld_.get();
+//     ld_.release();
+//   }
   
   float Scale() const { return ld->Scale(); }
 
@@ -62,8 +74,8 @@ public:
     ld->SetOriginPosition(pos);
   }
   
-  py::tuple GetOriginPosition() {
-    return py::make_tuple(ld->GetOriginPosition()[0],ld->GetOriginPosition()[1],ld->GetOriginPosition()[2]);
+  Float3 GetOriginPosition() {
+    return ld->GetOriginPosition();
   }
   
   py::object GetWorldBox() const {
@@ -113,63 +125,6 @@ public:
   }
 };
 
-PyLd* read_lattice_data_from_hdf_by_filename(const string fn, const string path)
-{
-  //h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
-  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
-  h5cpp::Group g_ld = h5cpp::Group(readInFile->root().open_group(path));
-  std::printf("if you read this, lattice data is in c++\n");
-  typedef polymorphic_latticedata::LatticeData LD;
-//  return new PyLd(new LD(ld));
-  std::auto_ptr<LD> ldp(LD::ReadHdf(g_ld));
-// 
-//   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD1;
-//   typedef polymorphic_latticedata::Derived<LatticeDataFCC> LD2;
-    return new PyLd(ldp.release()); //this is for std::auto_ptr
-//  return new PyLd(ldp.get());
-//  return new PyLd(ldp.get());
-}
-
-//pointer issue changed to boost::shared_ptr
-PyLd* read_lattice_data_from_hdf(const py::object &ld_grp_obj)
-{
-  h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
-  std::printf("if you read this, lattice data is in c++\n");
-  typedef polymorphic_latticedata::LatticeData LD;
-//  return new PyLd(new LD(ld));
-  std::auto_ptr<LD> ldp(LD::ReadHdf(g_ld));
-// 
-//   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD1;
-//   typedef polymorphic_latticedata::Derived<LatticeDataFCC> LD2;
-    return new PyLd(ldp.release()); //this is for std::auto_ptr
-//  return new PyLd(ldp.get());
-//  return new PyLd(ldp.get());
-}
-
-
-void write_lattice_data_to_hdf(py::object py_h5grp, const std::string &name, const PyLd *cpp_py_ld)
-{
-  h5cpp::Group g = PythonToCppGroup(py_h5grp);
-  h5cpp::Group g_ld = g.create_group(name);
-  cpp_py_ld->get().WriteHdf(g_ld);
-}
-
-
-void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float safety_spacing, LatticeDataQuad3d &ld);
-
-PyLd* PySetupFieldLattice(const py::object &py_wbbox, int dim, float spacing, float safety_spacing)
-{
-  FloatBBox3 wbbox = BBoxFromPy<float, 3>(py_wbbox);  
-  LatticeDataQuad3d ld;
-  SetupFieldLattice(wbbox, dim, spacing, safety_spacing, ld);
-  typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD;
-  return new PyLd(new LD(ld));
-  //serialization issues here!!!
-  //LD alattice = new LD(ld);
-  //return new PyLd(alattice);
-}
-
-
 namespace mw_py_impl
 {
 
@@ -179,9 +134,9 @@ struct LdToPy
 {
   static PyObject* convert(const LatticeDataType& ld)
   {
-    PyLd pyld(new polymorphic_latticedata::Derived<LatticeDataType>(ld));
-    py::object r(pyld);
-    return py::incref(r.ptr());
+//     PyLd pyld(new polymorphic_latticedata::Derived<LatticeDataType>(ld));
+//     py::object r(pyld);
+//     return py::incref(r.ptr());
   }
   
   static void Register()
@@ -224,7 +179,119 @@ struct LdFromPy
       data->convertible = storage;
     }
 };
+}
 
+PyLd* read_lattice_data_from_hdf_by_filename(const string fn, const string path)
+{
+  //h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
+  H5::H5File readInFile;
+  H5::Group g_ld;
+  try{
+    readInFile = H5::H5File(fn, H5F_ACC_RDONLY);
+    //h5cpp::Group g_ld = h5cpp::Group(readInFile->root().open_group(path));
+    g_ld = readInFile.openGroup(path);
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
+  string type;
+  readAttrFromH5(g_ld, "TYPE", type);
+  float scale;
+  readAttrFromH5(g_ld, "SCALE", scale);
+  Int6 bb;
+  readAttrFromH5(g_ld, "BOX", bb);
+  std::printf("if you read this, lattice data in c++ is %s\n", type.c_str());
+  typedef polymorphic_latticedata::LatticeData LD;
+  typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD_Derived;
+//  return new PyLd(new LD(ld));
+  //std::auto_ptr<LD> ldp = LD::ReadHdf(g_ld);
+//
+  readInFile.close();
+  //mw_py_impl::LdToPy<LatticeDataFCC> myconveter;
+  //myconveter.convert(ldp.release());
+  BBox3 bbox(bb[0],bb[2],bb[4],bb[1],bb[3],bb[5]);
+//   bbox[0]=bb[0];
+//   bbox[1]=bb[3];
+//   bbox[2]=bb[1];
+//   bbox[3]=bb[4];
+//   bbox[4]=bb[2];
+//   bbox[5]=bb[5];
+  PyLd *pyld= new PyLd(type, bbox, scale);
+  //PyLd *pyld = new PyLd(type, bbox, scale);
+  //py::object r(pyld);
+  return pyld;
+  //ldp.reset();
+  //py::object reture(pyld);
+  //py::incref(pyld);
+  //return pyld;
+//   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD1;
+//   typedef polymorphic_latticedata::Derived<LatticeDataFCC> LD2;
+  //std::auto_ptr<PyLd> myp = std::auto_ptr<PyLd>(new PyLd(ldp.release()));
+//   PyLd *myp = new PyLd(ldp.release());
+//   ldp.reset();
+//   return LdToPy.con; //this is for std::auto_ptr
+//  return PyLd(ldp.get());
+//  return new PyLd(ldp.get());
+}
+
+//pointer issue changed to boost::shared_ptr
+#if 0 //depricate since H5Cpp
+PyLd* read_lattice_data_from_hdf(const py::object &ld_grp_obj)
+{
+  h5cpp::Group g_ld = PythonToCppGroup(ld_grp_obj);
+  std::printf("if you read this, lattice data is in c++\n");
+  typedef polymorphic_latticedata::LatticeData LD;
+//  return new PyLd(new LD(ld));
+  std::auto_ptr<LD> ldp(LD::ReadHdf(g_ld));
+// 
+//   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD1;
+//   typedef polymorphic_latticedata::Derived<LatticeDataFCC> LD2;
+    return new PyLd(ldp.release()); //this is for std::auto_ptr
+//  return new PyLd(ldp.get());
+//  return new PyLd(ldp.get());
+}
+#endif
+
+#if 0 //depricated since H5Cpp
+void write_lattice_data_to_hdf(py::object py_h5grp, const std::string &name, const PyLd *cpp_py_ld)
+{
+  h5cpp::Group g = PythonToCppGroup(py_h5grp);
+  h5cpp::Group g_ld = g.create_group(name);
+  cpp_py_ld->get().WriteHdf(g_ld);
+}
+#endif
+
+void write_lattice_data_to_hdf_by_filename(const string fn, const string path, const PyLd *cpp_py_ld)
+{
+  H5::H5File *writeToFile = new H5::H5File(fn, H5F_ACC_RDWR);
+  H5::Group g = writeToFile->openGroup(path);
+  //cpp_py_ld->get().WriteHdf(g);
+  cpp_py_ld->get().Lattice2Hdf(g);
+  //h5cpp::Group g = PythonToCppGroup(py_h5grp);
+  //h5cpp::Group g_ld = g.create_group(name);
+  //cpp_py_ld->get().WriteHdf(g_ld);
+}
+
+void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float safety_spacing, LatticeDataQuad3d &ld);
+
+PyLd* PySetupFieldLattice(const py::object &py_wbbox, int dim, float spacing, float safety_spacing)
+{
+  FloatBBox3 wbbox = BBoxFromPy<float, 3>(py_wbbox);  
+  LatticeDataQuad3d ld;
+  SetupFieldLattice(wbbox, dim, spacing, safety_spacing, ld);
+  typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD;
+  //return new PyLd(new LD(ld));
+  //return new PyLd(new LD(ld));
+  //serialization issues here!!!
+  //LD alattice = new LD(ld);
+  //return new PyLd(alattice);
+}
+
+
+
+namespace mw_py_impl
+{
 
 
 void exportLatticeData()
@@ -250,11 +317,13 @@ void exportLatticeData()
     .def("__str__", &PyLd::toString)
     ;
 
-  py::def("read_lattice_data_from_hdf", read_lattice_data_from_hdf,
-          py::return_value_policy<py::manage_new_object>());
+//   py::def("read_lattice_data_from_hdf", read_lattice_data_from_hdf,
+//           py::return_value_policy<py::manage_new_object>());
   py::def("read_lattice_data_from_hdf_by_filename", read_lattice_data_from_hdf_by_filename,
           py::return_value_policy<py::manage_new_object>());
-  py::def("write_lattice_data_to_hdf", write_lattice_data_to_hdf);
+//      py::def("read_lattice_data_from_hdf_by_filename", read_lattice_data_from_hdf_by_filename);
+//   py::def("write_lattice_data_to_hdf", write_lattice_data_to_hdf);
+  py::def("write_lattice_data_to_hdf_by_filename", write_lattice_data_to_hdf_by_filename);
   py::def("SetupFieldLattice", PySetupFieldLattice, py::return_value_policy<py::manage_new_object>());
   
   //serialize fuck

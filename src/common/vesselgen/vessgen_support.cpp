@@ -23,19 +23,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/foreach.hpp>
 #include <boost/property_tree/info_parser.hpp>
+#include <boost/optional.hpp>
 
-#include "hdf_wrapper.h"
 #include "../hdfio.h"
 #include "remodeler.h"
 #include "mwlib/helpers-vec.h"
 #include "mwlib/any_tree.h"
 
-namespace h5 = h5cpp;
 using boost::str;
 using boost::format;
 
 
-void WriteHdfHistogram( h5::Group f, const string &id, const BasicHistogram1D<float> &h )
+void WriteHdfHistogram( H5::Group g, const string &id, const BasicHistogram1D<float> &h )
 {
   Array3d<float> a;
   bool ue = h.UseError();
@@ -52,36 +51,62 @@ void WriteHdfHistogram( h5::Group f, const string &id, const BasicHistogram1D<fl
       a(2,i,0) = sqrt( std::max<float>( 0, f ) );
     }
   }
-  h5::Dataset ds = WriteArray3D(f,id,a);
-  h5::Attributes attrs = ds.attrs();
-  attrs.set("TITLE",h.name);
-  attrs.set("BUCKED_SIZE", h.info.size_bucket);
-  attrs.set("FIELD_0_NAME",h.info.name);
-  attrs.set("FIELD_1_NAME",h.name);
-  if(ue) {
-    attrs.set("FIELD_2_NAME","rmse");
+  H5::DataSet ds = WriteArray3D(g,id,a);
+  //h5::Dataset ds = WriteArray3D(f,id,a);
+  writeAttrToH5(ds, string("TITLE"), h.name);
+  //writeAttrToH5<decltype(h.info.size_bucket)>(ds, "BUCKED_SIZE", h.info.size_bucket );
+  writeAttrToH5(ds, "BUCKED_SIZE", h.info.size_bucket );
+  writeAttrToH5(ds, "FIELD_0_NAME", h.info.name);
+  writeAttrToH5(ds,"FIELD_1_NAME", h.name );
+  if( ue)
+  {
+    writeAttrToH5(ds,"FIELD_2_NAME",string("rmse") );
   }
+  //h5::Attributes attrs = ds.attrs();
+//   attrs.set("TITLE",h.name);
+//   attrs.set("BUCKED_SIZE", h.info.size_bucket);
+//   attrs.set("FIELD_0_NAME",h.info.name);
+//   attrs.set("FIELD_1_NAME",h.name);
+//   if(ue) {
+//     attrs.set("FIELD_2_NAME","rmse");
+//   }
 }
 
 
-h5cpp::Group DebugOutVessels(const Grower &grower, const string &name)
+H5::Group DebugOutVessels(const Grower &grower, const string &name)
 {
   const VesselList3d &vl = grower.get_vl();
   static int number = 0;
-  h5::File f("dbgvessels.h5", number==0 ? "w" : "a");
-  h5::Group grp = f.root().create_group(str(format("%s") % name));
-  h5cpp::Group vesselgrp = grp.create_group("vessels");
+  H5::H5File f;
+  if ( number==0)
+  {
+    f = H5::H5File("dbgvessels.h5", H5F_ACC_TRUNC);
+  }
+  else
+  {
+    f = H5::H5File("dbgvessels.h5", H5F_ACC_RDWR);
+  }
+  //h5::File f("dbgvessels.h5", number==0 ? "w" : "a");
+  H5::Group grp = f.createGroup(str(format("%s") % name));
+  H5::Group vesselgrp = grp.createGroup("vessels");
+  H5::Group h5_nodes = vesselgrp.openGroup("nodes");
   //since world coordinates this is also needed for proper hdf output
-  vesselgrp.attrs().set<std::string>("CLASS","GRAPH");
+  //vesselgrp.attrs().set<std::string>("CLASS","GRAPH");
+  writeAttrToH5(vesselgrp, string("CLASS"), string("GRAPH"));
   WriteVesselList3d(vl, vesselgrp, make_ptree("w_all",false)("w_pressure",true)("w_flow",true));
 #if GFFIELD_ENABLE
   {
     DynArray<float> gf;
     grower.GetGfAtNodes(gf);
-    h5::create_dataset(vesselgrp.open_group("nodes"), "gf", gf);
+    //h5::create_dataset(vesselgrp.open_group("nodes"), "gf", gf);
+    
+    writeDataSetToGroup(h5_nodes, string("gf"), gf);
+    //h5::create_dataset(vesselgrp.open_group("nodes"), "gf", gf);
   }
-  h5::Group field_ld_grp = grp.create_group("field_ld");
-  WriteHdfLd(field_ld_grp, grower.get_field_ld());
+  H5::Group field_ld_grp = grp.createGroup("field_ld");
+  //WriteHdfLd(field_ld_grp, grower.get_field_ld());
+  //grower.get_field_ld().Lattice2Hdf(field_ld_grp);
+  grower.get_field_ld().WriteHdfLd(field_ld_grp);
   WriteScalarField(grp, "gf", grower.GetGf(), grower.get_field_ld(), field_ld_grp);
 #endif
   {
@@ -91,12 +116,15 @@ h5cpp::Group DebugOutVessels(const Grower &grower, const string &name)
       tmp2[i] = vl.GetNode(i)->flags;
     }
     //h5::create_dataset(vesselgrp.open_group("nodes"), "nodeflags", tmp2);
+    writeDataSetToGroup(h5_nodes, string("nodeflags"), tmp2);
 #ifdef WRITE_REMODELING_ACTIONS    
     for (int i=0; i<vl.GetNCount(); ++i)
     {
       tmp2[i] = grower.last_remodeling_action(vl.GetNode(i));
     }
-    h5::create_dataset(vesselgrp.open_group("nodes"), "action", tmp2);
+    //h5::create_dataset(vesselgrp.open_group("nodes"), "action", tmp2);
+    //writeDataSetToGroup<DynArray<uchar>>(vesselgrp.openGroup("nodes"), string("action"), tmp2);
+    writeDataSetToGroup(h5_nodes, string("action"), tmp2);
 #endif
   }
   ++number;
@@ -104,7 +132,7 @@ h5cpp::Group DebugOutVessels(const Grower &grower, const string &name)
 }
 
 
-void DoOutput(h5::Group root,
+void DoOutput(H5::Group &root,
               const VesselList3d &vl,
               const TreeRootList &tree_roots)
 {
@@ -119,106 +147,172 @@ void DoOutput(h5::Group root,
   double arad,aflow,arootcnt,vrad,vflow,vrootcnt;
   MeasureRoot(vl,arad,aflow,arootcnt,vrad,vflow,vrootcnt);
 
-  cout << "ouput -> " << root.get_file().get_file_name() << ":" << root.get_name() << endl;
+  //cout << "ouput -> " << root.get_file().get_file_name() << ":" << root.get_name() << endl;
+  cout << "ouput -> " << root.getFileName() << ":" << getH5GroupName(root) << endl;
 
+  
+  //h5::Attributes a;
+  // vessels and stuff
+  try
   {
-    h5::Attributes a;
-    // vessels and stuff
-    h5::Group vesselgrp = root.create_group("vessels");
-    // since world coordinates are introduced this is needed for proper hdf output
-    vesselgrp.attrs().set<std::string>("CLASS","GRAPH");
+    H5::Group vesselgrp;
+    try
+    {
+      //if this is created for the first time!
+      vesselgrp = root.createGroup("vessels");
+      // since world coordinates are introduced this is needed for proper hdf output
+      writeAttrToH5(vesselgrp, string("CLASS"), string("GRAPH"));
+    }
+    catch(H5::Exception e)
+    {
+      e.dontPrint();
+      vesselgrp = root.openGroup("vessels");
+    }
+    //vesselgrp.attrs().set<std::string>("CLASS","GRAPH");
     WriteVesselList3d(vl, vesselgrp, make_ptree("w_all",false)("w_pressure",true)("w_flow",true));
     {
-//       DynArray<uchar> tmp2(vl.GetNCount());
-//       for (int i=0; i<vl.GetNCount(); ++i)
-//       {
-//         tmp2[i] = vl.GetNode(i)->flags;
-//       }
+      DynArray<uchar> tmp2(vl.GetNCount());
+      for (int i=0; i<vl.GetNCount(); ++i)
+      {
+	tmp2[i] = vl.GetNode(i)->flags;
+      }
 //       h5::create_dataset(root.open_group("vessels/nodes"), "nodeflags", tmp2);
+      H5::Group h5_nodes;
+      try{
+	h5_nodes = root.openGroup("vessels/nodes");
+      }
+      catch( H5::Exception e)
+      {
+	e.printError();
+	h5_nodes = root.createGroup("vessels/nodes");
+      }
+      writeDataSetToGroup(h5_nodes, "nodeflags", tmp2);
+      
       DynArray<int> tmp3(vl.GetECount());
       for (int i=0; i<vl.GetECount(); ++i)
       {
-        tmp3[i] = vl.GetEdge(i)->timeSprout;
+	tmp3[i] = vl.GetEdge(i)->timeSprout;
       }
-      h5::create_dataset(root.open_group("vessels/edges"), "level", tmp3);
+      H5::Group h5_edges;
+      try{
+	h5_edges = root.openGroup("vessels/edges");
+      }
+      catch( H5::Exception e)
+      {
+	e.printError();
+	h5_edges = root.createGroup("vessels/edges");
+      }
+      //h5::create_dataset(root.open_group("vessels/edges"), "level", tmp3);
+      writeDataSetToGroup(h5_edges, string("level"), tmp3);
     }
     {
       MemUsage memusage = GetMemoryUsage();
-      a = root.attrs();
-      a.set<uint64>("mem_vsize", memusage.vmem_peak);
-      a.set<uint64>("mem_rss", memusage.rss_peak);
+      writeAttrToH5(root, string("mem_vsize"),(int)memusage.vmem_peak );
+      writeAttrToH5(root, string("mem_rss"),(int)memusage.rss_peak );
+      //a = root.attrs();
+//       a.set<uint64>("mem_vsize", memusage.vmem_peak);
+//       a.set<uint64>("mem_rss", memusage.rss_peak);
     }
     // measurement
-    h5::Group g = root.create_group("data");
+    H5::Group g = root.createGroup("data");
     WriteHdfHistogram(g,"lengths_prob",plen);
     WriteHdfHistogram(g,"lengths_by_rad",hlenbyrad);
     WriteHdfHistogram(g,"radii_prob",hrad);
     WriteHdfHistogram(g,"num_branches_by_rad",hbranch);
-    a = g.attrs();
-    a.set("rBV",bloodVolume);
-    a.set("SITES_OCCUPIED",num_occ_sites);
-    a.set("SITES_TOTAL",num_sites);
-    a.set("MEAN_BRANCH_LENGTH",mlen.Avg());
-    a.set("MEAN_BRANCH_RADIUS",mrad.Avg());
-    a.set("ROOT_A_RADIUS",arad);
-    a.set("ROOT_A_FLOW",aflow);
-    a.set("ROOT_A_COUNT",arootcnt);
-    a.set("ROOT_V_RADIUS",vrad);
-    a.set("ROOT_V_FLOW",vflow);
-    a.set("ROOT_V_COUNT",vrootcnt);
+    writeAttrToH5(g, string("rBV"), bloodVolume);
+    writeAttrToH5(g, string("SITES_OCCUPIED"), num_occ_sites);
+    writeAttrToH5(g, string("SITES_TOTAL"), num_sites);
+    writeAttrToH5(g, string("MEAN_BRANCH_LENGTH"), mlen.Avg());
+    writeAttrToH5(g, string("MEAN_BRANCH_RADIUS"), mrad.Avg());
+    writeAttrToH5(g, string("ROOT_A_RADIUS"), arad);
+    writeAttrToH5(g, string("ROOT_A_FLOW"), aflow);
+    writeAttrToH5(g, string("ROOT_A_COUNT"), arootcnt);
+    writeAttrToH5(g, string("ROOT_V_RADIUS"), vrad);
+    writeAttrToH5(g, string("ROOT_V_FLOW"), vflow);
+    writeAttrToH5(g, string("ROOT_V_COUNT"), vrootcnt);
+    
+    
+//     a = g.attrs();
+//     a.set("rBV",bloodVolume);
+//     a.set("SITES_OCCUPIED",num_occ_sites);
+//     a.set("SITES_TOTAL",num_sites);
+//     a.set("MEAN_BRANCH_LENGTH",mlen.Avg());
+//     a.set("MEAN_BRANCH_RADIUS",mrad.Avg());
+//     a.set("ROOT_A_RADIUS",arad);
+//     a.set("ROOT_A_FLOW",aflow);
+//     a.set("ROOT_A_COUNT",arootcnt);
+//     a.set("ROOT_V_RADIUS",vrad);
+//     a.set("ROOT_V_FLOW",vflow);
+//     a.set("ROOT_V_COUNT",vrootcnt);
     // roots
     {
       int N = tree_roots.size();
-      DynArray<int> pos(N), len(N);
+      DynArray<int64> pos(N);
+      DynArray<int> len(N);
       DynArray<char> dir(N);
       DynArray<uchar> flags(N);
       auto it = tree_roots.begin();
       for (int i=0; i<N; ++i, ++it)
       {
-        const TreeRoot &e = it->second;
-        pos[i] = ld.LatticeToSite(e.p);
-        len[i] = e.len;
-        dir[i] = e.dir;
-        flags[i] = e.flags;
+	const TreeRoot &e = it->second;
+	pos[i] = ld.LatticeToSite(e.p);
+	len[i] = e.len;
+	dir[i] = e.dir;
+	flags[i] = e.flags;
       }
-      h5::Group gg = g.create_group("roots");
-      h5::create_dataset(gg, "lattice_pos", pos);
-      h5::create_dataset(gg, "flags", flags);
-      h5::create_dataset(gg, "len", len);
-      h5::create_dataset(gg, "dir", dir);
+      H5::Group gg = g.createGroup("roots");
+      writeDataSetToGroup(gg, string("lattice_pos"), pos);
+      writeDataSetToGroup(gg, string("flags"), flags);
+      writeDataSetToGroup(gg, string("len"), len);
+      writeDataSetToGroup(gg, string("dir"), dir);
+//       h5::create_dataset(gg, "lattice_pos", pos); int
+//       h5::create_dataset(gg, "flags", flags); uchar
+//       h5::create_dataset(gg, "len", len); int
+//       h5::create_dataset(gg, "dir", dir); char
     }
   }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
+  
 }
 
 
-void DoOutput(h5::File &file,
+void DoOutput(H5::H5File &file,
               const VesselList3d &vl,
               const Grower &grower,
               const boost::property_tree::atree &additional_data,
               const ptree &input_pt
              )
 {
+      std::cout << "DoOutput" << std::endl;
       const VesselList3d::LatticeData &ld = vl.Ld();
-
-      DoOutput(file.root(), vl, grower.get_tree_roots());
+      H5::Group root = file.openGroup("/");
+      
+      DoOutput(root, vl, grower.get_tree_roots());
 
       {
-        h5::Attributes a;
-        h5::Group root = file.root();
+        //h5::Attributes a;
+        
 #if GFFIELD_ENABLE
         {
           DynArray<float> tmp;
           grower.GetGfAtNodes(tmp);
-          h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
+          //h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
+          //h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
+          H5::Group h5_nodes= root.openGroup("vessels/nodes");
+          writeDataSetToGroup(h5_nodes, string("gf"), tmp);
           tmp.clear();
         }
 #endif
         {
-          a = root.attrs();
-          a.set<double>("real_time", (my::Time() - additional_data.get<my::Time>("real_start_time")).to_s());
+          //a = root.attrs();
+          writeAttrToH5(root, string("real_time"), (my::Time() - additional_data.get<my::Time>("real_start_time")).to_s() );
+          //a.set<double>("real_time", (my::Time() - additional_data.get<my::Time>("real_start_time")).to_s());
         }
         // measurement
-        h5::Group g = root.require_group("data");
+        H5::Group h5_data = root.createGroup("data");
         {
           const int n = additional_data.get<int>("num_iter");
           Array3d<float> t(Int3(3,n,1));
@@ -230,36 +324,82 @@ void DoOutput(h5::File &file,
             t(2,i,0) = vv.second.get<int>("sites");
             ++i;
           }
-          h5::Dataset ds = WriteArray3D(g,"rBV_by_iter",t);
-          a = ds.attrs();
-          a.set<string>("FIELD_0_NAME","iter");
-          a.set<string>("FIELD_1_NAME","rBV");
+          H5::DataSet ds = WriteArray3D(h5_data,string("rBV_by_iter"),t);
+          //a = ds.attrs();
+          writeAttrToH5(ds, string("FIELD_0_NAME"), string("iter"));
+          writeAttrToH5(ds, string("FIELD_1_NAME"), string("rBV"));
+//           a.set<string>("FIELD_0_NAME","iter");
+//           a.set<string>("FIELD_1_NAME","rBV");
         }
 
         // parameters
-        g = root.require_group("parameters");
+        //g = root.require_group("parameters");
+        
+        H5::Group h5_param = root.createGroup("parameters");
+        
+        ptree parameter_pt = input_pt;// removes definitions since we already got those
+        
+        
+        
+        //parameter_pt.erase("roots");
         //h5::Dataset::create_scalar(g, "SEED", input_pt.get<uint>("seed"));
         //h5::Dataset::create_scalar(g, "IN_FILENAME", input_pt.get<string>("input_fn", ""));
         //h5::Dataset::create_scalar(g, "MESSAGE", input_pt.get<string>("message",""));
         //h5::Dataset::create_scalar(g, "ENSEMBLE_INDEX", input_pt.get<int>("ensemble_index", 0));
-        g.attrs().set("SEED", input_pt.get<uint>("seed"));
-        g.attrs().set("IN_FILENAME", input_pt.get<string>("input_fn", ""));
-        g.attrs().set("MESSAGE", input_pt.get<string>("message",""));
-        g.attrs().set( "ENSEMBLE_INDEX", input_pt.get<int>("ensemble_index", 0));
-        ptree parameter_pt = input_pt;
-        parameter_pt.erase("seed"); // removes definitions since we already got those
-        parameter_pt.erase("input_fn");
-        parameter_pt.erase("message");
-        parameter_pt.erase("ensemble_index");
-        parameter_pt.erase("roots"); 
-        WriteHdfPtree(g, parameter_pt, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+        boost::optional<int> seed = input_pt.get_optional<int>("seed");
+        if(seed)
+        {
+          writeAttrToH5(h5_param, string("SEED"), seed.get());
+          parameter_pt.erase("seed"); 
+        }
+        boost::optional<string> in_filename = input_pt.get_optional<string>("input_fn");
+        if( in_filename)
+        {
+          writeAttrToH5(h5_param, string("IN_FILENAME"), in_filename.get());
+          parameter_pt.erase("input_fn");
+        }
+        else
+        {
+          writeAttrToH5(h5_param, string("IN_FILENAME"), string(""));
+        }
+        boost::optional<string> message = input_pt.get_optional<string>("message");
+        if( message)
+        {
+          writeAttrToH5(h5_param, string("MESSAGE"), message.get());
+          parameter_pt.erase("message");
+        }
+        else
+        {
+          writeAttrToH5(h5_param, string("MESSAGE"), string(""));
+        }
+        boost::optional<int> ensemble_index = input_pt.get_optional<int>("ensemble_index");
+        if( ensemble_index)
+        {
+          writeAttrToH5(h5_param, string( "ENSEMBLE_INDEX"), ensemble_index.get());
+          parameter_pt.erase("ensemble_index");
+        }
+        else
+        {
+          writeAttrToH5(h5_param, string( "ENSEMBLE_INDEX"), 0);
+        }
+	
+//         g.attrs().set("SEED", input_pt.get<uint>("seed"));
+//         g.attrs().set("IN_FILENAME", input_pt.get<string>("input_fn", ""));
+//         g.attrs().set("MESSAGE", input_pt.get<string>("message",""));
+//         g.attrs().set( "ENSEMBLE_INDEX", input_pt.get<int>("ensemble_index", 0));
+        
+        
+        WriteHdfPtree(h5_param, parameter_pt, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+        std::cout << "after write Ptree" << std::endl;std::cout.flush();
 #if GFFIELD_ENABLE
-        h5::Group field_ld_grp = root.create_group("field_ld");
-        WriteHdfLd(field_ld_grp, grower.get_field_ld());
+        H5::Group field_ld_grp = root.createGroup("field_ld");
+        //WriteHdfLd(field_ld_grp, grower.get_field_ld());
+	grower.get_field_ld().WriteHdfLd(field_ld_grp);
         WriteScalarField(root, "gf", grower.GetGf(), grower.get_field_ld(), field_ld_grp);
         WriteScalarField(root, "gfsources", grower.ComputeGfSources(), grower.get_field_ld(), field_ld_grp);
 #endif
       }
+      std::cout << "exit DoOutput" << std::endl;
 }
 
 

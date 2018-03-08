@@ -160,7 +160,7 @@ class VD(Struct):
 
 
 def fix_worldsize(vd):
-  f = 1./0.8 if vd.latticetype == 'fcc' else 1
+  f = 1./0.8 if vd.latticetype == 'FCC' else 1
   vd.orgshape = vd.shape
   x,y,z = vd.shape
   y = int(f*y+0.5)
@@ -432,7 +432,7 @@ if __name__ == '__main__':
   if 0:
     paramset11.update(
       shape=(50,50,3),
-      latticetype='fcc',
+      latticetype='FCC',
       num_hierarchical_iterations=0,
       name='vessels-gf', 
       ensemble_index=0,

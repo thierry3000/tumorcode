@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/vessels3d.h"
 
 #include "mwlib/math_ext.h"
-#include "hdf_wrapper.h"
+
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/tools/tuple.hpp>
 #include <boost/foreach.hpp>
@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "oxygen_model2.h"
 #include <exception>
+#include <omp.h>
 
 
 #define APPROXIMATE_FEM_TRANSVASCULAR_EXCHANGE_TERMS 1
@@ -124,7 +125,7 @@ ptree Parameters::as_ptree() const
   return pt;
 }
   
-void WriteOutput(h5cpp::Group basegroup,
+void WriteOutput(H5::Group basegroup,
                  const VesselList3d &vl,
                  const Parameters &params,
                  const boost::optional<const VesselPO2Storage&> vesselpo2,
@@ -1242,7 +1243,9 @@ void ComputePo2Field(const Parameters &params,
       }
 
       if (params.tissue_boundary_condition_flags !=  FiniteVolumeMatrixBuilder::NEUMANN)
+      {
         mb.SetDirichletBoundaryConditions(bbox, params.tissue_boundary_condition_flags, params.tissue_boundary_value);
+      }
     }
   }
   
@@ -1318,7 +1321,7 @@ void DetailedP02Sim::init(Parameters &params_,
                           double grid_lattice_const, 
                           double safety_layer_size, 
                           boost::optional<Int3> grid_lattice_size,
-                          boost::optional<h5cpp::Group> tumorgroup,
+                          boost::optional<H5::Group> tumorgroup,
                           boost::optional<Array3df> previous_po2field,
                           boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels
 )
@@ -1329,10 +1332,9 @@ void DetailedP02Sim::init(Parameters &params_,
   params = params_;
   world = !vl.HasLattice();
   
-#ifdef mwOMP
   //multithreading
-  my::SetNumThreads(params.num_threads);
-#endif
+  //HACK2018
+  //my::SetNumThreads(params.num_threads);
   {
     //this worked only for lattices
     //int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
@@ -1367,20 +1369,18 @@ void DetailedP02Sim::init(Parameters &params_,
         SetupFieldLattice(vl.Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
       }
     }
-    grid.init(ld, dim);
-    //mtboxes.init(MakeMtBoxGrid(grid.Box()));
-    mtboxes.init(MakeMtBoxGridLarge(grid.Box(),128));
+    //grid.init(ld, dim);
+    grid = ContinuumGrid(ld, dim);
+    mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
     if (params.loglevel > 0)
     {
       cout << "continuum grid:" << endl;
       grid.ld.print(cout);
       cout << endl;
       cout << "multithreading:" << endl;
-#ifdef mwOMP
-      cout << my::GetNumThreads()<<endl;
-#else
-      cout << omp_get_max_threads() << endl;
-#endif
+      //HACK2018
+      //cout << my::GetNumThreads()<<endl;
+      cout << omp_get_max_threads() <<endl;
     }
     if (params.loglevel > 0)
     {
@@ -1464,6 +1464,8 @@ void DetailedP02Sim::init(Parameters &params_,
     }
     
     
+    
+    
     /** executes topological ordering
      * potential remodelling due to tumor should be considered
      */
@@ -1473,12 +1475,12 @@ void DetailedP02Sim::init(Parameters &params_,
     PrepareNetworkInfo(vl, sorted_vessels, roots);
     BOOST_FOREACH(const VesselNode* nd, roots)
     {
-      if(nd->Count()>0)// there needs to be at leat one connected vessel to check for type
+      if(nd->Count()>0)// there needs to be a connected vessel to check for type
       {
-        if(nd->GetEdge(0)->IsArtery())
-        {
-          arterial_roots.push_back(nd);
-        }
+	if(nd->GetEdge(0)->IsArtery())
+	{
+	  arterial_roots.push_back(nd);
+	}
       }
     }   //note vl is lost after this call!!!!
   }
@@ -1517,8 +1519,9 @@ int DetailedP02Sim::run(VesselList3d &vl)
   {
     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
     {
-      h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
-      WriteOutput(f.root().create_group(str(format("out%04i-a") % iteration_num)),
+      //h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
+      H5::H5File f(params.debug_fn,iteration_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
+      WriteOutput(f.createGroup(str(format("out%04i-a") % iteration_num)),
                   vl, 
 		  params,
                   //vesselpo2,
@@ -1527,6 +1530,7 @@ int DetailedP02Sim::run(VesselList3d &vl)
                   grid, 
 		  po2field,
                   tissue_diff_matrix_builder);
+      f.close();
     }
     const double tolerance = params.convergence_tolerance;
     // break if convergent
@@ -1540,11 +1544,13 @@ int DetailedP02Sim::run(VesselList3d &vl)
     /*
      * 1) propagate the oxygen along the blood stream
      */
+    //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
     IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
     {
-      h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
-      WriteOutput(f.root().create_group(str(format("out%04i-b") % iteration_num)),
+      //h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
+      H5::H5File f(params.debug_fn,iteration_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
+      WriteOutput(f.createGroup(str(format("out%04i-b") % iteration_num)),
                   vl, 
 		  params,
                   po2vessels,
@@ -1552,6 +1558,7 @@ int DetailedP02Sim::run(VesselList3d &vl)
                   grid, 
 		  po2field,
                   tissue_diff_matrix_builder);
+      f.close();
     }
     //bool keep_preconditioner = (iteration_num>2 && tissue_diff_solver.iteration_count<25);
     bool keep_preconditioner = true;
@@ -1725,7 +1732,7 @@ void Measurement::computeVesselSolution(int idx, DynArray< VesselPO2SolutionReco
  * debug output
 ---------------------------------------------------------------------------- */
 
-void WriteOutput(h5cpp::Group basegroup,
+void WriteOutput(H5::Group basegroup,
                  const VesselList3d &vl,
                  const Parameters &params,
                  const boost::optional<const VesselPO2Storage&> vesselpo2,
@@ -1736,7 +1743,8 @@ void WriteOutput(h5cpp::Group basegroup,
 {
 //     h5cpp::File f(fn,"w");
 //     h5cpp::Group basegroup = grpname.empty() ? f.root() : f.root().create_group(grpname);
-    h5cpp::Group g = basegroup.create_group("vessels");
+    H5::Group g = basegroup.createGroup("vessels");
+    H5::Group h5_edges= g.openGroup("edges");
     WriteVesselList3d(vl, g, make_ptree("w_all",false)("w_pressure",true));
 
     if (sorted_vessels)
@@ -1747,7 +1755,9 @@ void WriteOutput(h5cpp::Group basegroup,
         const Vessel* v = (*sorted_vessels)[i];
         toposort_indices[v->Index()] = i;
       }
-      h5cpp::create_dataset(g.open_group("edges"), "topoorder", toposort_indices);
+      //h5cpp::create_dataset(g.open_group("edges"), "topoorder", toposort_indices);
+      //h5cpp::create_dataset(g.open_group("edges"), "topoorder", toposort_indices);
+      writeDataSetToGroup(h5_edges, string("topoorder"), toposort_indices);
     }
     if (vesselpo2)
     {
@@ -1757,21 +1767,24 @@ void WriteOutput(h5cpp::Group basegroup,
         float po2 = ((*vesselpo2)[i][0]+(*vesselpo2)[i][1])*0.5;
         avg_po2[i] = isFinite(po2) ? po2 : -1.f;
       }
-      h5cpp::create_dataset(g.open_group("edges"), "avgpo2", avg_po2);
+      //h5cpp::create_dataset(g.open_group("edges"), "avgpo2", avg_po2);
+      writeDataSetToGroup(h5_edges, string("avgpo2"), avg_po2);
     }
 
     if (po2field)
     {
-      h5cpp::Group ld_group = RequireLatticeDataGroup(basegroup, "field_ld", grid->ld);
-      g = basegroup.create_group("fields");
+      //h5cpp::Group ld_group = RequireLatticeDataGroup(basegroup, "field_ld", grid->ld);
+      H5::Group ld_group = RequireLatticeDataGroup(basegroup, grid->ld);
+      g = basegroup.createGroup("fields");
       if (po2field)
         WriteScalarField(g, "po2field", *po2field, grid->ld, ld_group);
     }
 
     if (mbopt)
     {
-      h5cpp::Group ld_group = RequireLatticeDataGroup(basegroup, "field_ld", grid->ld);
-      g = basegroup.require_group("fields");
+      H5::Group ld_group = RequireLatticeDataGroup(basegroup, grid->ld);
+//       g = basegroup.require_group("fields");
+      g = basegroup.openGroup("fields");
       
       const FiniteVolumeMatrixBuilder& mb = *mbopt;
       const Epetra_CrsMatrix& mat = *mb.m;
@@ -1812,8 +1825,8 @@ void WriteOutput(h5cpp::Group basegroup,
 
 void TestSaturationCurve()
 {
-  h5cpp::File f("detailedpo2_saturationtest.h5","w");
-  h5cpp::Group root = f.root();
+  H5::H5File f("detailedpo2_saturationtest.h5", H5F_ACC_RDWR);
+  H5::Group root = f.openGroup("/");
   int n = 100000;
   double h = 0.45;
   Parameters params;
@@ -1830,8 +1843,12 @@ void TestSaturationCurve()
   }
   double t_ms = (my::Time()-t_).to_ms();
 
-  h5cpp::Dataset ds = h5cpp::create_dataset<double>(root, "p_to_conc", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
-  ds.attrs().set("time", t_ms);
+//   h5cpp::Dataset ds = h5cpp::create_dataset<double>(root, "p_to_conc", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
+//   h5cpp::Dataset ds = h5cpp::create_dataset<double>(root, "p_to_conc", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
+  H5::DataSet ds = writeDataSetToGroup(root, string("p_to_conc"), xy );
+  writeAttrToH5(ds, string("time"), t_ms);
+  
+//   ds.attrs().set("time", t_ms);
   }
 
   {
@@ -1846,8 +1863,10 @@ void TestSaturationCurve()
   }
   double t_ms = (my::Time()-t_).to_ms();
 
-  h5cpp::Dataset ds = h5cpp::create_dataset(f.root(), "conc_to_p", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
-  ds.attrs().set("time", t_ms);
+  //h5cpp::Dataset ds = h5cpp::create_dataset(f.root(), "conc_to_p", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
+  //ds.attrs().set("time", t_ms);
+  H5::DataSet ds = writeDataSetToGroup(root, string("conc_to_p"), xy );
+  writeAttrToH5(ds, string("time"), t_ms);
   }
 
   {
@@ -1859,7 +1878,8 @@ void TestSaturationCurve()
     xy[i*2+0] = p;
     xy[i*2+1] = pback;
   }
-  h5cpp::Dataset ds = h5cpp::create_dataset(f.root(), "diff", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
+  //h5cpp::Dataset ds = h5cpp::create_dataset(f.root(), "diff", h5cpp::Dataspace::simple_dims(n, 2), get_ptr(xy));
+  H5::DataSet ds = writeDataSetToGroup(root, string("diff"), xy );
   }
 
   {
@@ -1872,7 +1892,8 @@ void TestSaturationCurve()
     xy[i*3+1] = s;
     xy[i*3+2] = ds;
   }
-  h5cpp::Dataset ds = h5cpp::create_dataset(f.root(), "ds", h5cpp::Dataspace::simple_dims(n, 3), get_ptr(xy));
+  //h5cpp::Dataset ds = h5cpp::create_dataset(f.root(), "ds", h5cpp::Dataspace::simple_dims(n, 3), get_ptr(xy));
+  H5::DataSet ds = writeDataSetToGroup(root, string("ds"), xy );
   }
   
   f.close();

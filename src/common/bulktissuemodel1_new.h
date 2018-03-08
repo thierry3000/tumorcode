@@ -240,7 +240,7 @@ public:
   void invertImplicitOperatorMixture(State &lhs, const State &rhs, double identity_coeff, double operator_coeff, StepControl &ctrl, State &extrapolation);
   void evaluateImplicitOperatorMixture(State &lhs, const State &rhs, double identity_coeff, double operator_coeff);
 #endif
-  void writeH5(h5cpp::Group g, State &state, double t, h5cpp::Group &ld_group) const; 
+  void writeH5(H5::Group &g, State &state, double t, H5::Group &ld_group) const; 
   //void appendToImages(State &state, std::vector<Image> &images) const;
 
   void doPreStep(State &state, NewSteppers::StepControl &ctrl);

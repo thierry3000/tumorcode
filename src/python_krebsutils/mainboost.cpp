@@ -17,13 +17,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <boost/version.hpp>
+#include <boost/preprocessor/stringize.hpp>
 
+#include <boost/python/exception_translator.hpp>
 #include "python_helpers.h"
 #include <boost/python/object.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/str.hpp>
 #include <boost/python/call.hpp>
 #include <boost/python/exec.hpp>
+#include <pyerrors.h>
 
 #include <fenv.h>
 #include <map>
@@ -48,53 +52,38 @@ enum Mode {
   DATA_CONST = 0,
   DATA_LINEAR = 4,
 };
-#if BOOST_VERSION>106300
-py::object read_vessel_positions_from_hdf_by_filename(const string fn, const string groupname)
+//#pragma message("BOOST_VERSION=" BOOST_PP_STRINGIZE(BOOST_VERSION))
+//#if ((BOOST_VERSION/100)%1000) < 63
+
+py::tuple read_vessel_positions_from_hdf_by_filename(const string fn, const string groupname)
 {
   //h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
-  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
-  h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname)); // groupname should end by vesselgroup
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
-
-//   Py_ssize_t ndims[] = { 3, vl->GetNCount() };
-// 
-//   // create numpy array
-//   np::arrayt<float> wp = np::zeros(2, ndims, np::getItemtype<float>());
-  np::ndarray wp = np::zeros(py::make_tuple(3,vl->GetNCount()), np::dtype::get_builtin<float>());
-
-//   cout << ld << endl;
-  Float3 p;
-  for (int i=0; i<vl->GetNCount(); ++i)
-  {
-    VesselNode *nd = vl->GetNode(i);
-    if( !vl->HasLattice() )
-    {
-      p = nd->worldpos;
-    }
-    else
-    {
-      myAssert(vl->Ld().IsInsideLattice(nd->lpos));
-      p = vl->Ld().LatticeToWorld(nd->lpos);
-    }
-    for (int j=0; j<3; ++j)
-    {
-      wp[j][i] = p[j];
-    }
+  H5::H5File readInFile;
+  H5::Group g_vess;
+  std::unique_ptr<VesselList3d> vl;
+  try{
+   readInFile = H5::H5File(fn, H5F_ACC_RDONLY );
+  //h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname)); // groupname should end by vesselgroup
+   g_vess = readInFile.openGroup(groupname); // groupname should end by vesselgroup
+   vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
   }
-  return wp;
-}
-#else
-py::object read_vessel_positions_from_hdf_by_filename(const string fn, const string groupname)
-{
-  //h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
-  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
-  h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname)); // groupname should end by vesselgroup
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
-
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
+  
   Py_ssize_t ndims[] = { 3, vl->GetNCount() };
-
+  std::vector<float> x; x.resize(vl->GetNCount());
+  std::vector<float> y; y.resize(vl->GetNCount());
+  std::vector<float> z; z.resize(vl->GetNCount());
+  py::list py_x;
+  py::list py_y;
+  py::list py_z;
+//   py::object iter = get_iter(x);
+//   py::list py_x(iter);
+  
   // create numpy array
-  np::arrayt<float> wp = np::zeros(2, ndims, np::getItemtype<float>());
+  //np::arrayt<float> wp = np::zeros(2, ndims, np::getItemtype<float>());
 
 //   cout << ld << endl;
   Float3 p;
@@ -110,14 +99,24 @@ py::object read_vessel_positions_from_hdf_by_filename(const string fn, const str
       myAssert(vl->Ld().IsInsideLattice(nd->lpos));
       p = vl->Ld().LatticeToWorld(nd->lpos);
     }
-    for (int j=0; j<3; ++j)
-    {
-      wp(j, i) = p[j];
-    }
+    py_x.append(p[0]);
+    py_y.append(p[1]);
+    py_z.append(p[2]);
+   
+//     for (int j=0; j<3; ++j)
+//     {
+//       wp(j, i) = p[j];
+//     }
+    
   }
-  return wp.getObject();
+  readInFile.close();
+  //return wp.getObject();
+  return py::make_tuple(py_x, py_y, py_z);
 }
-#endif
+
+
+#if 0 
+//depricted since H5Cpp
 py::object read_vessel_positions_from_hdf(const py::object &vess_grp_obj)
 {
   
@@ -164,6 +163,10 @@ py::object read_vessel_positions_from_hdf(const py::object &vess_grp_obj)
   return wp.getObject();
 #endif
 }
+#endif
+
+#if 0
+//depricated since H5Cpp
 py::object read_vessel_positions_from_hdf_edges(const py::object &vess_grp_obj)
 {
   
@@ -224,6 +227,7 @@ py::object read_vessel_positions_from_hdf_edges(const py::object &vess_grp_obj)
   return wp.getObject();
 #endif
 }
+#endif
 
 template<class T> inline void op_logical_and(T &a, const T &b) { a &= b; }
 template<> inline void op_logical_and<double>(double &a, const double &T) {}
@@ -232,7 +236,7 @@ template<class T> inline  void op_logical_or(T &a, const T &b) { a |= b; }
 template<> inline void op_logical_or<double>(double &a, const double &T) {}
 template<> inline void op_logical_or<float>(float &a, const float &T) {}
 
-#if BOOST_VERSION>106300
+#if ((BOOST_VERSION/100)%1000) > 63
 template<class T>
 np::ndarray edge_to_node_property_t(int num_nodes, const np::ndarray &edges, const np::ndarray &prop, const int combinefunc_id)
 {
@@ -392,23 +396,20 @@ np::arraytbase edge_to_node_property_t(int num_nodes, const np::arrayt<int> &edg
 }
 #endif
 
-#if BOOST_VERSION>106300
+#if ((BOOST_VERSION/100)%1000) > 63
 py::object flood_fill(const np::ndarray &py_field, const Int3 &startpos)
 {
 //   np::arrayt<uchar> field(py_field);
   np::ndarray field(py_field);
   assert(py_field.get_nd() == 3);
-  //py::tuple shape = py::tuple(py_field.get_shape());
-  //np::ndarray res = np::zeros(shape,np::dtype::get_builtin<uchar>());
-  np::ndarray res = np::zeros(py::make_tuple(py_field.shape(0),py_field.shape(1),py_field.shape(2)),np::dtype::get_builtin<uchar>());
+  py::tuple shape = py::tuple(py_field.get_shape());
+  np::ndarray res = np::zeros(shape,np::dtype::get_builtin<uchar>());
   //np::arrayt<uchar> res(np::zeros(field.rank(), field.shape(), np::getItemtype<uchar>()));
   LatticeDataQuad3d ld;
-  ld.Init(Int3(py_field.shape(0), py_field.shape(1), py_field.shape(2)), 1.);
+  ld.Init(Int3(py_field.get_shape()[0], py_field.get_shape()[1], py_field.get_shape()[2]), 1.);
 
-  if (!ld.IsInsideLattice(startpos) || field[startpos[0]][startpos[1]][startpos[2]])
-  {
-    return res;
-  }
+  if (!ld.IsInsideLattice(startpos) ||
+      field(startpos[0], startpos[1], startpos[2])) return res;
   
   DynArray<Int3> stack(1024,ConsTags::RESERVE);
   stack.push_back(startpos);
@@ -420,10 +421,10 @@ py::object flood_fill(const np::ndarray &py_field, const Int3 &startpos)
     for(int i=0; i<LatticeDataQuad3d::DIR_CNT; ++i)
     {
       Int3 pnb = ld.NbLattice(p,i);
-      if(!ld.IsInsideLattice(pnb) || res[pnb[0]][pnb[1]][pnb[2]] || field[pnb[0]][pnb[1]][pnb[2]])
-      {
+      if(!ld.IsInsideLattice(pnb) ||
+         res(pnb[0],pnb[1],pnb[2]) ||
+         field(pnb[0],pnb[1],pnb[2]))
         continue;
-      }
       stack.push_back(pnb);
     }
   }
@@ -463,34 +464,17 @@ py::object flood_fill(const nm::array &py_field, const Int3 &startpos)
 #endif
 
 
-#if BOOST_VERSION>106300
+#if ((BOOST_VERSION/100)%1000) > 63
 py::object distancemap(const np::ndarray &py_field)
 {
-  //std::cout << std::endl << "Python ndarray :" << py::extract<char const *>(py::str(py_field)) << std::flush;
   //np::arrayt<uchar> field(py_field);
 //   np::arrayt<float> res = np::zeros(field.rank(), field.shape(), np::getItemtype<float>());
-  //py::tuple shape = py::tuple(py_field.get_shape());
-  //np::ndarray res = np::zeros(py::make_tuple(py), np::dtype::get_builtin<float>());
-  //np::ndarray res = np::zeros(py::make_tuple(py_field.shape(0),py_field.shape(1),py_field.shape(2)),np::dtype::get_builtin<float>());
+  py::tuple shape = py::tuple(py_field.get_shape());
+  np::ndarray res = np::zeros(shape, np::dtype::get_builtin<float>());
 
-  //Array3d<uchar> field = Array3dFromPy<uchar>(py_field);
-  //np::arrayt<float> res = np::zeros(field.rank(), field.shape(), np::getItemtype<float>());
-  //np::ndarray res = np::zeros(py::make_tuple(field.shape()[0],field.shape()[1],field.shape()[2]),np::dtype::get_builtin<float>());
-  //Array3d<float> arr3d;
-  // read in from python side
-  Array3d<uchar> arr3d_uchar = Array3dFromPy<uchar>(py_field);
-  //prepare output
-  np::ndarray res = np::zeros(py::make_tuple(py_field.shape(0),py_field.shape(1),py_field.shape(2)),np::dtype::get_builtin<float>());
-  Array3d<float> arr3d;
-  arr3d = Array3dFromPy<float>(res);
-  
-  Int3 aIndex = Int3(0,0,0);
-  uchar bla = arr3d_uchar(aIndex);
-  printf("this is the entry: %f\n", bla);
-  
+  Array3d<float> arr3d = Array3dFromPy<float>(res);
   LatticeDataQuad3d ld;
-  ld.Init(Int3(py_field.shape(0), py_field.shape(1), py_field.shape(2)), 1.);
-  
+  ld.Init(arr3d.getBox(), 1.);
   DistanceFieldComputer dfc;
   
   FOR_BBOX3(p, ld.Box())
@@ -513,11 +497,6 @@ py::object distancemap(const np::ndarray &py_field)
 
   dfc.Do(ld, arr3d);
 
-//   np::ndarray res = np::zeros(py::make_tuple(py_field.shape(0),py_field.shape(1),py_field.shape(2)),np::dtype::get_builtin<float>());
-//   FOR_BBOX3(ppp, ld.Box())
-//   {
-//     res[ppp[0]][ppp[1]][ppp[2]] = arr3d(ppp);
-//   }
   return res;
 }
 #else
@@ -556,7 +535,7 @@ py::object distancemap(const nm::array &py_field)
 }
 #endif
 
-#if BOOST_VERSION>106300
+#if ((BOOST_VERSION/100)%1000) > 63
 template<class T>
 py::object diff_field(np::ndarray py_field, int axis, double prefactor)
 {
@@ -572,8 +551,8 @@ py::object diff_field(np::ndarray py_field, int axis, double prefactor)
   //CopyBorder(field[bb], 3, 1);
 
   //np::arrayt<T> py_res = np::zeros(3, ::Size(bb).cast<Py_ssize_t>().eval().data(), np::getItemtype<T>());
-  //np::ndarray py_res = np::zeros(py::tuple(::Size(bb).cast<Py_ssize_t>().eval().data()), np::dtype::get_builtin<T>());
-  Array3d<T> res = Array3dFromPy<T>(py_field);
+  np::ndarray py_res = np::zeros(py::tuple(::Size(bb).cast<Py_ssize_t>().eval().data()), np::dtype::get_builtin<T>());
+  Array3d<T> res = Array3dFromPy<T>(py_res);
 
   FOR_BBOX3(p, bb)
   {
@@ -590,7 +569,6 @@ py::object diff_field(np::ndarray py_field, int axis, double prefactor)
     res(p) = f*prefactor*(field(p1)-field(p0));
   }
 
-  np::ndarray py_res = np::zeros(py::make_tuple(py_field.shape(0),py_field.shape(1),py_field.shape(2)),np::dtype::get_builtin<float>());
   return py_res;
 }
 #else
@@ -631,7 +609,7 @@ py::object diff_field(np::arrayt<T> py_field, int axis, double prefactor)
 #endif
 
 
-#if BOOST_VERSION>106300
+#if ((BOOST_VERSION/100)%1000) > 63
 py::object SumIsoSurfaceIntersectionWithVessels(float level, np::ndarray py_edgelist, np::ndarray py_pressure, np::ndarray py_flags, np::ndarray py_nodalLevel, np::ndarray py_datavalue)
 {
 //   np::arrayt<int> edges(py_edgelist);
@@ -731,92 +709,7 @@ py::object SumIsoSurfaceIntersectionWithVessels(float level, nm::array py_edgeli
 /* computes c(r) = <a(x)*y(x+r)>_{x,|r|}, where |r| is a fixed parameter argument.
  * The averaging is done over all points x, and concentric shells around it of radius |r|.
  */
-#if BOOST_VERSION>106300
-/* WARNING this needs to be implemented on newer boost!
- */
-template<class T>
-py::tuple radial_correlation(np::ndarray py_field1, np::ndarray py_field2, Int3 distance, int super_samples, bool subtract_avg, np::ndarray py_mask)
-{
-  Py_ssize_t num_bins = maxCoeff(distance)*super_samples;
-  LatticeWorldTransform<1> ld(1./super_samples);
-  ld.SetCellCentering(Vec<bool,1>(true));
-  ld.SetOriginPosition(Vec<float,1>(-ld.Scale()*0.5));
-  
-  std::vector<double> h_cnt(num_bins);
-  std::vector<double> h_corr(num_bins);
-  std::vector<double> h_sqr(num_bins);
-
-  Array3d<T> field1 = Array3dFromPy<T>(py_field1);
-  Array3d<T> field2 = Array3dFromPy<T>(py_field2);
-  myAssert(field1.getBox() == field2.getBox());
-
-  Array3d<uchar> mask; // obtain mask if available
-  bool use_mask = false;
-  if (!py_mask.is_none())
-  {
-    //np::arrayt<uchar> py_mask(py_obj_mask);
-    //np::ndarray wp = np::zeros(py::make_tuple(3,vl->GetNCount()), np::dtype::get_builtin<float>());
-    //np::ndarray py_mask = (py::obj_mask
-    mask = Array3dFromPy<uchar>(py_mask);
-    myAssert(mask.getBox() == field1.getBox());
-    use_mask = true;
-  }
-  
-  Random rnd;
-  
-  BBox3 displacements = BBox3().Add(Int3(0)).Extend(distance);
-
-  double average1 = 0., average2 = 0.;
-  if (subtract_avg)
-  {
-    FOR_BBOX3(p, field1.getBox())
-    {
-      average1 += field1(p);
-      average2 += field2(p);
-    }
-    average1 /= Volume(field1.getBox());
-    average2 /= Volume(field2.getBox());
-  }
-  
-  FOR_BBOX3(dp, displacements)
-  {
-    Float3 fdp = dp.cast<float>();
-    const BBox3 bb1 = field2.getBox().Move(dp).Intersection(field1.getBox());
-    FOR_BBOX3(p, bb1)
-    {
-      if (use_mask && (!mask(p) || !mask(p-dp))) continue;
-      
-      Float3 rdp(rnd.Get11(),rnd.Get11(),rnd.Get11());
-      float r = (rdp + fdp).norm();
-
-      int index = ld.WorldToLattice(Vec<float, 1>(r))[0];
-
-      if (index >= num_bins) continue;
-
-      double c = (field1(p)-average1) * (field2(p-dp)-average2);
-      h_cnt[index] += 1.;
-      h_corr[index] += c;
-      h_sqr[index] += c*c;
-    }
-  }
-  np::ndarray py_res_r = np::zeros(py::make_tuple(1,num_bins), np::dtype::get_builtin<double>());
-  np::ndarray py_res_c = np::zeros(py::make_tuple(1,num_bins), np::dtype::get_builtin<double>());
-  np::ndarray py_res_n = np::zeros(py::make_tuple(1,num_bins), np::dtype::get_builtin<double>());
-  np::ndarray py_res_s = np::zeros(py::make_tuple(1,num_bins), np::dtype::get_builtin<double>());
-  // 
-//   np::arrayt<double> py_res_r = np::zeros(1, &num_bins, np::getItemtype<double>());
-//   np::arrayt<double> py_res_c = np::zeros(1, &num_bins, np::getItemtype<double>());
-//   np::arrayt<double> py_res_n = np::zeros(1, &num_bins, np::getItemtype<double>());
-//   np::arrayt<double> py_res_s = np::zeros(1, &num_bins, np::getItemtype<double>());
-  for (int i=0; i<num_bins; ++i)
-  {
-    py_res_r[i] = ld.LatticeToWorld(Vec<int,1>(i))[0];
-    py_res_c[i] = h_corr[i];
-    py_res_n[i] = h_cnt[i];
-    py_res_s[i] = h_sqr[i];
-  }
-  return py::make_tuple(py_res_r, py_res_n, py_res_c, py_res_s);
-}
+#if ((BOOST_VERSION/100)%1000) > 63
 #else
 template<class T>
 py::tuple radial_correlation(np::arrayt<T> py_field1, np::arrayt<T> py_field2, Int3 distance, int super_samples, bool subtract_avg, py::object &py_obj_mask)
@@ -950,7 +843,7 @@ namespace mw_py_impl
 {
   void exportLatticeData();
   void exportVectorClassConverters();
-  void exportH5Converters();
+  //void exportH5Converters();
 }
 void export_povray_export();
 void export_samplevessels();
@@ -962,32 +855,37 @@ void export_calcflow();
 void export_compute_interpolation_field();
 void export_get_Murray();
 
-
+// see http://www.boost.org/doc/libs/1_66_0/libs/python/doc/html/tutorial/tutorial/exception.html
+struct VesselGenException : std::exception
+{
+  char const* what() const noexcept { return "One of my exceptions"; }
+};
+void translator(VesselGenException const& x) {
+  PyErr_SetString(PyExc_UserWarning, x.what());
+}
 #ifdef DEBUG
 BOOST_PYTHON_MODULE(libkrebs_d)
 #else
 BOOST_PYTHON_MODULE(libkrebs_)
 #endif
 {
-  printf("Loaded libkrebs_ module.\n");
   Py_Initialize();
 #if BOOST_VERSION>106300
   np::initialize();
 #else
   np::importNumpyAndRegisterTypes();
 #endif
-
-#ifdef mwOMP
+  
   PyEval_InitThreads(); // need for release of the GIL (http://stackoverflow.com/questions/8009613/boost-python-not-supporting-parallelism)
   // setup everything to work with threads.
-  my::initMultithreading(0, NULL, 1);
+  //HACK2018
+  //my::initMultithreading(0, NULL, 1);
   // register function to set the number of threads
-  py::def("set_num_threads", my::SetNumThreads);
-#endif
-
+  //py::def("set_num_threads", my::SetNumThreads);
+  
   mw_py_impl::exportVectorClassConverters();
   mw_py_impl::exportLatticeData();
-  mw_py_impl::exportH5Converters();
+  //mw_py_impl::exportH5Converters();
   
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
 
@@ -996,9 +894,13 @@ BOOST_PYTHON_MODULE(libkrebs_)
   
   // register some python wrapped functions
   //py::def("test", test);
-  py::def("read_vessel_positions_from_hdf", read_vessel_positions_from_hdf);
+  /* depricated */
+  //py::def("read_vessel_positions_from_hdf", read_vessel_positions_from_hdf);
+  
   py::def("read_vessel_positions_from_hdf_by_filename", read_vessel_positions_from_hdf_by_filename);
-  py::def("read_vessel_positions_from_hdf_edges", read_vessel_positions_from_hdf_edges);
+  /* depricated */
+  //py::def("read_vessel_positions_from_hdf_edges", read_vessel_positions_from_hdf_edges);
+  
   py::def("flood_fill", flood_fill);
   py::def("distancemap", distancemap);
   py::def("GetHealthyVesselWallThickness", GetInitialThickness);
@@ -1017,10 +919,10 @@ BOOST_PYTHON_MODULE(libkrebs_)
   py::def("diff_field_"#T, diff_field<T>);
   DEFINE_diff_field_t(float)
   DEFINE_diff_field_t(double)
-#define DEFINE_radial_correlation_t(T)\
-  py::def("radial_correlation_"#T, radial_correlation<T>);
-  DEFINE_radial_correlation_t(float)
-  DEFINE_radial_correlation_t(double)
+// #define DEFINE_radial_correlation_t(T)\
+//   py::def("radial_correlation_"#T, radial_correlation<T>);
+//   DEFINE_radial_correlation_t(float)
+//   DEFINE_radial_correlation_t(double)
   
   export_povray_export();
   export_samplevessels();

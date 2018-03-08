@@ -20,7 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
 #include <vector>
-#include <auto_ptr.h>
+//#include <auto_ptr.h>
+#include <memory> // unique_ptr
 #include <boost/scoped_array.hpp>
 
 using std::cout;
@@ -94,9 +95,11 @@ void test()
   f(b);
   b.foo();
   Derived<Args<double> > d;
-  std::auto_ptr<int> p(new int(3));
-  boost::scoped_array<std::auto_ptr<int> > v(new std::auto_ptr<int>[2]);
-  v[0] = p;
+  //std::auto_ptr<int> p(new int(3));
+  std::unique_ptr<int> p(new int(3));
+  //boost::scoped_array<std::auto_ptr<int> > v(new std::auto_ptr<int>[2]);
+  boost::scoped_array<std::unique_ptr<int> > v(new std::unique_ptr<int>[2]);
+  v[0] = std::move(p);
   cout << *v[0];
 };
 

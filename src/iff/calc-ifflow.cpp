@@ -28,15 +28,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/histogram.h"
 #include "continuum-flow.h"
 #include "mwlib/field.h"
-#include "hdf_wrapper.h"
+
 #include "mwlib/log.h"
 
 #include "trilinos_linsys_construction.h"
 #include "convection_diffusion_solver.h"
 #include "calc-ifdrug.h"
 
-
-namespace h5 = h5cpp;
 
 
 #define H_TO_SEC 3600.
@@ -180,29 +178,29 @@ ptree IffParams::as_ptree() const
   return pt;
 }
 
-void IffParams::WriteH5(h5::Group g) const
+void IffParams::WriteH5(H5::Group g) const
 {
-#define SETP(id) g.attrs().set(#id,id)
-#define SETP2(id,val) g.attrs().set(#id,val)
-  SETP(ecm_friction);
-  SETP(cell_friction);
-  SETP(iff_cond_tissue);
-  SETP(iff_cond_tumor);
-  SETP(iff_cond_necro);
-  SETP(iff_capillary_permeability_tissue);
-  SETP(iff_capillary_permeability_tumor);
-  SETP(lymph_surf_per_vol);
-  SETP(lymph_surf_per_vol_tumor);
-  SETP(lymph_press);
-  SETP(lymph_permeability);
-  SETP(coupled_flow);
-  SETP(capillary_oncotic_pressure);
-  SETP(interstitial_oncotic_pressure);
-  SETP(osmotic_reflection_coeff);
-  SETP(better_permeability_model);
-  SETP(osmotic_reflection_coeff_tumor);
-#undef SETP
-#undef SETP2
+// #define SETP(id) g.attrs().set(#id,id)
+// #define SETP2(id,val) g.attrs().set(#id,val)
+//   SETP(ecm_friction);
+//   SETP(cell_friction);
+//   SETP(iff_cond_tissue);
+//   SETP(iff_cond_tumor);
+//   SETP(iff_cond_necro);
+//   SETP(iff_capillary_permeability_tissue);
+//   SETP(iff_capillary_permeability_tumor);
+//   SETP(lymph_surf_per_vol);
+//   SETP(lymph_surf_per_vol_tumor);
+//   SETP(lymph_press);
+//   SETP(lymph_permeability);
+//   SETP(coupled_flow);
+//   SETP(capillary_oncotic_pressure);
+//   SETP(interstitial_oncotic_pressure);
+//   SETP(osmotic_reflection_coeff);
+//   SETP(better_permeability_model);
+//   SETP(osmotic_reflection_coeff_tumor);
+// #undef SETP
+// #undef SETP2
 }
 
 

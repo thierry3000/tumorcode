@@ -765,15 +765,12 @@ public:
   Array3d(const Int3 &_l, const Int3 &_m, const T* mem, std::size_t buffer_size, bool owned) : Super(_l, _m, mem, buffer_size, owned)
   {
 #ifdef DEBUG
-  printf("I am using this!");
+    printf("Am I using this?");
 #endif
   }
 
   Array3d(const BBox3 &bbox_, const Int3 &strides_, const T* addr_of_bbox_min, std::size_t buffer_size, bool owned) : Super(bbox_, strides_, addr_of_bbox_min, buffer_size, owned)
   {
-#ifdef DEBUG
-    printf("I am using this!");
-#endif
   }
 
   struct MoveHelper : public ConstArray3d<T>::MoveHelperConst

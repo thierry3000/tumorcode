@@ -22,10 +22,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "hdf_wrapper_ptree.h"
 #include "hdf_wrapper_vec.h"
+#include "../common/hdfio.h"
+#include "dynamicarray.h"
+#include <iostream>
 
 using boost::property_tree::ptree;
 
-void WriteHdfPtree(h5cpp::Group f, const ptree &pt, HdfWritePtreeAs storage_mode)
+void WriteHdfPtree(H5::Group &f, const ptree &pt, HdfWritePtreeAs storage_mode)
 {
   typedef ptree::const_iterator I;
   for (I it = pt.begin(); it != pt.end(); ++it)
@@ -36,12 +39,29 @@ void WriteHdfPtree(h5cpp::Group f, const ptree &pt, HdfWritePtreeAs storage_mode
     if (!v.data().empty())
     {
       if (storage_mode == HDF_WRITE_PTREE_AS_ATTRIBUTE)
-        f.attrs().set(k, v.data());
+      {
+	std::cout << "print k: "<< k << "v: " << v.data() << std::endl; 
+	writeAttrToH5(f, k, v.data());
+      }
       else
-        h5cpp::create_dataset_scalar<string>(f, k, v.data());
+      {
+	DynArray<string> this_data;
+	for( auto entry: v.data())
+	{
+	  this_data.push_back(&entry);
+	}
+	writeDataSetToGroup(f,k, this_data);
+      }
+//         f.attrs().set(k, v.data());
+/*	
+      else
+        h5cpp::create_dataset_scalar<string>(f, k, v.data());*/
     }
     // recurse
     if (v.begin() != v.end())
-      WriteHdfPtree(f.create_group(k), v, storage_mode);
+    {
+      H5::Group h5_group = f.createGroup(k);
+      WriteHdfPtree(h5_group, v, storage_mode);
+    }
   }
 }

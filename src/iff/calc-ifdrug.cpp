@@ -110,42 +110,36 @@ void Params::assign(const ptree& pt)
 }
 
 
-void Params::WriteH5(h5cpp::Group g) const
+void Params::WriteH5(H5::Group g) const
 {
-#define SETP(id) g.attrs().set(#id,id)
-#define SETP2(id,val) g.attrs().set(#id,val)
+//#define SETP(id) g.attrs().set(#id,id)
+//#define SETP(id) writeAttrToH5<string>(g, #id, id)
+//#define SETP2(id,val) g.attrs().set(#id,val)
   switch(inject_mode)
   {
   case Params::DF_INJECT_MODE_EXP:
-    SETP2(DF_INJECT_MODE,"DF_INJECT_MODE_EXP");
+    writeAttrToH5(g, string("DF_INJECT_MODE"),string("DF_INJECT_MODE_EXP")); 
+    //SETP2(DF_INJECT_MODE,"DF_INJECT_MODE_EXP");
     break;
   case Params::DF_INJECT_MODE_JUMP:
-    SETP2(DF_INJECT_MODE,"DF_INJECT_MODE_JUMP");
+    //SETP2(DF_INJECT_MODE,"DF_INJECT_MODE_JUMP");
+    writeAttrToH5(g, string("DF_INJECT_MODE"),string("DF_INJECT_MODE_JUMP"));
     break;
   }
-  SETP(inject_t);
-  SETP(kdiff);
-//   switch(uptake_mode)
-//   {
-//   case Params::DF_UPTAKE_LINEAR:
-//     SETP2(DF_UPTAKE_MODE,"DF_UPTAKE_LINEAR");
-//     SETP(linear_uptake_coeff);
-//     break;
-//   case Params::DF_UPTAKE_MICHAELIS_MENTEN:
-//     SETP2(DF_UPTAKE_MODE,"DF_UPTAKE_MICHAELIS_MENTEN");
-//     SETP(chalf_uptake);
-//     SETP(max_uptake);
-//     break;
-//   }
-  SETP(stepper);
-  SETP(comprates_k12);
-  SETP(comprates_k21);
-  SETP(stepper_compartments);
-  SETP(capillary_permeability_normal);
-  SETP(capillary_permeability_tumor);
-  SETP(convective_transport_enabled);
-#undef SETP
-#undef SETP2
+  writeAttrToH5(g, string("inject_t"),inject_t);
+  writeAttrToH5(g, string("kdiff"),kdiff);
+  writeAttrToH5(g, string("comprates_k12"),comprates_k12);
+  writeAttrToH5(g, string("comprates_k21"),comprates_k21);
+  writeAttrToH5(g, string("capillary_permeability_normal"),capillary_permeability_normal);
+  writeAttrToH5(g, string("capillary_permeability_tumor"),capillary_permeability_tumor);
+
+  writeAttrToH5(g, string("stepper"),stepper);
+  writeAttrToH5(g, string("stepper_compartments"),stepper_compartments);
+  
+  writeAttrToH5(g, string("convective_transport_enabled"),convective_transport_enabled);
+ 
+  
+
 }
 
 
@@ -792,15 +786,15 @@ void Calculator::CalculateSources(int boxindex, const BBox3& bbox, const State &
 #endif
 
 
-void Calculator::writeH5(h5cpp::File f, h5cpp::Group g, const State& state, double t, h5cpp::Group ld_group) const
+void Calculator::writeH5(H5::H5File f, H5::Group g, const State& state, double t, H5::Group ld_group) const
 {
   const Calculator& drugcalc = *this;
   
-  namespace h5 = h5cpp;
   
-  h5::Attributes a = g.attrs();
-  a.set("DRUG_INFLOW_CONC", drugcalc.GetInflowVesselConc());
+//   h5::Attributes a = g.attrs();
+//   a.set("DRUG_INFLOW_CONC", drugcalc.GetInflowVesselConc());
 
+  //writeAttrToH5<T>(g, string("DRUG_INFLOW_CONC"),drugcalc.GetInflowVesselConc() );
   const LatticeDataQuad3d &ld = grid->ld;
 
   Array3d<T> conc_total(ld.Box());
@@ -828,14 +822,24 @@ void Calculator::writeH5(h5cpp::File f, h5cpp::Group g, const State& state, doub
     }
   }
 
-  h5cpp::Datatype disktype = h5cpp::get_disktype<float>();
-  WriteScalarField(g, "conc", conc_total, ld, ld_group, disktype);
-  WriteScalarField(g, "conc_ex", state.field[ID_CONC_EXTRACELLULAR], ld, ld_group, disktype);
-  WriteScalarField(g, "conc_cell", state.field[ID_CONC_CELL], ld, ld_group, disktype);
+  //h5cpp::Datatype disktype = h5cpp::get_disktype<float>();
+  H5::DataType disktype = H5::PredType::NATIVE_FLOAT;
+//   WriteScalarField(g, "conc", conc_total, ld, ld_group, disktype);
+//   WriteScalarField(g, "conc_ex", state.field[ID_CONC_EXTRACELLULAR], ld, ld_group, disktype);
+//   WriteScalarField(g, "conc_cell", state.field[ID_CONC_CELL], ld, ld_group, disktype);
+//   //WriteScalarField(g, "uptake", uptake_field, ld, ld_group, disktype);
+//   WriteScalarField(g, "src_diff_vess", src_diff_vess, ld, ld_group, disktype);
+//   WriteScalarField(g, "src_flow_vess", src_flow_vess, ld, ld_group, disktype);
+//   WriteScalarField(g, "src_lymph", src_lymph, ld, ld_group, disktype);
+  
+  
+  WriteScalarField(g, "conc", conc_total, ld, ld_group);
+  WriteScalarField(g, "conc_ex", state.field[ID_CONC_EXTRACELLULAR], ld, ld_group);
+  WriteScalarField(g, "conc_cell", state.field[ID_CONC_CELL], ld, ld_group);
   //WriteScalarField(g, "uptake", uptake_field, ld, ld_group, disktype);
-  WriteScalarField(g, "src_diff_vess", src_diff_vess, ld, ld_group, disktype);
-  WriteScalarField(g, "src_flow_vess", src_flow_vess, ld, ld_group, disktype);
-  WriteScalarField(g, "src_lymph", src_lymph, ld, ld_group, disktype);
+  WriteScalarField(g, "src_diff_vess", src_diff_vess, ld, ld_group);
+  WriteScalarField(g, "src_flow_vess", src_flow_vess, ld, ld_group);
+  WriteScalarField(g, "src_lymph", src_lymph, ld, ld_group);
 }
 
 

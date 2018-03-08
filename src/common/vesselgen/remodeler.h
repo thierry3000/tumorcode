@@ -130,7 +130,7 @@ enum LatticeTypeId {
 class Grower
 {
   typedef VesselList3d::LatticeData LatticeData;
-  std::auto_ptr<VesselList3d> vl;
+  std::unique_ptr<VesselList3d> vl;
   Random rand;
   LatticeTypeId lattice_type_id;
   Float3 wdiraxes[32];
@@ -248,7 +248,7 @@ private:
   int GetDirection(const VesselNode* vc);
 };
 
-h5cpp::Group DebugOutVessels(const Grower &grower, const string &name);
+H5::Group DebugOutVessels(const Grower &grower, const string &name);
 typedef BasicHistogram1D<float> Histo;
 double MeasureBloodVolume( const VesselList3d& vl, float dest_lattice_scale, int &n_sites, int &n_sites_occupied );
 const my::Averaged<float> MeasureBranchLengths( const VesselList3d& vl, Histo &distrib, Histo &byrad );
@@ -257,7 +257,7 @@ void MeasureBranchNumbers( const VesselList3d &vl,  Histo &hbranch );
 void MeasureRoot( const VesselList3d &vl, double &arad, double &aflow, double &arootcnt, double &vrad, double &vflow, double &vrootcnt );
 const my::Averaged<float> MeasureShearDistribution( const VesselList3d& vl, Histo &hshear, Histo &byrad );
 
-void DoOutput(h5cpp::Group root,
+void DoOutput(H5::Group &root,
               const VesselList3d &vl,
               const TreeRootList &tree_roots);
 

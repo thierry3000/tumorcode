@@ -22,13 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "pylatticedata.h"
 
-#include "hdf_wrapper.h"
-
 #include "calcflow.h"
 #include "shared-objects.h"
 #include "vessels3d.h"
 
-namespace h5 = h5cpp;
 
 py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_path ,bool return_flags, const py::object &py_bfparams, bool simple, bool storeCalculationInHDF)
 {
@@ -36,10 +33,19 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
   
   const BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
 
-  h5cpp::File *readInFile = new h5cpp::File(fn,"r");
-  h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
+  H5::H5File readInFile;
+  H5::Group g_vess;
+  try{
+    readInFile = H5::H5File(fn, H5F_ACC_RDONLY);
+    g_vess = readInFile.openGroup(vesselgroup_path); // groupname should end by vesselgroup
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
+  //h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
   
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
+  std::unique_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
 
   Py_ssize_t num_nodes = vl->GetNCount();
   Py_ssize_t num_edges = vl->GetECount();
@@ -50,17 +56,42 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
 //   if (simple)
 //     CalcFlowSimple(*vl, bfparams, true);
 //   else
+  try{
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
   CalcFlow(*vl, bfparams);
+  }
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
   
   if( storeCalculationInHDF )
   {
-    if( not g_vess.exists("recomputed") )
+    try
     {
-      h5::Group grp_temp;
-      grp_temp = g_vess.create_group("recomputed");
-      ptree getEverytingPossible = make_ptree("w_adaption", false);
-      WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
+      g_vess.openGroup("recomputed");
     }
+    catch( H5::Exception error )
+    {
+      H5::Group recomp = g_vess.createGroup("recomputed");
+      ptree getEverytingPossible = make_ptree("w_adaption", false);
+      WriteVesselList3d(*vl, recomp, getEverytingPossible);
+    }
+//     if( not g_vess.exists("recomputed") )
+//     {
+//       h5::Group grp_temp;
+//       grp_temp = g_vess.create_group("recomputed");
+//       ptree getEverytingPossible = make_ptree("w_adaption", false);
+//       WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
+//     }
   }
 
 #if BOOST_VERSION>106300

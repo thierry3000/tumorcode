@@ -101,7 +101,7 @@ float DistanceFieldComputer::ComputeCenterGradient( const Int3 &p )
 {
   float q  = 1.0f * ld.Scale()*ld.Scale();
   Float3 val[2], minval;
-  Vec<bool,3> ok[2], bothok, okaxis;
+  Bool3 ok[2], bothok, okaxis;
   bool anyok = false;
   int n_pos=0, n_neg=0;
   //float _x[2],_y[2];

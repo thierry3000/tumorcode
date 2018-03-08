@@ -76,7 +76,8 @@ def CenterTheLattice(f, h5_path):
     ld = krebsutils.read_lattice_data_from_hdf(f[h5_path])   
     del f[h5_path]
     ld = ld.GetCentered()
-    krebsutils.write_lattice_data_to_hdf(f, h5_path, ld)
+    fn=str(f.file.filename)
+    krebsutils.write_lattice_data_to_hdf_by_filename(fn, h5_path, ld)
     
 
 def RunsOnClient(configstring_file, workdir, vesselfilename):
@@ -107,7 +108,7 @@ if not qsub.is_client:
        num_points = options.pop('num_points')
        scale      = options.pop('scale')
        hiter      = options.pop('hiter')
-       vd = VD(shape=(num_points, num_points, num_points), scale=scale, latticetype='fcc', num_hierarchical_iterations=hiter, ensemble_index=i, **options)
+       vd = VD(shape=(num_points, num_points, num_points), scale=scale, latticetype='FCC', num_hierarchical_iterations=hiter, ensemble_index=i, **options)
        vd = fix_worldsize(vd)
        vd.name        = options.get('name', filename)  #this goes into the message attribute of the output file, default to filename
        vd.outfilename = filename

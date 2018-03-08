@@ -42,11 +42,12 @@ else:
   tumor_cpp = __import__('libtumors_', globals(), locals())
   
 def vess_size_to_tum_size(fn, tum_lattice_const):
-  vesselgroup = h5files.open(fn, 'r')['/vessels']
-  if __debug__:
-    print("vesselgroup.id.id: %i" % vesselgroup.id.id)
-  ld = krebsutils.read_lattice_data_from_hdf(krebsutils.find_lattice_group_(vesselgroup))
-  ld_vessels = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])
+  #vesselgroup = h5files.open(fn, 'r')['/vessels']
+  #if __debug__:
+  #  print("vesselgroup.id.id: %i" % vesselgroup.id.id)
+  #ld = krebsutils.read_lattice_data_from_hdf(krebsutils.find_lattice_group_(vesselgroup))
+  #ld_vessels = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])
+  ld_vessels = krebsutils.read_lattice_data_from_hdf_by_filename(fn, "/vessels/lattice")
   bbox = ld_vessels.worldBox
   boxLengths = ((bbox[1]-bbox[0]),(bbox[3]-bbox[2]),(bbox[5]-bbox[4]))
   number_of_numerical_grid_points = np.ceil((np.asarray(boxLengths)+.5)/tum_lattice_const)
@@ -54,9 +55,9 @@ def vess_size_to_tum_size(fn, tum_lattice_const):
     if x==1:
       number_of_numerical_grid_points[i] = 2
   
-  del vesselgroup
-  l = ld.shape
-  s = int(ld.scale)
+  #del vesselgroup
+  l = ld_vessels.shape
+  s = int(ld_vessels.scale)
   """
   mapping from: latticesize initial vesselsnetwork 
   to numical lattice of tissue lattice

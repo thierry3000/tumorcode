@@ -428,7 +428,8 @@ public:
 template<class T>
 inline Smallest<T> MakeSmallestMax()
 {
-  return Smallest<T>(std::numeric_limits<T>::max());
+  //at some point we multiply by 2 which causes an exception in debug mode
+  return Smallest<T>(0.45 * std::numeric_limits<T>::max());
 }
 
 template<class T>

@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LATTICE_DATA_POLYMORPHIC
 
 #include "mwlib/lattice-data.h"
-#include "hdf_wrapper.h"
+#include "H5Cpp.h"
+#include "hdfio.h"
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -29,12 +30,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <boost/graph/graph_concepts.hpp>
 
+#include <memory> // std::unique_ptr
 
-// forward declaration, their location may change
-void WriteHdfLd( h5cpp::Group f, const LatticeDataQuad3d &ld );
-void ReadHdfLd( h5cpp::Group f, LatticeDataQuad3d &ld );
-void WriteHdfLd( h5cpp::Group f, const LatticeDataFCC &ld );
-void ReadHdfLd( h5cpp::Group f, LatticeDataFCC &ld );
 namespace polymorphic_latticedata{
 template<class Ld>
 class Derived;
@@ -71,11 +68,13 @@ class LatticeData : boost::noncopyable
     
     //virtual ~LatticeData() = default;
     virtual ~LatticeData() {}
-    virtual std::auto_ptr<LatticeData> Clone() const {};
+    virtual std::unique_ptr<LatticeData> Clone() const {};
+    
     virtual void Init(const BBox3 &bb, float scale) {};
 
     virtual float Scale() const {};
     virtual void SetScale(float s) {};
+    virtual string GetType() const {};
     
     virtual BBox3 Box() const {};
 
@@ -102,12 +101,14 @@ class LatticeData : boost::noncopyable
     /*
      * ldtype = quad or fcc
      */
-    static std::auto_ptr<LatticeData> Make(const char* ldtype, const BBox3 &bb, float scale);
 
     // hdf 5 support
-    static std::auto_ptr<LatticeData> ReadHdf(h5cpp::Group g);
-    virtual void WriteHdf(h5cpp::Group g) const {};
+    
+    virtual void Lattice2Hdf(H5::Group &g) const {};
+    
 };
+std::unique_ptr<LatticeData> ReadHdf(H5::Group &g);
+std::unique_ptr<LatticeData> Make_ld(const char* ldtype, const BBox3 &bb, float scale);
 
 template<class Ld>
 struct fwd_cell_centering {
@@ -123,7 +124,6 @@ struct fwd_cell_centering<LatticeDataQuad3d> {
 template<class LD>
 Int3 WorldToLatticeWrapper(const LD &ld, const Float3 &p);
 
-
 template<class Ld>
 class Derived : public LatticeData
 {
@@ -131,17 +131,18 @@ class Derived : public LatticeData
 public:
   // trivially forward all calls
   Derived() = default;
-  Derived(const Ld &ld) : ld(ld) { }
+  Derived(const Ld &ld);// : ld(ld) { }
   Derived(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
   Derived(const Derived &other) : ld(other.ld) {}
   //~Derived() { }
   //Ld& get() { return ld; }
   Ld get() const { return ld; }
 
-  std::auto_ptr<LatticeData> Clone() const { return std::auto_ptr<LatticeData>(new Derived(*this)); }
+  std::unique_ptr<LatticeData> Clone() const { return std::unique_ptr<LatticeData>(new Derived(*this)); }
   virtual void Init(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
 
   virtual float Scale() const { return ld.Scale(); }
+  virtual string GetType() const { return ld.getType(); }
   virtual void SetScale(float s) { ld.Scale(s); }
   virtual BBox3 Box() const { return ld.Box(); }
 
@@ -165,7 +166,7 @@ public:
 
   virtual void print(std::ostream &os) const { ld.print(os); }
   // hdf5 support
-  virtual void WriteHdf(h5cpp::Group g) const { WriteHdfLd(g, ld); }
+  void Lattice2Hdf(H5::Group &g) const;
 };
 
 inline std::ostream& operator<<(std::ostream &os, const LatticeData &ld)

@@ -15,9 +15,9 @@ endif()
 # add_executable(test_convection test_convection1.cpp)
 # target_link_libraries(test_convection ${myLibs})
 
-add_executable(test_stepper test_stepper.cpp)
-target_link_libraries(test_stepper ${myLibs})
-install(TARGETS test_stepper RUNTIME DESTINATION bin)
+# add_executable(test_stepper test_stepper.cpp)
+# target_link_libraries(test_stepper ${myLibs})
+# install(TARGETS test_stepper RUNTIME DESTINATION bin)
 
 if(USE_MILOTTI_MTS)
   add_executable(test_ann test_ann.cpp)
@@ -108,6 +108,5 @@ if (MPI_NEEDED)
   #moste trilinos test deal with mpi
   add_subdirectory(trilinos)
 endif()
-#add_subdirectory(trilinos)
 
-add_subdirectory(boost_graph_library)
+add_subdirectory(H5)

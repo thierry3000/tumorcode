@@ -21,7 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define _OXYGEN_MODEL2_H_
 //#define mwOMP
 #include "../python_krebsutils/python_helpers.h"
-#include "hdf_wrapper.h"
 
 #include "common/shared-objects.h"
 #include "common/continuum-grid.h"
@@ -180,7 +179,7 @@ struct DetailedP02Sim : public boost::noncopyable
   // after this call the 3D field phases is filled with
   // 3 vallues giving the portion of corresponding tissue type
   TissuePhases phases;//Declaration
-  void init(Parameters &params,BloodFlowParameters &bfparams, VesselList3d &vl, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, boost::optional<h5cpp::Group> tumorgroup,boost::optional<Array3df> previous_po2field, boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels);
+  void init(Parameters &params,BloodFlowParameters &bfparams, VesselList3d &vl, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, boost::optional<H5::Group> tumorgroup,boost::optional<Array3df> previous_po2field, boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels);
   int run(VesselList3d &vl);
   void PrepareNetworkInfo(const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots);
   

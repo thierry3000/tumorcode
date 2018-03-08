@@ -82,7 +82,10 @@ def CenterLattice(g):
   name   = str(g.name)
   del g
   del parent[name]
-  krebsutils.write_lattice_data_to_hdf(parent, name, ld)
+  #krebsutils.write_lattice_data_to_hdf(parent, name, ld)
+  fn=str(parent.file.filename)
+  #path=str(vesselgroup.name)
+  krebsutils.write_lattice_data_to_hdf_by_filename(fn, name, ld)
   return offset
 
 

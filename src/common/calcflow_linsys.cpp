@@ -51,7 +51,7 @@ void Linsys::initialize_pattern(int num_vertices, const std::vector< my::eqpair<
     }
 #ifdef EPETRA_MPI
 #ifdef DEBUG //some mpi error left in ubuntu 16
-    std::printf("is the bad thing happening here?");
+    //std::printf("is the bad thing happening here?");
 #endif
     Epetra_MpiComm epetra_comm(MPI_COMM_SELF);
 #endif
@@ -137,11 +137,13 @@ void Linsys::end_filling(const Linsys::BcsMap& bcs)
     //scaling_const /= sys->NumGlobalRows();
 #if 1
 #ifdef DEBUG
+#ifndef TOTAL_SILENCE
     printf("bcs.size(): %i\n",bcs.size());
     for(BcsMap::const_iterator bc = bcs.begin(); bc != bcs.end(); ++bc)
     {
       printf("first: %i, second: %f\n", bc->first, bc->second.val);
     }
+#endif
 #endif
 #endif
     for(BcsMap::const_iterator bc = bcs.begin(); bc != bcs.end(); ++bc)
