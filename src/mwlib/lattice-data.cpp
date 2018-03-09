@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/hdfio.h"
 
 #include <float.h>
+#include <string>
 
 #include "math_ext.h"
 #include <boost/archive/text_oarchive.hpp>
@@ -120,7 +121,7 @@ volatile bool LatticeDataQuad3d::nbs_init = false;
 Int3 LatticeDataQuad3d::vnb[LatticeDataQuad3d::DIR_CNT];
 void LatticeDataQuad3d::setType()
 {
-  type = "QUAD3D";
+  type = string("QUAD3D");
 }
 /* CONSTRUCTORS AND DESTRUCTORS */
 LatticeDataQuad3d::LatticeDataQuad3d()
@@ -151,7 +152,7 @@ LatticeDataQuad3d::LatticeDataQuad3d(const BBox3& bb, float scale): LatticeWorld
 
 void LatticeDataFCC::setType()
 {
-  type="FCC";
+  type=string("FCC");
 }
 LatticeDataFCC::LatticeDataFCC()
 {

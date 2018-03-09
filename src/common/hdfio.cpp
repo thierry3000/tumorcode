@@ -1127,7 +1127,7 @@ void ReadHdfLd( H5::Group &g, LatticeDataQuad3d &ld )
   
   string type;
   readAttrFromH5(g, string("TYPE"), type);
-  if(type!="QUAD3D") throw std::runtime_error("LatticeDataQuad3d from hdf5 mismatch");
+  if(type!=string("QUAD3D")) throw std::runtime_error("LatticeDataQuad3d from hdf5 mismatch");
   ReadHdfLdGenericPart_(g, ld);
   //do this properly!!!
 //   try {

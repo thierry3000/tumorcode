@@ -143,7 +143,7 @@ void writeAttrToH5(H5::Group g, const string &attr_name, const  string &value)
 void writeAttrToH5(H5::Group h, const string &attr_name,  const Float3 &value)
 { 
   {
-    int rank = 2;
+    const int rank = 2;
     hsize_t dims[rank] = {1,3};
     H5::DataSpace mspace( rank, dims);
     H5::Attribute attr_out = h.createAttribute(attr_name, H5::PredType::NATIVE_FLOAT, mspace);
@@ -155,7 +155,7 @@ void writeAttrToH5(H5::Group h, const string &attr_name,  const Float3 &value)
 void writeAttrToH5(H5::Group h, const string &attr_name,  const Float2 &value)
 { 
   {
-    int rank = 2;
+    const int rank = 2;
     hsize_t dims[rank] = {1,2};
     H5::DataSpace mspace( rank, dims);
     H5::Attribute attr_out = h.createAttribute(attr_name, H5::PredType::NATIVE_FLOAT, mspace);
@@ -166,7 +166,7 @@ void writeAttrToH5(H5::Group h, const string &attr_name,  const Float2 &value)
 void writeAttrToH5(H5::Group h, const string &attr_name,  const Double2 &value)
 { 
   {
-    int rank = 2;
+    const int rank = 2;
     hsize_t dims[rank] = {1,2};
     H5::DataSpace mspace( rank, dims);
     H5::Attribute attr_out = h.createAttribute(attr_name, H5::PredType::NATIVE_DOUBLE, mspace);
@@ -178,7 +178,7 @@ void writeAttrToH5(H5::Group h, const string &attr_name,  const Double2 &value)
 void writeAttrToH5(H5::Group h, string attr_name,  Int6 &value)
 { 
   {
-    int rank = 2;
+    const int rank = 2;
     hsize_t dims[rank] = {1,6};
     
     H5::DataSpace mspace( rank, dims);
@@ -191,7 +191,7 @@ void writeAttrToH5(H5::Group h, string attr_name,  Int6 &value)
 void writeAttrToH5(H5::Group h, string attr_name,  Int2 &value)
 { 
   {
-    int rank = 2;
+    const int rank = 2;
     hsize_t dims[rank] = {1,2};
     
     H5::DataSpace mspace( rank, dims);
@@ -204,7 +204,7 @@ void writeAttrToH5(H5::Group h, string attr_name,  Int2 &value)
 void writeAttrToH5(H5::Group h, string attr_name,  Bool3 &value)
 { 
   {
-    int rank = 2;
+    const int rank = 2;
     hsize_t dims[rank] = {1,3};
     H5::DataSpace mspace( rank, dims);
     H5::Attribute attr_out = h.createAttribute(attr_name, H5::PredType::NATIVE_CHAR, mspace);

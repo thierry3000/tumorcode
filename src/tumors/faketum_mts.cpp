@@ -585,21 +585,17 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
     writeAttrToH5(h5_timing, string("run_vbl_diff_loop_1"), tumorcode_pointer_to_currentCellsSystem->myTiming.diff_loop_1);
     writeAttrToH5(h5_timing, string("run_vbl_diff_loop_2"), tumorcode_pointer_to_currentCellsSystem->myTiming.diff_loop_2);
     writeAttrToH5(h5_timing, string("run_vbl_diff_loop_3"), tumorcode_pointer_to_currentCellsSystem->myTiming.diff_loop_3);
-  
-  timing_attrs.set("run_vbl_diff_loop_1", vbl::p_to_current_CellsSystem->myTiming.diff_loop_1);
-  timing_attrs.set("run_vbl_diff_loop_2", vbl::p_to_current_CellsSystem->myTiming.diff_loop_2);
-  timing_attrs.set("run_vbl_diff_loop_3", vbl::p_to_current_CellsSystem->myTiming.diff_loop_3);
-  timing_attrs.set("run_vbl_dynamics", vbl::p_to_current_CellsSystem->myTiming.dynamics);
-  timing_attrs.set("run_vbl_geometry", vbl::p_to_current_CellsSystem->myTiming.geometry);
-  timing_attrs.set("run_vbl_cellEvents", vbl::p_to_current_CellsSystem->myTiming.cellEvents);
-  timing_attrs.set("run_vbl_writeToFile", vbl::p_to_current_CellsSystem->myTiming.writeToFile);
-  timing_attrs.set("run_vbl_bico_call", vbl::p_to_current_CellsSystem->myTiming.bico_call);
-  timing_attrs.set("geometry_neighborhood", vbl::p_to_current_CellsSystem->myTiming.geometry_neighborhood);
-  
-  const auto now = std::chrono::system_clock::now();
-  const auto epoch   = now.time_since_epoch();
-  const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(epoch);
-  writeAttrToH5(h5_timing, string("secondsSinceEpoch"), (int)seconds.count());
+    writeAttrToH5(h5_timing, string("run_vbl_dynamics"), tumorcode_pointer_to_currentCellsSystem->myTiming.dynamics);
+    writeAttrToH5(h5_timing, string("run_vbl_geometry"), tumorcode_pointer_to_currentCellsSystem->myTiming.geometry);
+    writeAttrToH5(h5_timing, string("run_vbl_cellEvents"), tumorcode_pointer_to_currentCellsSystem->myTiming.cellEvents);
+    writeAttrToH5(h5_timing, string("run_vbl_writeToFile"), tumorcode_pointer_to_currentCellsSystem->myTiming.writeToFile);
+    writeAttrToH5(h5_timing, string("run_vbl_bico_call"), tumorcode_pointer_to_currentCellsSystem->myTiming.bico_call);
+    writeAttrToH5(h5_timing, string("geometry_neighborhood"), tumorcode_pointer_to_currentCellsSystem->myTiming.geometry_neighborhood);
+    ///// global timing
+    const auto now = std::chrono::system_clock::now();
+    const auto epoch   = now.time_since_epoch();
+    const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+    writeAttrToH5(h5_timing, string("secondsSinceEpoch"), (int)seconds.count());
     
     /* writes the vessel list */
     H5::Group h5_current_vessels = gout.createGroup("vessels");
