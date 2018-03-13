@@ -377,6 +377,7 @@ void HematocritCalculator::UpdateHematocrit()
     int upstream_node = (GetPress(e.first) > GetPress(e.second)) ? e.first : e.second;
     UpdateHematocritRecursive(i, upstream_node);
   }
+  std::cout << "UpdateHematocrit left" << std::endl;
 }
 
 
@@ -558,7 +559,7 @@ void HematocritCalculator::UpdateHematocritAtNode( int upstream_node, int edge_i
       const FlReal diff = std::abs(rbcout-rbcIn)/(rbcout+rbcIn+1.e-20);
       if( diff>1.0e-3f ) 
       {
-#ifndef TOTAL_SILENCE
+#ifndef SILENCE
         printf("WARNING: UpdateHematocritAtNode: RBC conservation violated %f %% (out: %e, in: %e) at node %i\n",diff,rbcout,rbcIn,upstream_node);
 #endif
         /*if( diff>0.5f ) 
@@ -583,7 +584,7 @@ void HematocritCalculator::UpdateHematocritAtNode( int upstream_node, int edge_i
 
 
 
-void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bloodFlowParameters)
+int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bloodFlowParameters)
 {
   cout << "CalcFlowWithPhaseSeparation called" << endl;
   cout.flush();
@@ -596,16 +597,22 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
   uint returnOfGetFlowNetwork = GetFlowNetwork(flownet, &vl, bloodFlowParameters, false);
   cout << "GetFlowNetwork called" << endl;
   cout.flush();
-  flownet.flow.resize(flownet.num_edges());
   flownet.press.resize(flownet.num_vertices());
-  flownet.hema.fill(bloodFlowParameters.inletHematocrit); // well defined values for the first compuation of viscosities // Dafug??? this was hardcoded to 0.45 but we would rather actually like to have it filled in GetFlowNetwork i suppose
+  
+  flownet.flow.resize(flownet.num_edges());
+  flownet.hema.resize(flownet.num_edges());
+  flownet.len.resize(flownet.num_edges());
+  flownet.rad.resize(flownet.num_edges());
+  //WARNING
+  //flownet.hema.fill(bloodFlowParameters.inletHematocrit); // well defined values for the first compuation of viscosities // Dafug??? this was hardcoded to 0.45 but we would rather actually like to have it filled in GetFlowNetwork i suppose
   //if read in could be zero, which is bad for oxygen calculations
   cout << "resized " << endl;
   cout.flush();
   FlArray visc(flownet.num_edges());
   FlArray cond(flownet.num_edges());
-  FlArray hema_last(flownet.num_edges(), getNAN<FlReal>()), flow_last(flownet.num_edges(), getNAN<FlReal>());
-
+  FlArray hema_last(flownet.num_edges(), std::numeric_limits<FlReal>::max());
+  FlArray flow_last(flownet.num_edges(), std::numeric_limits<FlReal>::max());
+  
   HematocritCalculator hematocritCalculator(flownet, flownet.flow, flownet.press, bloodFlowParameters.inletHematocrit);
   cout << "hematocritCalculator" << endl;
   cout.flush();
@@ -631,7 +638,10 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
   FlReal delta_h = std::numeric_limits<FlReal>::max(), delta_q = std::numeric_limits<FlReal>::max();
   const int max_iter = 20;
   
-  for( int iteration=0; iteration<max_iter && !my::checkAbort(); ++iteration )
+  int returnCode = 0; // 1 linsys error
+  
+  //for( int iteration=0; iteration<max_iter && !my::checkAbort(); ++iteration )
+  for( int iteration=0; iteration<max_iter; ++iteration )
   {
     
     //visc is local variable
@@ -641,24 +651,25 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
     flowsys.initialize_pattern(flownet.num_vertices(), flownet.edges);
     flowsys.fill_values(flownet.edges, cond, flownet.bcs);
     
-    EllipticEquationSolver solver(flowsys.sys, flowsys.rhs, solver_params);
+    EllipticEquationSolver *solver= new EllipticEquationSolver();
     solver_params.put("keep_preconditioner", iteration>3 && last_solver_iterations<15); // && solver.time_iteration<solver.time_precondition);
-    //solver.init(flowsys.sys, flowsys.rhs, solver_params);
+    solver->init(flowsys.sys, flowsys.rhs, solver_params);
     //EllipticEquationSolver *solver = new EllipticEquationSolver(flowsys.sys, flowsys.rhs, solver_params);
     cout << "EllipticEquationSolver instantiated" << endl;
     cout.flush();
-    int return_of_solver = solver.solve(flowsys.lhs);
+    int return_of_solver = solver->solve(flowsys.lhs);
     if( return_of_solver > 0 )
     {
       cout << "solver failed to solve!!!!" << endl;
+      returnCode=1;
       break;
     }
     cout << "solver solve called" << endl;
     cout.flush();
-    last_solver_iterations = solver.iteration_count;
+    last_solver_iterations = solver->iteration_count;
     cout << "iterations read" << endl;
     cout.flush();
-    //delete solver;
+    delete solver;
     cout << "solver deleted" << endl;
     cout.flush();
 
@@ -676,8 +687,15 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
     ok = MarkFailingVesselHidden(vl);
     cout << "MarkFailingVesselHidden" << endl;
     cout.flush();
-    if (!ok) break; // this is where due to numerical inaccuracies (???) small random flows occur which dont respect mass conservation
-    // after breaking the computation is restarted with the offending vessels hidden.
+    if (!ok)
+    {
+      /* this is where due to numerical inaccuracies (???) small random flows occur which dont respect mass conservation
+       * after breaking the computation is restarted with the offending vessels hidden.
+       */
+      cout << "offending vessels hidden --> restart" << std::endl;
+      cout.flush();
+      break;
+    }
 
     for (int i=0; i<flownet.num_edges(); ++i)
     {
@@ -690,6 +708,8 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
     hematocritCalculator.check_hematocrit_range = delta_h<1.e-3 && delta_q<1.e-3 && iteration >= 5;
     hematocritCalculator.UpdateHematocrit();
     cout << "Update hematocrit" << endl;
+    cout.flush();
+    cout << "max relative rbc loss: " << CalcHemaResidual(flownet, cond, flownet.hema) << endl;
     cout.flush();
 #ifndef SILENT
     cout << "max relative rbc loss: " << CalcHemaResidual(flownet, cond, flownet.hema) << endl;
@@ -709,7 +729,7 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
         delta_h = std::max(delta_h, std::abs(h-h_last)/(h+1.e-20));
         delta_q = std::max(delta_q, std::abs(q-q_last)/(q+1.e-20));
         #endif
-        delta_h += my::sqr((h-h_last));
+        delta_h += my::sqr((h-h_last));//sqare
         delta_q += my::sqr((q-q_last)/(q+1.e-20));
       }
       hema_last[i] = flownet.hema[i] = h;
@@ -724,11 +744,15 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
     {
       cout << "Manually call break" << endl;
       cout.flush();
+      returnCode = 2;
       break;
     }
+    cout << "next iteration" << std::endl;cout.flush();
   }
   if (ok)
   {
+    cout << "Before SetFlowValues called" << endl;
+    cout.flush();
     SetFlowValues(&vl, flownet, cond, flownet.press, flownet.hema);
     cout << "SetFlowValues called" << endl;
     cout.flush();
@@ -736,11 +760,14 @@ void CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bl
   
   if (!ok)
   {
+    cout << "before cc" << endl;
+    cout.flush();
     ComputeCirculatedComponents(&vl);
     cout << "cc again called" << endl;
     cout.flush();
-    CalcFlowWithPhaseSeparation(vl, bloodFlowParameters);
+    returnCode = CalcFlowWithPhaseSeparation(vl, bloodFlowParameters);
   }
+  return returnCode;
 }
 
 /* NB: this is completely NOT threadsafe!!!!*/
@@ -751,7 +778,31 @@ void CalcFlow(VesselList3d &vl, const BloodFlowParameters &params)
     std::cout << "ComputeCirculatedComponents called" << std::endl;
     std::cout.flush();
     if (params.includePhaseSeparationEffect)
-      CalcFlowWithPhaseSeparation(vl, params);
+    {
+      try
+      {
+        int calcflowReturn = CalcFlowWithPhaseSeparation(vl, params);
+        if(calcflowReturn == 1 )
+        {
+          throw 1;
+        }
+      }
+      catch( int e)
+      {
+        if( e>0)
+        {
+          std::cout << "hematocrit calculator Error" << std::endl;
+        }
+        if( e==1)
+        {
+          std::cout << "linsys solver did not converge" << std::endl;
+        }
+        if( e==2)
+        {
+          std::cout << "Hematocrit error" << std::endl;
+        }
+      }
+    }
     else
       CalcFlowSimple(vl, params, false);
     std::cout << "CalcFlow done called" << std::endl;

@@ -33,8 +33,8 @@ typedef boost::unordered_map<int, FlowBC> FlBoundaryList;
 //DA FUCK!!!! When did i ever think that global variables are a good thing ...
 //extern BloodFlowParameters bloodFlowParameters;
 
-template<class T>
-inline T getNAN() { return std::numeric_limits<T>::quiet_NaN(); }
+// template<class T>
+// inline T getNAN() { return std::numeric_limits<T>::quiet_NaN(); }
 
 template<class T>
 inline bool isFinite(T x) { return std::isfinite(x); }

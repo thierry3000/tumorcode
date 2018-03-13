@@ -1272,8 +1272,9 @@ void ComputePo2Field(const Parameters &params,
   int solverReturn2;
   try {
     //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
-    EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
-    //solver.init(mb.m, mb.rhs, solver_params);
+    //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
+    EllipticEquationSolver solver;
+    solver.init(mb.m, mb.rhs, solver_params);
     solverReturn = solver.solve(lhs);
   }
   catch (const ConvergenceFailureException &e)
@@ -1282,8 +1283,9 @@ void ComputePo2Field(const Parameters &params,
       {
         solver_params.put("keep_preconditioner", false);
         //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
-        EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
-        //solver.init(mb.m, mb.rhs, solver_params);
+        //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
+        EllipticEquationSolver solver;
+        solver.init(mb.m, mb.rhs, solver_params);
         solverReturn2 = solver.solve(lhs);
       }
       else throw e;

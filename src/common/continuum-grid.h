@@ -97,7 +97,7 @@ public:
 struct ContinuumGrid
 {
   ContinuumGrid(const LatticeDataQuad3d &ld_, int dim_ = -1);
-  ContinuumGrid() : dim(0) {}
+  ContinuumGrid();
   void init(const LatticeDataQuad3d &ld_, int dim_ = -1);
   
   LatticeDataQuad3d ld;

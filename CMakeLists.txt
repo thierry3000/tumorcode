@@ -99,7 +99,7 @@ endif()
 #                  "${CMAKE_BINARY_DIR}/externalProjects/ANN-build")
 
 list(APPEND CMAKE_CXX_SOURCE_FILE_EXTENSIONS c)
-add_definitions(-DSILENT)
+#add_definitions(-DSILENT)
 find_package(Threads REQUIRED)
 message("CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
 # set a search path for additional custom cmake modules.

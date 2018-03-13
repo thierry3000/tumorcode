@@ -40,7 +40,7 @@ void WriteHdfPtree(H5::Group &f, const ptree &pt, HdfWritePtreeAs storage_mode)
     {
       if (storage_mode == HDF_WRITE_PTREE_AS_ATTRIBUTE)
       {
-	std::cout << "print k: "<< k << "v: " << v.data() << std::endl; 
+	//std::cout << "print k: "<< k << "v: " << v.data() << std::endl; 
 	writeAttrToH5(f, k, v.data());
       }
       else

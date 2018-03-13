@@ -86,6 +86,10 @@ H5::DataType getH5TypeFromCpp()
   {
     thisWritingType = H5::PredType::NATIVE_INT64;
   }
+  else if(typeid(T) == typeid(unsigned long))
+  {
+    thisWritingType = H5::PredType::NATIVE_UINT64;
+  }
   else
   {
     cout << "unsupported Template type in writeDataSetToGroup!" << endl;
@@ -333,25 +337,7 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
 //   h5cpp::Attributes attrs = g.attrs();
   if(vl.HasLattice())//LATTICE IS THERE
   {
-    try
-    {
-      string theType;
-      readAttrFromH5(g, string("CLASS"), theType);
-      myAssert(theType == "GRAPH");
-    }
-    catch( H5::AttributeIException not_found_error )
-    {
-        cout << " Graph type not found" << endl;
-	writeAttrToH5(g,string("CLASS"), string("GRAPH"));
-    }
-//     if(attrs.exists("CLASS"))//correct hdf attribute is checke
-//     {
-//       myAssert(attrs.get<std::string>("CLASS") == "GRAPH");
-//     }
-//     else
-//     {
-//       attrs.create<std::string>("CLASS", "GRAPH");
-//     }
+    writeAttrToH5(g,string("CLASS"), string("GRAPH"));
     //lattice stuff is writen to hdf
     H5::Group lattice_group = g.createGroup("lattice");
     //vl.Ld().WriteHdf(g.create_group("lattice"));
@@ -436,27 +422,18 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
     if(vl.GetNode(i)->IsBoundary())
       roots.push_back(i);
   }
-  H5::DataSet ds;
-  try{
-      //DataSet dataset = file.openDataSet(DATASET_NAME);
-      ds = h5_nodes.openDataSet("roots");
-      //grp=h5file.openGroup("A");
-    } catch(H5::Exception& e){
-      /* group does not exists, create it */
-      //grp=h5file.createGroup("A");
-      //const int	 RANK = 2;
-      //hsize_t dims[2] = {1, 16};
-      //H5::DataSpace dataspace(RANK, dims);
-      //H5::DataSet ds = gg.createDataSet("roots", H5::PredType::NATIVE_INT, dataspace);
-      //ds.write(&roots, H5::PredType::NATIVE_INT);
-      H5::DataSet h5_dataset_roots = writeDataSetToGroup(h5_nodes, string("roots"), roots);
-      //ds = gg.createDataSet("roots")
-      //writeDataSetToGroup(ds,"roots", roots);
-    }
-//   if(!gg.exists("roots"))
-//   {
-//     h5cpp::create_dataset<int>(gg,  "roots", roots);
-//   }
+  H5::DataSet h5_dataset_roots;
+  try
+  {
+    //h5_dataset_roots = h5_nodes.openDataSet("roots");
+    h5_dataset_roots = writeDataSetToGroup(h5_nodes, string("roots"), roots);
+  } 
+  catch(H5::Exception& e)
+  {
+    /* group does not exists, create it */
+    e.printError();
+  }
+
   {
     DynArray <int> bc_node_index;
     DynArray <int> bctyp_index;
@@ -490,10 +467,7 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
     writeDataSetToGroup(h5_nodes, string("bc_type"), bctyp_index);
     writeDataSetToGroup(h5_nodes, string("bc_value"), values_of_bcs);
     writeDataSetToGroup(h5_nodes, string("bc_conductivity_value"), bc_conductivity_value);
-//     h5cpp::create_dataset<int>(gg,  "bc_node_index", bc_node_index);
-//     h5cpp::create_dataset<int>(gg,  "bc_type", bctyp_index);
-//     h5cpp::create_dataset<float>(gg,  "bc_value", values_of_bcs);
-//     h5cpp::create_dataset<float>(gg,  "bc_conductivity_value", bc_conductivity_value);
+
   }
   }//for interrupt 
 
@@ -961,9 +935,17 @@ H5::DataSet writeDataSetToGroup(H5::Group &g, const string &dataset_name, DynArr
 #ifndef NDEBUG
   cout << "we are writting data of size (" << dims[0] << ", " << dims[1] << "!" <<endl;
 #endif
-  H5::DataSpace dataspace( rank, dims);
-  H5::DataSet ds = g.createDataSet(dataset_name, thisWritingType, dataspace);
-  ds.write(&continousMemoryArrary, thisWritingType, dataspace);
+  H5::DataSet ds;
+  try 
+  {
+    H5::DataSpace dataspace( rank, dims);
+    ds = g.createDataSet(dataset_name, thisWritingType, dataspace);
+    ds.write(&continousMemoryArrary, thisWritingType, dataspace);
+  }
+  catch( H5::Exception e)
+  {
+    e.printError();
+  }
   return ds;
 }
 
@@ -1215,6 +1197,7 @@ INSTANTIATE_H5Cpp1_write(H5::Group, Int6)
 INSTANTIATE_H5Cpp1_write(H5::Group, bool)
 INSTANTIATE_H5Cpp1_write(H5::Group, uchar)
 INSTANTIATE_H5Cpp1_write(H5::Group, Bool3)
+INSTANTIATE_H5Cpp1_write(H5::Group, unsigned long)
 //INSTANTIATE_H5Cpp1_write(H5::Group, string)
 
 
@@ -1228,6 +1211,7 @@ INSTANTIATE_H5Cpp1_write(H5::DataSet, Int6)
 INSTANTIATE_H5Cpp1_write(H5::DataSet, bool)
 INSTANTIATE_H5Cpp1_write(H5::DataSet, uchar)
 INSTANTIATE_H5Cpp1_write(H5::DataSet, Bool3)
+INSTANTIATE_H5Cpp1_write(H5::DataSet, unsigned long)
 //INSTANTIATE_H5Cpp1_write(H5::DataSet, string)
 #undef INSTANTIATE_H5Cpp1_write
 

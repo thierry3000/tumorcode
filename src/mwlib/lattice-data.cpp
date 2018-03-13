@@ -119,15 +119,16 @@ template struct LatticeWorldTransform<3>;
 
 volatile bool LatticeDataQuad3d::nbs_init = false;
 Int3 LatticeDataQuad3d::vnb[LatticeDataQuad3d::DIR_CNT];
-void LatticeDataQuad3d::setType()
-{
-  type = string("QUAD3D");
-}
+// void LatticeDataQuad3d::setType()
+// {
+//   type = string("QUAD3D");
+// }
 /* CONSTRUCTORS AND DESTRUCTORS */
 LatticeDataQuad3d::LatticeDataQuad3d()
 {
   ClearMem( this, 1 );
-  this->setType();
+  //type = string("QUAD3D");
+  //this->setType();
 }
 LatticeDataQuad3d::~LatticeDataQuad3d()
 {
@@ -137,27 +138,31 @@ LatticeDataQuad3d::~LatticeDataQuad3d()
 
 LatticeDataQuad3d::LatticeDataQuad3d(const LatticeDataQuad3d& ld): LI(), LWT()
 {
+  //type = string("QUAD3D");
   CopyMem(&ld, this, 1);
 }
 
 LatticeDataQuad3d::LatticeDataQuad3d(const Int3& l, float scale): LatticeWorldTransform< int(3) >(scale)
 {
+  //type = string("QUAD3D");
   Init(l, scale); 
 }
 
 LatticeDataQuad3d::LatticeDataQuad3d(const BBox3& bb, float scale): LatticeWorldTransform< int(3) >(scale)
 {
+  //type = string("QUAD3D");
   Init(bb, scale); 
 }
 
-void LatticeDataFCC::setType()
-{
-  type=string("FCC");
-}
+// void LatticeDataFCC::setType()
+// {
+//   type=string("FCC");
+// }
 LatticeDataFCC::LatticeDataFCC()
 {
   ClearMem(this, 1);
-  this->setType();
+  //type=string("FCC");
+  //this->setType();
 }
 LatticeDataFCC::~LatticeDataFCC()
 {
@@ -170,13 +175,15 @@ LatticeDataFCC::LatticeDataFCC(const LatticeDataFCC& ld)
   ld.print(std::cout);
   //ClearMem( this, 1);
   CopyMem(&ld, this, 1);
-  this->setType();
+  //type=string("FCC");
+  //this->setType();
 }
 
 LatticeDataFCC::LatticeDataFCC(const BBox3& bb, float scale): LatticeWorldTransform< int(3) >(scale)
 {
   Init(bb, scale);
-  this->setType();
+  //type=string("FCC");
+  //this->setType();
 }
 
 
@@ -184,13 +191,13 @@ LatticeDataFCC::LatticeDataFCC(const BBox3& bb, float scale): LatticeWorldTransf
 void LatticeDataQuad3d::Init( const Int3 &l_, float scale_)
 {
   Init(BBox3(Int3(0), l_-Int3(1)), scale_);
-  type= string("QUAD3D");
+  //type= string("QUAD3D");
 }
 
 
 void LatticeDataQuad3d::Init(const BBox3 &bb, float scale_)
 {
-  type = string("QUAD3D");
+  //type = string("QUAD3D");
   myAssert(!bb.IsEmpty());
   myAssert(scale_ > 0.);
 
@@ -275,7 +282,7 @@ Int3 LatticeDataFCC::vnb[2][3][LatticeDataFCC::DIR_CNT];
 
 void LatticeDataFCC::Init(const BBox3 &bb, float scale_)
 {
-  type = string("FCC");
+  //type = string("FCC");
   myAssert(!bb.IsEmpty());
   myAssert(scale_ > 0.);
 
@@ -542,7 +549,7 @@ bool operator==( const LatticeDataFCC& a, const LatticeDataFCC& b )
 void LatticeDataFCC::WriteHdfLd(H5::Group& g) const
 {
   //string latticeType = getType();
-  writeAttrToH5(g, "TYPE", getType());
+  writeAttrToH5(g, "TYPE", string("FCC"));
   writeAttrToH5(g,"SIZEX", Size()[0]);
   writeAttrToH5(g,"SIZEY", Size()[1]);
   writeAttrToH5(g,"SIZEZ", Size()[2]);
@@ -567,7 +574,7 @@ void LatticeDataQuad3d::WriteHdfLd(H5::Group& g) const
   Bool3 centering = GetCellCentering();
   writeAttrToH5(g, "CENTERING", centering);
   
-  writeAttrToH5(g, "TYPE", getType());
+  writeAttrToH5(g, "TYPE", string("QUAD3D"));
   writeAttrToH5(g,"SIZEX", Size()[0]);
   writeAttrToH5(g,"SIZEY", Size()[1]);
   writeAttrToH5(g,"SIZEZ", Size()[2]);

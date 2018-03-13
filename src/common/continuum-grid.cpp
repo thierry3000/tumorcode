@@ -34,6 +34,11 @@ LatticeIndexRanges LatticeIndexRanges::FromCellRange(const BBox3 &b, int ndim)
   return ir;
 }
 
+ContinuumGrid::ContinuumGrid()
+{
+  dim = 0;
+  ld = LatticeDataQuad3d();
+}
 
 
 ContinuumGrid::ContinuumGrid(const LatticeDataQuad3d &ld_, int dim_) :

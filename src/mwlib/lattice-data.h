@@ -261,8 +261,8 @@ struct LatticeDataQuad3d : public LatticeIndexing<3, int64, int64>, public Latti
   void print(std::ostream &os) const;
   void setType();
   void WriteHdfLd( H5::Group &g) const;
-  const string& getType() const { return type; }
-  string type;
+  //const string& getType() const { return const string("QUAD3D"); }
+  //string type;
 protected:
   // i dont bother with thread safety. If two LatticeDatas happen to
   // be constructed at the same time, they will just initialize this
@@ -313,9 +313,9 @@ struct LatticeDataFCC : public LatticeIndexing<3, int64, int64>, public LatticeW
   void WriteHdfLd( H5::Group &g) const;
   
   Float3 wo; // world coordinate offset, added in lattice -> world
-  const string& getType() const { return type; }
-  string type;
-  void setType();
+  //const string& getType() const { return type; }
+  //string type;
+  //void setType();
 
 protected:
   static volatile bool nbs_init;

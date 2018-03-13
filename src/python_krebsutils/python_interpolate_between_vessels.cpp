@@ -117,8 +117,9 @@ np::ndarray CalcIntervascularInterpolationField(
   ptree solver_params = make_ptree("preconditioner","multigrid")("verbosity", "normal")("use_smoothed_aggregation", false)("max_iter", 500)("conv","rhs")("max_resid",1.e-8);
   
   {
-     EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
-     //solver.init(mb.m, mb.rhs, solver_params);
+     //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
+    EllipticEquationSolver solver;
+    solver.init(mb.m, mb.rhs, solver_params);
 //     solver.solve(lhs);
 //    EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
     //solver.init(mb.m, mb.rhs, solver_params);
@@ -240,8 +241,9 @@ np::arraytbase CalcIntervascularInterpolationField(
   ptree solver_params = make_ptree("preconditioner","multigrid")("verbosity", "normal")("use_smoothed_aggregation", false)("max_iter", 500)("conv","rhs")("max_resid",1.e-8);
   
   {
-    EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
-    //solver.init(mb.m, mb.rhs, solver_params);
+    //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
+    EllipticEquationSolver solver;
+    solver.init(mb.m, mb.rhs, solver_params);
 //     solver.solve(lhs);
 //    EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
     //solver.init(mb.m, mb.rhs, solver_params);

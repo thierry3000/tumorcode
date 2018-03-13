@@ -293,11 +293,17 @@ void Model::DoStep(double dt, const BloodFlowParameters *bfparams)
 #ifndef USE_ADAPTION
   {
     GenerateSprouts();
+    std::cout << "collapse called" << std::endl; std::cout.flush();
     CollapseVessels();
+    std::cout << "collapse ened" << std::endl; std::cout.flush();
     if (IS_DEBUG) vl->IntegrityCheck();
+    std::cout << "integrity ended" << std::endl; std::cout.flush();
     EnlargeVessels();
+    std::cout << "enlarge ended" << std::endl; std::cout.flush();
     SmoothVessels();
+    std::cout << "smooth ended" << std::endl; std::cout.flush();
     MaturateVessel();
+    std::cout << "maturate ended" << std::endl; std::cout.flush();
   }
 #endif
   if(num_iteration%10 == 0)
