@@ -207,6 +207,7 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
 def submit_(interpreter, submission_program, script):
   #global opts_
   # determine how to run
+  print("interpreter: %s, submission_program: %s" %(interpreter, submission_program))
   if submission_program == 'run_locally':
     submission_program = interpreter
   # verbose output
@@ -217,9 +218,11 @@ def submit_(interpreter, submission_program, script):
   # run stuff
   if not goodArgumentsQueue.q_dry:
     time.sleep(0.2)
-    if submission_program == 'python': # running python script with python locally?!! We can do it like so
+    if submission_program == 'python' or submission_program == 'python_debug': # running python script with python locally?!! We can do it like so
+      print("calling python:")
       exec script in dict(), dict()
     else: # all the other cases go like so!
+      print("calling subprocess:")
       subprocess.call("%s <<EOFQSUB\n%s\nEOFQSUB" % (submission_program, script), shell=True)
       #subprocess.check_output("%s <<EOFQSUB\n%s\nEOFQSUB" % (submission_program, script), shell=True)
 
@@ -256,7 +259,10 @@ class Func(object):
 
     You give an object of this kind to the submit function in order to run it.
   '''
-  interpreter = 'python'
+  if sys.flags.debug:
+    interpreter = 'python_debug'
+  else:
+    interpreter = 'python'
   def __init__(self, func, *args, **kwargs):
     self.func = func
     self.args = (args, kwargs)
@@ -363,7 +369,8 @@ def submit_qsub(obj, submission_program, **qsubopts):
   # interpreter string
   cases = {
     'sh' : '#!/bin/sh',
-    'python' : ('#!/usr/bin/env python%i'  % sys.version_info.major)
+    'python' : ('#!/usr/bin/env python%i'  % sys.version_info.major),
+    'python_debug' : ('#!/usr/bin/python%i -d'  % sys.version_info.major)
   }
   first_line = cases[obj.interpreter]
   # add qsub stuff + python script
@@ -389,7 +396,8 @@ def submit_slurm(obj, submission_program, **slurmopts):
   # interpreter string
   cases = {
     'sh' : '#!/bin/sh',
-    'python' : ('#!/usr/bin/env python%i'  % sys.version_info.major)
+    'python' : ('#!/usr/bin/env python%i'  % sys.version_info.major),
+    'python_debug' : ('#!/usr/bin/python%i -d'  % sys.version_info.major)
     #'python' : '#!/bin/sh'
   }
   first_line = cases[obj.interpreter]
@@ -474,7 +482,7 @@ def submit(obj, **qsubopts):
       print('override time from %f to %f' % (qsubopts['days'],goodArgumentsQueue.days))
       qsubopts['days'] = goodArgumentsQueue.days
     
-    if __debug__:
+    if sys.flags.debug:
       print(qsubopts)
     
     print("goodArgumentsQueue")

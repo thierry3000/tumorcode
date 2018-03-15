@@ -118,10 +118,12 @@ np::ndarray CalcIntervascularInterpolationField(
   
   {
      //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
+    //EllipticEquationSolver solver;
+    //solver.init(mb.m, mb.rhs, solver_params);
+//     solver.solve(lhs);
+    //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
     EllipticEquationSolver solver;
     solver.init(mb.m, mb.rhs, solver_params);
-//     solver.solve(lhs);
-//    EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
     //solver.init(mb.m, mb.rhs, solver_params);
     solver.solve(lhs);
   }
@@ -242,11 +244,12 @@ np::arraytbase CalcIntervascularInterpolationField(
   
   {
     //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
+    //EllipticEquationSolver solver;
+    //solver.init(mb.m, mb.rhs, solver_params);
+//     solver.solve(lhs);
+    //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
     EllipticEquationSolver solver;
     solver.init(mb.m, mb.rhs, solver_params);
-//     solver.solve(lhs);
-//    EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
-    //solver.init(mb.m, mb.rhs, solver_params);
     solver.solve(lhs);
   }
 

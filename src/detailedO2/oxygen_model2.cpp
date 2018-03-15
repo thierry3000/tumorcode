@@ -1412,6 +1412,10 @@ void DetailedP02Sim::init(Parameters &params_,
     {
       cout<<"works"<<endl;
       po2field.fill(*previous_po2field);
+      /* 
+       * po2vessel has size of vl.GetECount  --> that is the max index range
+       * 
+       */
       if(vl.GetECount() <= previous_po2vessels->size())
       {
         for(int i = 0;i<vl.GetECount();++i)
@@ -1421,7 +1425,11 @@ void DetailedP02Sim::init(Parameters &params_,
       }
       else
       {
-	printf("Warning: more vessels suggested than in previous run present!\n");
+        for(int i = 0;i<previous_po2vessels->size();++i)
+        {
+          po2vessels[i] = previous_po2vessels->operator[](i);
+        }
+        printf("Warning: more vessels suggested than in previous run present!\n");
       }
       //previous_po2vessels
 //       h5cpp::File f2("/localdisk/thierry/output_milotti/with_o2_sim/fakeTumMTS-default-typeI-sample00-milotti_detailed.h5", "r");

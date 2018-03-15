@@ -128,14 +128,20 @@ bool MarkFailingVesselHidden(VesselList3d &vl)
     VesselNode* nd = vl.GetNode(i);
     nd->residual = 0.;
     
-    if (nd->IsBoundary()) continue;
+    if (nd->IsBoundary())
+    {
+      continue;
+    }
     double qsum = 0.;
     double qabs = 0.;
     int n = 0;
     for (int i=0; i<nd->Count(); ++i)
     {
       auto nb = nd->GetNode(i);
-      if (!nb.edge->IsCirculated()) continue;
+      if (!nb.edge->IsCirculated())
+      {
+        continue;
+      }
       if (nb.node->press < nd->press)
       {
         qsum -= nb.edge->q;
@@ -145,7 +151,9 @@ bool MarkFailingVesselHidden(VesselList3d &vl)
         qsum += nb.edge->q;
       }
       else
+      {
         myAssert(nb.edge->q == 0.);
+      }
       qabs += nb.edge->q;
       n++;
     }
@@ -187,7 +195,7 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
   cout << "calcflow (no hematocrit)" << endl;
 #endif
   CompressedFlowNetwork flownet;
-  uint returnOfGetFlowNetwork = GetFlowNetwork(flownet, &vl, bloodFlowParameters, keepTheVesselHematocrit);
+  uint returnOfGetFlowNetwork = GetFlowNetwork(flownet, vl, bloodFlowParameters, keepTheVesselHematocrit);
   if(returnOfGetFlowNetwork>0)
   {
     return;
@@ -225,7 +233,7 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
     //flownet.flow.resize(flownet.num_edges());
     
     for (int i=0; i<flownet.num_vertices(); ++i) flownet.press[i] = flowsys.lhs_get(i);
-    SetFlowValues(&vl, flownet, cond, flownet.press, flownet.hema);
+    SetFlowValues(vl, flownet, cond, flownet.press, flownet.hema);
     
     
 #if 0
@@ -592,22 +600,26 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
   cout << "calcflow (with hematocrit)" << endl;
 #endif
   bool ok = true;
-  
   CompressedFlowNetwork flownet;
-  uint returnOfGetFlowNetwork = GetFlowNetwork(flownet, &vl, bloodFlowParameters, false);
+  uint returnOfGetFlowNetwork = GetFlowNetwork(flownet, vl, bloodFlowParameters, false);
+  if(returnOfGetFlowNetwork>0)
+  {
+    return 42;
+  }
   cout << "GetFlowNetwork called" << endl;
   cout.flush();
-  flownet.press.resize(flownet.num_vertices());
   
-  flownet.flow.resize(flownet.num_edges());
-  flownet.hema.resize(flownet.num_edges());
-  flownet.len.resize(flownet.num_edges());
-  flownet.rad.resize(flownet.num_edges());
+//   
+//   flownet.flow.resize(flownet.num_edges());
+//   flownet.press.resize(flownet.num_vertices());
+//   flownet.hema.resize(flownet.num_edges());
+  
+//   flownet.rad.resize(flownet.num_edges());
   //WARNING
   //flownet.hema.fill(bloodFlowParameters.inletHematocrit); // well defined values for the first compuation of viscosities // Dafug??? this was hardcoded to 0.45 but we would rather actually like to have it filled in GetFlowNetwork i suppose
   //if read in could be zero, which is bad for oxygen calculations
-  cout << "resized " << endl;
-  cout.flush();
+//   cout << "resized " << endl;
+//   cout.flush();
   FlArray visc(flownet.num_edges());
   FlArray cond(flownet.num_edges());
   FlArray hema_last(flownet.num_edges(), std::numeric_limits<FlReal>::max());
@@ -616,15 +628,21 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
   HematocritCalculator hematocritCalculator(flownet, flownet.flow, flownet.press, bloodFlowParameters.inletHematocrit);
   cout << "hematocritCalculator" << endl;
   cout.flush();
+  
   Linsys flowsys;
+  
   cout << "flowsys" << endl;
   cout.flush();
+
   flowsys.initialize_pattern(flownet.num_vertices(), flownet.edges);
   cout << "init initialize_pattern" << endl;
   cout.flush();
   flowsys.scaling_const = CalcFlowCoeff(bloodFlowParameters.viscosityPlasma, 4., 100.);
   cout << "CalcFlowCoeff" << endl;
   cout.flush();
+  
+  //EllipticEquationSolver *solver= new EllipticEquationSolver();
+  
   ptree solver_params = make_ptree("output", 1)("preconditioner","multigrid")("use_smoothed_aggregation", false)("max_iter", 200)("throw",false)("conv","rhs")("max_resid",1.e-10);
   
   
@@ -640,24 +658,30 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
   
   int returnCode = 0; // 1 linsys error
   
-  //for( int iteration=0; iteration<max_iter && !my::checkAbort(); ++iteration )
-  for( int iteration=0; iteration<max_iter; ++iteration )
+  for( int iteration=0; iteration<max_iter && !my::checkAbort(); ++iteration )
   {
     
     //visc is local variable
     CalcViscosities(flownet.rad, flownet.hema, bloodFlowParameters, visc);
     CalcConductivities(flownet.rad, flownet.len, visc, cond);
-
-    flowsys.initialize_pattern(flownet.num_vertices(), flownet.edges);
+    
     flowsys.fill_values(flownet.edges, cond, flownet.bcs);
     
-    EllipticEquationSolver *solver= new EllipticEquationSolver();
+#if 1
+    
     solver_params.put("keep_preconditioner", iteration>3 && last_solver_iterations<15); // && solver.time_iteration<solver.time_precondition);
-    solver->init(flowsys.sys, flowsys.rhs, solver_params);
-    //EllipticEquationSolver *solver = new EllipticEquationSolver(flowsys.sys, flowsys.rhs, solver_params);
+    //solver->init(flowsys.sys, flowsys.rhs, solver_params);
+    //EllipticEquationSolver &&solver = EllipticEquationSolver(flowsys.sys, flowsys.rhs, solver_params);
+    EllipticEquationSolver solver;
+    solver.init(flowsys.sys, flowsys.rhs, solver_params);
     cout << "EllipticEquationSolver instantiated" << endl;
     cout.flush();
-    int return_of_solver = solver->solve(flowsys.lhs);
+    int return_of_solver = solver.solve(flowsys.lhs);
+#else
+    solver_params.put("keep_preconditioner", iteration>3); // && solver.time_iteration<solver.time_precondition);
+    int return_of_solver = SolveEllipticEquation(flowsys.sys, flowsys.rhs, flowsys.lhs, solver_params);
+#endif
+    
     if( return_of_solver > 0 )
     {
       cout << "solver failed to solve!!!!" << endl;
@@ -666,24 +690,24 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
     }
     cout << "solver solve called" << endl;
     cout.flush();
-    last_solver_iterations = solver->iteration_count;
+    last_solver_iterations = solver.iteration_count;
     cout << "iterations read" << endl;
     cout.flush();
-    delete solver;
-    cout << "solver deleted" << endl;
-    cout.flush();
 
-    flowsys.clear_values();//set rhs and sys to zero
+    flowsys.clear_values();//set rhs and sys to zero, not deleting
     cout << "cleared values" << endl;
     cout.flush();
 
-    for (int i=0; i<flownet.num_vertices(); ++i) 
+    for (int i=0; i<flownet.num_vertices(); ++i)
+    {
       flownet.press[i] = flowsys.lhs_get(i);
+    }
     cout << "lhs_read" << endl;
     cout.flush();
-    SetFlowValues(&vl, flownet, cond, flownet.press, flownet.hema);
+    SetFlowValues(vl, flownet, cond, flownet.press, flownet.hema);
     cout << "setFlowValues" << endl;
     cout.flush();
+    
     ok = MarkFailingVesselHidden(vl);
     cout << "MarkFailingVesselHidden" << endl;
     cout.flush();
@@ -753,7 +777,7 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
   {
     cout << "Before SetFlowValues called" << endl;
     cout.flush();
-    SetFlowValues(&vl, flownet, cond, flownet.press, flownet.hema);
+    SetFlowValues(vl, flownet, cond, flownet.press, flownet.hema);
     cout << "SetFlowValues called" << endl;
     cout.flush();
   }
@@ -767,6 +791,9 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
     cout.flush();
     returnCode = CalcFlowWithPhaseSeparation(vl, bloodFlowParameters);
   }
+  //delete solver;
+  cout << "solver deleted" << endl;
+  cout.flush();
   return returnCode;
 }
 

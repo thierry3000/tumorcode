@@ -27,9 +27,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // to check if parameter files are present
 #include <boost/filesystem.hpp>
 #include <memory> //std::shared_ptr
-#ifdef USE_ADAPTION
-  #include "adaption/adaption_model2.h"
-#endif
 #include "common/vesselmodel1.h"
 #include "common/growthfactor_model.h"
 #include "common/hdfio.h"
@@ -41,17 +38,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "trilinos_linsys_construction.h"
 
-#ifdef MILOTTI_MTS
-#define ANN
-  #ifdef ANN
-    #include <ANN/ANN.h>
-  #endif
-  #include <vbl.h>
-#endif
-
-/** from milotti
- */
-
+#include <ANN/ANN.h>
+#include <vbl.h>
 
 
 #define USE_DETAILED_O2
@@ -65,7 +53,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef W_timing
   #include <chrono>
 #endif
-//namespace h5 = h5cpp;
+
 
 namespace FakeTumMTS{
   
@@ -114,10 +102,6 @@ struct Parameters
   int tissuePressureDistribution;
   double tissuePressureWidth;
   double tissuePressureCenterFraction;
-  
-#ifdef USE_ADAPTION
-  Adaption::Parameters adap_params;
-#endif
   //for continuum oxygen calculation
   Int3 lattice_size = {20,20,20};
   double lattice_scale = 10;
@@ -154,7 +138,7 @@ struct Timing
   double run_doMilottiStep = 0;
   double run_findNearestVessel = 0;
   double run_mts_main_loop = 0;
-//   void calculate_timings();
+
   void reset()
   {
     run_init_o2 = 0;
@@ -172,16 +156,13 @@ struct FakeTumorSimMTS : public boost::noncopyable
 {
   Timing currentTiming;
   std::unique_ptr<VesselList3d> vl;
-  // ANN stuff
-//   ANNkd_tree* kd_tree_of_vl;        // ann kd tree structurs
-  const int ANN_dim = 3;            // space dimension
-  const int ANN_maxPts = 25000;      // maximum number of data points --> to limit memory allocation
-  const double ANN_eps = 0.0;       // error bound
-//   ANNpointArray    dataPts;         // data points
-//   ANNpoint         queryPt;         // query point
-//   ANNidxArray      ANN_nnIdx;       // near neighbor indices   --> will be filled during search
-//   ANNdistArray     ANN_dists;       // near neighbor distances --> will be filled during search
-  const int	   ANN_k= 5;        // number of nearest neighbors
+  
+  /** global ANN stuff
+   */
+const int ANN_dim = 3;            // space dimension
+  const int ANN_maxPts = 25000;   // maximum number of data points --> to limit memory allocation
+  const double ANN_eps = 0.0;     // error bound
+  const int	   ANN_k= 5;          // number of nearest neighbors
   
   DynArray<nearest> vectorOfnearestVessels;
 	
@@ -220,9 +201,7 @@ struct FakeTumorSimMTS : public boost::noncopyable
   GfModel_Cell gf_model;
   
   BloodFlowParameters bfparams;
-#ifdef USE_ADAPTION
-  Adaption::Parameters adap_params;
-#endif
+
 #ifdef USE_DETAILED_O2
   DetailedPO2::Parameters o2_params;
 #else
@@ -235,31 +214,36 @@ struct FakeTumorSimMTS : public boost::noncopyable
   int num_iteration;
   int output_num;
 
-  // interface functions
-  //float getGf(const Float3 &pos) const;
+  /**
+   * interface functions for VBL
+   */
+  float estimateTumorRadiusFromCells();
+  
+  //growth factor
   float getGf(const Float3 &pos);
-  //float getPress(const Float3 &pos) const;
   float getPress(const Float3 &pos) ;
-  //float getTumorDens(const Float3 &pos) const;
   float getTumorDens(const Float3 &pos);
   Float3 getGfGrad(const Float3 &pos) const;
   
-  // main functions
-  //int run(int argc, char **argv);
+  //oxygen
+  void findNearestVessel( DetailedPO2::VesselPO2Storage &po2Store);
+  
+  /** 
+   * main functions
+   */
   int run();
   void doStep(double dt);
-  std::string writeOutput();
   
-  //milotti mts
+/** @brief
+ * writes the vbl based stuff to the HDF5 file
+ * returns the H5 Group name 
+ */
+  std::string writeOutput();
+  void WriteCellsSystemHDF_with_nearest_vessel_index(H5::Group &out_cell_group);
+  
   vbl::CellsSystem *tumorcode_pointer_to_currentCellsSystem;
   void doMilottiStep();
   void initMilotti();
-  //void update_milotti_vessels(vbl::CellsSystem &currentCellSys, VesselList3d &vl, DetailedPO2::VesselPO2Storage &po2Store);
-  //void WriteCellsSystemHDF(h5cpp::Group &out_cell_group);
-  void WriteCellsSystemHDF_with_nearest_vessel_index(H5::Group &out_cell_group);
-  //void fillKdTreeFromVl();
-  void findNearestVessel( DetailedPO2::VesselPO2Storage &po2Store);
-  float estimateTumorRadiusFromCells();
 };
 }//end FakeTum
 

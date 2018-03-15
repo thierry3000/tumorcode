@@ -740,8 +740,8 @@ Steppers::StepControl Calculator::doStep(State& state, const Steppers::StepContr
 //       myAssert(c > -0.01);
 //     }
 //   }
-  cout << "conc_e = " << state.field[0].valueStatistics() << endl;
-  cout << "conc_c = " << state.field[1].valueStatistics() << endl;
+  //cout << "conc_e = " << state.field[0].valueStatistics() << endl;
+  //cout << "conc_c = " << state.field[1].valueStatistics() << endl;
 #endif
   cout << format("t=%f, euler_dt=%f | dt_kdiff=%f, dt_src_impl=%f, dt_vel=%f, dt_k12=%f")
     % ctrl.t

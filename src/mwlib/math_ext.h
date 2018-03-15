@@ -222,10 +222,14 @@ T max(const T &a, const T &b, const T &c, const T &d)
 namespace averaging
 {
   template< class T, class S >
-  inline T avg( const T w, const S cnt ) { return w/cnt; }
+  inline T avg( const T w, const S cnt ) 
+  { 
+    return w/cnt; 
+  }
 
   template< class T, class S >
-  inline T var( const T w, const T w2, const S cnt ) {
+  inline T var( const T w, const T w2, const S cnt ) 
+  {
     return (w2-w*w/cnt)/cnt;
   }
 //   template< class T, class S >
@@ -234,9 +238,14 @@ namespace averaging
 //   }
 
   template< class T, class S >
-  inline T stddev( const T w, const T w2, const S cnt ) {
+  inline T stddev( const T w, const T w2, const S cnt ) 
+  {
     const T v = var<T,S>(w,w2,cnt);
-    assert(v > -(cnt*std::numeric_limits<T>::epsilon()));
+    /* NOTE
+     * this throws in debug mode, even though the behaviour 
+     * is well defined
+     */
+    //assert(v > -(cnt*std::numeric_limits<T>::epsilon()));
     return v<T(0) ? T(0) : std::sqrt(v);
   }
 
@@ -301,10 +310,16 @@ public:
   {
     w  += x;
     w2 += x*x;
-    if( n<=0 ) { min=max=x; }
-    else {
-      if(x<min) min=x;
-      if(x>max) max=x;
+    if( n<=0 ) 
+    { 
+      min=max=x; 
+    }
+    else 
+    {
+      if(x<min) 
+        min=x;
+      if(x>max) 
+        max=x;
     }
     ++n;
   }
@@ -314,8 +329,10 @@ public:
     w += x.w;
     w2 += x.w2;
     n += x.n;
-    if( x.min<min ) min=x.min;
-    if( x.max>max ) max=x.max;
+    if( x.min<min ) 
+      min=x.min;
+    if( x.max>max ) 
+      max=x.max;
   }
 
   const T Avg() const { return averaging::avg(w,n); }

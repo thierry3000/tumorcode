@@ -49,6 +49,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   #include "../adaption/adaption_model2.h"
 #endif
 
+#ifndef NDEBUG
+#include <stdio.h>
+#include <execinfo.h> //backtrace()
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
+//https://stackoverflow.com/questions/77005/how-to-automatically-generate-a-stacktrace-when-my-gcc-c-program-crashes
+void handler(int sig) {
+  void *array[42];
+  size_t size;
+
+  // get void*'s for all entries on the stack
+  size = backtrace(array, 42);
+
+  // print out all the frames to stderr
+  fprintf(stderr, "Error: signal %d:\n", sig);
+  backtrace_symbols_fd(array, size, STDERR_FILENO);
+  exit(1);
+}
+void baz() {
+ int *foo = (int*)-1; // make a bad pointer
+  printf("%d\n", *foo);       // causes segfault
+}
+
+void bar() { baz(); }
+void foo() { bar(); }
+#endif
 
 namespace Tumors{
   
@@ -224,6 +251,9 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   if (!mpi_is_initialized)
     //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
     MPI_Init_thread(0, NULL, 1,&prov);
+#endif
+#ifndef NDEBUG
+  signal(SIGSEGV, handler);
 #endif
   int returnCode = s.run();
   }

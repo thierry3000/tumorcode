@@ -327,13 +327,13 @@ FlReal PressureRadiusRelation( FlReal rad, bool bArtery )
 /*------------------------------------------------------------------
 --------------------------------------------------------------------*/
 uint GetFlowNetwork(CompressedFlowNetwork &fl,
-                    const VesselList3d* vl,
+                    const VesselList3d &vl,
                     const BloodFlowParameters &bfparams,
                     bool keepTheVesselHematocrit
  		  )
 {
-  int ecnt = vl->GetECount();
-  int ncnt = vl->GetNCount();
+  int ecnt = vl.GetECount();
+  int ncnt = vl.GetNCount();
 
   fl.edges.reserve(ecnt);
   fl.org2new_vertex.resize(ncnt);
@@ -341,10 +341,10 @@ uint GetFlowNetwork(CompressedFlowNetwork &fl,
   // copy only perfused edges
   for(int i=0; i<ecnt; ++i)
   {
-    const Vessel* v = vl->GetEdge(i);
+    const Vessel* v = vl.GetEdge(i);
     if (!v->IsCirculated()) 
       continue;
-    if (!vl->HasLattice())
+    if (!vl.HasLattice())
     {
       if (v->NodeA()->worldpos == v->NodeB()->worldpos) 
 	continue; //well obviously this happens :-(
@@ -379,7 +379,7 @@ uint GetFlowNetwork(CompressedFlowNetwork &fl,
   fl.bcs.clear();
   for(int i=0; i<ncnt; ++i)
   {
-    const VesselNode* vc= vl->GetNode(i);
+    const VesselNode* vc= vl.GetNode(i);
     // insert boundary nodes into the bcs array
     if (vc->IsBoundary())
     {
@@ -391,13 +391,13 @@ uint GetFlowNetwork(CompressedFlowNetwork &fl,
        */
       if (id != IntegerMap::unused())//and fl.bcs.find(vc->Index()) == fl.bcs.end())
       {
-	if( vl->GetBCMap().find(vc) == vl->GetBCMap().end())//not present
+	if( vl.GetBCMap().find(vc) == vl.GetBCMap().end())//not present
 	{
 	  fl.bcs[id] = FlowBC(FlowBC::PIN, vc->press);
 	}
 	else //is present
 	{
-	  fl.bcs[id] = vl->GetBCMap().at(vc);
+	  fl.bcs[id] = vl.GetBCMap().at(vc);
 	}
       }//if not unused
     }//if boundary
@@ -417,15 +417,19 @@ uint GetFlowNetwork(CompressedFlowNetwork &fl,
     fl.len.resize(fl.edges.size());
     fl.rad.resize(fl.edges.size());
     fl.hema.resize(fl.edges.size());
-    const VesselList3d::LatticeData &ld = vl->Ld();
+    fl.flow.resize(fl.edges.size());
+    
+    fl.press.resize(fl.num_vertices());
+    
+    const VesselList3d::LatticeData &ld = vl.Ld();
     for(int i=0, k=0; i<ecnt; ++i)
     {
-      const Vessel* v = vl->GetEdge(i);
+      const Vessel* v = vl.GetEdge(i);
       if (!v->IsCirculated()) continue;
       fl.hema[k] = keepTheVesselHematocrit ? v->hematocrit : bfparams.inletHematocrit;
       fl.rad[k] = v->r;
       double wl=0;
-      if (!vl->HasLattice())
+      if (!vl.HasLattice())
       {
         wl = (v->NodeA()->worldpos.transpose()-v->NodeB()->worldpos.transpose()).norm();
 	myAssert(wl>0);
@@ -448,20 +452,20 @@ cout<<"posB : "<<v->NodeB()->worldpos<<endl;
 }
 
 
-void SetFlowValues( VesselList3d* vl,
+void SetFlowValues( VesselList3d &vl,
                     const CompressedFlowNetwork &fl,
                     const FlArray &cond,
                     const FlArray &press,
                     const FlArray &hema
 		    )
 {
-  int ecnt = vl->GetECount();
-  int ncnt = vl->GetNCount();
+  int ecnt = vl.GetECount();
+  int ncnt = vl.GetNCount();
   
   //set node stuff
   for(int i=0; i<ncnt; ++i)
   {
-    VesselNode *nd= vl->GetNode(i);
+    VesselNode *nd= vl.GetNode(i);
     if (fl.org2new_vertex[nd->Index()] != IntegerMap::unused())
     {
       nd->press = press[fl.org2new_vertex[nd->Index()]];
@@ -470,7 +474,7 @@ void SetFlowValues( VesselList3d* vl,
   //set edge stuff
   for(int i=0, k=0; i<ecnt; ++i)
   {
-    Vessel* v = vl->GetEdge(i);
+    Vessel* v = vl.GetEdge(i);
     if(v->IsCirculated())
     {
       int a = fl.org2new_vertex[v->NodeA()->Index()];
@@ -483,13 +487,13 @@ void SetFlowValues( VesselList3d* vl,
         cout<< "bad hema at " << k << "... " << hema[k] <<endl;
 #endif
       double wl;
-      if( !vl->HasLattice() )
+      if( !vl.HasLattice() )
       {
 	wl = (v->NodeA()->worldpos.transpose()-v->NodeB()->worldpos.transpose()).norm();
       }
       else
       {
-	const VesselList3d::LatticeData &ld = vl->Ld();
+	const VesselList3d::LatticeData &ld = vl.Ld();
 	wl = v->WorldLength(ld);
       }
       myAssert(wl>0);

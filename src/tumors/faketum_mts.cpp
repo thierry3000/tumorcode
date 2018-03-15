@@ -204,7 +204,7 @@ float FakeTumMTS::FakeTumorSimMTS::getGf(const Float3 &pos)
   FieldInterpolate::ValueAveraged(state.gffield, grid.ld, FieldInterpolate::Const(0.f), pos);
 }
 
-//float FakeTumMTS::FakeTumorSimMTS::getPress(const Float3 &pos) const
+
 float FakeTumMTS::FakeTumorSimMTS::getPress(const Float3 &pos)
 {
 #ifdef someInteraction
@@ -257,12 +257,13 @@ Float3 FakeTumMTS::FakeTumorSimMTS::getGfGrad(const Float3 &pos) const
 
 int FakeTumMTS::FakeTumorSimMTS::run()
 {
-  //initialize cell system //use memory on heap to not mess up allocation
-  //vbl::CellsSystem *currentCellsSystem = new vbl::CellsSystem();
+  //initialize cell system 
+  //use memory on heap to not mess up allocation
   tumorcode_pointer_to_currentCellsSystem = new vbl::CellsSystem();
   // direct cout through log
   cout.rdbuf(my::log().rdbuf());
   {
+    //read vessels from file
     H5::H5File file;
     H5::Group h5_vessels;
     try{
@@ -287,8 +288,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     vl->Ld().print(cout); cout  << endl;
     cout << "--------------------"<< endl;
 
+    // I/O params
     H5::Group h5params = file.openGroup("/parameters");
-    
     try{
       string message;
       readAttrFromH5(h5params, string("MESSAGE"),message);
@@ -301,8 +302,9 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     {
       e.printError();
     }
-    
     file.close();
+    
+    /* READ IN DONE */
     
     /* define callback providing information about the simulation */
     VesselModel1::Callbacks callbacks;
@@ -336,8 +338,6 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   
 #ifdef USE_DETAILED_O2
   /* set up detailed oxygen calculation */
-  //this should be read from file later on
-  //DetailedPO2::Parameters oxy_params;
   double grid_lattice_const = 40;
   double safety_layer_size = 120;
   boost::optional<Int3> grid_lattice_size;
@@ -387,6 +387,9 @@ int FakeTumMTS::FakeTumorSimMTS::run()
 #ifdef W_timing
         currentTiming.begin_o2 = std::chrono::steady_clock::now();
 #endif
+        /* O2 stuff is initialized
+         * NOTE: size of po2Store is set here
+         */
         o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels);
         cout << "\nInit O2 completed" << endl;
         o2_sim.run(*vl);
@@ -414,6 +417,9 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       currentTiming.begin_ann = std::chrono::steady_clock::now();
 #endif
       findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
+#ifndef NDEBUG
+      std::cout << " findNearestVessel finished " << std::endl;std::cout.flush();
+#endif
 #ifdef W_timing
       currentTiming.end_ann = std::chrono::steady_clock::now();
       currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
@@ -473,15 +479,6 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     currentTiming.run_doMilottiStep = currentTiming.run_doMilottiStep + currentTiming.time_diff.count();
 #endif
     
-#ifdef W_timing
-    currentTiming.begin_ann = std::chrono::steady_clock::now();
-#endif
-    findNearestVessel(o2_sim.po2vessels);
-#ifdef W_timing
-    currentTiming.end_ann = std::chrono::steady_clock::now();
-    currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
-    currentTiming.run_ann = currentTiming.run_ann + currentTiming.time_diff.count();
-#endif
     ++num_iteration;
   }
 
@@ -501,7 +498,7 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
   
   /* this calculates the simple diffusion of substances */
   calcChemFields();
-  //tumor_radius += dt * params.tumor_speed;
+  /* maybe not the best estimate, but first approach */
   tumor_radius = estimateTumorRadiusFromCells();
 }
 
@@ -509,14 +506,16 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
 void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
 {
   cout << format("start mts at tumor time: %f\n" ) % time;
-  //from milotti
-  /* the tumor time is given in hours 
+  /** 
+   * the tumor time is given in hours 
    * evolve cells until that
    */
   uint returnValue = tumorcode_pointer_to_currentCellsSystem->runMainLoop( time * 3600 );
   
-  // for safety reasons we use both output structures
-  // this one the the output of milotti, see WriteCellsSystemHDF for the hdf output
+  /** 
+   * for safety reasons we use both output structures (hdf and vbl)
+   * this one the the output of milotti, see WriteCellsSystemHDF for the hdf output
+   */
   if ( tumorcode_pointer_to_currentCellsSystem->Get_ready2start() )
   {
     tumorcode_pointer_to_currentCellsSystem->Print2logfile("Cells at the end of the run");
@@ -860,76 +859,6 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   cout<< "finished writting cells to hdf" << endl;
 }
 
-// void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF(h5cpp::Group &out_cell_group)
-// {
-//   cout<< "going to write cells to a hdf file" << endl;
-//   int numberOfCells = currentCellsSystem->Get_ncells();
-//   std::vector<double> x = currentCellsSystem->Get_x();
-//   std::vector<double> y = currentCellsSystem->Get_y();
-//   std::vector<double> z = currentCellsSystem->Get_z();
-//   DynArray<float> a(3*numberOfCells);
-//   for( int i = 0; i<numberOfCells ;++i)
-//   {
-// //     a[3*i+0]= vl.GetNode(i)->worldpos[0]; /// from world part
-// //     a[i] = x[i];
-// //     a[i+1] = y[i];
-// //     a[i+2] = z[i];
-//     a[3*i+0] = x[i];
-//     a[3*i+1] = y[i];
-//     a[3*i+2] = z[i];
-//   }
-//   if(!out_cell_group.exists("cell_center_pos"))
-//   {
-// //     h5cpp::Dataset ds = h5cpp::create_dataset<float>(vesselgroup, "cell_center_pos", h5cpp::Dataspace::simple_dims(a.size()/3,3), &a[0]);
-//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "cell_center_pos", h5cpp::Dataspace::simple_dims(numberOfCells,3), &a[0]);
-//   }
-//   DynArray<float> buffer(numberOfCells);
-//   for( int i = 0; i<numberOfCells; ++i)
-//   {
-//     buffer[i] = currentCellsSystem->Get_r()[i];
-//   }
-//   if(!out_cell_group.exists("cell_radii"))
-//   {
-//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "cell_radii", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
-//   }
-//   // glucose extracellular Get_G_extra()
-//   for( int i = 0; i<numberOfCells; ++i)
-//   {
-//     buffer[i] = currentCellsSystem->Get_G_extra()[i];
-//   }
-//   if(!out_cell_group.exists("glucose_ex"))
-//   {
-//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "glucose_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
-//   }
-//   // ph Get_pH
-//   for( int i = 0; i<numberOfCells; ++i)
-//   {
-//     buffer[i] = currentCellsSystem->Get_pH()[i];
-//   }
-//   if(!out_cell_group.exists("pH_ex"))
-//   {
-//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "pH_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
-//   }
-//   // oxygen Get_O2
-//   for( int i = 0; i<numberOfCells; ++i)
-//   {
-//     buffer[i] = currentCellsSystem->Get_O2()[i];
-//   }
-//   if(!out_cell_group.exists("o2"))
-//   {
-//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "o2", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
-//   }
-//   // lactate Get_AcL_extra
-//   for( int i = 0; i<numberOfCells; ++i)
-//   {
-//     buffer[i] = currentCellsSystem->Get_AcL_extra()[i];
-//   }
-//   if(!out_cell_group.exists("AcL_ex"))
-//   {
-//     h5cpp::Dataset ds = h5cpp::create_dataset<float>(out_cell_group, "AcL_ex", h5cpp::Dataspace::simple_dims(numberOfCells,1), &buffer[0]);
-//   }
-//   cout<< "finished writting cells to hdf" << endl;
-// }
 
 double calculate_distance_from_vessel_to_point_in_space( const Float3 &a, const Float3 &b, ANNpoint &spacePoint)
 {
@@ -990,7 +919,8 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
    * index within the the vessel list
    */
   std::map <uint, uint> ann_to_vl;
-  std::map <uint, uint> vl_to_ann;
+  //obviously there is no need for this (so far)
+  //std::map <uint, uint> vl_to_ann;
   
   int ecnt      =vl->GetECount();// actual number of data points
   int nPts      = 0; //actual number of data points required for the kdtree
@@ -1006,7 +936,7 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
       continue;
     }
     ann_to_vl[nPts]=i;
-    vl_to_ann[i]=nPts;
+    //vl_to_ann[i]=nPts;
     nPts++;
   }
   
@@ -1108,10 +1038,15 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
   //transfere this nice informations to vbl
   //note this could nicely done in parallel
   tumorcode_pointer_to_currentCellsSystem->clean_BloodVesselVector();
+  cout << "cleaned BloodVesselVector" << endl;cout.flush();
   for( int i = 0; i<numberOfCells ;++i)
   {
     Float3 buffer;
     std::array<double,3> bufferToFill;
+#ifndef NDEBUG
+    printf("ecnt: %i, po2Store.size(): %i,  cell_i: %i, ann_to_vl[i]: %i", ecnt, po2Store.size(), i, ann_to_vl[i]);
+    myAssert(ann_to_vl[i]<po2Store.size());
+#endif
     const Vessel* v= vl->GetEdge(ann_to_vl[i]);
     vbl::BloodVessel suggestion = vbl::BloodVessel();
     
@@ -1133,7 +1068,7 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
 
   //     suggestion.SetBloodVesselO2start( envO2 );
   //     suggestion.SetBloodVesselO2end( envO2 );
-
+  
     float o2_a = to_vbl_o2_units(po2Store[v->Index()][0]);
     suggestion.SetBloodVesselO2start( o2_a );
     float o2_b = to_vbl_o2_units(po2Store[v->Index()][1]);
@@ -1152,15 +1087,6 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
     
     tumorcode_pointer_to_currentCellsSystem->Add_BloodVesselVector(suggestion);
   }
+  cout << "exit find nearest" << endl;cout.flush();
 }
-// void FakeTumMTS::Timing::calculate_timings()
-// {
-//   run_calcflow = std::chrono::duration_cast<std::chrono::microseconds>(end_calcflow-begin_calcflow).count();
-//   run_o2 = std::chrono::duration_cast<std::chrono::microseconds>(end_o2-begin_o2).count();
-//   run_ann = std::chrono::duration_cast<std::chrono::microseconds>(end_ann-begin_ann).count();
-//   run_doStep = std::chrono::duration_cast<std::chrono::microseconds>(end_doStep-begin_doStep).count();
-//   run_doMilottiStep = std::chrono::duration_cast<std::chrono::microseconds>(end_doMilottiStep-begin_doMilottiStep).count();
-//   run_findNearestVessel = std::chrono::duration_cast<std::chrono::microseconds>(end_findNearestVessel-begin_findNearestVessel).count();
-//   run_mts_main_loop = std::chrono::duration_cast<std::chrono::microseconds>(end_mts_main_loop-begin_mts_main_loop).count();
-//   
-// }
+

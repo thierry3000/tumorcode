@@ -110,3 +110,4 @@ if (MPI_NEEDED)
 endif()
 
 add_subdirectory(H5)
+add_subdirectory(intel)

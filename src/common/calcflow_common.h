@@ -81,14 +81,14 @@ static void remap_keys(const Map1 &src, Map2 &dst, const Keymap &keymap)
 void CalcViscosities( const FlArray &rad, const FlArray &hema, const BloodFlowParameters &bloodFlowParameters, FlArray &visc);
 void CalcConductivities(const FlArray &rad, const FlArray &len, const FlArray &visc, FlArray &cond);
 
-void SetFlowValues( VesselList3d* vl,
+void SetFlowValues( VesselList3d &vl,
                     const CompressedFlowNetwork &fl,
                     const FlArray &cond,
                     const FlArray &press,
                     const FlArray &hema
 		    );
 uint GetFlowNetwork(CompressedFlowNetwork &fl,
-                    const VesselList3d* vl,
+                    const VesselList3d &vl,
                     const BloodFlowParameters &bfparams,
                     bool keepTheVesselHematocrit
 		    );

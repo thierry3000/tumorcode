@@ -419,6 +419,9 @@ class EllipticEquationSolver : boost::noncopyable
   ptree params;
   bool keep_preconditioner;
 public:
+  EllipticEquationSolver();
+  //EllipticEquationSolver(const Teuchos::RCP<Epetra_CrsMatrix> &_matrix, const Teuchos::RCP<const Epetra_Vector> &_rhs, const boost::property_tree::ptree& _params);
+  ~EllipticEquationSolver();
   int solve(const Teuchos::RCP<Epetra_Vector> &lhs);
   double time_precondition, time_iteration;
   int iteration_count;

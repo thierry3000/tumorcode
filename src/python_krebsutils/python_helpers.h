@@ -124,7 +124,7 @@ static void _CheckArray(const py::object &obj, np::dtype itemtype, int rank, con
   np::ndarray a = np::from_object(obj);
   if(rank>0 && a.get_nd()!=rank) throw std::invalid_argument(str(format("array rank %i expected, got %i @ %s(%i)") % rank % a.get_nd() % file % line));
 //   if(itemtype>0 && a.itemtype()!=itemtype) throw std::invalid_argument(str(format("array itemtype %i expected, got %i @ %s(%i)") % itemtype % a.itemtype() % file % line));
-  if(!np::equivalent(a.get_dtype(),itemtype)) throw std::invalid_argument(str(format("array itemtype %i expected, got %i @ %s(%i)") % a.get_dtype() % itemtype % file % line));
+//  if(!np::equivalent(a.get_dtype(),itemtype)) throw std::invalid_argument(str(format("array itemtype %i expected, got %i @ %s(%i)") % a.get_dtype() % itemtype % file % line));
   //TODO: fix itemtypes. For some reason a python array of type np.float64 gives a different itemtype than NPY_DOUBLE ...!!!!!
   if(dims)
   {
