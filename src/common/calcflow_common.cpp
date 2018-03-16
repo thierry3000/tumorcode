@@ -482,7 +482,7 @@ void SetFlowValues( VesselList3d &vl,
       myAssert(a != IntegerMap::unused() && b != IntegerMap::unused());
       if(hema[k]>0)
         v->hematocrit = hema[k];
-#ifdef DEBUG
+#ifndef NDEBUG
       else
         cout<< "bad hema at " << k << "... " << hema[k] <<endl;
 #endif

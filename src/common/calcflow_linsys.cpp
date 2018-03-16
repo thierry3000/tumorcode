@@ -40,51 +40,67 @@ using boost::property_tree::make_ptree;
 
 Linsys::Linsys()
 {
+#ifndef NDEBUG
+  std::cout << "Linsys constructor called " << std::endl;std::cout.flush();
+#endif
 }
+Linsys::~Linsys()
+{
+#ifndef NDEBUG
+  std::cout << "Linsys destructor called " << std::endl;std::cout.flush();
+#endif
+  //delete sys;
+  //delete rhs;
+  //delete lhs;
+  //delete sp;
+  //delete epetra_map;
+}
+
 void Linsys::initialize_pattern(int num_vertices, const std::vector< my::eqpair< int > >& edges)
 {
-    std::vector<int> column_cnt(num_vertices, 1);
+    column_cnt = std::vector<int>(num_vertices, 1);
     for (EdgeIter it = edges.begin(); it != edges.end(); ++it)
     {
       column_cnt[it->first]++;
       column_cnt[it->second]++;
     }
 #ifdef EPETRA_MPI
-#ifdef DEBUG //some mpi error left in ubuntu 16
-    //std::printf("is the bad thing happening here?");
-#endif
-    Epetra_MpiComm epetra_comm(MPI_COMM_SELF);
+  Epetra_MpiComm epetra_comm(MPI_COMM_SELF);
 #endif
 #ifndef EPETRA_MPI
     Epetra_SerialComm epetra_comm;
 #endif
-    //epetra_comm.Print(cout); cout << endl;
-    Epetra_Map epetra_map(num_vertices, 0, epetra_comm);
-    SparsityPattern sp(Copy, epetra_map, get_ptr(column_cnt), true);
+    
+    epetra_map = Teuchos::rcp(new Epetra_Map(num_vertices, 0, epetra_comm));
+    sp = Teuchos::rcp(new SparsityPattern(Copy, *epetra_map, get_ptr(column_cnt), true));
 
     for (int i=0; i<num_vertices; ++i)
     {
-      sp.InsertGlobalIndices(i, 1, &i);
+      sp->InsertGlobalIndices(i, 1, &i);
     }
     for (int i=0; i<edges.size(); ++i)
     {
       int v[2] = { edges[i].first, edges[i].second };
-      sp.InsertGlobalIndices(v[0], 1, &v[1]);
-      sp.InsertGlobalIndices(v[1], 1, &v[0]);
+      sp->InsertGlobalIndices(v[0], 1, &v[1]);
+      sp->InsertGlobalIndices(v[1], 1, &v[0]);
     }
-    sp.FillComplete();
-    sp.OptimizeStorage();
+    sp->FillComplete();
+    sp->OptimizeStorage();
 
-//     sys.reset(new Epetra_CrsMatrix(Copy, sp));
-//     rhs.reset(new Epetra_Vector(epetra_map));
-//     lhs.reset(new Epetra_Vector(epetra_map));
-    sys = Teuchos::RCP<Epetra_CrsMatrix>(new Epetra_CrsMatrix(Copy, sp));
-    rhs = Teuchos::RCP<Epetra_Vector>(new Epetra_Vector(epetra_map));
-    lhs = Teuchos::RCP<Epetra_Vector>(new Epetra_Vector(epetra_map));
+//     sys = new Epetra_CrsMatrix(Copy, *sp);
+//     rhs = new Epetra_Vector(*epetra_map);
+//     lhs = new Epetra_Vector(*epetra_map);
+//     sys = std::move(Teuchos::RCP<Epetra_CrsMatrix>(new Epetra_CrsMatrix(Copy, *sp)));
+//     rhs = std::move(Teuchos::RCP<Epetra_Vector>(new Epetra_Vector(*epetra_map)));
+//     lhs = std::move(Teuchos::RCP<Epetra_Vector>(new Epetra_Vector(*epetra_map)));
+    sys = Teuchos::rcp(new Epetra_CrsMatrix(Copy, *sp));
+    rhs = Teuchos::rcp(new Epetra_Vector(*epetra_map));
+    lhs = Teuchos::rcp(new Epetra_Vector(*epetra_map));
     scaling_const = 1.;
 }
 void Linsys::sys_add(int a, int b, double val)
 {
+  //int Epetra_CrsMatrix::SumIntoMyValues(int Row, int NumEntries, const double * srcValues, const int *Indices)
   sys->SumIntoMyValues(a, 1, &val, &b);
 }
 void Linsys::sys_set(int a, int b, double val)

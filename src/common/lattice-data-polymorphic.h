@@ -142,7 +142,7 @@ public:
   virtual void Init(const BBox3 &bb, float scale) { ld.Init(bb, scale); }
 
   virtual float Scale() const { return ld.Scale(); }
-  //virtual string GetType() const { return ld.getType(); }
+  virtual string GetType() const;
   virtual void SetScale(float s) { ld.Scale(s); }
   virtual BBox3 Box() const { return ld.Box(); }
 

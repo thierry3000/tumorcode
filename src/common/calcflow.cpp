@@ -668,35 +668,38 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
     flowsys.fill_values(flownet.edges, cond, flownet.bcs);
     
 #if 1
-    
-    solver_params.put("keep_preconditioner", iteration>3 && last_solver_iterations<15); // && solver.time_iteration<solver.time_precondition);
+    /** TF
+     * probably not a good idea, put I will go on and NOT consider the 
+     * preconditioner at the moment. For the small systems this should work.
+     * 
+     * I am also not sure, why this additional EllipticEquationSolver stuff is here.
+     */
+    solver_params.put("keep_preconditioner", iteration>3 && last_solver_iterations<15); 
     //solver->init(flowsys.sys, flowsys.rhs, solver_params);
     //EllipticEquationSolver &&solver = EllipticEquationSolver(flowsys.sys, flowsys.rhs, solver_params);
-    EllipticEquationSolver solver;
-    solver.init(flowsys.sys, flowsys.rhs, solver_params);
-    cout << "EllipticEquationSolver instantiated" << endl;
-    cout.flush();
-    int return_of_solver = solver.solve(flowsys.lhs);
+    //EllipticEquationSolver solver;
+    //solver.init(*flowsys.sys, *flowsys.rhs, solver_params);
+    //int return_of_solver = solver.solve(*flowsys.lhs);
+    flowsys.solve();
 #else
     solver_params.put("keep_preconditioner", iteration>3); // && solver.time_iteration<solver.time_precondition);
     int return_of_solver = SolveEllipticEquation(flowsys.sys, flowsys.rhs, flowsys.lhs, solver_params);
 #endif
     
-    if( return_of_solver > 0 )
-    {
-      cout << "solver failed to solve!!!!" << endl;
-      returnCode=1;
-      break;
-    }
-    cout << "solver solve called" << endl;
-    cout.flush();
-    last_solver_iterations = solver.iteration_count;
-    cout << "iterations read" << endl;
-    cout.flush();
+//     if( return_of_solver > 0 )
+//     {
+//       cout << "solver failed to solve!!!!" << endl;
+//       returnCode=1;
+//       break;
+//     }
+//     cout << "solver solve called" << endl;
+//     cout.flush();
+//     last_solver_iterations = solver.iteration_count;
+//     cout << "iterations read" << endl;
+//     cout.flush();
 
-    flowsys.clear_values();//set rhs and sys to zero, not deleting
-    cout << "cleared values" << endl;
-    cout.flush();
+//    flowsys.clear_values();//set rhs and sys to zero, not deleting
+
 
     for (int i=0; i<flownet.num_vertices(); ++i)
     {
@@ -731,10 +734,7 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
 
     hematocritCalculator.check_hematocrit_range = delta_h<1.e-3 && delta_q<1.e-3 && iteration >= 5;
     hematocritCalculator.UpdateHematocrit();
-    cout << "Update hematocrit" << endl;
-    cout.flush();
-    cout << "max relative rbc loss: " << CalcHemaResidual(flownet, cond, flownet.hema) << endl;
-    cout.flush();
+    
 #ifndef SILENT
     cout << "max relative rbc loss: " << CalcHemaResidual(flownet, cond, flownet.hema) << endl;
 #endif

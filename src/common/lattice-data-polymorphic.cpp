@@ -91,5 +91,11 @@ Derived<Ld>::Derived(const Ld& _ld): ld(_ld)
   ld.print(std::cout);
 }
 
+template <class Ld>
+string Derived<Ld>::GetType() const
+{
+  return string("FCC");
+}
+
 
 }//polymorphic_latticedata

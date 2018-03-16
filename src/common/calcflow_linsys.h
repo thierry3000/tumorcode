@@ -40,6 +40,7 @@ using boost::property_tree::make_ptree;
 
 struct Linsys
 {
+  
   typedef Epetra_CrsGraph SparsityPattern;
   //typedef Epetra_CrsMatrix Matrix;
   //typedef Epetra_Vector Vector;
@@ -48,11 +49,19 @@ struct Linsys
   typedef EdgeRange::const_iterator EdgeIter;
   typedef boost::unordered_map<int, FlowBC> BcsMap;
 
-  Teuchos::RCP <Epetra_CrsMatrix> sys;
-  Teuchos::RCP <Epetra_Vector> rhs, lhs;
+  Teuchos::RCP<Epetra_CrsMatrix> sys;
+  Teuchos::RCP<Epetra_Vector> rhs,lhs;
+  //Epetra_CrsMatrix *sys;
+  //Epetra_Vector *rhs, *lhs;
   double scaling_const;
+  Teuchos::RCP<SparsityPattern> sp;
+  Teuchos::RCP<Epetra_Map> epetra_map;
+  //SparsityPattern *sp;
+  //Epetra_Map *epetra_map;
+  std::vector<int> column_cnt;
 
   Linsys();
+  ~Linsys();
   //Linsys(){} // void constructor make sure you initialize everything in initialize_pattern
   
   void initialize_pattern(int num_vertices, const std::vector<my::eqpair<int> > &edges);

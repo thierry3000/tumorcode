@@ -1247,35 +1247,34 @@ void Grower::UpscaleTrees()
   // first get vessels on subdivided lattice 
   //std::unique_ptr<LatticeData> oldld = vl->Ld().Clone();
   //auto &the_very_old_lattice =vl->Ld();
-  
+#ifndef NDEBUG
   std::cout << "cloning finished" << std::endl;
+#endif
   //hope this wont end too bad, it ended bad TF 16.02.2018
   //std::unique_ptr<LatticeData> oldld(vl->Ld().get());
   auto former_lattice_scale = vl->Ld().Scale();
   auto former_lattice_type = vl->Ld().GetType();
-  
+
+#ifndef NDEBUG
   std::cout << "former lattice scale: " << former_lattice_scale << std::endl;
   std::cout << "former lattice type: " << former_lattice_type << std::endl;
+#endif  
   
   //allocates new memory
-  std::unique_ptr<LatticeData> oldld = polymorphic_latticedata::Make_ld("FCC", vl->Ld().Box(), vl->Ld().Scale());
-//   std::auto_ptr<VesselList3d> vl_new = GetSubdivided(vl, 2, oldld->Scale(), 0);
-  //std::unique_ptr<VesselList3d> vl_new = GetSubdivided(vl, 2, oldld->Scale(), 0);
-  std::cout << vl->Ld().Scale();
-  std::cout.flush();
-  std::cout << "size of vl->GetBCMap() before subdividing: " << vl->GetBCMap().size() << std::endl;
-  std::cout << " Ld before subdividing" << std::endl;
-  vl->Ld().print(std::cout);
+  /** NOTE: 
+   * for cubic lattices this has to be changed, but be aware that adding
+   * members in LatticeData is dangerous because of memory corruption
+   */
+  
+  std::unique_ptr<LatticeData> oldld = polymorphic_latticedata::Make_ld(former_lattice_type.c_str(), vl->Ld().Box(), vl->Ld().Scale());
+
   GetSubdivided(vl, 2, vl->Ld().Scale(), 0);
-  //vl = std::move(subdivided);
-  //vl = std::move(GetSubdivided(vl, 2, vl->Ld().Scale(), 0));
+#ifndef NDEBUG
   std::cout << " Ld after subdividing" << std::endl;
   vl->Ld().print(std::cout);
   std::cout.flush();
-  //vl = std::move(vl_new);
-  //const LatticeData &ld = vl->Ld();
-  //vl = GetSubdivided(vl, 2, vl->Ld().Scale(), 0);
-  //const LatticeData &ld = vl->Ld();
+#endif
+  
   
   VESSGEN_MAXDBG(vl->IntegrityCheck();)
 
@@ -1348,7 +1347,9 @@ void Grower::HierarchicalGrowth()
     DebugOutVessels(*this, str(format("without_capillaries_hit_%i") % hierarchy_level));
   
   UpscaleTrees();
+#ifndef NDEBUG
   std::cout << "splitting" << std::endl;
+#endif
   SplitSegmentsToOneLatticeBond(*vl);
   vl->Ld().print(std::cout);
   // obtain new terminal branches for random growth
@@ -1456,9 +1457,9 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
   {
     for (hierarchy_level=0; hierarchy_level<max_hierarchy_level; ++hierarchy_level)
     {
-      for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
-      // this is for hardcore debugging, force only 20 iterations per level
-      //for (iteration_number_on_level = 0; iteration_number_on_level<20; ++iteration_number_on_level)
+      //for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
+      // this is for hardcore debugging, force only 10 iterations per level
+      for (iteration_number_on_level = 0; iteration_number_on_level<10; ++iteration_number_on_level)
       {
         RemodelTrees();
 

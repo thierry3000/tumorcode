@@ -104,11 +104,12 @@ void doit(const Int3 size)
   pt.put("max_iter", 100);
   pt.put("throw", false);
 
-  SolveEllipticEquation(mb.m, mb.rhs, lhs, pt);
+  //SolveEllipticEquation(*mb.m, *mb.rhs, *lhs, pt);
+//  SolveEllipticEquation(mb.m, mb.rhs, lhs, pt);
 
-  //EllipticEquationSolver solver;
-  //solver.init(*mb.m, *mb.rhs, pt);
-  //solver.solve(lhs);
+  EllipticEquationSolver solver;
+  solver.init(mb.m, mb.rhs, pt);
+  solver.solve(lhs);
 
   cout << "solve memory cons: " << double(GetMemoryUsage().rss_peak - mem_usage1)/num_dof << " b/dof" << endl;
   

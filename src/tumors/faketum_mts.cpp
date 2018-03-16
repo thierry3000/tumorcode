@@ -1044,7 +1044,7 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
     Float3 buffer;
     std::array<double,3> bufferToFill;
 #ifndef NDEBUG
-    printf("ecnt: %i, po2Store.size(): %i,  cell_i: %i, ann_to_vl[i]: %i", ecnt, po2Store.size(), i, ann_to_vl[i]);
+    //printf("ecnt: %i, po2Store.size(): %i,  cell_i: %i, ann_to_vl[i]: %i", ecnt, po2Store.size(), i, ann_to_vl[i]);
     myAssert(ann_to_vl[i]<po2Store.size());
 #endif
     const Vessel* v= vl->GetEdge(ann_to_vl[i]);

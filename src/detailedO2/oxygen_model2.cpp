@@ -1274,6 +1274,8 @@ void ComputePo2Field(const Parameters &params,
     //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
     //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
     EllipticEquationSolver solver;
+    //solver.init(*mb.m, *mb.rhs, solver_params);
+    //solverReturn = solver.solve(*lhs);
     solver.init(mb.m, mb.rhs, solver_params);
     solverReturn = solver.solve(lhs);
   }
@@ -1285,6 +1287,8 @@ void ComputePo2Field(const Parameters &params,
         //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
         //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
         EllipticEquationSolver solver;
+        //solver.init(*mb.m, *mb.rhs, solver_params);
+        //solverReturn2 = solver.solve(*lhs);
         solver.init(mb.m, mb.rhs, solver_params);
         solverReturn2 = solver.solve(lhs);
       }

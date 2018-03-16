@@ -118,14 +118,14 @@ np::ndarray CalcIntervascularInterpolationField(
   
   {
      //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
-    //EllipticEquationSolver solver;
-    //solver.init(mb.m, mb.rhs, solver_params);
-//     solver.solve(lhs);
-    //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
     EllipticEquationSolver solver;
     solver.init(mb.m, mb.rhs, solver_params);
-    //solver.init(mb.m, mb.rhs, solver_params);
     solver.solve(lhs);
+    //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
+    //EllipticEquationSolver solver;
+    //solver.init(mb.m, mb.rhs, solver_params);
+    //solver.init(*mb.m, *mb.rhs, solver_params);
+    //solver.solve(*lhs);
   }
 
 //   np::arrayt<float> res(np::zeros(3, Cast<Py_ssize_t>(::Size(ld.Box())).data(), np::getItemtype<float>()));
@@ -244,13 +244,13 @@ np::arraytbase CalcIntervascularInterpolationField(
   
   {
     //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
-    //EllipticEquationSolver solver;
-    //solver.init(mb.m, mb.rhs, solver_params);
-//     solver.solve(lhs);
-    //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
     EllipticEquationSolver solver;
     solver.init(mb.m, mb.rhs, solver_params);
     solver.solve(lhs);
+    //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
+//    EllipticEquationSolver solver;
+//    solver.init(*mb.m, *mb.rhs, solver_params);
+//    solver.solve(*lhs);
   }
 
   np::arrayt<float> res(np::zeros(3, Cast<Py_ssize_t>(::Size(ld.Box())).data(), np::getItemtype<float>()));

@@ -402,19 +402,19 @@ class EllipticEquationSolver : boost::noncopyable
   typedef long global_ordinal_type;
   typedef KokkosClassic::DefaultNode::DefaultNodeType node_type;
   
-  Teuchos::RCP<Epetra_CrsMatrix> sys_matrix;
-  Teuchos::RCP<const Epetra_Vector> rhs;
+  //Epetra_CrsMatrix *sys_matrix;
+  //const Epetra_Vector *rhs;
   
   typedef Tpetra::MultiVector<scalar_type, local_ordinal_type, global_ordinal_type, node_type> vec_type;
   typedef Tpetra::CrsMatrix<scalar_type, local_ordinal_type, global_ordinal_type, node_type> matrix_type;
   typedef Tpetra::Operator<scalar_type, local_ordinal_type, global_ordinal_type, node_type> op_type;
     
   typedef Belos::LinearProblem<BelosScalarType, BelosMultiVector, BelosOperator> BelosLinearProblem;
-  Teuchos::RCP<BelosLinearProblem> problem;
+  const Teuchos::RCP <BelosLinearProblem> problem = Teuchos::RCP <BelosLinearProblem>(new BelosLinearProblem());
   //Teuchos::RCP<Ifpack_Preconditioner> ifpack_Prec;
   Teuchos::RCP<Belos::EpetraPrecOp> belos_Prec;
   Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> ml_prec;
-  Teuchos::RCP<Teuchos::ParameterList> belosList;
+  const Teuchos::RCP<Teuchos::ParameterList> belosList = Teuchos::RCP<Teuchos::ParameterList>(new Teuchos::ParameterList ("Belos"));
   
   ptree params;
   bool keep_preconditioner;
@@ -422,16 +422,19 @@ public:
   EllipticEquationSolver();
   //EllipticEquationSolver(const Teuchos::RCP<Epetra_CrsMatrix> &_matrix, const Teuchos::RCP<const Epetra_Vector> &_rhs, const boost::property_tree::ptree& _params);
   ~EllipticEquationSolver();
-  int solve(const Teuchos::RCP<Epetra_Vector> &lhs);
+  int solve(Teuchos::RCP<Epetra_Vector> lhs);
   double time_precondition, time_iteration;
   int iteration_count;
   bool convergent;
   double residual;
-  int init(const Teuchos::RCP<Epetra_CrsMatrix> &_matrix, const Teuchos::RCP<const Epetra_Vector> &_rhs, const boost::property_tree::ptree &_params);
+  //int init( Epetra_CrsMatrix &_matrix, const Epetra_Vector &_rhs, const boost::property_tree::ptree &_params);
+  int init( const Teuchos::RCP<Epetra_CrsMatrix> _matrix, const Teuchos::RCP<const Epetra_Vector> _rhs, const boost::property_tree::ptree &_params);
 };
 #endif
 
-int SolveEllipticEquation(Teuchos::RCP <Epetra_CrsMatrix> &matrix, Teuchos::RCP<Epetra_Vector> &rhs, Teuchos::RCP<Epetra_Vector> &lhs, const boost::property_tree::ptree &params);
+int SolveEllipticEquation(Teuchos::RCP<Epetra_CrsMatrix> matrix, Teuchos::RCP<Epetra_Vector> rhs, Teuchos::RCP<Epetra_Vector> lhs, const boost::property_tree::ptree &params);
+
+//int SolveEllipticEquation(Epetra_CrsMatrix &matrix, Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params);
 
 /*------------------------------------------------------
 ------------------------------------------------------*/
