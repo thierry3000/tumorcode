@@ -22,7 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 from copy import deepcopy
 from os.path import join,splitext, basename
-#import h5files
 import h5py
 
 def MakeVesselFilenamePart(fn):

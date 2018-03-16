@@ -58,7 +58,6 @@ import matplotlib.pyplot as plt
 
 import qsub
 import myutils
-import h5files
 
 from krebs.detailedo2 import PO2ToSaturation, OpenVesselAndTumorGroups, chb_of_rbcs
 from krebs.detailedo2Analysis import DataDetailedPO2

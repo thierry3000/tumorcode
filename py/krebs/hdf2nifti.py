@@ -43,7 +43,6 @@ import myutils
 import krebs.analyzeGeneral
 import krebs.plotIff
 import detailedo2Analysis as o2analysis
-import h5files
 import pydicom
 def std_example():
   # Particle setup

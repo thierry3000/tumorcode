@@ -27,7 +27,6 @@ if __name__ == '__main__':
   sys.path.append(join(dirname(__file__),'..'))
 import krebsutils
 import h5py
-import h5files
 import numpy as np
 import itertools
 import extensions

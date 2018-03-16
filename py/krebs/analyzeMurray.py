@@ -26,7 +26,6 @@ from os.path import join, basename, dirname, splitext
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 
-import h5files
 import h5py
 import myutils
 import numpy as np

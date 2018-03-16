@@ -26,7 +26,6 @@ import krebsutils as ku
 import math
 import collections
 import itertools
-import h5files
 import myutils
 import os
 

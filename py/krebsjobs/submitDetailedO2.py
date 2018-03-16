@@ -49,14 +49,12 @@ def worker_on_client(fn, pattern, o2params):
 
 def worker_plots_for_paper(filenames, pattern):
   from krebs.detailedo2Analysis import plotsForPaper
-  import h5files
   h5files.search_paths.append('..')
   plotsForPaper.doit(filenames, pattern)
 
 def worker_render_images(fn, pattern, num_threads):
   from krebs import povrayRenderOxygenDetailed
-  import h5files
-  h5files.search_paths.append('..')
+  #h5files.search_paths.append('..')
   rendersettings = dict(
     format = 'png',
     res=(1024, 1024),

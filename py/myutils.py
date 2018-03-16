@@ -23,7 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from os.path import join, basename, dirname, splitext
 import os
 import h5py
-import h5files
 import numpy as np
 import collections
 import posixpath

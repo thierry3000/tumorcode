@@ -26,7 +26,6 @@ sys.path.append(join(dirname(__file__),'..'))
 
 from os.path import basename, dirname, join, splitext
 import h5py
-import h5files
 import numpy as np
 import extensions # for hdf5 support in np.asarray
 import krebsutils as krebs

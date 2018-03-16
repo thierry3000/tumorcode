@@ -38,7 +38,6 @@ import glob
 import md5
 import cPickle
 import pprint
-import h5files
 import qsub
 
 import extensions # for asarray with h5py support

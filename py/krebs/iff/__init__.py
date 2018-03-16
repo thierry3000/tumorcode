@@ -31,7 +31,6 @@ Created on Mon Aug 22 12:57:28 2016
 from os.path import basename, dirname, join, splitext
 import os,sys
 import h5py
-import h5files
 import numpy as np
 import extensions # for hdf5 support in np.asarray
 import myutils

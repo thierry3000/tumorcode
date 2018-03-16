@@ -24,7 +24,6 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
 import h5py
-import h5files
 
 import numpy as np
 import extensions # for hdf5 support in np.asarray

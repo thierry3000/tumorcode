@@ -26,7 +26,6 @@ from os.path import join, basename, dirname, splitext
 if __name__ == '__main__':
   sys.path.append(join(dirname(__file__),'..'))
 import h5py
-import h5files
 import numpy as np
 import vtkcommon
 import extensions # for asarray with h5py support

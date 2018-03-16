@@ -35,7 +35,6 @@ from os.path import join, basename, dirname, splitext, commonprefix
 import time
 import krebsutils
 import h5py
-import h5files
 import numpy as np
 import itertools
 import extensions

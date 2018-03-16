@@ -28,7 +28,6 @@ if __name__ == '__main__':
 import os,sys
 from os.path import basename, splitext, commonprefix
 import h5py
-import h5files
 import os,sys
 import numpy as np
 import collections

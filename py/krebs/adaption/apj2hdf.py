@@ -39,7 +39,6 @@ if __name__ == '__main__':
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 
 import krebsutils as ku
-import h5files
 import math
 import numpy as np
 import scipy.spatial.distance as sdist

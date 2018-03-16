@@ -34,7 +34,6 @@ import myutils
 import h5py
 import numpy as np
 import sys
-import h5files
 import matplotlib.pyplot as pyplot
 
 from os.path import basename

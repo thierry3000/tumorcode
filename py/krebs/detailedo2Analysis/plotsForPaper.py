@@ -26,7 +26,6 @@ if __name__ == '__main__':
 import os,sys
 from os.path import basename, splitext
 import h5py
-import h5files
 import numpy as np
 import extensions # for hdf5 support in np.asarray
 import krebsutils

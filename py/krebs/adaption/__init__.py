@@ -23,7 +23,6 @@ import krebsutils as _ku # import of this must come in front of import of detail
 from os.path import basename, dirname, join, splitext
 import os, os.path, sys
 import h5py
-import h5files
 import uuid
 import numpy as np
 #import extensions # for hdf5 support in np.asarray

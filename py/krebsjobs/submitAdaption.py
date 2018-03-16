@@ -32,7 +32,6 @@ import dicttoinfo
 import krebsutils
 import myutils
 import h5py
-import h5files
 import itertools
 import time
 import string

@@ -28,7 +28,6 @@ import os, sys
 import qsub
 import glob
 import h5py
-import h5files
 import numpy as np
 import identifycluster
 import krebsutils

@@ -25,7 +25,6 @@ if __name__ == '__main__':
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
   
 import os, sys
-import h5files
 from krebsutils import typelist
 
 def createParamFileFromSlurm(label):

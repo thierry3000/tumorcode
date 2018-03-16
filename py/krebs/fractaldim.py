@@ -33,7 +33,6 @@ import time
 import posixpath
 from mystruct import Struct
 import myutils
-import h5files
 
 import extensions
 import krebsutils

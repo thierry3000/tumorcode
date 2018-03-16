@@ -54,7 +54,6 @@ import third_party
 import third_party.ffmpy
 import collections
 import shutil
-import h5files
 
 #import krebs.povrayRenderVessels
 from krebs.povrayRenderVessels import  addVesselTree, cm_redblue

@@ -33,7 +33,6 @@ if __name__ == '__main__':
 
 import myutils
 import krebsutils
-import h5files
 import itertools
 import sys
 import numpy as np

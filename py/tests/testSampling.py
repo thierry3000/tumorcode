@@ -23,7 +23,6 @@ import os,sys
 from os.path import basename, dirname, join, splitext, commonprefix
 if __name__=='__main__': sys.path.append(join(dirname(__file__),'..'))
 import h5py
-import h5files
 import numpy as np
 import extensions # for hdf5 support in np.asarray
 import krebsutils

@@ -34,7 +34,6 @@ from os.path import basename, splitext, join
 import sys, os
 import posixpath
 import h5py
-#import h5files
 import numpy
 import krebsutils
 from mystruct import Struct

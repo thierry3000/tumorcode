@@ -24,7 +24,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #import os,sys
 #from os.path import basename, dirname, join, splitext, commonprefix
 import h5py
-import h5files
 import numpy as np
 import extensions # for hdf5 support in np.asarray
 import krebsutils

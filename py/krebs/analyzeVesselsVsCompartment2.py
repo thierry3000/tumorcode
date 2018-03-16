@@ -34,7 +34,6 @@ Created on Mon Aug 24 11:16:44 2015
 """
 
 import h5py
-import h5files
 import numpy as np
 import krebsutils as ku
 import os

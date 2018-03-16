@@ -30,7 +30,6 @@ import os,sys
     e.g. mulithreading initializer,...
     '''
 import qsub
-import h5files
 import numpy as np
 from copy import deepcopy
 from dicttoinfo import Vec

@@ -38,7 +38,6 @@ import re
 import cPickle
 from collections import defaultdict
 from pprint import pprint
-import h5files
 import qsub
 
 #import vtkcommon
