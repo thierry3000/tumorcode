@@ -30,7 +30,6 @@ sys.path.append(abspath(join(dirname(__file__),'..')))
 import qsub
 import glob
 import h5py
-import h5files
 import numpy as np
 import krebsutils
 import krebs
