@@ -190,7 +190,10 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
     //CalcFlow(grower.get_vl(),);
     
   }
+#ifndef NDEBUG
   std::cout << "before return in callback" << std::endl;
+#endif
+  
   return finished_countdown < quality_buff_size;
 }
 

@@ -616,7 +616,10 @@ void GetSubdivided( std::unique_ptr<VesselList3d> &vl, int multi, float newscale
 {
   typedef VesselList3d::LatticeData LatticeData;
   const LatticeData &ld = vl.get()->Ld();
+  
+#ifndef NDEBUG
   std::cout << " in GetSubdivided" << std::endl;
+#endif
   //if(multi == 1) return vl;
 
   int ecnt = vl->GetECount();
@@ -656,16 +659,20 @@ void GetSubdivided( std::unique_ptr<VesselList3d> &vl, int multi, float newscale
     Vessel* newv = vlnew->InsertVessel(vlnew->GetNode(a), vlnew->GetNode(b));
     *(VData*)newv = *(VData*)v;
   }
+#ifndef NDEBUG
   std::cout << "start adding vl->GetBCMap() : " << vl->GetBCMap().size() << std::endl;
+#endif
   for (auto it = vl->GetBCMap().begin(); it != vl->GetBCMap().end(); ++it)
   {
     FlowBC aCondition = FlowBC(it->second.typeOfInstance, it->second.val);
     vlnew->SetBC(vlnew->GetNode(it->first->Index()), aCondition);
-    std::cout << "added condition: " << aCondition.val << " at " << it->first->Index() << std::endl;
+    //std::cout << "added condition: " << aCondition.val << " at " << it->first->Index() << std::endl;
   }
   //vl->ClearLattice();
   vl = std::move(vlnew);
-  std::cout << "moved" << std::endl;
+#ifndef NDEBUG
+  std::cout << "moved pointer" << std::endl;
+#endif
   //return vlnew;
 }
 

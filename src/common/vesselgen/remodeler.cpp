@@ -1333,7 +1333,6 @@ void Grower::UpscaleTrees()
   tree_roots = new_roots;
   VESSGEN_MAXDBG(vl->IntegrityCheck();)
   
-  std::cout << "subdivided" << std::endl;
   //oldld.reset();
 }
 
@@ -1365,11 +1364,15 @@ void Grower::HierarchicalGrowth()
       int dir = GetDirection(vc);
       ends.add(vc->lpos, dir, vc->flags & (ARTERY|VEIN));
     }
+#ifndef NDEBUG
     std::cout << "begin RandomGrowth" << std::endl;
+#endif
     RandomGrowth(ends, false);
   }
+#ifndef NDEBUG
   std::cout << "finished RandomGrowth" << std::endl;
   std::cout.flush();
+#endif
   if (debug_output_every_configuration)
     DebugOutVessels(*this, str(format("after_growth_hit_%i") % hierarchy_level));
   
@@ -1420,7 +1423,7 @@ void Grower::RandomGrowth(OpenEnds &ends, bool isInitial)
 void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> callback)
 {
   Init(settings);
-
+  
   { // placing root nodes
     OpenEnds ends;
     GenerateRootElements(settings, ends);
@@ -1434,8 +1437,11 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
 	 */
     RandomGrowth(ends, true);
   }
+  
+#ifndef NDEBUG
   std::cout<< "finshed inital growth " << std::endl;
-
+#endif
+  
   if (debug_output_every_configuration)
     DebugOutVessels(*this, "after_initial_growth");
 
@@ -1451,15 +1457,18 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
   if (debug_output_every_configuration)
     DebugOutVessels(*this, "after_initial_calcflow");
   
+#ifndef NDEBUG
   std::cout << "start HierarchicalGrowth" << std::endl;
+#endif
+  
   if (my::checkAbort()) return;
   if (max_hierarchy_level > 0)
   {
     for (hierarchy_level=0; hierarchy_level<max_hierarchy_level; ++hierarchy_level)
     {
-      //for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
+      for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
       // this is for hardcore debugging, force only 10 iterations per level
-      for (iteration_number_on_level = 0; iteration_number_on_level<10; ++iteration_number_on_level)
+      //for (iteration_number_on_level = 0; iteration_number_on_level<10; ++iteration_number_on_level)
       {
         RemodelTrees();
 
@@ -1475,10 +1484,12 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
           return;
         }
       }
-      cout << "here: " << vl->GetBCMap().size() << endl;
-      cout << "call ing HierarchicalGrowth " << endl;
+      //cout << "here: " << vl->GetBCMap().size() << endl;
+      
       HierarchicalGrowth();
+#ifndef NDEBUG
       cout << "finished HierarchicalGrowth" << endl;
+#endif
     if (my::checkAbort()) return;
       
 #if GFFIELD_ENABLE
@@ -1491,28 +1502,26 @@ void Grower::Run(const ptree &settings, boost::function1<bool, const Grower&> ca
 
   for (iteration_number_on_level = 0; iteration_number_on_level<max_num_iter; ++iteration_number_on_level)
   // this is for hardcore debugging, force only 20 iterations per level
-  //for (iteration_number_on_level = 0; iteration_number_on_level<20; ++iteration_number_on_level)
+  //for (iteration_number_on_level = 0; iteration_number_on_level<10; ++iteration_number_on_level)
   {
     RemodelTrees();
-    cout << "done remodel trees" << endl;
+#ifndef NDEBUG
+    cout << "done: RemodelTrees()" << endl;
+#endif
 
     if (debug_output_every_configuration)
       DebugOutVessels(*this, str(format("after_remodel_%02i_%05i") % hierarchy_level % iteration_number_on_level));
 
     if (!callback(boost::cref(*this)))
     {
-      cout << "before break" << endl;
-      cout.flush();
       break;
     }
     if (my::checkAbort())
     {
-      cout << "before my check abort" << endl;
-      cout.flush();
       return;
     }
   }
-  cout << "done iteration_number_on_level"<< endl;
+  cout << "done " << iteration_number_on_level <<" iteration_number_on_level"<< endl;
 
 #if 0
   if (max_hierarchy_level > 0)

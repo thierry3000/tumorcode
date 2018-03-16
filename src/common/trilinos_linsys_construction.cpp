@@ -365,13 +365,17 @@ enum EllipticSolveOutputLevel
 #if 1
 EllipticEquationSolver::~EllipticEquationSolver()
 {
+#ifndef NDEBUG
   std::cout << "EllipticEquationSolver destructor called" << std::endl;
   std::cout.flush();
+#endif
 }
 EllipticEquationSolver::EllipticEquationSolver()
 {
+#ifndef NDEBUG
   std::cout << "default constructor called called" << std::endl;
   std::cout.flush();
+#endif
 }
 // EllipticEquationSolver::EllipticEquationSolver(const Teuchos::RCP<Epetra_CrsMatrix> &_matrix, const Teuchos::RCP<const Epetra_Vector> &_rhs, const boost::property_tree::ptree& _params):sys_matrix(_matrix), rhs(_rhs), params(_params)
 // {
@@ -426,12 +430,20 @@ int EllipticEquationSolver::init(const Teuchos::RCP<Epetra_CrsMatrix> _matrix, c
   Epetra_SerialComm Comm;
 #endif
   
+  /** NOTE
+   * if future we should do this by parameters
+   */
+#ifndef NDEBUG
   bool verbose = true;
+#else
+  bool verbose = false;
+#endif
+  
   bool success = true;
   
   try 
   {
-    bool proc_verbose = true;
+    bool proc_verbose = verbose;
     int frequency = 10;        // frequency of status test output.
     int numrhs = 1;            // number of right-hand sides to solve for
     int maxiters = 1000;         // maximum number of iterations allowed per linear 
@@ -461,7 +473,7 @@ int EllipticEquationSolver::init(const Teuchos::RCP<Epetra_CrsMatrix> _matrix, c
     // create ifpack preconditioner
     if(PrecType=="multigrid" && (!keep_preconditioner || !ml_prec.get()))
     {
-#ifdef DEBUG
+#ifndef NDEBUG
 #ifndef TOTAL_SILENCE
       cout<<"EllipticEquationSolver::init"<<endl;
 #endif
@@ -559,8 +571,7 @@ int EllipticEquationSolver::init(const Teuchos::RCP<Epetra_CrsMatrix> _matrix, c
     }
     else 
     {
-      belosList->set ("Verbosity", Belos::Errors + Belos::Warnings +
-                      Belos::FinalSummary);
+      //belosList->set ("Verbosity", Belos::Errors + Belos::Warnings + Belos::FinalSummary);
     }
   }//global try
   TEUCHOS_STANDARD_CATCH_STATEMENTS(verbose, std::cerr, success);
@@ -574,8 +585,6 @@ int EllipticEquationSolver::solve ( Teuchos::RCP<Epetra_Vector> _lhs )
 {
   bool verbose = true;
   bool success = true;
-  cout << "in solver solve" << endl;
-  cout.flush();
   try 
   {
     //
@@ -626,16 +635,20 @@ int EllipticEquationSolver::solve ( Teuchos::RCP<Epetra_Vector> _lhs )
 //       cout << endl;
 //     }
     // Ask Belos to solve the linear system.
+#ifndef NDEBUG
     cout << "before asking" << endl;
     cout.flush();
+#endif
+    
     Belos::ReturnType ret = solver.solve();
+    
+#ifndef NDEBUG
     cout << "after asking" << endl;
     cout.flush();
+#endif
     //vector_print(*_lhs);
   }
   TEUCHOS_STANDARD_CATCH_STATEMENTS(verbose, std::cerr, success)
-  cout << "before return" << endl;
-    cout.flush();
   return( success ? 0 : 1 );
 }
 #endif
@@ -646,7 +659,9 @@ int EllipticEquationSolver::solve ( Teuchos::RCP<Epetra_Vector> _lhs )
 int SolveEllipticEquation( Teuchos::RCP<Epetra_CrsMatrix> matrix, Teuchos::RCP<Epetra_Vector> rhs, Teuchos::RCP<Epetra_Vector> lhs, const boost::property_tree::ptree &params)
 {
   //EllipticEquationSolver solver(matrix, rhs, params);
+#ifdef trilinos_bug_output
   std::cout << "entered SolveEllipticEquation" << std::endl;
+#endif
   //EllipticEquationSolver solver;
   //solver.init(matrix, rhs, params);
   //EllipticEquationSolver &&solver = EllipticEquationSolver{matrix, rhs,params};

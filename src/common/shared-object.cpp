@@ -772,7 +772,6 @@ std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptr
 void WriteVesselList3d(const VesselList3d &vl, H5::Group &vesselgroup, const ptree &params)
 {
   WriteHdfGraph(vesselgroup,vl);
-
   
   int ecnt = vl.GetECount();
   int ncnt = vl.GetNCount();
@@ -789,7 +788,10 @@ void WriteVesselList3d(const VesselList3d &vl, H5::Group &vesselgroup, const ptr
   
   if (w_pressure)
   {
-    for(int i=0; i<ncnt; ++i) { arrd[i] = vl.GetNode(i)->press; }
+    for(int i=0; i<ncnt; ++i) 
+    { 
+      arrd[i] = vl.GetNode(i)->press; 
+    }
     //h5::Dataset ds = h5::create_dataset(vesselgroup,"nodes/pressure",arrd);
     //H5::DataSet ds = vesselgroup.createDataSet("nodes/pressure");
     writeDataSetToGroup(vesselgroup, string("nodes/pressure"), arrd);
@@ -799,12 +801,14 @@ void WriteVesselList3d(const VesselList3d &vl, H5::Group &vesselgroup, const ptr
     try
     {
       press = vesselgroup.openDataSet(string("nodes/pressure"));
+      writeAttrToH5(press,string("MODE"), string("linear"));
     }
     catch(H5::Exception e)
     {
+      cout<< "bad error" <<endl;
       e.printError();
     }
-    writeAttrToH5(press,string("MODE"), string("linear"));
+    
 
     //for(int i=0; i<ncnt; ++i) { arrd[i] = vl.GetNode(i)->residual; }
     //ds = h5::create_dataset_range(vesselgroup,"nodes/residual",arrd);

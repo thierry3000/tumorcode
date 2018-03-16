@@ -133,7 +133,9 @@ LatticeDataQuad3d::LatticeDataQuad3d()
 LatticeDataQuad3d::~LatticeDataQuad3d()
 {
   ClearMem( this, 1 );
+#ifndef NDEBUG
   std::cout << "destruct LatticeDataQuad3d" << std::endl;
+#endif
 }
 
 LatticeDataQuad3d::LatticeDataQuad3d(const LatticeDataQuad3d& ld): LI(), LWT()

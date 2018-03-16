@@ -325,7 +325,7 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    //e.printError();
     h5_nodes = g.openGroup("nodes");
   }
   writeAttrToH5(h5_nodes, string("COUNT"), ncnt);
@@ -337,7 +337,15 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
 //   h5cpp::Attributes attrs = g.attrs();
   if(vl.HasLattice())//LATTICE IS THERE
   {
-    writeAttrToH5(g,string("CLASS"), string("GRAPH"));
+    try
+    {
+      string graph_type;
+      readAttrFromH5(g,string("CLASS"),graph_type);
+    }
+    catch(H5::Exception e)
+    {
+       writeAttrToH5(g,string("CLASS"), string("GRAPH"));
+    }
     //lattice stuff is writen to hdf
     H5::Group lattice_group = g.createGroup("lattice");
     //vl.Ld().WriteHdf(g.create_group("lattice"));
@@ -395,11 +403,14 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
     }
     // due to creation of h5 files with python this could already be pressent
     
-    try{
+    try
+    {
       //DataSet dataset = file.openDataSet(DATASET_NAME);
       H5::DataSet ds = h5_nodes.openDataSet("world_pos");
       //grp=h5file.openGroup("A");
-    } catch(H5::Exception& e){
+    } 
+    catch(H5::Exception& e)
+    {
       /* group does not exists, create it */
       //grp=h5file.createGroup("A");
       const int	 RANK = 2;

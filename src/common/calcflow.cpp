@@ -169,8 +169,10 @@ bool MarkFailingVesselHidden(VesselList3d &vl)
       }
     }
   }
+#ifndef NDEBUG
 #ifndef SILENT
   cout << "max relative fluid loss: " << max_res << endl;
+#endif
 #endif
   return ok;
 }
@@ -385,7 +387,6 @@ void HematocritCalculator::UpdateHematocrit()
     int upstream_node = (GetPress(e.first) > GetPress(e.second)) ? e.first : e.second;
     UpdateHematocritRecursive(i, upstream_node);
   }
-  std::cout << "UpdateHematocrit left" << std::endl;
 }
 
 
@@ -594,11 +595,14 @@ void HematocritCalculator::UpdateHematocritAtNode( int upstream_node, int edge_i
 
 int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &bloodFlowParameters)
 {
+  /* I am looking for a memory leak and create additional output with that flag */
+//#define trilinos_bug_output
+  
+#ifndef NDEBUG
   cout << "CalcFlowWithPhaseSeparation called" << endl;
   cout.flush();
-#ifndef SILENT
-  cout << "calcflow (with hematocrit)" << endl;
 #endif
+
   bool ok = true;
   CompressedFlowNetwork flownet;
   uint returnOfGetFlowNetwork = GetFlowNetwork(flownet, vl, bloodFlowParameters, false);
@@ -606,8 +610,7 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
   {
     return 42;
   }
-  cout << "GetFlowNetwork called" << endl;
-  cout.flush();
+
   
 //   
 //   flownet.flow.resize(flownet.num_edges());
@@ -626,20 +629,13 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
   FlArray flow_last(flownet.num_edges(), std::numeric_limits<FlReal>::max());
   
   HematocritCalculator hematocritCalculator(flownet, flownet.flow, flownet.press, bloodFlowParameters.inletHematocrit);
-  cout << "hematocritCalculator" << endl;
-  cout.flush();
+
   
   Linsys flowsys;
-  
-  cout << "flowsys" << endl;
-  cout.flush();
 
   flowsys.initialize_pattern(flownet.num_vertices(), flownet.edges);
-  cout << "init initialize_pattern" << endl;
-  cout.flush();
   flowsys.scaling_const = CalcFlowCoeff(bloodFlowParameters.viscosityPlasma, 4., 100.);
-  cout << "CalcFlowCoeff" << endl;
-  cout.flush();
+
   
   //EllipticEquationSolver *solver= new EllipticEquationSolver();
   
@@ -705,15 +701,14 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
     {
       flownet.press[i] = flowsys.lhs_get(i);
     }
-    cout << "lhs_read" << endl;
-    cout.flush();
     SetFlowValues(vl, flownet, cond, flownet.press, flownet.hema);
-    cout << "setFlowValues" << endl;
-    cout.flush();
     
     ok = MarkFailingVesselHidden(vl);
+#ifdef trilinos_bug_output
     cout << "MarkFailingVesselHidden" << endl;
     cout.flush();
+#endif
+    
     if (!ok)
     {
       /* this is where due to numerical inaccuracies (???) small random flows occur which dont respect mass conservation
@@ -728,15 +723,19 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
     {
       flownet.flow[i] = cond[i] * std::abs(flownet.press[flownet.edges[i][0]]-flownet.press[flownet.edges[i][1]]);
     }
+#ifdef trilinos_bug_output
     cout << "read flow" << endl;
     cout.flush();
+#endif
     //cout << "max relative mass loss: " << CalcFlowResidual(flownet, cond) << endl;
 
     hematocritCalculator.check_hematocrit_range = delta_h<1.e-3 && delta_q<1.e-3 && iteration >= 5;
     hematocritCalculator.UpdateHematocrit();
-    
+
+#ifndef NDEBUG    
 #ifndef SILENT
     cout << "max relative rbc loss: " << CalcHemaResidual(flownet, cond, flownet.hema) << endl;
+#endif
 #endif
 
     delta_h = delta_q = 0.;
@@ -761,25 +760,31 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
     }
     delta_h = sqrt(delta_h)/flownet.num_edges();
     delta_q = sqrt(delta_q)/flownet.num_edges();
+    
+#ifndef NDEBUG
 #ifndef SILENT
     cout << format("dh = %e, dq = %e") % delta_h % delta_q << endl;
 #endif
+#endif
     if (delta_h < 1.e-6 && delta_q < 1.e-6 && iteration >= 10)
     {
+#ifdef trilinos_bug_output
       cout << "Manually call break" << endl;
       cout.flush();
+#endif
       returnCode = 2;
       break;
     }
-    cout << "next iteration" << std::endl;cout.flush();
+#ifndef NDEBUG
+    cout << "next in hematoric calculating loop" << std::endl;cout.flush();
+#endif
   }
   if (ok)
   {
-    cout << "Before SetFlowValues called" << endl;
-    cout.flush();
     SetFlowValues(vl, flownet, cond, flownet.press, flownet.hema);
-    cout << "SetFlowValues called" << endl;
-    cout.flush();
+#ifndef NDEBUG
+    cout << "OK here" << endl;cout.flush();
+#endif
   }
   
   if (!ok)
@@ -792,8 +797,10 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
     returnCode = CalcFlowWithPhaseSeparation(vl, bloodFlowParameters);
   }
   //delete solver;
+#ifdef trilinos_bug_output
   cout << "solver deleted" << endl;
   cout.flush();
+#endif
   return returnCode;
 }
 
@@ -802,8 +809,10 @@ void CalcFlow(VesselList3d &vl, const BloodFlowParameters &params)
 {
   calcflow_mutex.lock();
     ComputeCirculatedComponents(&vl);
+#ifndef NDEBUG
     std::cout << "ComputeCirculatedComponents called" << std::endl;
     std::cout.flush();
+#endif
     if (params.includePhaseSeparationEffect)
     {
       try
@@ -832,8 +841,10 @@ void CalcFlow(VesselList3d &vl, const BloodFlowParameters &params)
     }
     else
       CalcFlowSimple(vl, params, false);
-    std::cout << "CalcFlow done called" << std::endl;
+#ifndef NDEBUG
+    std::cout << "CalcFlow done" << std::endl;
     std::cout.flush();
+#endif
   calcflow_mutex.unlock();
 }
 
