@@ -59,7 +59,7 @@ def getDomainSizeFromVesselFile(fn):
 
 
 def MakeVesselFilenamePart(fn):
-  with h5files.open(fn, mode='a') as f:
+  with h5py.File(fn, mode='a') as f:
     if 'parameters' in f:
       if 'MESSAGE' in f['parameters'].attrs:
         msg = f['parameters'].attrs['MESSAGE']

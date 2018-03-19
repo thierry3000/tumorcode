@@ -1033,6 +1033,9 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
     //cout << "shortes distance for index "<< candidate.indexOfVessel << ": " << candidate.distance <<endl;
   }
 // }//end #pragma omp parallel
+  delete kd_tree_of_vl;
+  delete [] ANN_nnIdx;
+  delete [] ANN_dists;
   annClose();
   cout << "annClose called" << endl;
   //transfere this nice informations to vbl
