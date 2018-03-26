@@ -613,9 +613,9 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
 
   
 //   
-//   flownet.flow.resize(flownet.num_edges());
-//   flownet.press.resize(flownet.num_vertices());
-//   flownet.hema.resize(flownet.num_edges());
+  flownet.flow.resize(flownet.num_edges());
+  flownet.press.resize(flownet.num_vertices());
+  flownet.hema.resize(flownet.num_edges());
   
 //   flownet.rad.resize(flownet.num_edges());
   //WARNING
@@ -653,6 +653,7 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
   const int max_iter = 20;
   
   int returnCode = 0; // 1 linsys error
+  flowsys.initialize_pattern(flownet.num_vertices(), flownet.edges);
   
   for( int iteration=0; iteration<max_iter && !my::checkAbort(); ++iteration )
   {
@@ -660,6 +661,7 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
     //visc is local variable
     CalcViscosities(flownet.rad, flownet.hema, bloodFlowParameters, visc);
     CalcConductivities(flownet.rad, flownet.len, visc, cond);
+
     
     flowsys.fill_values(flownet.edges, cond, flownet.bcs);
     
@@ -694,7 +696,7 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
 //     cout << "iterations read" << endl;
 //     cout.flush();
 
-//    flowsys.clear_values();//set rhs and sys to zero, not deleting
+    flowsys.clear_values();//set rhs and sys to zero, not deleting
 
 
     for (int i=0; i<flownet.num_vertices(); ++i)

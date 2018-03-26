@@ -135,9 +135,20 @@ void WriteOutput(H5::Group basegroup,
                  const boost::optional<const FiniteVolumeMatrixBuilder&> mbopt);
   
 
-inline double NANd() { return std::numeric_limits<double>::quiet_NaN(); }
-inline float NANf() { return std::numeric_limits<float>::quiet_NaN(); }
-inline bool isFinite(double x) { return std::isfinite(x); }
+inline double NANd() 
+{ 
+  //return std::numeric_limits<double>::quiet_NaN(); 
+  return std::numeric_limits<double>::max();
+}
+inline float NANf() 
+{ 
+  //return std::numeric_limits<float>::quiet_NaN(); 
+  std::numeric_limits<float>::max();
+}
+inline bool isFinite(double x) 
+{ 
+  return std::isfinite(x); 
+}
 
 /*-------------------------------------------------------------*/
 // paramters and basic equation
@@ -1214,8 +1225,8 @@ void ComputePo2Field(const Parameters &params,
 		     FiniteVolumeMatrixBuilder &mb,  
 		     bool keep_preconditioner)
 {
-  if (params.debug_zero_o2field) return;
-  
+  if (params.debug_zero_o2field) 
+    return;
   //I think this initializes the matrix with the values given before
   my::Time t_;
   #pragma omp parallel
@@ -1249,7 +1260,7 @@ void ComputePo2Field(const Parameters &params,
     }
   }
   
-  Teuchos::RCP<Epetra_Vector> lhs= Teuchos::RCP<Epetra_Vector>(new Epetra_Vector(mb.rhs->Map()));
+  Teuchos::RCP<Epetra_Vector> lhs= Teuchos::rcp(new Epetra_Vector(mb.rhs->Map()));
   #pragma omp parallel
   {
     BOOST_FOREACH(const BBox3 bbox, mtboxes.getCurrentThreadRange())
@@ -1268,31 +1279,39 @@ void ComputePo2Field(const Parameters &params,
                                     ("max_resid",1.e-8)
                                     ("keep_preconditioner", keep_preconditioner);
 
-  int solverReturn;
-  int solverReturn2;
+  int solverReturn = 0;
+  int solverReturn2 = 0;
+  
   try {
     //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
-    //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
-    EllipticEquationSolver solver;
+    EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
+    //EllipticEquationSolver solver;
     //solver.init(*mb.m, *mb.rhs, solver_params);
     //solverReturn = solver.solve(*lhs);
-    solver.init(mb.m, mb.rhs, solver_params);
+    //solver.init(mb.m, mb.rhs, solver_params);
     solverReturn = solver.solve(lhs);
+    cout<< "try worked " << endl;
   }
   catch (const ConvergenceFailureException &e)
   {
+      cout<< "in catch " << endl;
       if (e.reason == ConvergenceFailureException::MAX_ITERATIONS)
       {
+        cout<< "if MAX_ITERATIONS " << endl;
         solver_params.put("keep_preconditioner", false);
         //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
-        //EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
-        EllipticEquationSolver solver;
+        EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
+        //EllipticEquationSolver solver;
         //solver.init(*mb.m, *mb.rhs, solver_params);
         //solverReturn2 = solver.solve(*lhs);
-        solver.init(mb.m, mb.rhs, solver_params);
+        //solver.init(mb.m, mb.rhs, solver_params);
         solverReturn2 = solver.solve(lhs);
       }
-      else throw e;
+      else 
+      {
+        cout<< "else throw" << endl;
+        throw e;
+      }
   }
   
   /** @brief write back the results from matrix solve */
@@ -1306,6 +1325,7 @@ void ComputePo2Field(const Parameters &params,
       }
     }
   }
+  
   if( solverReturn > 0)
   {
     cout<< "solver broken 1 " << endl;
@@ -1529,23 +1549,24 @@ int DetailedP02Sim::run(VesselList3d &vl)
   /*
    * ****** MAIN LOOP **********
    */
+  bool keep_preconditioner = true;
   for (int iteration_num = 0;; ++iteration_num)
   {
-    if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
-    {
-      //h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
-      H5::H5File f(params.debug_fn,iteration_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
-      WriteOutput(f.createGroup(str(format("out%04i-a") % iteration_num)),
-                  vl, 
-		  params,
-                  //vesselpo2,
-                  po2vessels,
-                  sorted_vessels,
-                  grid, 
-		  po2field,
-                  tissue_diff_matrix_builder);
-      f.close();
-    }
+//     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
+//     {
+//       //h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
+//       H5::H5File f(params.debug_fn,iteration_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
+//       WriteOutput(f.createGroup(str(format("out%04i-a") % iteration_num)),
+//                   vl, 
+// 		  params,
+//                   //vesselpo2,
+//                   po2vessels,
+//                   sorted_vessels,
+//                   grid, 
+// 		  po2field,
+//                   tissue_diff_matrix_builder);
+//       f.close();
+//     }
     const double tolerance = params.convergence_tolerance;
     // break if convergent
     const double res_delta_fieldM = delta_fieldM();
@@ -1560,22 +1581,22 @@ int DetailedP02Sim::run(VesselList3d &vl)
      */
     //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
     IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
-    if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
-    {
-      //h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
-      H5::H5File f(params.debug_fn,iteration_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
-      WriteOutput(f.createGroup(str(format("out%04i-b") % iteration_num)),
-                  vl, 
-		  params,
-                  po2vessels,
-                  sorted_vessels,
-                  grid, 
-		  po2field,
-                  tissue_diff_matrix_builder);
-      f.close();
-    }
+//     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
+//     {
+//       //h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
+//       H5::H5File f(params.debug_fn,iteration_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
+//       WriteOutput(f.createGroup(str(format("out%04i-b") % iteration_num)),
+//                   vl, 
+// 		  params,
+//                   po2vessels,
+//                   sorted_vessels,
+//                   grid, 
+// 		  po2field,
+//                   tissue_diff_matrix_builder);
+//       f.close();
+//     }
     //bool keep_preconditioner = (iteration_num>2 && tissue_diff_solver.iteration_count<25);
-    bool keep_preconditioner = true;
+    
     /*
      * 2) propagate the oxygen from the blood stream to the tissue
      */
@@ -1644,7 +1665,8 @@ int DetailedP02Sim::run(VesselList3d &vl)
   IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
   //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
   
-  ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, true);
+  ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, keep_preconditioner);
+  cout << "before return field" << endl;
   return 0;
 }
 

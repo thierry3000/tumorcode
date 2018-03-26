@@ -509,16 +509,7 @@ std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptr
   typedef polymorphic_latticedata::LatticeData LatticeData;
   string type_of_vessel_network;
   readAttrFromH5(vesselgroup, string("CLASS"), type_of_vessel_network);
-//   // Create new string datatype for attribute
-//   H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
-//   H5std_string strreadbuff("");
-//   H5::Attribute myatt_out = vesselgroup.openAttribute("CLASS");
-//   myatt_out.read(strdatatype,strreadbuff);
-  //std::string myString = vesselgroup.openAttribute("CLASS");
-  //h5cpp::Attributes a = vesselgroup.attrs();
-/*
-  if(vesselgroup.attrs().get<std::string>("CLASS") == "GRAPH")
-    */
+
   if(type_of_vessel_network == "GRAPH")
   {
 #ifdef DEBUG

@@ -404,6 +404,8 @@ class EllipticEquationSolver : boost::noncopyable
   
   //Epetra_CrsMatrix *sys_matrix;
   //const Epetra_Vector *rhs;
+  Teuchos::RCP <Epetra_CrsMatrix> sys_matrix;
+  Teuchos::RCP <Epetra_Vector> rhs;
   
   typedef Tpetra::MultiVector<scalar_type, local_ordinal_type, global_ordinal_type, node_type> vec_type;
   typedef Tpetra::CrsMatrix<scalar_type, local_ordinal_type, global_ordinal_type, node_type> matrix_type;
@@ -418,21 +420,23 @@ class EllipticEquationSolver : boost::noncopyable
   
   ptree params;
   bool keep_preconditioner;
+private:
+  int init();
 public:
-  EllipticEquationSolver();
-  //EllipticEquationSolver(const Teuchos::RCP<Epetra_CrsMatrix> &_matrix, const Teuchos::RCP<const Epetra_Vector> &_rhs, const boost::property_tree::ptree& _params);
+  //EllipticEquationSolver();
+  EllipticEquationSolver(Teuchos::RCP<Epetra_CrsMatrix> &_matrix, Teuchos::RCP< Epetra_Vector> &_rhs, const boost::property_tree::ptree& _params);
   ~EllipticEquationSolver();
-  int solve(Teuchos::RCP<Epetra_Vector> lhs);
+  int solve(Teuchos::RCP<Epetra_Vector> &lhs);
   double time_precondition, time_iteration;
   int iteration_count;
   bool convergent;
   double residual;
   //int init( Epetra_CrsMatrix &_matrix, const Epetra_Vector &_rhs, const boost::property_tree::ptree &_params);
-  int init( const Teuchos::RCP<Epetra_CrsMatrix> _matrix, const Teuchos::RCP<const Epetra_Vector> _rhs, const boost::property_tree::ptree &_params);
+  //int init( const Teuchos::RCP<Epetra_CrsMatrix> _matrix, const Teuchos::RCP<const Epetra_Vector> _rhs, const boost::property_tree::ptree &_params);
 };
 #endif
 
-int SolveEllipticEquation(Teuchos::RCP<Epetra_CrsMatrix> matrix, Teuchos::RCP<Epetra_Vector> rhs, Teuchos::RCP<Epetra_Vector> lhs, const boost::property_tree::ptree &params);
+int SolveEllipticEquation(Teuchos::RCP<Epetra_CrsMatrix> &matrix, Teuchos::RCP<Epetra_Vector> &rhs, Teuchos::RCP<Epetra_Vector> &lhs, const boost::property_tree::ptree &params);
 
 //int SolveEllipticEquation(Epetra_CrsMatrix &matrix, Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params);
 

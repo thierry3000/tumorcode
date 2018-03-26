@@ -337,6 +337,7 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
 //   h5cpp::Attributes attrs = g.attrs();
   if(vl.HasLattice())//LATTICE IS THERE
   {
+    std::cout<<"lattice found" << std::endl;
     try
     {
       string graph_type;
@@ -344,6 +345,7 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
     }
     catch(H5::Exception e)
     {
+      e.dontPrint();
        writeAttrToH5(g,string("CLASS"), string("GRAPH"));
     }
     //lattice stuff is writen to hdf
@@ -375,13 +377,14 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
     try
     {
       string theType;
-      readAttrFromH5(g, "CLASS", theType);
-      myAssert(theType == "REALWORLD");
+      readAttrFromH5(g, string("CLASS"), theType);
+      //myAssert(theType == "REALWORLD");
     }
-    catch( H5::AttributeIException not_found_error )
+    catch( H5::Exception not_found_error )
     {
-        cout << " CLASS type not found" << endl;
-	writeAttrToH5(g,"CLASS", string("REALWORLD"));
+      not_found_error.dontPrint();
+      cout << " CLASS type not found" << endl;
+      writeAttrToH5(g,string("CLASS"), string("REALWORLD"));
     }  
     // write the special world stuff
     //needs old school linearizing

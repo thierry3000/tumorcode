@@ -393,8 +393,10 @@ int FakeTumMTS::FakeTumorSimMTS::run()
         o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels);
         cout << "\nInit O2 completed" << endl;
         o2_sim.run(*vl);
+        cout << "\n mts run finished" << endl;
         //we store the results, to achive quicker convergence in consecutive runs
         state.previous_po2field = o2_sim.getPo2field();
+        cout << "\nAccquired po2Field  completed" << endl;
         state.previous_po2vessels = o2_sim.getVesselPO2Storrage();
         cout << "\nDetailed O2 completed" << endl;
 #ifdef W_timing
@@ -824,6 +826,8 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   writeDataSetToGroup(out_cell_group, string("index_of_nearest_vessel"), index_of_nearest_vessel);
   
   DynArray<float> buffer(numberOfCells);
+  DynArray<int> buffer_int(numberOfCells);
+  
   for( int i = 0; i<numberOfCells; ++i)
   {
     buffer[i] = tumorcode_pointer_to_currentCellsSystem->Get_r()[i];
@@ -856,6 +860,13 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
     buffer[i] = tumorcode_pointer_to_currentCellsSystem->Get_AcL_extra()[i];
   }
   writeDataSetToGroup(out_cell_group, string("AcL_ex"), buffer);
+  
+  // cell phase
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    buffer_int[i] = tumorcode_pointer_to_currentCellsSystem->Get_phase(i);
+  }
+  writeDataSetToGroup(out_cell_group, string("cell_phase"), buffer_int);
   cout<< "finished writting cells to hdf" << endl;
 }
 

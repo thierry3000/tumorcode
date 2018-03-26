@@ -2,7 +2,8 @@
 #include <array>
 #include <iostream>
 
-inline float NANf() { return std::numeric_limits<float>::quiet_NaN(); }
+//inline float NANf() { return std::numeric_limits<float>::quiet_NaN(); }
+inline float NANf() { return std::numeric_limits<float>::max(); }
 
 int main()
 {

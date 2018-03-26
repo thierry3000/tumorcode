@@ -197,8 +197,10 @@ void FiniteVolumeMatrixBuilder::FiniteVolumeMatrixBuilder::Init27Point(const Lat
   graph.FillComplete();
   graph.OptimizeStorage();
 
-  m.reset(new Epetra_CrsMatrix(Copy, graph)); // static profile, memory alloction is fixed, map object is copied
-  rhs.reset(new Epetra_Vector(epetra_map));
+  m = std::move(Teuchos::rcp(new Epetra_CrsMatrix(Copy, graph)));
+  rhs = std::move(Teuchos::rcp(new Epetra_Vector(epetra_map)));
+  //m.reset(new Epetra_CrsMatrix(Copy, graph)); // static profile, memory alloction is fixed, map object is copied
+  //rhs.reset(new Epetra_Vector(epetra_map));
 }
 
 
@@ -370,47 +372,54 @@ EllipticEquationSolver::~EllipticEquationSolver()
   std::cout.flush();
 #endif
 }
-EllipticEquationSolver::EllipticEquationSolver()
+
+// EllipticEquationSolver::EllipticEquationSolver()
+// {
+// #ifndef NDEBUG
+//   std::cout << "default constructor called called" << std::endl;
+//   std::cout.flush();
+// #endif
+// }
+
+EllipticEquationSolver::EllipticEquationSolver(Teuchos::RCP<Epetra_CrsMatrix> &_matrix, Teuchos::RCP<Epetra_Vector> &_rhs, const boost::property_tree::ptree& _params):sys_matrix(_matrix), rhs(_rhs), params(_params)
 {
 #ifndef NDEBUG
   std::cout << "default constructor called called" << std::endl;
   std::cout.flush();
 #endif
+  try
+  { 
+    //int success = init(sys_matrix,rhs,params);
+    int success = init();
+    if( not (success == 0))
+    {
+      throw 42;
+    }
+  }
+  catch(int e)
+  {
+    if(e == 42)
+    {
+      std::cout << "init EllipticEquationSolver not successfull" << std::endl;
+    }
+  }
 }
-// EllipticEquationSolver::EllipticEquationSolver(const Teuchos::RCP<Epetra_CrsMatrix> &_matrix, const Teuchos::RCP<const Epetra_Vector> &_rhs, const boost::property_tree::ptree& _params):sys_matrix(_matrix), rhs(_rhs), params(_params)
-// {
-//   try
-//   { 
-//     int success = init(sys_matrix,rhs,params);
-//     if( not (success == 0))
-//     {
-//       throw 42;
-//     }
-//   }
-//   catch(int e)
-//   {
-//     if(e == 42)
-//     {
-//       std::cout << "init EllipticEquationSolver not successfull" << std::endl;
-//     }
-//   }
-// }
 
 /**
  * this also sets the preconditioner 
  */
 //int EllipticEquationSolver::init(Epetra_CrsMatrix &_matrix, const Epetra_Vector &_rhs, const boost::property_tree::ptree& _params)
-int EllipticEquationSolver::init(const Teuchos::RCP<Epetra_CrsMatrix> _matrix, const Teuchos::RCP<const Epetra_Vector> _rhs, const boost::property_tree::ptree& _params)
+int EllipticEquationSolver::init()
 {
   //sys_matrix = &_matrix;
   //rhs = &_rhs;
   //const Teuchos::RCP< Epetra_CrsMatrix> this_system = Teuchos::rcp(&_matrix);
-  _matrix->OptimizeStorage();
-  problem->setOperator(_matrix);
+  sys_matrix->OptimizeStorage();
+  problem->setOperator(sys_matrix);
   //const Teuchos::RCP<const Epetra_Vector> this_rhs = Teuchos::rcp(&_rhs);
-  problem->setRHS(_rhs);
+  problem->setRHS(rhs);
   
-  params = _params;
+  //params = _params;
   
 #ifdef EPETRA_MPI
   int MyPID = 0;
@@ -474,9 +483,9 @@ int EllipticEquationSolver::init(const Teuchos::RCP<Epetra_CrsMatrix> _matrix, c
     if(PrecType=="multigrid" && (!keep_preconditioner || !ml_prec.get()))
     {
 #ifndef NDEBUG
-#ifndef TOTAL_SILENCE
       cout<<"EllipticEquationSolver::init"<<endl;
-#endif
+      std::cout << "multigrid selected " << std::endl;
+      std::cout.flush();
 #endif
       Teuchos::ParameterList mllist;
       ML_Epetra::SetDefaults("SA",mllist);
@@ -503,7 +512,7 @@ int EllipticEquationSolver::init(const Teuchos::RCP<Epetra_CrsMatrix> _matrix, c
       try 
       {
         //ml_prec = Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner>(new ML_Epetra::MultiLevelPreconditioner(*sys_matrix,mllist,true));
-        ml_prec = Teuchos::rcp(new ML_Epetra::MultiLevelPreconditioner(*_matrix,mllist,true));
+        ml_prec = Teuchos::rcp(new ML_Epetra::MultiLevelPreconditioner(*sys_matrix,mllist,true));
       } 
       catch (std::exception& e) 
       {
@@ -521,7 +530,7 @@ int EllipticEquationSolver::init(const Teuchos::RCP<Epetra_CrsMatrix> _matrix, c
     }
     else
     {
-      std::cout << "else " << std::endl;
+      std::cout << "not multigrid selected " << std::endl;
       std::cout.flush();
     }
     // end &sys_matrix && PrecType=="multigrid" && (!keep_preconditioner || !ml_prec.get())
@@ -545,7 +554,7 @@ int EllipticEquationSolver::init(const Teuchos::RCP<Epetra_CrsMatrix> _matrix, c
     //
     // Create parameter list for the Belos solver
     //
-    const int NumGlobalElements = _rhs->GlobalLength ();
+    const int NumGlobalElements = rhs->GlobalLength ();
     if (maxiters == -1) 
     {
       maxiters = NumGlobalElements - 1; // maximum number of iterations to run
@@ -579,9 +588,10 @@ int EllipticEquationSolver::init(const Teuchos::RCP<Epetra_CrsMatrix> _matrix, c
 #ifdef EPETRA_MPI
   //MPI_Finalize();
 #endif
+  return 0;
 }
 
-int EllipticEquationSolver::solve ( Teuchos::RCP<Epetra_Vector> _lhs )
+int EllipticEquationSolver::solve ( Teuchos::RCP<Epetra_Vector> &_lhs )
 {
   bool verbose = true;
   bool success = true;
@@ -656,17 +666,17 @@ int EllipticEquationSolver::solve ( Teuchos::RCP<Epetra_Vector> _lhs )
 
 #if 1
 //int SolveEllipticEquation( Epetra_CrsMatrix &matrix, Epetra_Vector &rhs, Epetra_Vector &lhs, const boost::property_tree::ptree &params)
-int SolveEllipticEquation( Teuchos::RCP<Epetra_CrsMatrix> matrix, Teuchos::RCP<Epetra_Vector> rhs, Teuchos::RCP<Epetra_Vector> lhs, const boost::property_tree::ptree &params)
+int SolveEllipticEquation( Teuchos::RCP<Epetra_CrsMatrix> &matrix, Teuchos::RCP<Epetra_Vector> &rhs, Teuchos::RCP<Epetra_Vector> &lhs, const boost::property_tree::ptree &params)
 {
-  //EllipticEquationSolver solver(matrix, rhs, params);
+  EllipticEquationSolver solver(matrix, rhs, params);
 #ifdef trilinos_bug_output
   std::cout << "entered SolveEllipticEquation" << std::endl;
 #endif
   //EllipticEquationSolver solver;
   //solver.init(matrix, rhs, params);
   //EllipticEquationSolver &&solver = EllipticEquationSolver{matrix, rhs,params};
-  EllipticEquationSolver solver;
-  solver.init(matrix, rhs, params);
+  //EllipticEquationSolver solver;
+  //solver.init(matrix, rhs, params);
   return solver.solve(lhs);
 }
 #endif

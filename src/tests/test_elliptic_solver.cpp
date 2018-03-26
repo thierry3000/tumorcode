@@ -97,19 +97,20 @@ void doit(const Int3 size)
   
   boost::property_tree::ptree pt;
   pt.put("output", 1);
-  pt.put("use_multigrid", false);
+  //pt.put("use_multigrid", false);
+  pt.put("use_multigrid", true);
   pt.put("output_matrix", false);
   pt.put("use_smoothed_aggregation", true);
   pt.put("solver", "cg");
   pt.put("max_iter", 100);
-  pt.put("throw", false);
+  pt.put("throw", true);
 
   //SolveEllipticEquation(*mb.m, *mb.rhs, *lhs, pt);
-//  SolveEllipticEquation(mb.m, mb.rhs, lhs, pt);
+  SolveEllipticEquation(mb.m, mb.rhs, lhs, pt);
 
-  EllipticEquationSolver solver;
-  solver.init(mb.m, mb.rhs, pt);
-  solver.solve(lhs);
+  //EllipticEquationSolver solver;
+  //solver.init(mb.m, mb.rhs, pt);
+  //solver.solve(lhs);
 
   cout << "solve memory cons: " << double(GetMemoryUsage().rss_peak - mem_usage1)/num_dof << " b/dof" << endl;
   
@@ -251,6 +252,15 @@ void doit2(const Int3 size)
 
 int main(int argc, char **argv)
 {
+#ifdef EPETRA_MPI
+  std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+  int mpi_is_initialized = 0;
+  int prov;
+  MPI_Initialized(&mpi_is_initialized);
+  if (!mpi_is_initialized)
+    //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+    MPI_Init_thread(0, NULL, 1,&prov);
+#endif
   // Declare the supported options.
   po::options_description desc("Allowed options");
   desc.add_options()

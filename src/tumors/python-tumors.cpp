@@ -49,7 +49,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   #include "../adaption/adaption_model2.h"
 #endif
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
 #include <stdio.h>
 #include <execinfo.h> //backtrace()
 #include <signal.h>
@@ -66,7 +66,7 @@ void handler(int sig) {
   // print out all the frames to stderr
   fprintf(stderr, "Error: signal %d:\n", sig);
   backtrace_symbols_fd(array, size, STDERR_FILENO);
-  exit(1);
+  exit(sig);
 }
 void baz() {
  int *foo = (int*)-1; // make a bad pointer
@@ -75,7 +75,7 @@ void baz() {
 
 void bar() { baz(); }
 void foo() { bar(); }
-#endif
+// #endif
 
 namespace Tumors{
   
@@ -241,8 +241,6 @@ void run_fakeTumor_mts(const py::str &param_info_str)
     /*
      * run major simulation, hopefully all parameters are set correct at this stage
      */
-  try
-  {
 #ifdef EPETRA_MPI
   std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
   int mpi_is_initialized = 0;
@@ -252,9 +250,13 @@ void run_fakeTumor_mts(const py::str &param_info_str)
     //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
     MPI_Init_thread(0, NULL, 1,&prov);
 #endif
-#ifndef NDEBUG
+  try
+  {
+
+// #ifndef NDEBUG
   signal(SIGSEGV, handler);
-#endif
+  signal(SIGFPE, handler);
+// #endif
   int returnCode = s.run();
   }
   catch(std::exception &ex)

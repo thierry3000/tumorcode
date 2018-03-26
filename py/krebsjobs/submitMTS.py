@@ -51,7 +51,7 @@ from krebsutils import typelist
 
 
 def getDomainSizeFromVesselFile(fn):
-  with h5files.open(fn, 'r') as f:
+  with h5py.File(fn, 'r') as f:
     ld = krebsutils.read_lattice_data_from_hdf(krebsutils.find_lattice_group_(f['vessels']))
     size = np.amax(ld.GetWorldSize())
   # longest axis times the lattice spacing
@@ -59,7 +59,7 @@ def getDomainSizeFromVesselFile(fn):
 
 
 def MakeVesselFilenamePart(fn):
-  with h5files.open(fn, mode='a') as f:
+  with h5py.File(fn, mode='a') as f:
     if 'parameters' in f:
       if 'MESSAGE' in f['parameters'].attrs:
         msg = f['parameters'].attrs['MESSAGE']

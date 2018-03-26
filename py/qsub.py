@@ -296,30 +296,30 @@ func = Func
 
 
 
-#class Exe(object):
-#  '''
-#    A wrapper around a system call to execute a program.
-#
-#    You give an object of this kind to the submit function in order to run it.
-#
-#    cmd - string or sequence of objects which can be converted to strings
-#  '''
-#  interpreter = 'sh'
-#  def __init__(self, *cmds):
-#    for i, cmd in enumerate(cmds):
-#      if isinstance(cmd, str) or not hasattr(cmd, '__iter__'):
-#        cmds[i] = [cmd]
-#    self.cmds = cmds
-#    self.name_hint = None
-#  def generate_script(self, qsubopts):
-#    lines = [
-#      ' '.join(list(str(q) for q in cmd)) for cmd in self.cmds
-#      ]
-#    if qsubopts.get('change_cwd', False):
-#      lines = [ 'cd %s' % os.getcwd() ] + lines
-#    return '\n'.join(lines)
-#
-#exe = Exe
+class Exe(object):
+  '''
+    A wrapper around a system call to execute a program.
+
+    You give an object of this kind to the submit function in order to run it.
+
+    cmd - string or sequence of objects which can be converted to strings
+  '''
+  interpreter = 'sh'
+  def __init__(self, *cmds):
+    for i, cmd in enumerate(cmds):
+      if isinstance(cmd, str) or not hasattr(cmd, '__iter__'):
+        cmds[i] = [cmd]
+    self.cmds = cmds
+    self.name_hint = None
+  def generate_script(self, qsubopts):
+    lines = [
+      ' '.join(list(str(q) for q in cmd)) for cmd in self.cmds
+      ]
+    if qsubopts.get('change_cwd', False):
+      lines = [ 'cd %s' % os.getcwd() ] + lines
+    return '\n'.join(lines)
+
+exe = Exe
 #
 #class SrunExe(object):
 #  '''
@@ -397,7 +397,8 @@ def submit_slurm(obj, submission_program, **slurmopts):
   cases = {
     'sh' : '#!/bin/sh',
     'python' : ('#!/usr/bin/env python%i'  % sys.version_info.major),
-    'python_debug' : ('#!/usr/bin/python%i -d'  % sys.version_info.major)
+    'python_debug' : ('#!/usr/bin/python%i -d'  % sys.version_info.major),
+    'debug_hardcore' : '#!/bin/sh',                  
     #'python' : '#!/bin/sh'
   }
   first_line = cases[obj.interpreter]
