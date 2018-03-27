@@ -229,7 +229,7 @@ def writeFields_(graph, options):
   #search_groups = ['po2/adaption/vessels_after_adaption/po2field']
   search_groups = []
   search_groups.append(str(options.writeFields))
-  e = extractVtkFields.Extractor(f, search_groups, recursive = True) 
+  e = extractVtkFields.Extractor(f, search_groups, recursive = True, lattice_path="field_ld") 
   print 'found field datasets:'
   pprint.pprint(e.getDatasetPaths())
   e.write(options.outfn % 'fields')

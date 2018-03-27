@@ -197,44 +197,25 @@ PyLd* read_lattice_data_from_hdf_by_filename(const string fn, const string path)
   {
     e.printError();
   }
-  string type;
-  readAttrFromH5(g_ld, "TYPE", type);
-  float scale;
-  readAttrFromH5(g_ld, "SCALE", scale);
+  string TYPE;
+  readAttrFromH5(g_ld, string("TYPE"), TYPE);
+  float SCALE;
+  readAttrFromH5(g_ld, string("SCALE"), SCALE);
   Int6 bb;
   readAttrFromH5(g_ld, "BOX", bb);
-  std::printf("if you read this, lattice data in c++ is %s\n", type.c_str());
-  typedef polymorphic_latticedata::LatticeData LD;
-  typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD_Derived;
-//  return new PyLd(new LD(ld));
-  //std::auto_ptr<LD> ldp = LD::ReadHdf(g_ld);
-//
+  Float3 WORLD_OFFSET;
+  readAttrFromH5(g_ld, string("WORLD_OFFSET"), WORLD_OFFSET);
+#ifndef NDEBUG
+  std::printf("if you read this, lattice data in c++ is %s\n", TYPE.c_str());
+#endif
   readInFile.close();
-  //mw_py_impl::LdToPy<LatticeDataFCC> myconveter;
-  //myconveter.convert(ldp.release());
+
   BBox3 bbox(bb[0],bb[2],bb[4],bb[1],bb[3],bb[5]);
-//   bbox[0]=bb[0];
-//   bbox[1]=bb[3];
-//   bbox[2]=bb[1];
-//   bbox[3]=bb[4];
-//   bbox[4]=bb[2];
-//   bbox[5]=bb[5];
-  PyLd *pyld= new PyLd(type, bbox, scale);
-  //PyLd *pyld = new PyLd(type, bbox, scale);
-  //py::object r(pyld);
+  
+  //allocate memory and let boost::python handle it by the return!
+  PyLd *pyld= new PyLd(TYPE, bbox, SCALE);
+  pyld->SetOriginPosition(WORLD_OFFSET);
   return pyld;
-  //ldp.reset();
-  //py::object reture(pyld);
-  //py::incref(pyld);
-  //return pyld;
-//   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD1;
-//   typedef polymorphic_latticedata::Derived<LatticeDataFCC> LD2;
-  //std::auto_ptr<PyLd> myp = std::auto_ptr<PyLd>(new PyLd(ldp.release()));
-//   PyLd *myp = new PyLd(ldp.release());
-//   ldp.reset();
-//   return LdToPy.con; //this is for std::auto_ptr
-//  return PyLd(ldp.get());
-//  return new PyLd(ldp.get());
 }
 
 //pointer issue changed to boost::shared_ptr
