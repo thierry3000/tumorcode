@@ -172,18 +172,36 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   ptree detailedO2Settings = s.o2_params.as_ptree();
   ptree bfSettings = s.o2_sim.bfparams.as_ptree();
   ptree fakeTumMTSSettings = s.params.as_ptree();
+  ptree systemSettings = s.mySystemParameters.as_ptree();
   ptree vesselSettings = s.vessel_model.params.as_ptree();
- #ifndef NDEBUG
+
+  #ifndef NDEBUG
   std::cout << "with detailed params: " << std::endl;
   printPtree(detailedO2Settings);
   std::cout << "with calcflow params: " << std::endl;
   printPtree(bfSettings);
- #endif
+  #endif
   // update settings with the read in data
   boost::property_tree::update(detailedO2Settings, pt_params.get_child("detailedo2"));
   boost::property_tree::update(bfSettings, detailedO2Settings.get_child("calcflow"));
   boost::property_tree::update(fakeTumMTSSettings, pt_params);
   boost::property_tree::update(vesselSettings, pt_params.get_child("vessels"));
+  
+  // update cluster information, if we are on a cluster
+  if( std::getenv("SLURM_CLUSTER_NAME") )
+  {
+    systemSettings.put("cluster", std::getenv("SLURM_CLUSTER_NAME"));
+  }
+  if( std::getenv("SLURMD_NODENAME") )
+  {
+    systemSettings.put("computing_node", std::getenv("SLURMD_NODENAME"));
+  }
+  if( std::getenv("SLURM_CPUS_ON_NODE") )
+  {
+    systemSettings.put("num_threads_queuing", std::getenv("SLURM_CPUS_ON_NODE"));
+  }
+  systemSettings.put("num_threads", omp_get_max_threads());
+  
   #ifdef DEBUG
   std::cout << "detailed params after update: " << std::endl;
   printPtree(detailedO2Settings);
@@ -199,6 +217,7 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   // assign vessel parameters to the simulation
   s.vessel_model.params.assign(vesselSettings);
   s.params.assign(fakeTumMTSSettings);
+  s.mySystemParameters.assign(systemSettings);
   /* 
    * if we are on a cluster, we expect multiple runs
    * and create a directory for each run 
@@ -284,7 +303,7 @@ void run_fakeTumor(const py::str &param_info_str)
 {
   ptree pt_params = convertInfoStr(param_info_str, ptree());
   std::cout << "run_fakeTumor on c++ called" << std::endl;
-#ifndef NDEBUG
+#ifdef DEBUG
   std::cout << "with params: " << std::endl;
   printPtree(pt_params);
 #endif
