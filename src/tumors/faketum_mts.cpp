@@ -77,7 +77,38 @@ void FakeTumMTS::FakeTumorSimMTS::initMilotti()
   cout << "\nStartup milotti completed" << endl; 
 }
 
-//Parameters::Parameters()
+FakeTumMTS::SystemParameters::SystemParameters()
+{
+  num_threads = 1;
+  cluster = "local";
+  computing_node = "local";
+  num_threads_queuing = 1;
+  mem_in_GB = 1;
+}
+void FakeTumMTS::SystemParameters::assign(const boost::property_tree::ptree& pt)
+{
+  #define DOPT(name) boost::property_tree::get(name, #name, pt)
+  DOPT(num_threads);
+  DOPT(cluster);
+  DOPT(computing_node);
+  DOPT(num_threads_queuing);
+  DOPT(mem_in_GB);
+  #undef DOPT
+}
+boost::property_tree::ptree FakeTumMTS::SystemParameters::as_ptree() const
+{
+  boost::property_tree::ptree pt;
+  #define DOPT(name) pt.put(#name, name)
+  DOPT(cluster);
+  DOPT(computing_node);
+  DOPT(num_threads);
+  DOPT(num_threads_queuing);
+  DOPT(mem_in_GB);
+  #undef DOPT
+  return pt;
+}
+
+
 FakeTumMTS::Parameters::Parameters()
 {
   rGf = 200;
@@ -86,7 +117,6 @@ FakeTumMTS::Parameters::Parameters()
   apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
   tend = 1000;
   dt = 1;
-  num_threads = 1;
   tumor_radius = 200.;
   tumor_speed = 2.;  // \mu m / hour
   vesselfile_ensemble_index = 0;
@@ -102,7 +132,6 @@ void FakeTumMTS::Parameters::assign(const ptree &pt)
   #define DOPT(name) boost::property_tree::get(name, #name, pt)
   int lattice_size_per_single_dim;
   DOPT(paramset_name);
-  DOPT(num_threads);
   DOPT(out_intervall);
   DOPT(tend);
   DOPT(dt);
@@ -140,7 +169,6 @@ ptree FakeTumMTS::Parameters::as_ptree() const
   boost::property_tree::ptree pt;
   #define DOPT(name) pt.put(#name, name)
   DOPT(paramset_name);
-  DOPT(num_threads);
   DOPT(out_intervall);
   DOPT(apply_adaption_intervall);
   DOPT(tend);
@@ -532,7 +560,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   H5::H5File f;
-  H5::Group root, gout, h5_tum, h5_cells_out, h5_parameters, h5_vessel_parameters, h5_field_ld_group, h5_timing;
+  H5::Group root, gout, h5_tum, h5_cells_out, h5_parameters, h5_vessel_parameters, h5_system_parameters,h5_field_ld_group, h5_timing;
   H5::Attribute a;
   std::string tumOutName = "nothing";
   try{
@@ -553,6 +581,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
     {
       h5_parameters = root.createGroup("parameters");
       h5_vessel_parameters = h5_parameters.createGroup("vessels");
+      h5_system_parameters = h5_parameters.createGroup("system");
       writeAttrToH5(root, string("MESSAGE"), params.message);
       writeAttrToH5(root, string("VESSELTREEFILE"), params.fn_vessel);
       writeAttrToH5(root, string("OUTPUT_NAME"), params.fn_out);
@@ -560,6 +589,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
       writeAttrToH5(root, string("VESSELFILE_ENSEMBLE_INDEX"), params.vesselfile_ensemble_index);
       WriteHdfPtree(h5_vessel_parameters,vessel_model.params.as_ptree());
       WriteHdfPtree(h5_parameters, params.as_ptree());
+      WriteHdfPtree(h5_system_parameters, mySystemParameters.as_ptree());
       /* on first occasion, we write field_ld to the root folder */
       h5_field_ld_group = root.createGroup("field_ld");
       grid.ld.WriteHdfLd(h5_field_ld_group);

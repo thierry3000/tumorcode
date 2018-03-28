@@ -86,6 +86,18 @@ struct nearest
   double distance = std::numeric_limits<double>::max();
   uint indexOfVessel = 0;
 };
+struct SystemParameters
+{
+  int num_threads;
+  string cluster;
+  string computing_node;
+  int num_threads_queuing;
+  double mem_in_GB;
+  
+  SystemParameters();
+  void assign(const ptree &pt);
+  ptree as_ptree() const;
+};
 struct Parameters
 {
   double out_intervall, tend;
@@ -98,7 +110,6 @@ struct Parameters
   double rGf, gf_production_threshold;
   double tumor_radius, tumor_speed;
   double stopping_radius_fraction; // actual-stopping-radius = 0.5*system-length-along-the-longest-dimension * stopping_radius_fraction
-  int num_threads;
   int tissuePressureDistribution;
   double tissuePressureWidth;
   double tissuePressureCenterFraction;
@@ -197,6 +208,7 @@ const int ANN_dim = 3;            // space dimension
   TissuePhases phases;//Declaration
   
   FakeTumMTS::Parameters params;
+  FakeTumMTS::SystemParameters mySystemParameters;
   //GlucoseModel::GlucoseParams glucoseParams;
   GfModel_Cell gf_model;
   

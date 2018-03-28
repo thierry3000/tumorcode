@@ -140,18 +140,22 @@ def plot_from_h5(goodArguments, pp):
             totalTime = int(f[key+'/timing'].attrs.get('secondsSinceEpoch')) - int(f[goodKeys[i-1]+'/timing'].attrs.get('secondsSinceEpoch'))
           myDictOfData[mykey].append(totalTime)
         elif mykey == 'number_of_cells':
-          if 'cell_radii' in f[key+'/cells']:
-            arrayOfRadii = np.asarray(f[key+'/cells/cell_radii'])
-            myDictOfData[mykey].append(len(arrayOfRadii))
-          else:
-            myDictOfData[mykey].append(0)
+          if 'out' in key:
+            ex = key+'/cells/cell_radii' in f
+            if ex:
+              arrayOfRadii = np.asarray(f[key+'/cells/cell_radii'])
+              myDictOfData[mykey].append(len(np.concatenate(arrayOfRadii, axis=0)))
+            else:
+              myDictOfData[mykey].append(0)
         else:
           #myDictOfData[mykey].append(f[key+'/timing'].attrs.get(mykey)/1e6)
-          myDictOfData[mykey].append(f[key+'/timing'].attrs.get(mykey))
+          timeForKey = f[key+'/timing'].attrs.get(mykey)
+          myDictOfData[mykey].append(timeForKey[0][0])
   
   plotVsCells = True;
   fig, ax = plt.subplots()
   for mykey in myH5Keys:
+    print("mykey: %s" % mykey)
     if not mykey == 'number_of_cells':
       if plotVsCells:
           ax.plot(myDictOfData['number_of_cells'],myDictOfData[mykey][0:],label=mykey)
@@ -166,7 +170,7 @@ def plot_from_h5(goodArguments, pp):
   else:
     ax.set_xlabel('output group/ one unit is 1h of simulated time')
     ax.set_ylabel('runtime/ s')
-  
+  no_of_threads = 28
   ax.set_title('cluster run of faketumor with vbl \n run on snowden with # %i threads' % int(no_of_threads))
   #plt.ylabel('#cells')
   legend = ax.legend(loc='upper left', shadow=True)
@@ -181,7 +185,7 @@ if __name__ == '__main__':
   parser.add_argument('--v',dest='vbl_timing_filename', type=str, default='timing_of_runMainLoop_in_run.txt', help='timing file to evalutate')
   parser.add_argument('--s',dest='vbl_simulation_output_filename', type=str, default='safe.h5', help='output file name in hdf5 format')
   
-  interactive = True;
+  interactive = False;
   goodArguments, otherArguments = parser.parse_known_args()
   #qsub.parse_args(otherArguments)
   if 0:

@@ -18,6 +18,7 @@ execute_process(COMMAND ln -s ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/submitVesselg
 execute_process(COMMAND ln -s ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/submitBulkTissue.py ${CMAKE_INSTALL_PREFIX}/bin/submitBulkTissue)
 execute_process(COMMAND ln -s ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/submitFakeTum.py ${CMAKE_INSTALL_PREFIX}/bin/submitFakeTum)
 execute_process(COMMAND ln -s ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/submitPovrayRender.py ${CMAKE_INSTALL_PREFIX}/bin/submitPovrayRender)
+execute_process(COMMAND ln -s ${CMAKE_INSTALL_PREFIX}/py/krebsjobs/submitMTS.py ${CMAKE_INSTALL_PREFIX}/bin/submitMTS)
 
 #T.F.: to not spoil the repository by different parameterset when
 #variing, we check generic parameterset into the repository and 
