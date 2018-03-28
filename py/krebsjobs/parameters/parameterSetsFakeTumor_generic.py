@@ -121,10 +121,17 @@ plos_One_2016_rmax = dict(
 newradiusdeflation = deepcopy(default)
 milotti_mts_1 = deepcopy(plos_One_2016_rmax)
 milotti_mts_1.update(
-    tumor_speed = 0.2,
-    out_intervall = 100,
-    tend=1400.,
+    tumor_radius = 10.,
+    tumor_speed = 1.,
+    out_intervall = 1,
+    tend=1000.,
     )
+milotti_mts_1['vessels'].update(
+    probCollapse = 0.05,
+    radInit = 3.6,
+    radMin = 2.5,
+)
+
 forCatSim = deepcopy(plos_One_2016_rmax)
 forCatSim.update(
   num_threads = cluster_threads,

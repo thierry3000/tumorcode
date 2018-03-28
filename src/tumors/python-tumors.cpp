@@ -172,16 +172,18 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   ptree detailedO2Settings = s.o2_params.as_ptree();
   ptree bfSettings = s.o2_sim.bfparams.as_ptree();
   ptree fakeTumMTSSettings = s.params.as_ptree();
-  #ifdef DEBUG
+  ptree vesselSettings = s.vessel_model.params.as_ptree();
+ #ifndef NDEBUG
   std::cout << "with detailed params: " << std::endl;
   printPtree(detailedO2Settings);
   std::cout << "with calcflow params: " << std::endl;
   printPtree(bfSettings);
-  #endif
+ #endif
   // update settings with the read in data
   boost::property_tree::update(detailedO2Settings, pt_params.get_child("detailedo2"));
   boost::property_tree::update(bfSettings, detailedO2Settings.get_child("calcflow"));
   boost::property_tree::update(fakeTumMTSSettings, pt_params);
+  boost::property_tree::update(vesselSettings, pt_params.get_child("vessels"));
   #ifdef DEBUG
   std::cout << "detailed params after update: " << std::endl;
   printPtree(detailedO2Settings);
@@ -194,6 +196,8 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   // assign bfparams parameters to the simulation
   s.o2_sim.bfparams.assign(bfSettings);
   s.bfparams.assign(bfSettings);
+  // assign vessel parameters to the simulation
+  s.vessel_model.params.assign(vesselSettings);
   s.params.assign(fakeTumMTSSettings);
   /* 
    * if we are on a cluster, we expect multiple runs
@@ -280,7 +284,7 @@ void run_fakeTumor(const py::str &param_info_str)
 {
   ptree pt_params = convertInfoStr(param_info_str, ptree());
   std::cout << "run_fakeTumor on c++ called" << std::endl;
-#ifdef DEBUG
+#ifndef NDEBUG
   std::cout << "with params: " << std::endl;
   printPtree(pt_params);
 #endif
@@ -290,6 +294,7 @@ void run_fakeTumor(const py::str &param_info_str)
   //construct default parameters
   //get default params
   ptree bfSettings = s.params.bfparams.as_ptree();
+  ptree vesselSettings = s.vessel_model.params.as_ptree();
 #ifdef USE_ADAPTION
   ptree adaptionSettings = s.params.adap_params.as_ptree();
   if(pt_params.count("adaption")>0)
@@ -300,19 +305,16 @@ void run_fakeTumor(const py::str &param_info_str)
 #endif
   ptree fakeTumSettings = s.params.as_ptree();
   //update with read in params
+  boost::property_tree::update(vesselSettings, pt_params.get_child("vessels"));
   boost::property_tree::update(bfSettings, pt_params.get_child("calcflow"));
   boost::property_tree::update(fakeTumSettings, pt_params);
   
+  s.vessel_model.params.assign(vesselSettings);
   s.params.bfparams.assign(bfSettings);
   s.params.assign(fakeTumSettings);
   
-//   FakeTum::Parameters defaultParams;  /// default parameters
-//   ptree faketumSettings = defaultParams.as_ptree();
-//   boost::property_tree::update(faketumSettings,pt_params);
-  //printPtree(defaultParams.as_ptree());
-  
-  //printPtree(faketumSettings);
-    try{
+  try
+  {
 #ifdef EPETRA_MPI
     std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
     int mpi_is_initialized = 0;
@@ -328,7 +330,6 @@ void run_fakeTumor(const py::str &param_info_str)
   {
     std::cout << ex.what();
   }
-  //return returnCode;
 }
 void export_faketum()
 {

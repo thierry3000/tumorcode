@@ -43,9 +43,9 @@ copper       greens        prgn     reds
 dark2        greys         prism    set1
 '''
 def test_points3d():
-    t = numpy.linspace(0, 4 * numpy.pi, 20)
-    cos = numpy.cos
-    sin = numpy.sin
+    t = np.linspace(0, 4 * np.pi, 20)
+    cos = np.cos
+    sin = np.sin
 
     x = sin(2 * t)
     y = cos(t)
@@ -54,6 +54,42 @@ def test_points3d():
 
     return mlab.points3d(x, y, z, s, colormap="copper", scale_factor=.25)
     
+def test_points3d_gauss():
+    n=20
+    pts = np.random.randn(n,3)
+    s = np.sqrt(np.sum(pts**2,1))
+    
+    no_grid_points = 10
+    x_min = np.min(pts[:,0])
+    x_max = np.max(pts[:,0])
+    x_dist=(x_max-x_min)/no_grid_points
+    
+    y_min = np.min(pts[:,1])
+    y_max = np.max(pts[:,1])
+    y_dist=(y_max-y_min)/no_grid_points
+    
+    z_min = np.min(pts[:,2])
+    z_max = np.max(pts[:,2])
+    z_dist=(z_max-z_min)/no_grid_points
+    
+    
+    X, Y, Z = np.meshgrid(np.arange(x_min,x_max,x_dist), np.arange(y_min,y_max,y_dist), np.arange(z_min,z_max,z_dist))
+    
+    from scipy.interpolate import griddata
+    
+    grid1 = griddata(pts,s,(X,Y,Z), method='nearest')
+    obj = mlab.contour3d(grid1, contours=1, transparent=True)
+    return obj
+
+
+def test_contour3d():
+    n=20
+    pts = np.random.randn(3,20)
+    s = np.sum(pts**2,0)
+    
+
+    obj = mlab.contour3d(pts[0,:],pts[1,:],pts[2,:], s, contours=0.5, transparent=True)
+    return obj
 @mlab.show
 def plot_cells(goodArguments):
   with h5py.File(goodArguments.vbl_simulation_output_filename, 'r') as f:
@@ -121,7 +157,51 @@ def plot_cells(goodArguments):
   mlab.colorbar()
   #mlab.savefig("test.eps")
   
-  
+@mlab.show
+def plot_contour_cells(goodArguments):
+  with h5py.File(goodArguments.vbl_simulation_output_filename, 'r') as f:
+    h5_cells_grp = f[goodArguments.output_grp_name + "/cells"]
+    pos = h5_cells_grp['cell_center_pos']
+    pos = np.asarray(pos)
+    rad = h5_cells_grp['cell_radii']
+    rad = np.asarray(rad)
+    o2 = h5_cells_grp['o2']
+    o2 = np.asarray(o2)
+    o2 = o2[:,0]
+    x = pos[:,0]
+    y = pos[:,1]
+    z = pos[:,2]
+    s = rad[:,0]
+    pts = mlab.quiver3d(x,y,z, s,s,s, scalars=o2, colormap="blue-red", scale_factor=2, mode='sphere')
+    pts.glyph.color_mode = 'color_by_scalar'
+    #pts.glyph.glyph_source.glyph_source.center = [0,0,0]
+    
+    
+    ''' interpolate to grid '''
+    
+    no_grid_points = 100
+    x_min = np.min(pos[:,0])
+    x_max = np.max(pos[:,0])
+    x_dist=(x_max-x_min)/no_grid_points
+    
+    y_min = np.min(pos[:,1])
+    y_max = np.max(pos[:,1])
+    y_dist=(y_max-y_min)/no_grid_points
+    
+    z_min = np.min(pos[:,2])
+    z_max = np.max(pos[:,2])
+    z_dist=(z_max-z_min)/no_grid_points
+    
+    
+    X, Y, Z = np.meshgrid(np.arange(x_min,x_max,x_dist), np.arange(y_min,y_max,y_dist), np.arange(z_min,z_max,z_dist))
+    
+    from scipy.interpolate import griddata
+    
+    grid1 = griddata(pos,o2,(X,Y,Z), method='linear')
+    isosurface = (np.max(o2)-np.min(o2))/2
+    print("isosurface at: %f" % isosurface)
+    obj = mlab.contour3d(grid1, contours=[isosurface], transparent=True)
+    
 
 if __name__ == "__main__":
   import argparse
@@ -134,6 +214,12 @@ if __name__ == "__main__":
   goodArguments.output_grp_name = 'out0100'
   #goodArguments.output_grp_name = 'out0458'
   
-  plot_cells(goodArguments)
+  #test_points3d_gauss()
+  #test_contour3d()
+  
+  #plot_cells(goodArguments)
+  plot_contour_cells(goodArguments)
   
   #plot_vessels(goodArguments)
+  
+  mlab.show()

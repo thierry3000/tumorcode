@@ -321,7 +321,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     // initialize vessel model
     vessel_model.Init(vl.get(), this->vessel_model.params, callbacks);
   }
-
+  
   /* set initial conditions of the FakeTumMTS simulation */
   //tumor_radius = params.tumor_radius; not needed for cell based simulation
   time = 0.;

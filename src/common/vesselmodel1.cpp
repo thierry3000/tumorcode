@@ -293,17 +293,29 @@ void Model::DoStep(double dt, const BloodFlowParameters *bfparams)
 #ifndef USE_ADAPTION
   {
     GenerateSprouts();
+#ifndef NDEBUG
     std::cout << "collapse called" << std::endl; std::cout.flush();
+#endif
     CollapseVessels();
+#ifndef NDEBUG
     std::cout << "collapse ened" << std::endl; std::cout.flush();
+#endif
     if (IS_DEBUG) vl->IntegrityCheck();
+#ifndef NDEBUG
     std::cout << "integrity ended" << std::endl; std::cout.flush();
+#endif
     EnlargeVessels();
+#ifndef NDEBUG
     std::cout << "enlarge ended" << std::endl; std::cout.flush();
+#endif
     SmoothVessels();
+#ifndef NDEBUG
     std::cout << "smooth ended" << std::endl; std::cout.flush();
+#endif
     MaturateVessel();
+#ifndef NDEBUG
     std::cout << "maturate ended" << std::endl; std::cout.flush();
+#endif
   }
 #endif
   if(num_iteration%10 == 0)
@@ -768,7 +780,7 @@ void Model::CollapseVessels()
   }
   else
   {
-    std::cout<<"Noting to KILL!"<<endl;
+    std::cout<<"Nothing to KILL!"<<endl;
   }
 
   FUNC_TIMING_END_OS(my::log())
