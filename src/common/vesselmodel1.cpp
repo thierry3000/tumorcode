@@ -320,9 +320,13 @@ void Model::DoStep(double dt, const BloodFlowParameters *bfparams)
 #endif
   if(num_iteration%10 == 0)
   {
+#ifndef NDEBUG
     cout << "optimize called" << endl;
+#endif
     Optimize(vl);
+#ifndef NDEBUG
     cout << "optimize finished" << endl;
+#endif
   }
   if (IS_DEBUG) vl->IntegrityCheck();
   ClassifyTumorVessels();

@@ -28,6 +28,7 @@ import parameterSetsFakeTumor
 
 default = parameterSetsFakeTumor.default
 default.update(
+  out_intervall = 100,
   dt = 1,
   message = '',
   rGf = 200.,
@@ -92,7 +93,7 @@ milotti_mts_1 = deepcopy(default)
 milotti_mts_1.update(
     rGf = 100.,
     tumor_speed = 0.2,
-    out_intervall = 100,
+    out_intervall = 1,
     tend=1400.,
     tissuePressureDistribution = 'sphere',
     )
