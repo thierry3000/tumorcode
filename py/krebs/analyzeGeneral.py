@@ -439,7 +439,7 @@ class DataBasicVessel(object):
         if   property_name in vesselgroup['edges']: association = 'edges'
         elif property_name in vesselgroup['nodes']: association = 'nodes'
       if property_name == 'position':
-        return krebsutils.read_vessel_positions_from_hdf_(vesselgroup).transpose(), 'nodes'
+        return krebsutils.read_vessel_positions_from_hdf_by_filename(str(vesselgroup.file.filename),str(vesselgroup.name)), 'nodes'
       elif property_name == 'length':
         graph = dataman.obtain_data('vessel_graph', vesselgroup, ['position'])
         pos = graph.nodes['position']
@@ -458,7 +458,7 @@ class DataBasicVessel(object):
     def obtain_data(self, dataman, dataname, *args):
       if dataname == 'vessel_graph':
         vesselgroup, properties = args
-        graph = krebsutils.read_vessels_from_hdf(vesselgroup, [], return_graph=True)
+        graph = krebsutils.read_vessels_from_hdf(vesselgroup, properties, return_graph=True)
         for prop in properties:
           data, association = self.get_property(dataman, vesselgroup, 'auto', prop)
           getattr(graph, association)[prop] = data

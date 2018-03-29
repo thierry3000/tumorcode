@@ -205,8 +205,7 @@ void exportVectorClassConverters()
 //   mw_py_impl::VecToPy<bool, 3>::Register();
 }
 
-template<class T>
-double checkedExtractFromDict(const py::dict &d, const char* name)
+double checkedExtractFromDict(const py::dict &d, const string &name)
 {
   try
   {
@@ -218,6 +217,39 @@ double checkedExtractFromDict(const py::dict &d, const char* name)
     throw e; // don't every try to handle this!
   }
 }
+
+// template<class T>
+// static T checkedExtractFromDict(const py::dict &d, const string &name)
+// {
+//   try
+//   {
+//     double abc=py::extract<double>(d[name]);
+//     return py::extract<T>(d.get(name));
+//     //return abc;
+//   }
+//   catch (const py::error_already_set &e) 
+//   {
+//     std::cerr << format("unable to extract parameter '%s': ") % name;
+//     throw e; // don't every try to handle this!
+//   }
+// }
+// template static string checkedExtractFromDict<string>(const py::dict &d, const string &name);
+// template<class T>
+// T checkedExtractFromDict(const py::dict &d, const string &name)
+// {
+//   try
+//   {
+//     string buffer = py::extract<string>(d[name]);
+//     T returnValue = (T) buffer;
+//     return returnValue;
+//     //return abc;
+//   }
+//   catch (const py::error_already_set &e) 
+//   {
+//     std::cerr << format("unable to extract parameter '%s': ") % name;
+//     throw e; // don't every try to handle this!
+//   }
+// }
 
 
 }//namespace mw_py_impl

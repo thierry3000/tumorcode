@@ -153,7 +153,8 @@ def readParameters(po2group):
       p = getattr(parameterSetsO2, o2_paramset_name)
       #p=myutils.hdf_read_dict_hierarchy_attr(po2group.parent.parent['parameters/o2_params'])
   else:
-    p = myutils.hdf_read_dict_hierarchy(po2group['parameters'])
+    #p = myutils.hdf_read_dict_hierarchy(po2group['parameters'])
+    p = dict(po2group['parameters/o2'].attrs)
   ''' hopefully not needed anymore consistent parameter choice'''
 #  for oldName, newName in [("kD_tissue", 'D_tissue'),
 #                           ("alpha_t", "solubility_tissue"),
@@ -203,25 +204,28 @@ def OpenVesselAndTumorGroups(po2group):
       gvessels = po2group.parent['vessels']
       gtumor = None
   else:
-    refVessels, refTumor = getSourceRefs_(po2group)
-    if refVessels.fn:
-      gvessels = h5files.open(refVessels.fn, 'r+', relatedObjectForSearch = po2group)[refVessels.path]
-    else:
-      gvessels = po2group.file[refVessels.path] # look in the same file
-      # expect it to return someting. cannot have no vessel network
-    if refTumor.fn in os.listdir('.'):
-      gtumor = h5files.open(refTumor.fn, 'r+', relatedObjectForSearch = po2group)[refTumor.path] if refTumor.fn else None # maybe there is no tumor
-    else:
-      print('Warning: did not find tumor in same folder!')
-      if refTumor.fn in os.listdir('../'):
-        gtumor = h5files.open('../'+refTumor.fn, 'r+', relatedObjectForSearch = po2group)[refTumor.path] if refTumor.fn else None # maybe there is no tumor
-      else:
-        print('Warning: also not in top level folder')
-        if refTumor.fn in os.listdir('../../'):
-          gtumor = h5files.open('../../'+refTumor.fn, 'r+', relatedObjectForSearch = po2group)[refTumor.path] if refTumor.fn else None # maybe there is no tumor
-        else:
-          print('also not in top top level')
-          gtumor = None
+    #fakeTumor
+    gvessels = po2group[po2group.attrs['SOURCE_VESSELS_PATH']]
+    gtumor = None
+#    refVessels, refTumor = getSourceRefs_(po2group)
+#    if refVessels.fn:
+#      gvessels = h5files.open(refVessels.fn, 'r+', relatedObjectForSearch = po2group)[refVessels.path]
+#    else:
+#      gvessels = po2group.file[refVessels.path] # look in the same file
+#      # expect it to return someting. cannot have no vessel network
+#    if refTumor.fn in os.listdir('.'):
+#      gtumor = h5files.open(refTumor.fn, 'r+', relatedObjectForSearch = po2group)[refTumor.path] if refTumor.fn else None # maybe there is no tumor
+#    else:
+#      print('Warning: did not find tumor in same folder!')
+#      if refTumor.fn in os.listdir('../'):
+#        gtumor = h5files.open('../'+refTumor.fn, 'r+', relatedObjectForSearch = po2group)[refTumor.path] if refTumor.fn else None # maybe there is no tumor
+#      else:
+#        print('Warning: also not in top level folder')
+#        if refTumor.fn in os.listdir('../../'):
+#          gtumor = h5files.open('../../'+refTumor.fn, 'r+', relatedObjectForSearch = po2group)[refTumor.path] if refTumor.fn else None # maybe there is no tumor
+#        else:
+#          print('also not in top top level')
+#          gtumor = None
   return gvessels, gtumor
 
 

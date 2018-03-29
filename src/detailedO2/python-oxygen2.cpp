@@ -45,13 +45,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace DetailedPO2
 {
 
-void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
+void InitParameters(DetailedPO2::Parameters &params, const py::dict &py_parameters)
 {
   cout << "begin init params" << endl;
-#define GET_PO2_PARAM_FROM_DICT(TYPE, NAME) checkedExtractFromDict<TYPE>(py_parameters, NAME);
+//#define GET_PO2_PARAM_FROM_DICT(TYPE, NAME) checkedExtractFromDict<TYPE>(py_parameters, NAME);
+#define GET_PO2_PARAM_FROM_DICT(NAME) checkedExtractFromDict(py_parameters, NAME);
 #define GET_PO2_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters.get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
-  
-  
+  boost::python::list keys = py_parameters.keys(); 
+  boost::python::extract<double> extracted_key(keys[0]);
+  string abc = boost::python::extract<string>(py_parameters["po2init_r0"]);
+  if(!extracted_key.check())
+  {  
+                std::cout<<"Key invalid, map might be incomplete"<<std::endl;  
+             
+           }
+  //boost::python::extract<string> extracted_val(py_parameters[keys[0]]);
+  //std::cout << extracted_val << std::endl;
+  //string myres = GET_PO2_PARAM_FROM_DICT(string, "po2init_r0");
+  params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(string("po2init_r0"));
+#if 0
   params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
   params.po2init_dr = GET_PO2_PARAM_FROM_DICT(double, "po2init_dr");
   params.po2init_cutoff = GET_PO2_PARAM_FROM_DICT(double, "po2init_cutoff");
@@ -91,6 +103,7 @@ void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
   GET_PO2_PARAM_IF_NONNONE(params.approximateInsignificantTransvascularFlux, bool, "approximateInsignificantTransvascularFlux");
   GET_PO2_PARAM_IF_NONNONE(params.D_plasma, double, "D_plasma");
   GET_PO2_PARAM_IF_NONNONE(params.massTransferCoefficientModelNumber, int, "massTransferCoefficientModelNumber");
+
 //   try 
 //   {
 //     kd = GET_PO2_PARAM_FROM_DICT(double, "D_tissue");
@@ -138,6 +151,7 @@ void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
   
   // required parameters for transvascular transport
   
+#endif
   
 #undef GET_PO2_PARAM_FROM_DICT
 #undef GET_PO2_PARAM_IF_NONNONE
@@ -175,8 +189,9 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   const string fn = py::extract<string>(py_parameters.get("output_file_name", "None"));
   const string tumor_file_name = py::extract<string>(py_parameters.get("tumor_file_name", "None"));
   const string tumor_group_path = py::extract<string>(py_parameters.get("tumor_group_path", "None"));
-  
   const string out_grp_path = py::extract<string>(py_parameters.get("output_group_path", "None"));
+  string vesselgroup_path = py::extract<string>(py_parameters.get("vessel_group_path", "None"));
+  vesselgroup_path = "/" + vesselgroup_path;
   //h5cpp::File *o2File = new h5cpp::File(fn,"a");
   std::unique_ptr<VesselList3d> vl;
   H5::H5File o2File;
@@ -192,8 +207,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
        */
       o2File = H5::H5File( fn, H5F_ACC_RDWR );
 
-      string vesselgroup_path = py::extract<string>(py_parameters.get("vessel_group_path", "None"));
-      vesselgroup_path = "/" + vesselgroup_path;
+      
       H5::Group vesselgroup = o2File.openGroup(vesselgroup_path);
       vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
    }  // end of try block
@@ -271,7 +285,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
     H5::Group outputgroup = o2File.createGroup(out_grp_path);
     
     writeAttrToH5(outputgroup, string("SOURCE_VESSELS_FILE"), fn);
-    writeAttrToH5(outputgroup, string("SOURCE_VESSELS_PATH"), out_grp_path);
+    writeAttrToH5(outputgroup, string("SOURCE_VESSELS_PATH"), vesselgroup_path);
     writeAttrToH5(outputgroup, string("SOURCE_TISSUE_FILE"), string("none"));
     writeAttrToH5(outputgroup, string("SOURCE_TISSUE_PATH"), string("none"));
     H5::Group h5_o2_lattice = outputgroup.createGroup("field_ld");
@@ -372,7 +386,7 @@ static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters
   return result;
 }
 #else
-static py::object PyComputeSaturation(nm::array py_po2, py::dict py_parameters)
+static py::object PyComputeSaturation(nm::array &py_po2, py::dict &py_parameters)
 {
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
@@ -816,7 +830,7 @@ void export_oxygen_computation()
 } // namespace
 
 
-#ifdef DEBUG
+#ifndef NDEBUG
 BOOST_PYTHON_MODULE(libdetailedo2_d)
 #else
 BOOST_PYTHON_MODULE(libdetailedo2_)

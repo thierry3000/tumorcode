@@ -192,7 +192,7 @@ struct DetailedP02Sim : public boost::noncopyable
 };
 // template<class T>
 // static T checkedExtractFromDict(const py::dict &d, const char* name);
-void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters);
+void InitParameters(DetailedPO2::Parameters &params, const py::dict &py_parameters);
 };//end namespace
 
 #endif

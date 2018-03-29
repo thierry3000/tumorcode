@@ -863,7 +863,7 @@ struct VesselGenException : std::exception
 void translator(VesselGenException const& x) {
   PyErr_SetString(PyExc_UserWarning, x.what());
 }
-#ifdef DEBUG
+#ifndef NDEBUG
 BOOST_PYTHON_MODULE(libkrebs_d)
 #else
 BOOST_PYTHON_MODULE(libkrebs_)

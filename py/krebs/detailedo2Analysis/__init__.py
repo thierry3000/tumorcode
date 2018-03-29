@@ -79,7 +79,8 @@ class DataDetailedPO2(object):
       a  = np.asarray(po2group['po2vessels'])
       if a.shape[0] <> 2: a = np.transpose(a)
       po2field  = po2group['po2field']
-      ld = krebsutils.read_lattice_data_from_hdf(po2group['field_ld'])
+      #ld = krebsutils.read_lattice_data_from_hdf(po2group['field_ld'])
+      ld=krebsutils.read_lattice_data_from_hdf_by_filename(str(po2group.file.filename),str(po2group.name)+'/field_ld')
       parameters = dataman.obtain_data('detailedPO2Parameters', po2group)
       return a, ld, po2field, parameters
 

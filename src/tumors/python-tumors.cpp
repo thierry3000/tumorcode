@@ -84,7 +84,9 @@ void InitSimpleO2ParametersFromPy(O2Model::SimpleO2Params &params, py::dict py_p
 //   #define GET_SimpleO2_PARAM_FROM_DICT(TYPE, NAME) checkedExtractFromDict<TYPE>(py_parameters, NAME);
 //   #define GET_SimpleO2_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters.get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
 //  params.hematocrit_init = GET_SimpleO2_PARAM_FROM_DICT(int, "hematocrit_init");
+#if 0
   params.hematocrit_init = checkedExtractFromDict<double>(py_parameters,"hematocrit_init");
+#endif
   cout<<params.hematocrit_init<<endl;
 //   params.sat_curve_exponent = GET_PO2_PARAM_FROM_DICT(double, "S_n");
 //   params.sat_curve_p50 = GET_PO2_PARAM_FROM_DICT(double, "S_p50");

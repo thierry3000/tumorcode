@@ -52,19 +52,9 @@ using boost::str;
 // // double checkedExtractFromDict(const py::dict &d, const char* name);
 // static T checkedExtractFromDict(const py::dict &d, const char* name);
 
-template<class T>
-static T checkedExtractFromDict(const py::dict &d, const char* name)
-{
-  try
-  {
-    return py::extract<T>(d.get(name));
-  }
-  catch (const py::error_already_set &e) 
-  {
-    std::cerr << format("unable to extract parameter '%s': ") % name;
-    throw e; // don't every try to handle this!
-  }
-}
+double checkedExtractFromDict(const py::dict &d, const string &name);
+
+
 
 
 template<class T, int dim>
