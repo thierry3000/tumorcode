@@ -25,6 +25,7 @@ import myutils
 cluster_threads = myutils.cluster_threads
 import parameterSetsO2
 import parameterSetsFakeTumor
+import parameterSetsVesselGen
 
 default = parameterSetsFakeTumor.default
 default.update(
@@ -98,6 +99,7 @@ milotti_mts_1.update(
     tissuePressureDistribution = 'sphere',
     )
 milotti_mts_1['detailedo2'] = parameterSetsO2.milotti_o2
-
+milotti_mts_2 = deepcopy(milotti_mts_1)
+milotti_mts_2['calcflow'] = parameterSetsVesselGen.no_phase
 if __name__ == '__main__':
   print(milotti_detailed)

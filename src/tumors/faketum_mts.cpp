@@ -364,14 +364,11 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   std::string lastTumorGroupWrittenByFakeTumName;
 
   
-#ifdef USE_DETAILED_O2
-  /* set up detailed oxygen calculation */
   double grid_lattice_const = 40;
   double safety_layer_size = 120;
   boost::optional<Int3> grid_lattice_size;
-#endif
   /* continum lattice stuff
-   * 
+   * set up grid for calculating diffusion equations
    * needed for solving diffusion equations, here Growthfactors
    */
   Int3 s = params.lattice_size;
@@ -407,46 +404,56 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   /* start main loop */
   while (true)
   {
+    // time =0, next_output_time = 0 at begining
+    // 0>=-1 if dt=1 --> true
+    // first one is negative in time, so we are preparing
     if (time >= next_output_time - params.dt )
     {
 #ifdef USE_DETAILED_O2
       /* right now, the o2 simulation is called at every output time */
-      {
 #ifdef W_timing
-        currentTiming.begin_o2 = std::chrono::steady_clock::now();
+      currentTiming.begin_o2 = std::chrono::steady_clock::now();
 #endif
-        /* O2 stuff is initialized
-         * NOTE: size of po2Store is set here
-         */
-        o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels);
-        cout << "\nInit O2 completed" << endl;
-        o2_sim.run(*vl);
-        cout << "\n mts run finished" << endl;
-        //we store the results, to achive quicker convergence in consecutive runs
-        state.previous_po2field = o2_sim.getPo2field();
-        cout << "\nAccquired po2Field  completed" << endl;
-        state.previous_po2vessels = o2_sim.getVesselPO2Storrage();
-        cout << "\nDetailed O2 completed" << endl;
+      /* O2 stuff is initialized
+	* NOTE: size of po2Store is set here
+	*/
+      o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels);
+      cout << "\nInit O2 completed" << endl;
+      o2_sim.run(*vl);
+      cout << "\n mts run finished" << endl;
+      //we store the results, to achive quicker convergence in consecutive runs
+      state.previous_po2field = o2_sim.getPo2field();
+      cout << "\nAccquired po2Field  completed" << endl;
+      state.previous_po2vessels = o2_sim.getVesselPO2Storrage();
+      cout << "\nDetailed O2 completed" << endl;
 #ifdef W_timing
-        currentTiming.end_o2 = std::chrono::steady_clock::now();
-        currentTiming.time_diff = currentTiming.end_o2 - currentTiming.begin_o2;
-        currentTiming.run_o2 = currentTiming.run_o2 + currentTiming.time_diff.count();
+      currentTiming.end_o2 = std::chrono::steady_clock::now();
+      currentTiming.time_diff = currentTiming.end_o2 - currentTiming.begin_o2;
+      currentTiming.run_o2 = currentTiming.run_o2 + currentTiming.time_diff.count();
 #endif
-      }
 #else
       /// no detailed o2 model
+
+#ifdef W_timing
+      currentTiming.run_o2 = currentTiming.run_o2 + 0;
+#endif
       
 #endif
       /** @brief    
        * o2 data is feed back to the cells, milotti part
        */
-#ifdef USE_DETAILED_O2
+      // T.F. 4.4.2018 
+      // there is no update_milotti_vessels any more!!
       // feed milotti structure with detailed o2 simulation result
       //update_milotti_vessels(currentCellsSystem, *vl, o2_sim.po2vessels);
 #ifdef W_timing
       currentTiming.begin_ann = std::chrono::steady_clock::now();
 #endif
+#ifdef USE_DETAILED_O2
       findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
+#else
+      findNearestVessel();
+#endif
 #ifndef NDEBUG
       std::cout << " findNearestVessel finished " << std::endl;std::cout.flush();
 #endif
@@ -455,10 +462,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
       currentTiming.run_ann = currentTiming.run_ann + currentTiming.time_diff.count();
 #endif
-#else
-      // simple version which set oxygen level of the vessels to a constant value
-      update_milotti_vessels(currentCellsSystem, *vl);
-#endif
+
 
       lastTumorGroupWrittenByFakeTumName = writeOutput();//detailedO2 should be calculated prior to this call
       currentTiming.reset();
@@ -498,7 +502,6 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     time += params.dt;
     /* propergate cells in time until current fake tumor time */
     cout << boost::format("advance milotti until: %f\n") % time;
-    //currentCellsSystem->Set_tmax(time);
 #ifdef W_timing
     currentTiming.begin_doMilottiStep = std::chrono::steady_clock::now();
 #endif
@@ -565,16 +568,13 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   std::string tumOutName = "nothing";
   try{
     f = H5::H5File(params.fn_out + ".h5", output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
-    //f = H5::H5File(params.fn_out, H5F_ACC_RDWR );
     root = f.openGroup("/");
   }
   catch(H5::Exception e)
   {
     e.printError();
   }
-
-//   h5::Attributes a = root.attrs();
-//   
+  
   if (output_num == 0)
   {
     try
@@ -954,7 +954,11 @@ float to_vbl_o2_units(float pressure_in_mmhg)
 }
 /** @brief core interface for vbl BloodVesselVector
  */
+#ifdef USE_DETAILED_O2
 void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Storage &po2Store)
+#else
+void FakeTumMTS::FakeTumorSimMTS::findNearestVessel()
+#endif
 {
   /* we will fill the ann structure contnouslsy, so we need that map to restore the 
    * index within the the vessel list
@@ -1088,8 +1092,10 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
     Float3 buffer;
     std::array<double,3> bufferToFill;
 #ifndef NDEBUG
+#ifdef USE_DETAILED_O2
     //printf("ecnt: %i, po2Store.size(): %i,  cell_i: %i, ann_to_vl[i]: %i", ecnt, po2Store.size(), i, ann_to_vl[i]);
     myAssert(ann_to_vl[i]<po2Store.size());
+#endif
 #endif
     const Vessel* v= vl->GetEdge(ann_to_vl[i]);
     vbl::BloodVessel suggestion = vbl::BloodVessel();
@@ -1112,11 +1118,17 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
 
   //     suggestion.SetBloodVesselO2start( envO2 );
   //     suggestion.SetBloodVesselO2end( envO2 );
-  
+#ifdef USE_DETAILED_O2  
     float o2_a = to_vbl_o2_units(po2Store[v->Index()][0]);
     suggestion.SetBloodVesselO2start( o2_a );
     float o2_b = to_vbl_o2_units(po2Store[v->Index()][1]);
     suggestion.SetBloodVesselO2end( o2_b );
+#else
+    //do not use the po2Store!!!
+    float envO2 = vbl::O2_BV;
+    suggestion.SetBloodVesselO2start(envO2);
+    suggestion.SetBloodVesselO2end(envO2);
+#endif
 
     suggestion.SetBloodVesselCO2start( 0. );
     suggestion.SetBloodVesselCO2end( 0. );

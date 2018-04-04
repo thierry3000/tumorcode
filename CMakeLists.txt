@@ -132,6 +132,11 @@ if(TOTAL_SILENCE)
   add_definitions(-DTOTAL_SILENCE)
 endif()
 
+option(USE_DETAILED_O2 "decide to use the detailed oxygen calculation" OFF)
+if(USE_DETAILED_O2)
+  message("USE_DETAILED_O2 preprocessor defined")
+  add_definitions(-DUSE_DETAILED_O2)
+endif()
 
 #It would be nicer to see if pagmo was compilled 
 #with mpi automatically, pagmo2 is supporting that

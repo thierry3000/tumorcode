@@ -244,20 +244,20 @@ void run_fakeTumor_mts(const py::str &param_info_str)
    * 
    */
   //get default params
-  ptree detailedO2Settings = s.o2_params.as_ptree();
+  //ptree detailedO2Settings = s.o2_params.as_ptree();
   ptree bfSettings = s.bfparams.as_ptree();
   ptree fakeTumMTSSettings = s.params.as_ptree();
   //update with read in params
-  boost::property_tree::update(detailedO2Settings, pt_params.get_child("detailedo2"));
+  //boost::property_tree::update(detailedO2Settings, pt_params.get_child("detailedo2"));
   boost::property_tree::update(bfSettings, pt_params.get_child("calcflow"));
   boost::property_tree::update(fakeTumMTSSettings, pt_params);
   //update read default parameters with read in parameters
   //boost::property_tree::update(destination, source);
   //O2Model::SimpleO2Params simpleO2params;
-  ptree simpleO2Settings = s.o2_params.as_ptree();
+  //ptree simpleO2Settings = s.o2_params.as_ptree();
   //boost::property_tree::update(simpleO2Settings, pt_params.get_child("simple_o2"));
   // assign params
-  s.o2_params.assign(simpleO2Settings);
+  //s.o2_params.assign(simpleO2Settings);
   s.bfparams.assign(bfSettings);
   s.params.assign(fakeTumMTSSettings);
   
