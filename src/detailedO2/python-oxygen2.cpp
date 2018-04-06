@@ -48,8 +48,7 @@ namespace DetailedPO2
 void InitParameters(DetailedPO2::Parameters &params, const py::dict &py_parameters)
 {
   cout << "begin init params" << endl;
-//#define GET_PO2_PARAM_FROM_DICT(TYPE, NAME) checkedExtractFromDict<TYPE>(py_parameters, NAME);
-#define GET_PO2_PARAM_FROM_DICT(NAME) checkedExtractFromDict(py_parameters, NAME);
+#define GET_PO2_PARAM_FROM_DICT(TYPE, NAME) checkedExtractFromDict<TYPE>(py_parameters, NAME);
 #define GET_PO2_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters.get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
   boost::python::list keys = py_parameters.keys(); 
   boost::python::extract<double> extracted_key(keys[0]);
@@ -62,7 +61,8 @@ void InitParameters(DetailedPO2::Parameters &params, const py::dict &py_paramete
   //boost::python::extract<string> extracted_val(py_parameters[keys[0]]);
   //std::cout << extracted_val << std::endl;
   //string myres = GET_PO2_PARAM_FROM_DICT(string, "po2init_r0");
-  params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(string("po2init_r0"));
+  checkedExtractFromDict(py_parameters, "po2init_r0", params.po2init_r0 );
+  //params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
 #if 0
   params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
   params.po2init_dr = GET_PO2_PARAM_FROM_DICT(double, "po2init_dr");

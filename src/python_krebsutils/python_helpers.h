@@ -48,12 +48,13 @@ using boost::format;
 using boost::str;
 
 // template<class T>
-// // int checkedExtractFromDict(const py::dict &d, const char* name);
-// // double checkedExtractFromDict(const py::dict &d, const char* name);
-// static T checkedExtractFromDict(const py::dict &d, const char* name);
+// // // int checkedExtractFromDict(const py::dict &d, const char* name);
+// // // double checkedExtractFromDict(const py::dict &d, const char* name);
+// static T checkedExtractFromDict(const py::dict &d, const char *name);
 
-double checkedExtractFromDict(const py::dict &d, const string &name);
-
+//double checkedExtractFromDict(const py::dict &d, const string &name);
+template<class T>
+void checkedExtractFromDict(const py::dict &d, const char *name, T &variableToFill);
 
 
 
