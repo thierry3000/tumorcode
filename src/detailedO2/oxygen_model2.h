@@ -84,7 +84,8 @@ public:
  */
   std::pair<double, double> ComputeUptake(double po2, float *tissue_phases, int phases_count) const; // (value, first derivative)
   void SetTissueParamsByDiffusionRadius(double kdiff_, double alpha_, double rdiff_norm_, double rdiff_tum_, double rdiff_necro_);
-
+  void writeParametersToHDF(H5::Group &parameter_out_group);
+  
   int max_iter;
   double ds2_zeros_[2];
   double ds2_max_;
@@ -92,7 +93,7 @@ public:
   //Parameters& operator=(const Parameters&);
   int iteration_count;
   double haemoglobin_binding_capacity;
-  double plasma_solubility, tissue_solubility; /* mlO2/cm^3/mmHg = (mlO2 / ml tissue) / mmHg */
+  double solubility_plasma, solubility_tissue; /* mlO2/cm^3/mmHg = (mlO2 / ml tissue) / mmHg */
   double D_plasma;
   double rd_norm;
   double rd_tum;
@@ -120,6 +121,7 @@ public:
   int num_threads;
   string detailedO2name;
   double convergence_tolerance; // field and vessel po2 differences from iteration to iteration must both be lower than this for the iteration to stop
+  string tissue_po2_boundary_condition;
 };
 
 

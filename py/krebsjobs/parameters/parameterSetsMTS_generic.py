@@ -41,8 +41,9 @@ default.update(
 default['detailedo2'] = parameterSetsO2.milotti_o2
 
 '''works as test, creates 4-5 cells '''
-milotti_mts_test = deepcopy(default)
-milotti_mts_test.update(
+milotti_mts = deepcopy(default)
+milotti_mts['detailedo2'] = parameterSetsO2.milotti_o2
+milotti_mts.update(
     out_intervall = 1,
     tend=200.,
     tumor_speed = 0.1,
@@ -71,24 +72,12 @@ milotti_mts_test.update(
          use_o2_source_decay = 0,#bool
         )
     )
-milotti_detailed = deepcopy(milotti_mts_test)
-milotti_detailed['detailedo2'] = parameterSetsO2.milotti_o2
+milotti_detailed = deepcopy(milotti_mts)
 milotti_detailed.update(
     rGf = 100.,
     tend= 200, # usually starts to get lame over 200
     )
 
-milotti_simple = deepcopy(milotti_detailed)
-milotti_simple['detailedo2'].update(
-    parameterSetsO2.milotti_o2_simple
-    )
-milotti_feedback = deepcopy(milotti_simple)
-milotti_feedback.update(
-    rGf = 100.,
-    tend= 860000, # about 10 days
-    )
-milotti_test = deepcopy(milotti_detailed)
-milotti_test['detailedo2'] = parameterSetsO2.milotti_o2_test
 
 milotti_mts_1 = deepcopy(default)
 milotti_mts_1.update(

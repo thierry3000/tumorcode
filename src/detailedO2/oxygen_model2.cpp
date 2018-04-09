@@ -51,7 +51,7 @@ void Parameters::assign(const ptree &pt)
   DOPT(po2init_r0);
   DOPT(po2init_dr);
   DOPT(po2init_cutoff);
-  DOPT(plasma_solubility); 
+  DOPT(solubility_plasma); 
   ////DOPT(c0);
   //DOPT(S_n);
   DOPT(sat_curve_exponent);
@@ -60,7 +60,7 @@ void Parameters::assign(const ptree &pt)
   //DOPT(D_tissue);
   //DOPT(kd);
   DOPT(D_plasma);
-  DOPT(tissue_solubility);
+  DOPT(solubility_tissue);
   //#dM = 0.05,
   DOPT(rd_norm);
   DOPT(rd_tum);
@@ -79,6 +79,7 @@ void Parameters::assign(const ptree &pt)
   DOPT(conductivity_coeff3);
   DOPT(detailedO2name);
   DOPT(loglevel);
+  DOPT(tissue_po2_boundary_condition);
   DetailedPO2::Parameters::UpdateInternalValues();
   #undef DOPT
 }
@@ -90,7 +91,7 @@ ptree Parameters::as_ptree() const
   DOPT(po2init_r0);
   DOPT(po2init_dr);
   DOPT(po2init_cutoff);
-  DOPT(plasma_solubility); 
+  DOPT(solubility_plasma); 
   ////DOPT(c0);
   //DOPT(S_n);
   DOPT(sat_curve_exponent);
@@ -102,7 +103,7 @@ ptree Parameters::as_ptree() const
   //DOPT(D_tissue);
   //DOPT(kd);
   DOPT(D_plasma);
-  DOPT(tissue_solubility);
+  DOPT(solubility_tissue);
   //#dM = 0.05,
   DOPT(rd_norm);
   DOPT(rd_tum);
@@ -121,6 +122,7 @@ ptree Parameters::as_ptree() const
   DOPT(conductivity_coeff3);
   DOPT(detailedO2name);
   DOPT(loglevel);
+  DOPT(tissue_po2_boundary_condition);
   #undef DOPT
   return pt;
 }
@@ -222,6 +224,10 @@ boost::tuple<double, double, double> Parameters::DiffSaturation2(double p) const
 
 Parameters::Parameters()
 {
+  /* DEFAULT values
+   */
+  tissue_po2_boundary_condition= "neumann";
+  
   sat_curve_exponent = 2.;
   sat_curve_p50 = 38.;
   max_iter = 100;
@@ -240,8 +246,8 @@ Parameters::Parameters()
   po2_mmcons_m0[DEAD] = 0.;
   po2_mmcons_k[DEAD]  = 2.; // mmHg
   michaelis_menten_uptake = false;
-  plasma_solubility = 3.1e-5;
-  tissue_solubility = 2.8e-5;
+  solubility_plasma = 3.1e-5;
+  solubility_tissue = 2.8e-5;
   haemoglobin_binding_capacity = 0.5; /*mlO2/cm^3*/
   extra_tissue_source_linear = 0.;
   extra_tissue_source_const = 0.;
@@ -259,6 +265,7 @@ Parameters::Parameters()
   conductivity_coeff2 = 0;
   conductivity_coeff3 = 0;
   detailedO2name = "none";
+  debug_fn = "none";
   
   UpdateInternalValues();
 }
@@ -281,13 +288,64 @@ void Parameters::UpdateInternalValues()
   double p = sat_curve_p50;
   while (true)
   {
-    double f = haemoglobin_binding_capacity*Saturation(p)/(plasma_solubility*p);
+    double f = haemoglobin_binding_capacity*Saturation(p)/(solubility_plasma*p);
     if (f < 1.e-6)
       break;
     p *= 0.5;
   }
   conc_neglect_s  = BloodPO2ToConc(p, 1.);
-  SetTissueParamsByDiffusionRadius(D_plasma, tissue_solubility, rd_norm, rd_tum, rd_necro);
+  SetTissueParamsByDiffusionRadius(D_plasma, solubility_tissue, rd_norm, rd_tum, rd_necro);
+}
+
+void Parameters::writeParametersToHDF(H5::Group& parameter_out_group)
+{
+  //analogues to as_ptree()
+  #define H5OUT(name) writeAttrToH5(parameter_out_group, string(#name), name)
+  H5OUT(po2init_r0);
+  H5OUT(po2init_dr);
+  H5OUT(po2init_cutoff);
+  H5OUT(solubility_plasma); 
+  H5OUT(sat_curve_exponent);
+  H5OUT(sat_curve_p50);
+  H5OUT(po2_mmcons_k[TISSUE]);
+  H5OUT(po2_mmcons_k[TCS]);
+  H5OUT(po2_mmcons_k[DEAD]);
+  H5OUT(D_plasma);
+  H5OUT(solubility_tissue);
+  H5OUT(rd_norm);
+  H5OUT(rd_tum);
+  H5OUT(rd_necro);
+  H5OUT(max_iter);
+  H5OUT(num_threads);
+  H5OUT(convergence_tolerance);
+  H5OUT(axial_integration_step_factor);
+  H5OUT(debug_zero_o2field);
+  //DOPT(grid_lattice_const);
+  
+  H5OUT(michaelis_menten_uptake);
+  H5OUT(massTransferCoefficientModelNumber);
+  H5OUT(conductivity_coeff1);
+  H5OUT(conductivity_coeff2);
+  H5OUT(conductivity_coeff3);
+  H5OUT(detailedO2name);
+  H5OUT(loglevel);
+  H5OUT(tissue_po2_boundary_condition);
+  H5OUT(approximateInsignificantTransvascularFlux);
+  H5OUT(extra_tissue_source_const);
+  H5OUT(extra_tissue_source_linear);
+  H5OUT(tissue_boundary_value);
+  H5OUT(haemoglobin_binding_capacity);
+  H5OUT(transvascular_ring_size);
+  H5OUT(debug_fn);
+  writeAttrToH5(parameter_out_group, string("mmcons_k_norm"), po2_mmcons_k[TISSUE]);
+  writeAttrToH5(parameter_out_group, string("mmcons_k_tum"), po2_mmcons_k[TCS]);
+  writeAttrToH5(parameter_out_group, string("mmcons_k_necro"), po2_mmcons_k[DEAD]);
+  writeAttrToH5(parameter_out_group, string("mmcons_m0_norm"), po2_mmcons_m0[TISSUE]);
+  writeAttrToH5(parameter_out_group, string("mmcons_m0_tum"), po2_mmcons_m0[TCS]);
+  writeAttrToH5(parameter_out_group, string("mmcons_m0_necro"), po2_mmcons_m0[DEAD]);
+  
+#undef H5OUT
+
 }
 
 
@@ -302,13 +360,13 @@ double Parameters::DiffSaturationMaxRateOfChange(double p) const
  */
 double Parameters::BloodPO2ToConc(double p, double h)  const
 {
-  return h*haemoglobin_binding_capacity*Saturation(p) +  plasma_solubility*p;  // mlO2/cm^3
+  return h*haemoglobin_binding_capacity*Saturation(p) +  solubility_plasma *p;  // mlO2/cm^3
 }
 
 
 std::pair<double, double> Parameters::BloodPO2ToHematocritAndPlasmaConc(double p, double h) const
 {
-  return std::make_pair(haemoglobin_binding_capacity*Saturation(p), plasma_solubility*p);
+  return std::make_pair(haemoglobin_binding_capacity*Saturation(p), solubility_plasma *p);
 }
 
 /**
@@ -320,7 +378,7 @@ std::pair<double, double> Parameters::BloodPO2ToHematocritAndPlasmaConc(double p
  */
 double Parameters::ConcToBloodPO2(double conc, double h)  const
 { 
-  const double a = h*haemoglobin_binding_capacity, b = plasma_solubility;
+  const double a = h*haemoglobin_binding_capacity, b = solubility_plasma;
 
   if (conc < conc_neglect_s || (h <= 0.))
     return conc/b;
@@ -369,9 +427,9 @@ double Parameters::ConcToBloodPO2(double conc, double h)  const
 void Parameters::SetTissueParamsByDiffusionRadius(double kdiff_, double alpha_, double rdiff_norm_, double rdiff_tum_, double rdiff_necro_)
 {
   po2_kdiff = kdiff_; // um^2/s
-  po2_cons_coeff[0] = po2_kdiff/my::sqr(rdiff_norm_)*tissue_solubility; // added TissueSolutbility
-  po2_cons_coeff[1] = po2_kdiff/my::sqr(rdiff_tum_)*tissue_solubility;
-  po2_cons_coeff[2] = po2_kdiff/my::sqr(rdiff_necro_)*tissue_solubility;
+  po2_cons_coeff[0] = po2_kdiff/my::sqr(rdiff_norm_)*solubility_tissue; // added TissueSolutbility
+  po2_cons_coeff[1] = po2_kdiff/my::sqr(rdiff_tum_)*solubility_tissue;
+  po2_cons_coeff[2] = po2_kdiff/my::sqr(rdiff_necro_)*solubility_tissue;
 }
 
 
@@ -544,7 +602,7 @@ void AddSourceContributionsTo(const Parameters &params, const LatticeDataQuad3d 
   SmallKernelConvolution<decltype(func)>(kernel.bbox, 3, func);
 #else
 #if APPROXIMATE_FEM_TRANSVASCULAR_EXCHANGE_TERMS
-  const double w = 1./params.tissue_solubility/my::cubed(ld.Scale());
+  const double w = 1./params.solubility_tissue/my::cubed(ld.Scale());
   Int3 ip; Float3 q;
   boost::tie(ip, q) = ld.WorldToFractionalCoordinate(wp);
   FOR_BBOX3(iq, BBox3(ip[0],ip[1],ip[2],ip[0]+1,ip[1]+1,ip[2]+1))
@@ -602,7 +660,7 @@ double ComputeCircumferentialMassTransferCoeff(const Parameters &params, double 
   if (params.massTransferCoefficientModelNumber == 1)
   {
     const double nusseltNumber = p2*(1.0 - std::exp(-r/p1)) + p3 * r;
-    const double kd = params.plasma_solubility*params.D_plasma;
+    const double kd = params.solubility_plasma*params.D_plasma;
     const double intravascularConductivity = my::mconst::pi()*nusseltNumber*kd;
     //printf("p1=%f, p2=%f, p3=%f, nu=%f, c=%f\n", p1, p2, p3, nusseltNumber, intravascularConductivity);
     return intravascularConductivity;
@@ -755,7 +813,7 @@ typedef ComputeWallFluxesDiffusive ComputeRadialFluxes;
 static double ComputePO2RateOfChange(const Parameters &params, double po2, double flow_rate, double h, double j_tv)
 {
   double S, dS; boost::tie(S,dS) = params.DiffSaturation(po2);
-  double t1 = dS*h*params.haemoglobin_binding_capacity+params.plasma_solubility;
+  double t1 = dS*h*params.haemoglobin_binding_capacity+params.solubility_plasma;
   double t2 = 1./t1;
   double t3 = 1./flow_rate;
   double slope = -j_tv*t2*t3;
@@ -837,7 +895,7 @@ public:
     auto objective_function = [=](double po2) -> double
     {
       double S, dS; boost::tie(S,dS) = params.DiffSaturation(po2);
-      double t1 = dS*h*params.haemoglobin_binding_capacity+params.plasma_solubility;
+      double t1 = dS*h*params.haemoglobin_binding_capacity+params.solubility_plasma;
       t1 *= flow_rate;
       double jinner, jouter;
       tie(jinner, jouter) = computeFlux->ComputeFluxes(po2);
@@ -1231,7 +1289,7 @@ void ComputePo2Field(const Parameters &params,
   my::Time t_;
   #pragma omp parallel
   {
-    const double consumption_prefactor = 1./params.tissue_solubility;
+    const double consumption_prefactor = 1./params.solubility_tissue;
     BOOST_FOREACH(const DomainDecomposition::ThreadBox bbox, mtboxes.getCurrentThreadRange())
     {
       //diffusion part of differential equation
@@ -1290,7 +1348,6 @@ void ComputePo2Field(const Parameters &params,
     //solverReturn = solver.solve(*lhs);
     //solver.init(mb.m, mb.rhs, solver_params);
     solverReturn = solver.solve(lhs);
-    cout<< "try worked " << endl;
   }
   catch (const ConvergenceFailureException &e)
   {
