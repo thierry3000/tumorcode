@@ -31,6 +31,7 @@ import h5py
 import itertools
 import copy
 
+import krebs
 from krebs import detailedo2
 from krebsjobs.parameters import parameterSetsO2
 #from krebs import povrayRenderOxygenDetailed
