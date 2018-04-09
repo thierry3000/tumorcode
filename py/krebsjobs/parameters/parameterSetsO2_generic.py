@@ -57,13 +57,27 @@ default_o2 = dict(
     includePhaseSeparationEffect = 1,
   ),
   michaelis_menten_uptake = 1,
-  mmcons_m0_norm = 6.2e-5, # = 3.7e-3 ml O2 / ml / min; # fairly low like estimates by rinneberg and beany
-  mmcons_m0_tum = 6.2e-5 * 4,
+  mmcons_k_norm = 4.,
+  mmcons_k_tum = 2.,
+  mmcons_k_necro = 2.,
+  # = 3.7e-3 ml O2 / ml / min; # fairly low like estimates by rinneberg and beany
+  mmcons_m0_norm = 6.1e-5, # value for breast (ml O2 / ml Tissue / s)
+  mmcons_m0_tum = 6.1e-5 * 4., # 4 times normal uptake
+  mmcons_m0_necro = 0.,
   massTransferCoefficientModelNumber = 1,
   conductivity_coeff1 = c1_,
   conductivity_coeff2 = c2_,
   conductivity_coeff3 = c3_,
   detailedO2name = 'default_o2',
+  tissue_po2_boundary_condition = 'neumann',
+  approximateInsignificantTransvascularFlux = True,
+  loglevel = 0,
+  extra_tissue_source_const = 0.0,
+  extra_tissue_source_linear = 0.0,
+  tissue_boundary_value = 0.0,
+  haemoglobin_binding_capacity = 0.5, # /*mlO2/cm^3*/
+  transvascular_ring_size = 0.5,
+  debug_fn = "none.h5"
 )
 small_size = deepcopy(default_o2)
 small_size.update(

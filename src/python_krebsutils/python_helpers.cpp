@@ -266,12 +266,14 @@ void checkedExtractFromDict(const py::dict &d, const char *name, T &variableToFi
   }
   catch (const py::error_already_set &e) 
   {
-    std::cerr << format("unable to extract parameter '%s': ") % name;
-    throw e; // don't every try to handle this!
+    std::cerr << format("unable to extract parameter: '%s' from detailed O2 parameters --> USING default value\n") % name;
+    //throw e; // don't every try to handle this!
   }
 }
 template void checkedExtractFromDict<double>(const py::dict &d, const char *name, double &variableToFill);
-//template void checkedExtractFromDict<string>(const py::dict &d, const char *name, T &variableToFill);
+template void checkedExtractFromDict<string>(const py::dict &d, const char *name, string &variableToFill);
+template void checkedExtractFromDict<int>(const py::dict &d, const char *name, int &variableToFill);
+template void checkedExtractFromDict<bool>(const py::dict &d, const char *name, bool &variableToFill);
 
 bool PyCheckAbort()
 {

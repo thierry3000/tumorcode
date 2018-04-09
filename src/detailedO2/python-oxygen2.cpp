@@ -47,114 +47,60 @@ namespace DetailedPO2
 
 void InitParameters(DetailedPO2::Parameters &params, const py::dict &py_parameters)
 {
+#ifndef NDEBUG
   cout << "begin init params" << endl;
-#define GET_PO2_PARAM_FROM_DICT(TYPE, NAME) checkedExtractFromDict<TYPE>(py_parameters, NAME);
-#define GET_PO2_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters.get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
-  boost::python::list keys = py_parameters.keys(); 
-  boost::python::extract<double> extracted_key(keys[0]);
-  string abc = boost::python::extract<string>(py_parameters["po2init_r0"]);
-  if(!extracted_key.check())
-  {  
-                std::cout<<"Key invalid, map might be incomplete"<<std::endl;  
-             
-           }
-  //boost::python::extract<string> extracted_val(py_parameters[keys[0]]);
-  //std::cout << extracted_val << std::endl;
-  //string myres = GET_PO2_PARAM_FROM_DICT(string, "po2init_r0");
-  checkedExtractFromDict(py_parameters, "po2init_r0", params.po2init_r0 );
-  //params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
-#if 0
-  params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
-  params.po2init_dr = GET_PO2_PARAM_FROM_DICT(double, "po2init_dr");
-  params.po2init_cutoff = GET_PO2_PARAM_FROM_DICT(double, "po2init_cutoff");
-  params.num_threads = GET_PO2_PARAM_FROM_DICT(int, "num_threads");
-  
-  params.tissue_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_tissue");
-  params.plasma_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_plasma");
-  params.max_iter = GET_PO2_PARAM_FROM_DICT(int, "max_iter");
-  params.sat_curve_exponent = GET_PO2_PARAM_FROM_DICT(double, "sat_curve_exponent");
-  params.sat_curve_p50 = GET_PO2_PARAM_FROM_DICT(double, "sat_curve_p50");
-  params.conductivity_coeff1 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff1"); 
-  params.conductivity_coeff2 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff2");
-  params.conductivity_coeff3 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff3");
-  
-  GET_PO2_PARAM_IF_NONNONE(params.axial_integration_step_factor, double, "axial_integration_step_factor");
-  GET_PO2_PARAM_IF_NONNONE(params.debug_zero_o2field, bool, "debug_zero_o2field");
-  GET_PO2_PARAM_IF_NONNONE(params.debug_fn, string, "debug_fn");
-  GET_PO2_PARAM_IF_NONNONE(params.transvascular_ring_size, double, "transvascular_ring_size");
-  GET_PO2_PARAM_IF_NONNONE(params.rd_norm, double, "rd_norm");
-  GET_PO2_PARAM_IF_NONNONE(params.rd_tum, double, "rd_tum");
-  GET_PO2_PARAM_IF_NONNONE(params.rd_necro, double, "rd_necro");
-  GET_PO2_PARAM_IF_NONNONE(params.michaelis_menten_uptake, bool, "michaelis_menten_uptake");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[TISSUE], double, "mmcons_k_norm");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[TCS], double, "mmcons_k_tum");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_k[DEAD], double, "mmcons_k_necro");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[TISSUE], double, "mmcons_m0_norm");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[TCS], double, "mmcons_m0_tum");
-  GET_PO2_PARAM_IF_NONNONE(params.po2_mmcons_m0[DEAD], double, "mmcons_m0_necro");
-  GET_PO2_PARAM_IF_NONNONE(params.haemoglobin_binding_capacity, double, "haemoglobin_binding_capacity");
-  string bc_type("neumann");
-  GET_PO2_PARAM_IF_NONNONE(bc_type, string, "tissue_po2_boundary_condition");
-  GET_PO2_PARAM_IF_NONNONE(params.tissue_boundary_value, double, "tissue_boundary_value");
-  GET_PO2_PARAM_IF_NONNONE(params.extra_tissue_source_linear, double, "extra_tissue_source_linear");
-  GET_PO2_PARAM_IF_NONNONE(params.extra_tissue_source_const, double, "extra_tissue_source_const");
-  GET_PO2_PARAM_IF_NONNONE(params.convergence_tolerance, double, "convergence_tolerance");
-  GET_PO2_PARAM_IF_NONNONE(params.loglevel, int, "loglevel");
-  GET_PO2_PARAM_IF_NONNONE(params.approximateInsignificantTransvascularFlux, bool, "approximateInsignificantTransvascularFlux");
-  GET_PO2_PARAM_IF_NONNONE(params.D_plasma, double, "D_plasma");
-  GET_PO2_PARAM_IF_NONNONE(params.massTransferCoefficientModelNumber, int, "massTransferCoefficientModelNumber");
+#endif
 
-//   try 
-//   {
-//     kd = GET_PO2_PARAM_FROM_DICT(double, "D_tissue");
-//   }
-//   catch (py::error_already_set &e) // load legacy name
-//   {
-//     std::cerr << "fallback to kD_tissue" << endl;
-//     kd = GET_PO2_PARAM_FROM_DICT(double, "kD_tissue");
-//   }
-//   try
-//   {
-//     params.tissue_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_tissue");
-//   }
-//   catch (py::error_already_set &e) // load legacy name
-//   {
-//     std::cerr << "fallback to alpha_t" << endl;
-//     params.tissue_solubility = GET_PO2_PARAM_FROM_DICT(double, "alpha_t");
-//   }
-//   try 
-//   {
-//     params.plasma_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_plasma");
-//   }
-//   catch (py::error_already_set &e) // load legacy name
-//   {
-//     std::cerr << "fallback to alpha_p" << endl;
-//     params.plasma_solubility = GET_PO2_PARAM_FROM_DICT(double, "alpha_p");
-//   }
+  checkedExtractFromDict(py_parameters, "po2init_r0", params.po2init_r0 );
+  checkedExtractFromDict(py_parameters, "po2init_dr", params.po2init_dr );
+  checkedExtractFromDict(py_parameters, "po2init_cutoff", params.po2init_cutoff );
+  //checkedExtractFromDict(py_parameters, "num_threads", params.num_threads );
+  checkedExtractFromDict(py_parameters, "solubility_tissue", params.solubility_tissue );
+  checkedExtractFromDict(py_parameters, "solubility_plasma", params.solubility_plasma );
+  checkedExtractFromDict(py_parameters, "max_iter", params.max_iter);
+  checkedExtractFromDict(py_parameters, "sat_curve_exponent", params.sat_curve_exponent);
+  checkedExtractFromDict(py_parameters, "sat_curve_p50", params.sat_curve_p50);
+  checkedExtractFromDict(py_parameters, "conductivity_coeff1", params.conductivity_coeff1);
+  checkedExtractFromDict(py_parameters, "conductivity_coeff2", params.conductivity_coeff2);
+  checkedExtractFromDict(py_parameters, "conductivity_coeff3", params.conductivity_coeff3);
+  checkedExtractFromDict(py_parameters, "axial_integration_step_factor", params.axial_integration_step_factor);
+  checkedExtractFromDict(py_parameters, "debug_zero_o2field", params.debug_zero_o2field);
+  checkedExtractFromDict(py_parameters, "debug_fn", params.debug_fn);
+  checkedExtractFromDict(py_parameters, "transvascular_ring_size", params.transvascular_ring_size);
+  checkedExtractFromDict(py_parameters, "rd_norm", params.rd_norm);
+  checkedExtractFromDict(py_parameters, "rd_tum", params.rd_tum);
+  checkedExtractFromDict(py_parameters, "rd_necro", params.rd_necro);
+  checkedExtractFromDict(py_parameters, "michaelis_menten_uptake",params.michaelis_menten_uptake);
   
-  
-  //rd_tum = GET_PO2_PARAM_FROM_DICT(double, "rd_tum");
-  //rd_necro = GET_PO2_PARAM_FROM_DICT(double, "rd_necro");
-  
-  
-  
-  if (bc_type == "dirichlet_x") 
-    params.tissue_boundary_condition_flags = 1; //FiniteVolumeMatrixBuilder;
-  else if (bc_type == "dirichlet_yz") 
-    params.tissue_boundary_condition_flags = 2;
-  else if (bc_type == "dirichlet") 
-    params.tissue_boundary_condition_flags = 3;
-  else if (bc_type == "neumann") 
-    params.tissue_boundary_condition_flags = 0;
-  else 
-    throw std::invalid_argument("tissue_po2_boundary_condition must be 'dirichlet','dirichlet_x', 'dirichlet_yz' or 'neumann'");
+  checkedExtractFromDict(py_parameters, "haemoglobin_binding_capacity",params.haemoglobin_binding_capacity);
+  checkedExtractFromDict(py_parameters, "tissue_boundary_value",params.tissue_boundary_value);
+  checkedExtractFromDict(py_parameters, "extra_tissue_source_linear",params.extra_tissue_source_linear);
+  checkedExtractFromDict(py_parameters, "extra_tissue_source_const",params.extra_tissue_source_const);
+  checkedExtractFromDict(py_parameters, "convergence_tolerance",params.convergence_tolerance);
+  checkedExtractFromDict(py_parameters, "loglevel",params.loglevel);
+  checkedExtractFromDict(py_parameters, "approximateInsignificantTransvascularFlux",params.approximateInsignificantTransvascularFlux);
+  checkedExtractFromDict(py_parameters, "D_plasma",params.D_plasma);
+  checkedExtractFromDict(py_parameters, "massTransferCoefficientModelNumber",params.massTransferCoefficientModelNumber);
+  checkedExtractFromDict(py_parameters, "tissue_po2_boundary_condition",params.tissue_po2_boundary_condition);
+ 
   
   // required parameters for transvascular transport
   
-#endif
+  if (params.tissue_po2_boundary_condition == "dirichlet_x") 
+    params.tissue_boundary_condition_flags = 1; //FiniteVolumeMatrixBuilder;
+  else if (params.tissue_po2_boundary_condition == "dirichlet_yz") 
+    params.tissue_boundary_condition_flags = 2;
+  else if (params.tissue_po2_boundary_condition == "dirichlet") 
+    params.tissue_boundary_condition_flags = 3;
+  else if (params.tissue_po2_boundary_condition == "neumann") 
+    params.tissue_boundary_condition_flags = 0;
+  else
+  {
+    std::cout << "bc_type: " << params.tissue_po2_boundary_condition << std::endl;
+    throw std::invalid_argument("tissue_po2_boundary_condition must be 'dirichlet','dirichlet_x', 'dirichlet_yz' or 'neumann'");
+  }
   
-#undef GET_PO2_PARAM_FROM_DICT
-#undef GET_PO2_PARAM_IF_NONNONE
+  
   //calculate stuff parameters dependent on the given parameters
   params.UpdateInternalValues();
 }
@@ -186,30 +132,38 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   
   //h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
   // this was fn
-  const string fn = py::extract<string>(py_parameters.get("output_file_name", "None"));
+  const string input_file_name = py::extract<string>(py_parameters.get("input_file_name", "None"));
+  string input_group_path = py::extract<string>(py_parameters.get("input_group_path", "None"));
+  
+  const string output_file_name = py::extract<string>(py_parameters.get("output_file_name", "None"));
   const string tumor_file_name = py::extract<string>(py_parameters.get("tumor_file_name", "None"));
   const string tumor_group_path = py::extract<string>(py_parameters.get("tumor_group_path", "None"));
   const string out_grp_path = py::extract<string>(py_parameters.get("output_group_path", "None"));
   string vesselgroup_path = py::extract<string>(py_parameters.get("vessel_group_path", "None"));
   vesselgroup_path = "/" + vesselgroup_path;
+  input_group_path = "/" + input_group_path;
   //h5cpp::File *o2File = new h5cpp::File(fn,"a");
   std::unique_ptr<VesselList3d> vl;
   H5::H5File o2File;
+  H5::H5File vesselInputFile;
   try
-   {
+  {
+    
+    vesselInputFile = H5::H5File( input_file_name , H5F_ACC_RDONLY);
+    H5::Group vesselgroup = vesselInputFile.openGroup(input_group_path);
+    vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
       /*
        * Turn off the auto-printing when failure occurs so that we can
        * handle the errors appropriately
        */
-      H5::Exception::dontPrint();
+      //H5::Exception::dontPrint();
       /*
        * Open the specified file and the specified dataset in the file.
        */
-      o2File = H5::H5File( fn, H5F_ACC_RDWR );
-
+      o2File = H5::H5File( output_file_name, H5F_ACC_TRUNC );
       
-      H5::Group vesselgroup = o2File.openGroup(vesselgroup_path);
-      vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
+//       H5::Group vesselgroup = o2File.openGroup(vesselgroup_path);
+//       vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
    }  // end of try block
       // catch failure caused by the H5File operations
    catch( H5::FileIException error )
@@ -254,7 +208,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
     tumorgroup = boost::optional<H5::Group>(h5_tumor_file->openGroup(tumor_group_path));
   }
   
-  s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels);
+//  s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels);
 //   else
 //   {
 //     tumorgroup = nullptr;
@@ -262,12 +216,13 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   
   
   
-  { //ReleaseGIL unlock(); // allow the python interpreter to do things while this is running
+  //{ //ReleaseGIL unlock(); // allow the python interpreter to do things while this is running
   /**
    * MOST IMPORTANT CALL
    * grid is conitnuum grid, mtboxes is decomposition into threads
    */
-  try{
+  try
+  {
 #ifdef EPETRA_MPI
     std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
     int mpi_is_initialized = 0;
@@ -282,10 +237,12 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
     s.run(*vl);
     
     /* OUTPUT */
-    H5::Group outputgroup = o2File.createGroup(out_grp_path);
+    //H5::Group outputgroup = o2File.createGroup(out_grp_path);
+    H5::Group po2_out_group = o2File.createGroup(string("/po2"));
+    H5::Group outputgroup = o2File.createGroup(string("/") + string("po2/") + input_group_path);
     
-    writeAttrToH5(outputgroup, string("SOURCE_VESSELS_FILE"), fn);
-    writeAttrToH5(outputgroup, string("SOURCE_VESSELS_PATH"), vesselgroup_path);
+    writeAttrToH5(outputgroup, string("SOURCE_VESSELS_FILE"), input_file_name);
+    writeAttrToH5(outputgroup, string("SOURCE_VESSELS_PATH"), input_group_path);
     writeAttrToH5(outputgroup, string("SOURCE_TISSUE_FILE"), string("none"));
     writeAttrToH5(outputgroup, string("SOURCE_TISSUE_PATH"), string("none"));
     H5::Group h5_o2_lattice = outputgroup.createGroup("field_ld");
@@ -298,10 +255,10 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
     H5::Group h5_meta_data = h5_params.createGroup("metadata");
     WriteHdfPtree(h5_meta_data, s.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
     H5::Group h5_o2_params = h5_params.createGroup("o2");
-    WriteHdfPtree(h5_o2_params, s.params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
+    s.params.writeParametersToHDF(h5_o2_params);
+    //WriteHdfPtree(h5_o2_params, s.params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
     H5::Group h5_bf_params = h5_params.createGroup("calcflow");
     WriteHdfPtree(h5_bf_params, s.bfparams.as_ptree());
-    
   }
   catch(std::exception &ex)
   {
@@ -311,9 +268,11 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   {
     e.printError();
   }
+  
+  //cout << "c++ part of detailedO2 finished" << std::endl;
   //DetailedPO2::ComputePO2(params, *vl, grid, mtboxes, po2field, po2vessels, phases, metadata, world);
-  }
-  if (PyErr_Occurred() != NULL) return; // don't save stuff
+//   }
+//   if (PyErr_Occurred() != NULL) return; // don't save stuff
   
   //This writes the results back to python
 #if 0
@@ -359,7 +318,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
 //      h5cpp::create_dataset<float>(outputGroup, "po2vessels", h5cpp::Dataspace::simple_dims(s.po2vessels.size(), 2), (float*)s.po2vessels[0].data(), h5cpp::CREATE_DS_COMPRESSED); // FIX ME: transpose the array!
 //      WriteHdfPtree(outputGroup, s.metadata, HDF_WRITE_PTREE_AS_DATASETS);
     //outputFile.close();
-  
+    std::cout << boost::format("wrote o2 to file %s at %s") % output_file_name % out_grp_path;
 }
 
 #if BOOST_VERSION>106300

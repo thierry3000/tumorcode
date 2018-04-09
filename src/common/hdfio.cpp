@@ -337,7 +337,9 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
 //   h5cpp::Attributes attrs = g.attrs();
   if(vl.HasLattice())//LATTICE IS THERE
   {
+#ifndef NDEBUG
     std::cout<<"lattice found" << std::endl;
+#endif
     try
     {
       string graph_type;
