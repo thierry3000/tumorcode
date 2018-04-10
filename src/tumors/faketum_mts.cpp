@@ -885,11 +885,12 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   writeDataSetToGroup(out_cell_group, string("o2"), buffer);
   
   // lactate Get_AcL_extra
-  for( int i = 0; i<numberOfCells; ++i)
-  {
-    buffer[i] = tumorcode_pointer_to_currentCellsSystem->Get_AcL_extra()[i];
-  }
-  writeDataSetToGroup(out_cell_group, string("AcL_ex"), buffer);
+  // not needed, could be calculated from pH
+//   for( int i = 0; i<numberOfCells; ++i)
+//   {
+//     buffer[i] = tumorcode_pointer_to_currentCellsSystem->Get_AcL_extra()[i];
+//   }
+//   writeDataSetToGroup(out_cell_group, string("AcL_ex"), buffer);
   
   // cell phase
   for( int i = 0; i<numberOfCells; ++i)
@@ -897,6 +898,27 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
     buffer_int[i] = tumorcode_pointer_to_currentCellsSystem->Get_phase(i);
   }
   writeDataSetToGroup(out_cell_group, string("cell_phase"), buffer_int);
+  
+  // cell age Get_age
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    buffer[i] = tumorcode_pointer_to_currentCellsSystem->Get_age()[i];
+  }
+  writeDataSetToGroup(out_cell_group, string("cell_age"), buffer);
+  
+  // cell phage_age Get_phase_age
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    buffer[i] = tumorcode_pointer_to_currentCellsSystem->Get_phase_age()[i];
+  }
+  writeDataSetToGroup(out_cell_group, string("cell_phase_age"), buffer);
+  
+  // number of neighbours
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    buffer_int[i] = tumorcode_pointer_to_currentCellsSystem->Get_neigh(i);
+  }
+  writeDataSetToGroup(out_cell_group, string("cell_no_neigh"), buffer_int);
   cout<< "finished writting cells to hdf" << endl;
 }
 

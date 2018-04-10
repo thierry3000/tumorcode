@@ -236,7 +236,7 @@ def writeFields_(graph, options):
   del e
 
 def writeVessels_(graph, options):  
-  polydata = ConvertMyHdfVesselsToVTKPolydata(graph, new, goodArguments);
+  polydata = ConvertMyHdfVesselsToVTKPolydata(graph, False, goodArguments);
   writer = vtkPolyDataWriter()
   print("use vtkVersion: %s" % vtkVersion.GetVTKVersion())
   if(int(vtkVersion.GetVTKVersion()[0])>5):
@@ -265,35 +265,11 @@ def writeCells_(graph, options):
     
   polydata = vtkPolyData()
   polydata.SetPoints(pts)
-  #pointData = polydata.GetPointData()
-  #polydata.GetCellData().AddArray(asVtkArray(rad, "radius", vtkFloatArray))
-  rad = np.asarray(f[str(options.grp_pattern)+'/cells/cell_radii'])
-  polydata.GetPointData().AddArray(asVtkArray(rad, "cell_radius", vtkFloatArray))
   
-  o2 = np.asarray(f[str(options.grp_pattern)+'/cells/o2'])
-  polydata.GetPointData().AddArray(asVtkArray(o2, "cell_o2", vtkFloatArray))
-  
-  pH_ex = np.asarray(f[str(options.grp_pattern)+'/cells/pH_ex'])
-  polydata.GetPointData().AddArray(asVtkArray(pH_ex, "cell_pH_ex", vtkFloatArray))
-  
-  glucose_ex = np.asarray(f[str(options.grp_pattern)+'/cells/glucose_ex'])
-  polydata.GetPointData().AddArray(asVtkArray(glucose_ex, "cell_glucose_ex", vtkFloatArray))
-  
-  AcL_ex = np.asarray(f[str(options.grp_pattern)+'/cells/AcL_ex'])
-  polydata.GetPointData().AddArray(asVtkArray(AcL_ex, "cell_AcL_ex", vtkFloatArray))
-  
-  index_of_nearest_vessel = np.asarray(f[str(options.grp_pattern)+'/cells/index_of_nearest_vessel'])
-  polydata.GetPointData().AddArray(asVtkArray(index_of_nearest_vessel, "index_of_nearest_vessel", vtkFloatArray))
-  
-  distance_to_nearest_vessel = np.asarray(f[str(options.grp_pattern)+'/cells/distance_to_nearest_vessel'])
-  polydata.GetPointData().AddArray(asVtkArray(distance_to_nearest_vessel, "distance_to_nearest_vessel", vtkFloatArray))
-  
-  #polydata.GetCellData().AddArray(asVtkArray(rad, "cell_radius", vtkFloatArray))
-  #e = extractVtkFields.Extractor(f, search_groups, recursive = True) 
-  #print 'found field datasets:'
-  #pprint.pprint(e.getDatasetPaths())
-  #e.write(options.outfn % 'fields')
-  #del e
+  cellGroup = f[str(options.grp_pattern)+'/cells']
+  for aKey in cellGroup.keys():
+    npReadOut = np.asarray(cellGroup[aKey])
+    polydata.GetPointData().AddArray(asVtkArray(npReadOut, aKey, vtkFloatArray))
   
   writer = vtkPolyDataWriter()
   print("use vtkVersion: %s" % vtkVersion.GetVTKVersion())
@@ -379,9 +355,10 @@ if __name__ == '__main__':
 
       elif 'out' in d:
         vesselgroup = f[join('/',d+'/vessels')]['.']
-        new = False
-        if new:
-          graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
+        useConstO2 = f['/parameters'].attrs['useConstO2']
+        if useConstO2:
+          ''' the po2_node will not be present in this case '''
+          graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
         else:
           graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['po2_node','position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
         if goodArguments.filteruncirculated:
