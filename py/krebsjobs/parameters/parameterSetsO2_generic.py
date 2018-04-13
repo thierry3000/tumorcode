@@ -104,7 +104,7 @@ milotti_o2.update(
     grid_lattice_const = 50.,
     max_iter = 150,
     convergence_tolerance = 1e-3,
-    loglevel=1,
+    loglevel=0,
     )
 milotti_o2_test = deepcopy(default_o2)
 milotti_o2_test.update(

@@ -125,12 +125,14 @@ FakeTumMTS::Parameters::Parameters()
   tissuePressureCenterFraction = 0.;
   stopping_radius_fraction = 0.6;
   paramset_name = "aname";
+  useConstO2 = true;
 }
 
 void FakeTumMTS::Parameters::assign(const ptree &pt)
 {
   #define DOPT(name) boost::property_tree::get(name, #name, pt)
   int lattice_size_per_single_dim;
+  DOPT(useConstO2);
   DOPT(paramset_name);
   DOPT(out_intervall);
   DOPT(tend);
@@ -168,6 +170,7 @@ ptree FakeTumMTS::Parameters::as_ptree() const
 {
   boost::property_tree::ptree pt;
   #define DOPT(name) pt.put(#name, name)
+  DOPT(useConstO2);
   DOPT(paramset_name);
   DOPT(out_intervall);
   DOPT(apply_adaption_intervall);
@@ -401,59 +404,62 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   }
   
   
-  /* start main loop */
+  /** 
+   * MAIN LOOP
+   *  1) calculated vessel po2 and p2 field
+   *  2) hand vessels and their po2 to cells simulation
+   *  3) OUTPUT
+   *  4) run cells simulation
+   *  5) remodel vessel tree
+   */
   while (true)
   {
     // time =0, next_output_time = 0 at begining
     // 0>=-1 if dt=1 --> true
     // first one is negative in time, so we are preparing
-    if (time >= next_output_time - params.dt )
+    //maybe we need the output intervalls later again?
+    //if (time >= next_output_time - params.dt )
     {
-#ifdef USE_DETAILED_O2
-      /* right now, the o2 simulation is called at every output time */
+      if( ! params.useConstO2)
+      {
+        /* right now, the o2 simulation is called at every output time */
 #ifdef W_timing
-      currentTiming.begin_o2 = std::chrono::steady_clock::now();
+        currentTiming.begin_o2 = std::chrono::steady_clock::now();
 #endif
-      /* O2 stuff is initialized
-	* NOTE: size of po2Store is set here
-	*/
-      o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels);
-      cout << "\nInit O2 completed" << endl;
-      o2_sim.run(*vl);
-      cout << "\n mts run finished" << endl;
-      //we store the results, to achive quicker convergence in consecutive runs
-      state.previous_po2field = o2_sim.getPo2field();
-      cout << "\nAccquired po2Field  completed" << endl;
-      state.previous_po2vessels = o2_sim.getVesselPO2Storrage();
-      cout << "\nDetailed O2 completed" << endl;
+       /* O2 stuff is initialized
+        * NOTE: size of po2Store is set here
+        */
+        o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels);
+        cout << "\nInit O2 completed" << endl;
+        o2_sim.run(*vl);
+        cout << "\n mts run finished" << endl;
+        //we store the results, to achive quicker convergence in consecutive runs
+        state.previous_po2field = o2_sim.getPo2field();
+        cout << "\nAccquired po2Field  completed" << endl;
+        state.previous_po2vessels = o2_sim.getVesselPO2Storrage();
+        cout << "\nDetailed O2 completed" << endl;
 #ifdef W_timing
-      currentTiming.end_o2 = std::chrono::steady_clock::now();
-      currentTiming.time_diff = currentTiming.end_o2 - currentTiming.begin_o2;
-      currentTiming.run_o2 = currentTiming.run_o2 + currentTiming.time_diff.count();
+        currentTiming.end_o2 = std::chrono::steady_clock::now();
+        currentTiming.time_diff = currentTiming.end_o2 - currentTiming.begin_o2;
+        currentTiming.run_o2 = currentTiming.run_o2 + currentTiming.time_diff.count();
 #endif
-#else
-      /// no detailed o2 model
+      }
 
-#ifdef W_timing
-      currentTiming.run_o2 = currentTiming.run_o2 + 0;
-#endif
-      
-#endif
-      /** @brief    
-       * o2 data is feed back to the cells, milotti part
-       */
-      // T.F. 4.4.2018 
-      // there is no update_milotti_vessels any more!!
-      // feed milotti structure with detailed o2 simulation result
-      //update_milotti_vessels(currentCellsSystem, *vl, o2_sim.po2vessels);
 #ifdef W_timing
       currentTiming.begin_ann = std::chrono::steady_clock::now();
 #endif
-#ifdef USE_DETAILED_O2
+      /** 
+       * vessel o2 data is feed back to the cell,
+       * ALSO
+       * the milotti vessel structure is initialize with the current configuration 
+       * of the tumorcode vessel list
+       */
       findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
-#else
-      findNearestVessel();
-#endif
+      
+      lastTumorGroupWrittenByFakeTumName = writeOutput();//detailedO2 should be calculated prior to this call
+      currentTiming.reset();
+      next_output_time += params.out_intervall;
+
 #ifndef NDEBUG
       std::cout << " findNearestVessel finished " << std::endl;std::cout.flush();
 #endif
@@ -462,56 +468,56 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
       currentTiming.run_ann = currentTiming.run_ann + currentTiming.time_diff.count();
 #endif
+      /**
+       * milotti vessel structure is initialized with tumorcodes vessels
+       */
+      /* increment tumor time */
+      time += params.dt;
+      /* propergate cells in time until current fake tumor time */
+      cout << boost::format("advance milotti until: %f\n") % time;
+#ifdef W_timing
+      currentTiming.begin_doMilottiStep = std::chrono::steady_clock::now();
+#endif
+      doMilottiStep();
+#ifdef W_timing
+      currentTiming.end_doMilottiStep = std::chrono::steady_clock::now();
+      currentTiming.time_diff = currentTiming.end_doMilottiStep-currentTiming.begin_doMilottiStep;
+      currentTiming.run_doMilottiStep = currentTiming.run_doMilottiStep + currentTiming.time_diff.count();
+#endif
 
-
-      lastTumorGroupWrittenByFakeTumName = writeOutput();//detailedO2 should be calculated prior to this call
-      currentTiming.reset();
-      next_output_time += params.out_intervall;
       
-    }
+    
+      if (time > params.tend) 
+      {
+        std::cout << "stopped because time limit" << std::endl;
+        break;
+      }
+    
+      /* stop if tumor reaches certain fraction of volume */
+      double size_limit = 0.5*maxCoeff(Size(vl->Ld().GetWorldBox())) * params.stopping_radius_fraction; 
+      //cout << format("size_limit = %f vs tumor_radius = %f\n") % size_limit % tumor_radius;
+      if (tumor_radius >  size_limit) 
+      {
+        std::cout << "stopped because of size limit" << std::endl;
+        break;
+      }
 
-    if (time > params.tend) 
-    {
-      std::cout << "stopped because time limit" << std::endl;
-      break;
+      /**
+      * do a vessel model remodeling step 
+      */
+      cout << boost::format("start vessel remodel step! \n");
+#ifdef W_timing
+      currentTiming.begin_doStep = std::chrono::steady_clock::now();
+#endif
+      doStep(params.dt);
+#ifdef W_timing
+      currentTiming.end_doStep = std::chrono::steady_clock::now();
+      currentTiming.time_diff = currentTiming.end_doStep-currentTiming.begin_doStep;
+      currentTiming.run_doStep = currentTiming.run_doStep + currentTiming.time_diff.count();
+#endif
+    
+      cout << boost::format("finished vessel remodel step! \n");
     }
-    
-    /* stop if tumor reaches certain fraction of volume */
-    double size_limit = 0.5*maxCoeff(Size(vl->Ld().GetWorldBox())) * params.stopping_radius_fraction; 
-    //cout << format("size_limit = %f vs tumor_radius = %f\n") % size_limit % tumor_radius;
-    if (tumor_radius >  size_limit) 
-    {
-      std::cout << "stopped because of size limit" << std::endl;
-      break;
-    }
-
-    /* do a vessel model remodeling step */
-    cout << boost::format("start vessel remodel step! \n");
-#ifdef W_timing
-    currentTiming.begin_doStep = std::chrono::steady_clock::now();
-#endif
-    doStep(params.dt);
-#ifdef W_timing
-    currentTiming.end_doStep = std::chrono::steady_clock::now();
-    currentTiming.time_diff = currentTiming.end_doStep-currentTiming.begin_doStep;
-    currentTiming.run_doStep = currentTiming.run_doStep + currentTiming.time_diff.count();
-#endif
-    
-    cout << boost::format("finished vessel remodel step! \n");
-    /* increment tumor time */
-    time += params.dt;
-    /* propergate cells in time until current fake tumor time */
-    cout << boost::format("advance milotti until: %f\n") % time;
-#ifdef W_timing
-    currentTiming.begin_doMilottiStep = std::chrono::steady_clock::now();
-#endif
-    doMilottiStep();
-#ifdef W_timing
-    currentTiming.end_doMilottiStep = std::chrono::steady_clock::now();
-    currentTiming.time_diff = currentTiming.end_doMilottiStep-currentTiming.begin_doMilottiStep;
-    currentTiming.run_doMilottiStep = currentTiming.run_doMilottiStep + currentTiming.time_diff.count();
-#endif
-    
     ++num_iteration;
   }
 
@@ -665,21 +671,20 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
     /* write oxygen stuff */
   try 
   {
-#ifdef USE_DETAILED_O2
-    // copied from python-oxygen2.cpp
-    // write the detailed o2 stuff necessary for the cells
-    H5::Group po2outputGroup;
-    po2outputGroup = gout.createGroup("po2");
-    H5::Group ldgroup;
-    ldgroup = po2outputGroup.createGroup("field_ld");
-    o2_sim.grid.ld.WriteHdfLd(ldgroup);
-    WriteScalarField<float>(po2outputGroup, string("po2field"), o2_sim.po2field, o2_sim.grid.ld, ldgroup);
-    writeDataSetToGroup(po2outputGroup, string("po2vessels"),o2_sim.po2vessels);
-    writeAttrToH5(po2outputGroup, string("simType"), string("MTS"));
-    WriteHdfPtree(po2outputGroup, o2_sim.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
-#else
-    std::cout << "USE_DETAILED_O2 is not declared!" << std::endl;
-#endif
+    if(!params.useConstO2)
+    {
+      // copied from python-oxygen2.cpp
+      // write the detailed o2 stuff necessary for the cells
+      H5::Group po2outputGroup;
+      po2outputGroup = gout.createGroup("po2");
+      H5::Group ldgroup;
+      ldgroup = po2outputGroup.createGroup("field_ld");
+      o2_sim.grid.ld.WriteHdfLd(ldgroup);
+      WriteScalarField<float>(po2outputGroup, string("po2field"), o2_sim.po2field, o2_sim.grid.ld, ldgroup);
+      writeDataSetToGroup(po2outputGroup, string("po2vessels"),o2_sim.po2vessels);
+      writeAttrToH5(po2outputGroup, string("simType"), string("MTS"));
+      WriteHdfPtree(po2outputGroup, o2_sim.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+    }
   }
   catch(H5::Exception e)
   {
@@ -974,13 +979,8 @@ float to_vbl_o2_units(float pressure_in_mmhg)
   // need pressure in atm
   return pressure_in_mmhg * 0.0013157895567935 * k_h;
 }
-/** @brief core interface for vbl BloodVesselVector
- */
-#ifdef USE_DETAILED_O2
+
 void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Storage &po2Store)
-#else
-void FakeTumMTS::FakeTumorSimMTS::findNearestVessel()
-#endif
 {
   /* we will fill the ann structure contnouslsy, so we need that map to restore the 
    * index within the the vessel list
@@ -1114,10 +1114,8 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel()
     Float3 buffer;
     std::array<double,3> bufferToFill;
 #ifndef NDEBUG
-#ifdef USE_DETAILED_O2
     //printf("ecnt: %i, po2Store.size(): %i,  cell_i: %i, ann_to_vl[i]: %i", ecnt, po2Store.size(), i, ann_to_vl[i]);
     myAssert(ann_to_vl[i]<po2Store.size());
-#endif
 #endif
     const Vessel* v= vl->GetEdge(ann_to_vl[i]);
     vbl::BloodVessel suggestion = vbl::BloodVessel();
@@ -1140,17 +1138,20 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel()
 
   //     suggestion.SetBloodVesselO2start( envO2 );
   //     suggestion.SetBloodVesselO2end( envO2 );
-#ifdef USE_DETAILED_O2  
-    float o2_a = to_vbl_o2_units(po2Store[v->Index()][0]);
-    suggestion.SetBloodVesselO2start( o2_a );
-    float o2_b = to_vbl_o2_units(po2Store[v->Index()][1]);
-    suggestion.SetBloodVesselO2end( o2_b );
-#else
-    //do not use the po2Store!!!
-    float envO2 = vbl::O2_BV;
-    suggestion.SetBloodVesselO2start(envO2);
-    suggestion.SetBloodVesselO2end(envO2);
-#endif
+    if(params.useConstO2)
+    {
+      //do not use the po2Store!!!
+      float envO2 = vbl::O2_BV;
+      suggestion.SetBloodVesselO2start(envO2);
+      suggestion.SetBloodVesselO2end(envO2);
+    }
+    else
+    {
+      float o2_a = to_vbl_o2_units(po2Store[v->Index()][0]);
+      suggestion.SetBloodVesselO2start( o2_a );
+      float o2_b = to_vbl_o2_units(po2Store[v->Index()][1]);
+      suggestion.SetBloodVesselO2end( o2_b );
+    }
 
     suggestion.SetBloodVesselCO2start( 0. );
     suggestion.SetBloodVesselCO2end( 0. );

@@ -131,6 +131,18 @@ milotti_mts_1['vessels'].update(
     radInit = 3.6,
     radMin = 2.5,
 )
+milotti_mts_3 = deepcopy(plos_One_2016_rmax)
+milotti_mts_3.update(
+    tumor_radius = 10.,
+    tumor_speed = 1.,
+    out_intervall = 1,
+    tend=1000.,
+    )
+milotti_mts_3['vessels'].update(
+    radInit = 3.6,
+    radMin = 2.5,
+    probCollapse = 0.6,
+)
 
 forCatSim = deepcopy(plos_One_2016_rmax)
 forCatSim.update(

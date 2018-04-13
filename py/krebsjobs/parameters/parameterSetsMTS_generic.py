@@ -37,12 +37,14 @@ default.update(
   stopping_radius_fraction = 0.6,
   lattice_scale = 5.,
   lattice_size = 25,
+  useConstO2 = True,
 )
 default['detailedo2'] = parameterSetsO2.milotti_o2
 
 '''works as test, creates 4-5 cells '''
 milotti_mts = deepcopy(default)
 milotti_mts['detailedo2'] = parameterSetsO2.milotti_o2
+milotti_mts['vessels'] = parameterSetsFakeTumor.milotti_mts_3
 milotti_mts.update(
     out_intervall = 1,
     tend=200.,
@@ -51,33 +53,12 @@ milotti_mts.update(
     lattice_scale = 50.,
     lattice_size = 20,
     tissuePressureDistribution = 'sphere',
-    vessels = dict(
-        timeProlEcSprout = 2,
-        timeProlEcSproutLifetime = 50,
-        ),
-    simple_o2 = dict(
-         o2_range_necro       = 100,
-         o2_range_normal      = 100,
-         o2_range_tumor       = 100,
-         o2_cons_coeff_necro  = 0.0001,
-         o2_cons_coeff_normal = 0.0001,
-         o2_cons_coeff_tumor  = 0.0001,
-         o2_rel_tumor_source_density = 0.2,
-         o2_level_normal = 100,
-         o2_source_decay_time = 8,
-         hematocrit_init = 0.45,
-         reference_intercapillary_distance = 80,
-         capillary_wall_permeability = 0.013,
-         test_obstacle = 0,
-         use_o2_source_decay = 0,#bool
-        )
     )
 milotti_detailed = deepcopy(milotti_mts)
 milotti_detailed.update(
     rGf = 100.,
     tend= 200, # usually starts to get lame over 200
     )
-
 
 milotti_mts_1 = deepcopy(default)
 milotti_mts_1.update(
@@ -86,6 +67,7 @@ milotti_mts_1.update(
     out_intervall = 1,
     tend=1400.,
     tissuePressureDistribution = 'sphere',
+    useConstO2 = False,
     )
 milotti_mts_1['detailedo2'] = parameterSetsO2.milotti_o2
 milotti_mts_2 = deepcopy(milotti_mts_1)

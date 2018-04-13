@@ -40,11 +40,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <ANN/ANN.h>
 #include <vbl.h>
+#include "../detailedO2/oxygen_model2.h"
 
-
-#ifdef USE_DETAILED_O2
-  #include "../detailedO2/oxygen_model2.h"
-#endif
 
 #ifdef W_timing
   #include <chrono>
@@ -63,10 +60,10 @@ struct State : boost::noncopyable
   int tumor_checksum;
   //boost::scoped_ptr<VesselList3d> vessels;
   int vessels_checksum;
-#ifdef USE_DETAILED_O2
+
   boost::optional<Array3df> previous_po2field;
   boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels;
-#endif
+
   //Array3d<float> o2field;
   //Array3d<float> glucoseField;
   Array3d<float> gffield;
@@ -114,6 +111,7 @@ struct Parameters
   //for continuum oxygen calculation
   Int3 lattice_size = {20,20,20};
   double lattice_scale = 10;
+  bool useConstO2;
   
   Parameters();
   void assign(const ptree &pt);
@@ -177,9 +175,7 @@ const int ANN_dim = 3;            // space dimension
 	
 	
   VesselModel1::Model vessel_model;
-#ifdef USE_DETAILED_O2
   DetailedPO2::DetailedP02Sim o2_sim;
-#endif
   
   void calcChemFields();
   // lattice definition of the continuum field lattice
@@ -207,12 +203,9 @@ const int ANN_dim = 3;            // space dimension
   FakeTumMTS::SystemParameters mySystemParameters;
   //GlucoseModel::GlucoseParams glucoseParams;
   GfModel_Cell gf_model;
-  
   BloodFlowParameters bfparams;
-
-#ifdef USE_DETAILED_O2
   DetailedPO2::Parameters o2_params;
-#endif
+
   ptree all_pt_params;
 
   double tumor_radius;
@@ -232,11 +225,11 @@ const int ANN_dim = 3;            // space dimension
   Float3 getGfGrad(const Float3 &pos) const;
   
   //oxygen
-#ifdef USE_DETAILED_O2
+/** @brief core interface for vbl BloodVesselVector
+ * calculates the distances to the nearest vessels by means of the ANN library.
+ */
   void findNearestVessel( DetailedPO2::VesselPO2Storage &po2Store);
-#else
-  void findNearestVessel( );
-#endif
+
   
   /** 
    * main functions
