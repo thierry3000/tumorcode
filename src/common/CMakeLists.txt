@@ -13,3 +13,5 @@ endif()
 
 file(GLOB CommonFiles2 "vesselgen/*.cpp")
 add_library(vesselgenlib STATIC ${CommonFiles2})
+
+install(DIRECTORY . DESTINATION "include/common" FILES_MATCHING PATTERN "*.h")

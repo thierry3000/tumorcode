@@ -246,7 +246,7 @@ const int ANN_dim = 3;            // space dimension
   
   vbl::CellsSystem *tumorcode_pointer_to_currentCellsSystem;
   void doMilottiStep();
-  void initMilotti();
+  void initMilotti(LatticeDataQuad3d &field_ld);
 };
 }//end FakeTum
 

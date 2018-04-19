@@ -19,8 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "faketum_mts.h"
 
-void FakeTumMTS::FakeTumorSimMTS::initMilotti()
+void FakeTumMTS::FakeTumorSimMTS::initMilotti(LatticeDataQuad3d &field_ld)
 {
+  /* let the CellsSystem know the continuous grid of tumorcode */
+#if VBL_USE_TUMORCODE
+  tumorcode_pointer_to_currentCellsSystem->Set_Tumorcode_Continuous_lattice(field_ld);
+#endif
     /**   INIT Milotti   */
   int run_type = 1; //command file
   bool terminal = false;
@@ -396,7 +400,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   
   /* init the cell system */
   try{
-    initMilotti();
+    initMilotti(field_ld);
   }
   catch( const std::runtime_error& e)
   {
@@ -1115,7 +1119,11 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
     std::array<double,3> bufferToFill;
 #ifndef NDEBUG
     //printf("ecnt: %i, po2Store.size(): %i,  cell_i: %i, ann_to_vl[i]: %i", ecnt, po2Store.size(), i, ann_to_vl[i]);
-    myAssert(ann_to_vl[i]<po2Store.size());
+    if(ann_to_vl[i]<po2Store.size())
+    {
+      printf("ann_to_vl[i]: %i, po2Store.size(): %i \n", ann_to_vl[i], po2Store.size());
+      myAssert(ann_to_vl[i]<po2Store.size());
+    }
 #endif
     const Vessel* v= vl->GetEdge(ann_to_vl[i]);
     vbl::BloodVessel suggestion = vbl::BloodVessel();
