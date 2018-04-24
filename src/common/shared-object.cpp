@@ -996,14 +996,21 @@ void CenterVesselListAndSetupFieldLattice(VesselList3d &vl, int dim, float spaci
 void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float safety_spacing, LatticeDataQuad3d &ld)
 {
   Float3 vessel_domain_size = wbbox.max - wbbox.min;
-  Float3 domain_size(0.); Bool3 cell_centering(false);
+  Float3 domain_size(0.); 
+  Bool3 cell_centering(false);
   Int3 num_cells(1);
   Float3 world_offset(0.);
-  for (int i=0; i<dim; ++i) {
+  
+  for (int i=0; i<dim; ++i) 
+  {
     domain_size[i] = vessel_domain_size[i] + 2.*safety_spacing;
     cell_centering[i] = true;
     num_cells[i] = std::max<int>(1, my::iceil(domain_size[i]/spacing));
-    world_offset[i] = -num_cells[i]*spacing*0.5 + vessel_domain_size[i]*0.5 + wbbox.min[i];
+    /** this transforms the cell in to 0,0,0 
+     *  world_offset[i] = domain_size[i]*0.5 + wbbox.min[i];
+     */
+    world_offset[i] = -domain_size[i]*0.5 + wbbox.min[i] + num_cells[i]*spacing*0.5;
+    //printf("i: %i  vessel_domain_size: %f, domain_size: %f, world_offset: %f \n", i, vessel_domain_size[i], domain_size[i], world_offset[i]);
   }
   ld.Init(num_cells, spacing);
   ld.SetOriginPosition(world_offset);

@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /** the source should be at this stage,
  * here we add how this source propergates some GF
  */
+#if 0
 void GfModel_Cell::AddSourceDistribution_from_cell( std::vector<double> x,
                                       std::vector<double> y,
                                       std::vector<double> z,
@@ -91,3 +92,4 @@ void GfModel_Cell::AddSourceDistribution_from_cell( std::vector<double> x,
   }
   
 }
+#endif

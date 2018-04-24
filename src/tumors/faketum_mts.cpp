@@ -14,16 +14,17 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
+You should have receivqed a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "faketum_mts.h"
 
-void FakeTumMTS::FakeTumorSimMTS::initMilotti(LatticeDataQuad3d &field_ld)
+void FakeTumMTS::FakeTumorSimMTS::initMilotti()
 {
   /* let the CellsSystem know the continuous grid of tumorcode */
 #if VBL_USE_TUMORCODE
-  tumorcode_pointer_to_currentCellsSystem->Set_Tumorcode_Continuous_lattice(field_ld);
+  std::cout<< "use tumorcod" << std::endl;
+  tumorcode_pointer_to_currentCellsSystem->Set_Tumorcode_O2_uptake_model(o2_uptake_model);
 #endif
     /**   INIT Milotti   */
   int run_type = 1; //command file
@@ -116,6 +117,7 @@ boost::property_tree::ptree FakeTumMTS::SystemParameters::as_ptree() const
 FakeTumMTS::Parameters::Parameters()
 {
   rGf = 200;
+  rO2Consumtion = 10;
   gf_production_threshold = 0.1;
   out_intervall = 100;
   apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
@@ -145,6 +147,7 @@ void FakeTumMTS::Parameters::assign(const ptree &pt)
   DOPT(fn_out);
   DOPT(fn_vessel);
   DOPT(rGf);
+  DOPT(rO2Consumtion);
   DOPT(gf_production_threshold);
   DOPT(tumor_radius);
   DOPT(tumor_speed);
@@ -185,6 +188,7 @@ ptree FakeTumMTS::Parameters::as_ptree() const
   DOPT(fn_vessel);
   DOPT(rGf);
   DOPT(gf_production_threshold);
+  DOPT(rO2Consumtion);
   DOPT(tumor_radius);
   DOPT(tumor_speed);
   DOPT(stopping_radius_fraction);
@@ -236,7 +240,7 @@ float FakeTumMTS::FakeTumorSimMTS::getGf(const Float3 &pos)
 //   float r = pos.norm();
 //   return std::max(tumor_radius + params.rGf - r, 0.);
 // #endif
-  FieldInterpolate::ValueAveraged(state.gffield, grid.ld, FieldInterpolate::Const(0.f), pos);
+  return FieldInterpolate::ValueAveraged(state.gffield, grid.ld, FieldInterpolate::Const(0.f), pos);
 }
 
 
@@ -314,7 +318,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     pt.put("scale subdivide", 10.);
     vl = ReadVesselList3d(h5_vessels, pt);
     
-    // adjust vessel list ld
+    // adjust vessel list ld to have the center inside the
+    // simulation domain, an not at the edge of th cube
     const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
     vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
 
@@ -371,8 +376,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   std::string lastTumorGroupWrittenByFakeTumName;
 
   
-  double grid_lattice_const = 40;
-  double safety_layer_size = 120;
+  double grid_lattice_const = 10;
+  double safety_layer_size = 50;
   boost::optional<Int3> grid_lattice_size;
   /* continum lattice stuff
    * set up grid for calculating diffusion equations
@@ -395,12 +400,16 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   
   gf_model.init(field_ld, mtboxes, params.as_ptree());
   gf_model.initField(state.gffield);
+  
+  o2_uptake_model.init(field_ld,mtboxes, params.as_ptree());
+  o2_uptake_model.initField(state.cell_O2_consumption);
+  
   last_chem_update = -1;
   last_vessels_checksum = -1;
   
   /* init the cell system */
   try{
-    initMilotti(field_ld);
+    initMilotti();
   }
   catch( const std::runtime_error& e)
   {
@@ -549,11 +558,16 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
 void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
 {
   cout << format("start mts at tumor time: %f\n" ) % time;
+  //std::cout << "o2_uptake before milotti" << std::endl;
+  //std::cout << state.cell_O2_consumption(0,0,0) << std::endl;
   /** 
    * the tumor time is given in hours 
    * evolve cells until that
    */
   uint returnValue = tumorcode_pointer_to_currentCellsSystem->runMainLoop( time * 3600 );
+  
+  //std::cout << "o2_uptake after milotti" << std::endl;
+  //std::cout << state.cell_O2_consumption(0,0,0) << std::endl;
   
   /** 
    * for safety reasons we use both output structures (hdf and vbl)
@@ -659,6 +673,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
     writeAttrToH5(h5_tum, string("TUMOR_RADIUS"), tumor_radius);
     // could be done, but since it is a sphere, you can easily calculate the tc_density from the radius
     WriteScalarField(h5_tum, string("fieldGf"), state.gffield, grid.ld, root.openGroup("field_ld"));
+    WriteScalarField(h5_tum, string("fieldO2Consumption"), state.cell_O2_consumption, grid.ld, root.openGroup("field_ld"));
     /* needs to calculate, before output! */
     UpdateVesselVolumeFraction();
     //WriteScalarField(h5_tum, "vessel_volume_fraction", vessel_volume_fraction, grid.ld, root.openGroup("field_ld"));
@@ -704,6 +719,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
 
 void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
 {
+  //*********** gf ****************
   {
     my::log().push("gf:");
     
@@ -713,6 +729,45 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
     std::vector<double> x = tumorcode_pointer_to_currentCellsSystem->Get_x();
     std::vector<double> y = tumorcode_pointer_to_currentCellsSystem->Get_y();
     std::vector<double> z = tumorcode_pointer_to_currentCellsSystem->Get_z();
+    
+    std::vector<double> O2Rates = tumorcode_pointer_to_currentCellsSystem->Get_O2Rate();
+    
+    #pragma omp parallel
+    {
+      BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
+      {
+        for(int i=0; i<x.size();++i)
+        {
+          Float3 pos(x[i],y[i],z[i]);
+          AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)1.0);
+          
+          //auto this_o2_rate = O2Rates[i] * 1000;
+          AddSmoothDelta(cell_O2src, bbox, grid.ld, grid.dim, pos, (float) O2Rates[i] );
+        }
+      }
+    }
+    
+    gf_model.update(state.gffield, cell_GFsrc);
+    o2_uptake_model.update(state.cell_O2_consumption, cell_O2src);
+
+#ifdef DEBUG
+    cout << "stats: " << state.gffield.valueStatistics() << endl;
+#endif
+    my::log().pop();
+  }
+  
+#if 0
+  //**************** o2 *************
+  {
+    my::log().push("o2 consumption:");
+    
+    // create source field from cells
+    //Array3d<float> cell_source;
+    float n_cells = (float) tumorcode_pointer_to_currentCellsSystem->Get_ncells();
+    std::vector<double> x = tumorcode_pointer_to_currentCellsSystem->Get_x();
+    std::vector<double> y = tumorcode_pointer_to_currentCellsSystem->Get_y();
+    std::vector<double> z = tumorcode_pointer_to_currentCellsSystem->Get_z();
+    auto O2Rates = tumorcode_pointer_to_currentCellsSystem->Get_O2Rate();
     #pragma omp parallel
     {
       BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
@@ -722,30 +777,33 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
           float offset = 10*15;
           offset = 0.0;
           Float3 pos(x[i]+offset,y[i]+offset,z[i]+offset);
-          AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)1.0/n_cells);
+          double this_o2_rate = O2Rates[i];
+          AddSmoothDelta(cell_O2src, bbox, grid.ld, grid.dim, pos, (float) 42.0);
         }
       }
     }
     
-    gf_model.update(state.gffield, cell_GFsrc);
+    o2_uptake_model.update(state.cell_O2_consumption, cell_O2src);
 
 
 #ifdef DEBUG
-    cout << "stats: " << state.gffield.valueStatistics() << endl;
-#endif
-    my::log().pop();
-  }
-#if 1
-  {
-    my::log().push("gf:");
-    cout << "update" << endl;
-
-#ifdef DEBUG
-    cout << "stats: " << state.gffield.valueStatistics() << endl;
+    cout << "stats: " << state.cell_O2_consumption.valueStatistics() << endl;
 #endif
     my::log().pop();
   }
 #endif
+  
+// #if 1
+//   {
+//     my::log().push("gf:");
+//     cout << "update" << endl;
+// 
+// #ifdef DEBUG
+//     cout << "stats: " << state.gffield.valueStatistics() << endl;
+// #endif
+//     my::log().pop();
+//   }
+// #endif
   state.chem_checksum++;
 }
 
@@ -772,7 +830,7 @@ void FakeTumMTS::FakeTumorSimMTS::UpdateVesselVolumeFraction()
 //   ops.init(vessel_glucosesrc_clin);
 //   ops.init(vessel_glucosesrc_crhs);
   ops.init(cell_GFsrc);
-  //ops.init(cell_GFsrc_crhs);
+  ops.init(cell_O2src);
 
 #pragma omp parallel
   {
@@ -787,7 +845,7 @@ void FakeTumMTS::FakeTumorSimMTS::UpdateVesselVolumeFraction()
   last_vessels_checksum = state.vessels_checksum;
 }
 
-
+#if 0
 void FakeTumMTS::FakeTumorSimMTS::insertGFCoefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder &mb)
 {
   Array3d<float> l_coeff(bbox),
@@ -842,6 +900,7 @@ void FakeTumMTS::FakeTumorSimMTS::insertGFCoefficients(int box_index, const BBox
     mb.AddLocally(p, -l_coeff(p) , -rhs(p));
   }
 }
+#endif
 
 void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index( H5::Group &out_cell_group)
 {
@@ -867,6 +926,11 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   DynArray<float> buffer(numberOfCells);
   DynArray<int> buffer_int(numberOfCells);
   
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    buffer[i] = tumorcode_pointer_to_currentCellsSystem->Get_O2Rate()[i];
+  }
+  writeDataSetToGroup(out_cell_group, string("cell_o2_consumption_rate"), buffer);
   for( int i = 0; i<numberOfCells; ++i)
   {
     buffer[i] = tumorcode_pointer_to_currentCellsSystem->Get_r()[i];

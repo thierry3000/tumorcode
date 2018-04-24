@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/filesystem.hpp>
 #include <memory> //std::shared_ptr
 #include "common/vesselmodel1.h"
+#include "common/cell_based_oxygen_update_model.h"
 #include "common/growthfactor_model.h"
 #include "common/hdfio.h"
 
@@ -67,6 +68,7 @@ struct State : boost::noncopyable
   //Array3d<float> o2field;
   //Array3d<float> glucoseField;
   Array3d<float> gffield;
+  Array3d<float> cell_O2_consumption;
   int chem_checksum;
 };  
 
@@ -103,6 +105,7 @@ struct Parameters
   string paramset_name;
   int vesselfile_ensemble_index;
   double rGf, gf_production_threshold;
+  double rO2Consumtion;
   double tumor_radius, tumor_speed;
   double stopping_radius_fraction; // actual-stopping-radius = 0.5*system-length-along-the-longest-dimension * stopping_radius_fraction
   int tissuePressureDistribution;
@@ -185,11 +188,13 @@ const int ANN_dim = 3;            // space dimension
   State state;
   
 //   void insertGlucoseCoefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder& mb);
-  void insertGFCoefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder& mb);
+  //void insertGFCoefficients(int box_index, const BBox3& bbox, const State &state, FiniteVolumeMatrixBuilder& mb);
   Array3d<float> vessel_volume_fraction;
 //   Array3d<float> vessel_o2src_clin, vessel_o2src_crhs;
 //   Array3d<float> vessel_glucosesrc_clin, vessel_glucosesrc_crhs;
   Array3d<float> cell_GFsrc;
+  Array3d<float> cell_O2src;
+  
   Array3dOps<float> oxyops;
   Array3dOps<float> glucoseOps;
   double last_chem_update;
@@ -203,6 +208,8 @@ const int ANN_dim = 3;            // space dimension
   FakeTumMTS::SystemParameters mySystemParameters;
   //GlucoseModel::GlucoseParams glucoseParams;
   GfModel_Cell gf_model;
+  CellBasedO2Uptake o2_uptake_model;
+  
   BloodFlowParameters bfparams;
   DetailedPO2::Parameters o2_params;
 
@@ -246,7 +253,7 @@ const int ANN_dim = 3;            // space dimension
   
   vbl::CellsSystem *tumorcode_pointer_to_currentCellsSystem;
   void doMilottiStep();
-  void initMilotti(LatticeDataQuad3d &field_ld);
+  void initMilotti();
 };
 }//end FakeTum
 

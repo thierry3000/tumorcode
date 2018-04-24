@@ -232,7 +232,8 @@ def writeFields_(graph, options):
   e = extractVtkFields.Extractor(f, search_groups, recursive = True, lattice_path="field_ld") 
   print 'found field datasets:'
   pprint.pprint(e.getDatasetPaths())
-  e.write(options.outfn % 'fields')
+  filename_append = 'fields_%s' % str(os.path.split(search_groups[0])[-1])
+  e.write(options.outfn % filename_append)
   del e
 
 def writeVessels_(graph, options):  

@@ -77,7 +77,7 @@ public:
   py::tuple GetOriginPosition() 
   {
     auto anyInstanceOfVector = ld->GetOriginPosition();
-    return py::make_tuple(anyInstanceOfVector[0],anyInstanceOfVector[0],anyInstanceOfVector[0]);
+    return py::make_tuple(anyInstanceOfVector[0],anyInstanceOfVector[1],anyInstanceOfVector[2]);
   }
   
   py::object GetWorldBox() const {
@@ -210,11 +210,14 @@ PyLd* read_lattice_data_from_hdf_by_filename(const string fn, const string path)
 #endif
   readInFile.close();
 
+  //T xmin,T ymin, T zmin,T xmax,T ymax, T zmax
   BBox3 bbox(bb[0],bb[2],bb[4],bb[1],bb[3],bb[5]);
   
   //allocate memory and let boost::python handle it by the return!
   PyLd *pyld= new PyLd(TYPE, bbox, SCALE);
   pyld->SetOriginPosition(WORLD_OFFSET);
+  //py::tuple bla = pyld->GetOriginPosition();
+  //printf("1: %f, 2: %f, 3: %f\n", bla[0],bla[1],bla[2]);
   return pyld;
 }
 

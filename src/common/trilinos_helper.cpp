@@ -1,4 +1,7 @@
-#include "trilinos_helper.h"
+#include <Epetra_Vector.h>
+#include <Epetra_CrsMatrix.h>
+#include <Ifpack_Utils.h>
+#include <fstream>
 
 void vector_print(Epetra_Vector &v)
 {

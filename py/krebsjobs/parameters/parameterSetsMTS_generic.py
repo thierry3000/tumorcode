@@ -33,6 +33,7 @@ default.update(
   dt = 1,
   message = '',
   rGf = 200.,
+  rO2Consumtion = 100.,
   gf_production_threshold = 0.1,
   stopping_radius_fraction = 0.6,
   lattice_scale = 5.,
@@ -63,6 +64,7 @@ milotti_detailed.update(
 milotti_mts_1 = deepcopy(default)
 milotti_mts_1.update(
     rGf = 100.,
+    rO2Consumtion = 10.,
     tumor_speed = 0.2,
     out_intervall = 1,
     tend=1400.,

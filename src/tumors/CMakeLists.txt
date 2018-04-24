@@ -44,7 +44,7 @@ endif()
 
 add_library(tumors_ SHARED ${Tumor_Files})
 
-set(myLibs "${myLibs};krebs_")
+set(myLibs "${myLibs};krebs_;common")
 if(USE_ADAPTION)
   set(myLibs "${myLibs};adaption_")
 endif()

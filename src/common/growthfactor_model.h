@@ -201,13 +201,14 @@ struct GfModel_Cell
           if(std::abs(diff)>1.0e-2)
           {
             {
+              //static void array_apply_offset3d(Array3d<T> &a, const ConstArray3d<S> &b, F &func, const Int3 &boffset, uchar flags=0)
               _conv_addfunc f; f.s = diff;
               array_apply_offset3d<float, float,_conv_addfunc>(
-                gffield,
-                gf_lut,
-                f,
-                p-(gf_lut.size()/2),
-                0
+                gffield,// Array3d<T>
+                gf_lut, // ConstArray3d<T>
+                f,// F func
+                p-(gf_lut.size()/2),// Int3 boffset
+                0// flags
               );
             }
             fieldLastSources(p) = src;
