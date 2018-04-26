@@ -195,6 +195,8 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   boost::optional<H5::Group> tumorgroup;
   boost::optional<Array3df> previous_po2field;
   boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels;
+  boost::optional<Array3d<float>> cell_based_o2_uptake;
+  
   //boost::optional<std::string> tumorgroup_path;
   //h5cpp::Group   *tumorgroup = new h5cpp::Group();
   DetailedP02Sim s;
@@ -233,7 +235,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
       MPI_Init_thread(0, NULL, 1,&prov);
 #endif
     DetailedP02Sim s;
-    s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels);
+    s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels,cell_based_o2_uptake);
     s.run(*vl);
     
     /* OUTPUT */

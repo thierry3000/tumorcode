@@ -45,34 +45,27 @@ default['detailedo2'] = parameterSetsO2.milotti_o2
 '''works as test, creates 4-5 cells '''
 milotti_mts = deepcopy(default)
 milotti_mts['detailedo2'] = parameterSetsO2.milotti_o2
+milotti_mts['detailedo2'].update(
+    useCellBasedUptake=True
+    )
 milotti_mts['vessels'] = parameterSetsFakeTumor.milotti_mts_3
 milotti_mts.update(
     out_intervall = 1,
-    tend=200.,
-    tumor_speed = 0.1,
+    tumor_speed = 0.2,
     tumor_radius = 5.,
     lattice_scale = 50.,
     lattice_size = 20,
     tissuePressureDistribution = 'sphere',
-    )
-milotti_detailed = deepcopy(milotti_mts)
-milotti_detailed.update(
-    rGf = 100.,
-    tend= 200, # usually starts to get lame over 200
-    )
-
-milotti_mts_1 = deepcopy(default)
-milotti_mts_1.update(
     rGf = 100.,
     rO2Consumtion = 10.,
-    tumor_speed = 0.2,
-    out_intervall = 1,
     tend=1400.,
-    tissuePressureDistribution = 'sphere',
     useConstO2 = False,
     )
-milotti_mts_1['detailedo2'] = parameterSetsO2.milotti_o2
-milotti_mts_2 = deepcopy(milotti_mts_1)
-milotti_mts_2['calcflow'] = parameterSetsVesselGen.no_phase
+
+milotti_mts_2 = deepcopy(milotti_mts)
+milotti_mts_2.update(
+    useConstO2=True,
+    )
+
 if __name__ == '__main__':
   print(milotti_detailed)

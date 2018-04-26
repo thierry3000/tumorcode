@@ -376,8 +376,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   std::string lastTumorGroupWrittenByFakeTumName;
 
   
-  double grid_lattice_const = 10;
-  double safety_layer_size = 50;
+  double grid_lattice_const = 15;
+  double safety_layer_size = 30;
   boost::optional<Int3> grid_lattice_size;
   /* continum lattice stuff
    * set up grid for calculating diffusion equations
@@ -442,7 +442,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
        /* O2 stuff is initialized
         * NOTE: size of po2Store is set here
         */
-        o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels);
+        o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
         cout << "\nInit O2 completed" << endl;
         o2_sim.run(*vl);
         cout << "\n mts run finished" << endl;
@@ -587,7 +587,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   H5::H5File f;
-  H5::Group root, gout, h5_tum, h5_cells_out, h5_parameters, h5_vessel_parameters, h5_system_parameters,h5_field_ld_group, h5_timing;
+  H5::Group root, gout, h5_tum, h5_cells_out, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_field_ld_group, h5_timing;
   H5::Attribute a;
   std::string tumOutName = "nothing";
   try{
@@ -606,6 +606,8 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
       h5_parameters = root.createGroup("parameters");
       h5_vessel_parameters = h5_parameters.createGroup("vessels");
       h5_system_parameters = h5_parameters.createGroup("system");
+      h5_o2_parameters = h5_parameters.createGroup("o2");
+      
       writeAttrToH5(root, string("MESSAGE"), params.message);
       writeAttrToH5(root, string("VESSELTREEFILE"), params.fn_vessel);
       writeAttrToH5(root, string("OUTPUT_NAME"), params.fn_out);
@@ -614,6 +616,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
       WriteHdfPtree(h5_vessel_parameters,vessel_model.params.as_ptree());
       WriteHdfPtree(h5_parameters, params.as_ptree());
       WriteHdfPtree(h5_system_parameters, mySystemParameters.as_ptree());
+      WriteHdfPtree(h5_o2_parameters, o2_params.as_ptree());
       /* on first occasion, we write field_ld to the root folder */
       h5_field_ld_group = root.createGroup("field_ld");
       grid.ld.WriteHdfLd(h5_field_ld_group);
@@ -672,8 +675,14 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
     writeAttrToH5(h5_tum, string("TYPE"), string("faketumor"));
     writeAttrToH5(h5_tum, string("TUMOR_RADIUS"), tumor_radius);
     // could be done, but since it is a sphere, you can easily calculate the tc_density from the radius
-    WriteScalarField(h5_tum, string("fieldGf"), state.gffield, grid.ld, root.openGroup("field_ld"));
-    WriteScalarField(h5_tum, string("fieldO2Consumption"), state.cell_O2_consumption, grid.ld, root.openGroup("field_ld"));
+    /** BIG DATA HERE 
+     * so we output this only every 5.th time step 
+     */
+    if( output_num > 0 and (output_num % 5 == 0) )
+    {
+      WriteScalarField(h5_tum, string("fieldGf"), state.gffield, grid.ld, root.openGroup("field_ld"));
+      WriteScalarField(h5_tum, string("fieldO2Consumption"), state.cell_O2_consumption, grid.ld, root.openGroup("field_ld"));
+    }
     /* needs to calculate, before output! */
     UpdateVesselVolumeFraction();
     //WriteScalarField(h5_tum, "vessel_volume_fraction", vessel_volume_fraction, grid.ld, root.openGroup("field_ld"));
@@ -741,8 +750,8 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
           Float3 pos(x[i],y[i],z[i]);
           AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)1.0);
           
-          //auto this_o2_rate = O2Rates[i] * 1000;
-          AddSmoothDelta(cell_O2src, bbox, grid.ld, grid.dim, pos, (float) O2Rates[i] );
+          auto this_o2_rate = O2Rates[i];
+          AddSmoothDelta(cell_O2src, bbox, grid.ld, grid.dim, pos, (float) this_o2_rate );
         }
       }
     }

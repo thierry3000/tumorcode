@@ -49,6 +49,7 @@ default_o2 = dict(
   convergence_tolerance = 0.03,
   axial_integration_step_factor = .1,
   debug_zero_o2field = False,
+  useCellBasedUptake = False,
   grid_lattice_const = 40.,
   calcflow = dict(
     viscosityPlasma = 1.2e-6,

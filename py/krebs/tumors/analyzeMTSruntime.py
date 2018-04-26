@@ -99,7 +99,7 @@ def plot_no_cells_over_time_since_epoch(goodArguments,pp):
     plt.show()
   else:
     pp.savefig()
-def plot_from_h5(goodArguments, pp):
+def plot_runtime_from_h5(goodArguments, pp):
   myH5Keys = [
               #'run_ann',
               'run_doMilottiStep',
@@ -120,7 +120,100 @@ def plot_from_h5(goodArguments, pp):
   myDictOfData = dict()
   for key in myH5Keys:
     myDictOfData[key] = []
+    
+  no_of_threads = 42
+  print("filename: %s" % str(goodArguments.vbl_simulation_output_filename))
+  with h5py.File(str(goodArguments.vbl_simulation_output_filename), 'r') as f:
+    initialTime = f['out0000/timing'].attrs.get('secondsSinceEpoch')
+    no_of_threads=f.attrs.get('detectedNumberOfThreads')
+    lastKey = 'out0000'
+#    def isKeyGood(key):
+#      if 'out' in key:
+#        return str(key)
+    goodKeys = [str(x) for x in f.keys() if 'out' in x]
+    for mykey in myH5Keys:
+      for (i,key) in enumerate(goodKeys):
+        if mykey == 'total_time':
+          if i ==0:
+            totalTime = 0
+          else:
+            totalTime = int(f[key+'/timing'].attrs.get('secondsSinceEpoch')) - int(f[goodKeys[i-1]+'/timing'].attrs.get('secondsSinceEpoch'))
+          myDictOfData[mykey].append(totalTime)
+        elif mykey == 'number_of_cells':
+          if 'out' in key:
+            ex = key+'/cells/cell_radii' in f
+            if ex:
+              arrayOfRadii = np.asarray(f[key+'/cells/cell_radii'])
+              myDictOfData[mykey].append(len(np.concatenate(arrayOfRadii, axis=0)))
+            else:
+              myDictOfData[mykey].append(0)
+        else:
+          #myDictOfData[mykey].append(f[key+'/timing'].attrs.get(mykey)/1e6)
+          timeForKey = f[key+'/timing'].attrs.get(mykey)
+          myDictOfData[mykey].append(timeForKey[0][0])
+    b_sytem_parameters_exist = '/parameters/system' in f
+    if b_sytem_parameters_exist:
+      no_of_threads = f['/parameters/system'].attrs.get('num_threads')
   
+  plotVsCells = True;
+  fig, ax = plt.subplots()
+  for mykey in myH5Keys:
+    print("mykey: %s" % mykey)
+    if not mykey == 'number_of_cells':
+      if plotVsCells:
+          ax.plot(myDictOfData['number_of_cells'],myDictOfData[mykey][0:],label=mykey)
+      else:
+          ax.plot(myDictOfData[mykey][0:],label=mykey)
+          
+  
+  if plotVsCells:
+    ax.set_xlabel('#cells')
+    ax.set_ylabel('runtime/ s')
+  else:
+    ax.set_xlabel('output group/ one unit is 1h of simulated time')
+    ax.set_ylabel('runtime/ s')
+  
+  
+  ax.set_title('cluster run of faketumor with vbl \n run on snowden with # %i threads' % int(no_of_threads))
+  #plt.ylabel('#cells')
+  legend = ax.legend(loc='upper left', shadow=True)
+  if interactive:
+    plt.show()
+  else:
+    pp.savefig()
+    
+def plot_memory_from_h5(goodArguments, pp):
+  myH5Keys = [
+              #'run_ann',
+              #'run_doMilottiStep',
+              #'run_doStep',
+              #'run_o2',
+              #'run_vbl_cellEvents',
+              #'run_vbl_diff',
+              #'run_vbl_diff_loop_1',
+              #'run_vbl_diff_loop_2',
+              #'run_vbl_diff_loop_3',
+              #'run_vbl_dynamics',
+              #'run_vbl_geometry',
+              #'run_vbl_bico_call',
+              #'run_vbl_writeToFile',
+              #'total_time', # NOTE: this is the integrated time, all others are runtimes!
+              'number_of_cells',
+              ]
+  myDictOfData = dict()
+  for key in myH5Keys:
+    myDictOfData[key] = []
+  
+  h5_memory_keys = [
+        'rss',
+        'rss_peak',
+        'vmem',
+        'vmem_peak'
+        ]
+  myDictOfDataForMemory = dict()
+  for key in h5_memory_keys:
+    myDictOfDataForMemory[key] =[]
+    
   no_of_threads=0
   print("filename: %s" % str(goodArguments.vbl_simulation_output_filename))
   with h5py.File(str(goodArguments.vbl_simulation_output_filename), 'r') as f:
@@ -151,33 +244,49 @@ def plot_from_h5(goodArguments, pp):
           #myDictOfData[mykey].append(f[key+'/timing'].attrs.get(mykey)/1e6)
           timeForKey = f[key+'/timing'].attrs.get(mykey)
           myDictOfData[mykey].append(timeForKey[0][0])
+    ''' memory '''
+    for mykey in h5_memory_keys:
+      for (i,key) in enumerate(goodKeys):
+        ex = key +'/memory' in f;
+        if ex:
+          value = float(f[key+'/memory'].attrs.get(mykey))
+          ''' value is in bytes'''
+          value = value/1000 #KB
+          value = value/1000 #MB
+          value = value/1000 #GB
+          myDictOfDataForMemory[mykey].append(value)
+    exist_system_parameters_in_hdf = '/parameters/system' in f
+    if exist_system_parameters_in_hdf:
+      no_of_threads = f['/parameters/system'].attrs.get('num_threads')
+    else:
+      no_of_threads = 42
   
-  plotVsCells = True;
+  plotVsCells = False;
   fig, ax = plt.subplots()
-  for mykey in myH5Keys:
+  for mykey in myDictOfDataForMemory:
     print("mykey: %s" % mykey)
     if not mykey == 'number_of_cells':
       if plotVsCells:
-          ax.plot(myDictOfData['number_of_cells'],myDictOfData[mykey][0:],label=mykey)
+          ax.plot(myDictOfData['number_of_cells'],myDictOfDataForMemory[mykey][0:],label=mykey)
       else:
-          ax.plot(myDictOfData[mykey][0:],label=mykey)
-  #handles, labels = ax.get_legend_handles_labels()
-  #lgd = ax.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5,-0.1))
+          ax.plot(myDictOfDataForMemory[mykey][0:],label=mykey)
+        
   
   if plotVsCells:
     ax.set_xlabel('#cells')
-    ax.set_ylabel('runtime/ s')
+    ax.set_ylabel('use Memory/ GB')
   else:
     ax.set_xlabel('output group/ one unit is 1h of simulated time')
-    ax.set_ylabel('runtime/ s')
-  no_of_threads = 28
+    ax.set_ylabel('use Memory/ GB')
+    
   ax.set_title('cluster run of faketumor with vbl \n run on snowden with # %i threads' % int(no_of_threads))
   #plt.ylabel('#cells')
-  legend = ax.legend(loc='upper left', shadow=True)
+  legend = ax.legend(loc='center', shadow=True)
   if interactive:
     plt.show()
   else:
-    pp.savefig()    
+    pp.savefig()   
+    
 if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Analyze MTS runtime')  
@@ -194,4 +303,5 @@ if __name__ == '__main__':
       plot_no_cells_over_time_since_epoch(goodArguments,pp)
   if 1:
     with PdfPages('runtime_analysis_file_%s.pdf' % str(goodArguments.vbl_simulation_output_filename)) as pp:
-      plot_from_h5(goodArguments,pp)
+      plot_runtime_from_h5(goodArguments,pp)
+      plot_memory_from_h5(goodArguments,pp)

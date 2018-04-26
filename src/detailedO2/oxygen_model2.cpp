@@ -70,6 +70,7 @@ void Parameters::assign(const ptree &pt)
   DOPT(convergence_tolerance);
   DOPT(axial_integration_step_factor);
   DOPT(debug_zero_o2field);
+  DOPT(useCellBasedUptake);
   //DOPT(grid_lattice_const);
   
   DOPT(michaelis_menten_uptake);
@@ -116,6 +117,7 @@ ptree Parameters::as_ptree() const
   //DOPT(grid_lattice_const);
   
   DOPT(michaelis_menten_uptake);
+  DOPT(useCellBasedUptake);
   DOPT(massTransferCoefficientModelNumber);
   DOPT(conductivity_coeff1);
   DOPT(conductivity_coeff2);
@@ -246,6 +248,8 @@ Parameters::Parameters()
   po2_mmcons_m0[DEAD] = 0.;
   po2_mmcons_k[DEAD]  = 2.; // mmHg
   michaelis_menten_uptake = false;
+  useCellBasedUptake = false;
+  
   solubility_plasma = 3.1e-5;
   solubility_tissue = 2.8e-5;
   haemoglobin_binding_capacity = 0.5; /*mlO2/cm^3*/
@@ -1279,7 +1283,8 @@ void ComputePo2Field(const Parameters &params,
 		     const ContinuumGrid &grid, 
 		     DomainDecomposition &mtboxes, 
 		     const TissuePhases &phases, 
-		     Array3df po2field, 
+		     Array3df po2field,
+         boost::optional<Array3d<float>> cell_based_o2_uptake,
 		     FiniteVolumeMatrixBuilder &mb,  
 		     bool keep_preconditioner)
 {
@@ -1299,13 +1304,32 @@ void ComputePo2Field(const Parameters &params,
       {
         double m, dm, po2 = po2field(p);
         Float3 phases_loc = phases(p);
-        //oxygen uptake of tissue according michalis menten model or simpler
-        boost::tie(m, dm) = params.ComputeUptake(po2, phases_loc.data(), phases.count);
-        double cons_coeff = -dm;
-        double cons_const = -(m-dm*std::max(po2, 0.)); // fixed: negative po2 would lead to even more consumption, resulting in more negative po2. So limit evaluation to po2>0.
+        if(! params.useCellBasedUptake)
+        {
+          /**
+          * oxygen uptake of tissue according michalis menten model or simpler
+          */
+          boost::tie(m, dm) = params.ComputeUptake(po2, phases_loc.data(), phases.count);
+        }
+        else
+        {
+          /** 
+          * or more complicated based on single cells
+          */
+          float value = (*cell_based_o2_uptake)(p);
+          //if(value>0)
+          {
+            //std::cout << "cell_based" << std::endl;
+            //std::cout << value << std::endl;
+            dm = 0;
+            m = (-1)* value;
+          }
+        }
+        double consumption_coeff = -dm;
+        double consumption_const = -(m-dm*std::max(po2, 0.)); // fixed: negative po2 would lead to even more consumption, resulting in more negative po2. So limit evaluation to po2>0.
                 
-        double lin_coeff = consumption_prefactor*cons_coeff + params.extra_tissue_source_linear;
-        double src_const_loc = consumption_prefactor*cons_const + params.extra_tissue_source_const;
+        double lin_coeff = consumption_prefactor*consumption_coeff + params.extra_tissue_source_linear;
+        double src_const_loc = consumption_prefactor*consumption_const + params.extra_tissue_source_const;
         double rhs = -src_const_loc;
 
         mb.AddLocally(p, -lin_coeff, -rhs);
@@ -1406,9 +1430,11 @@ void DetailedP02Sim::init(Parameters &params_,
                           boost::optional<Int3> grid_lattice_size,
                           boost::optional<H5::Group> tumorgroup,
                           boost::optional<Array3df> previous_po2field,
-                          boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels
+                          boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels,
+                          boost::optional<Array3d<float>> cell_based_o2_uptake
 )
 {
+  this->cell_based_o2_uptake = cell_based_o2_uptake;
   bfparams = bfparams_;
   
   CalcFlow(vl, bfparams);
@@ -1657,7 +1683,7 @@ int DetailedP02Sim::run(VesselList3d &vl)
     /*
      * 2) propagate the oxygen from the blood stream to the tissue
      */
-    ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, keep_preconditioner);
+    ComputePo2Field(params, grid, mtboxes, phases, po2field, cell_based_o2_uptake, tissue_diff_matrix_builder, keep_preconditioner);
     
     /*
      * From here on the results are handled
@@ -1722,7 +1748,7 @@ int DetailedP02Sim::run(VesselList3d &vl)
   IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
   //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
   
-  ComputePo2Field(params, grid, mtboxes, phases, po2field, tissue_diff_matrix_builder, keep_preconditioner);
+  ComputePo2Field(params, grid, mtboxes, phases, po2field, cell_based_o2_uptake, tissue_diff_matrix_builder, keep_preconditioner);
   cout << "before return field" << endl;
   return 0;
 }

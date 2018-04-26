@@ -108,6 +108,7 @@ public:
   string debug_fn;
   bool debug_zero_o2field; // zero out the o2 field
   bool michaelis_menten_uptake;
+  bool useCellBasedUptake;
   double po2_mmcons_m0[3], po2_mmcons_k[3];
   int tissue_boundary_condition_flags;
   double tissue_boundary_value;
@@ -172,7 +173,7 @@ struct DetailedP02Sim : public boost::noncopyable
   Float3 worldCenter;
   Float3 gridCenter;
   
-  
+  boost::optional<Array3df> cell_based_o2_uptake;
   Array3df po2field;
   DetailedPO2::VesselPO2Storage po2vessels;
   ptree metadata;
@@ -181,7 +182,7 @@ struct DetailedP02Sim : public boost::noncopyable
   // after this call the 3D field phases is filled with
   // 3 vallues giving the portion of corresponding tissue type
   TissuePhases phases;//Declaration
-  void init(Parameters &params,BloodFlowParameters &bfparams, VesselList3d &vl, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, boost::optional<H5::Group> tumorgroup,boost::optional<Array3df> previous_po2field, boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels);
+  void init(Parameters &params,BloodFlowParameters &bfparams, VesselList3d &vl, double grid_lattice_const, double safety_layer_size, boost::optional<Int3> grid_lattice_size, boost::optional<H5::Group> tumorgroup,boost::optional<Array3df> previous_po2field, boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels, boost::optional<Array3d<float>> cell_based_o2_uptake);
   int run(VesselList3d &vl);
   void PrepareNetworkInfo(const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots);
   
