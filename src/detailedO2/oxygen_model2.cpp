@@ -81,6 +81,8 @@ void Parameters::assign(const ptree &pt)
   DOPT(detailedO2name);
   DOPT(loglevel);
   DOPT(tissue_po2_boundary_condition);
+  DOPT(extra_tissue_source_const);
+  DOPT(extra_tissue_source_linear);
   DetailedPO2::Parameters::UpdateInternalValues();
   #undef DOPT
 }
@@ -125,6 +127,9 @@ ptree Parameters::as_ptree() const
   DOPT(detailedO2name);
   DOPT(loglevel);
   DOPT(tissue_po2_boundary_condition);
+  DOPT(extra_tissue_source_const);
+  DOPT(extra_tissue_source_linear);
+  
   #undef DOPT
   return pt;
 }
@@ -1321,8 +1326,14 @@ void ComputePo2Field(const Parameters &params,
           {
             //std::cout << "cell_based" << std::endl;
             //std::cout << value << std::endl;
+            /** 
+             * I do not have a dependency of the metabolics
+             * to the pressure, so dm = 0
+             * --> lin_coeff = 0
+             * --> consumption_const = -m
+             */
             dm = 0;
-            m = (-1)* value;
+            m = value;
           }
         }
         double consumption_coeff = -dm;
@@ -1331,6 +1342,12 @@ void ComputePo2Field(const Parameters &params,
         double lin_coeff = consumption_prefactor*consumption_coeff + params.extra_tissue_source_linear;
         double src_const_loc = consumption_prefactor*consumption_const + params.extra_tissue_source_const;
         double rhs = -src_const_loc;
+//         std::cout << 
+//         "consumption_prefactor: " <<
+//         consumption_prefactor << 
+//         "params.extra_tissue_source_const: " <<
+//         params.extra_tissue_source_const <<
+//         std::endl;
 
         mb.AddLocally(p, -lin_coeff, -rhs);
       }

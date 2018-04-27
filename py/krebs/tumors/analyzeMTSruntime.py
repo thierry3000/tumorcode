@@ -175,7 +175,7 @@ def plot_runtime_from_h5(goodArguments, pp):
   
   
   ax.set_title('cluster run of faketumor with vbl \n run on snowden with # %i threads' % int(no_of_threads))
-  #plt.ylabel('#cells')
+  
   legend = ax.legend(loc='upper left', shadow=True)
   if interactive:
     plt.show()
@@ -280,7 +280,7 @@ def plot_memory_from_h5(goodArguments, pp):
     ax.set_ylabel('use Memory/ GB')
     
   ax.set_title('cluster run of faketumor with vbl \n run on snowden with # %i threads' % int(no_of_threads))
-  #plt.ylabel('#cells')
+  
   legend = ax.legend(loc='center', shadow=True)
   if interactive:
     plt.show()
