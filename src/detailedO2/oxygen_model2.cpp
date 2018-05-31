@@ -460,9 +460,9 @@ std::pair<double, double> Parameters::ComputeUptake(double po2, float *tissue_ph
     // phase count is 0 in the cell based simulations --> fix that
     for (int i=0; i<phases_count; ++i)
     {
-#ifndef DEBUG
-    std::cout << "po2_mmcons_m0[" << i << "]:" << po2_mmcons_m0[i] << std::endl;
-#endif
+// #ifndef DEBUG
+//     std::cout << "po2_mmcons_m0[" << i << "]:" << po2_mmcons_m0[i] << std::endl;
+// #endif
       double t1 = 1./(po2+po2_mmcons_k[i]);
       double m  = po2_mmcons_m0[i]*po2*t1;
       double dm = po2_mmcons_m0[i]*po2_mmcons_k[i]*t1*t1; // Fixed formula for first derivative
@@ -1320,21 +1320,21 @@ void ComputePo2Field(const Parameters &params,
           * oxygen uptake of tissue according michalis menten model or simpler
           */
           boost::tie(m, dm) = params.ComputeUptake(po2, phases_loc.data(), phases.count);
-          if(p[0]==59 and p[1]==62 and p[2] == 52)
-          {
-            std::cout << "1:)" << std::endl;
-            std::cout << "m: " << std::scientific << m << "dm: " << std::scientific << dm << std::endl;
-          }
-          if(p[0]==0 and p[1]==0 and p[2] == 0)
-          {
-            std::cout << "2:)" << std::endl;
-            std::cout << "m: " << std::scientific << m << "dm: " << std::scientific << dm << std::endl;
-          }
-          if(m>0.0)
-          {
-            std::cout << "3:)" << std::endl;
-            std::cout << "m: " << std::scientific << m << "dm: " << std::scientific << dm << std::endl;
-          }
+//           if(p[0]==59 and p[1]==62 and p[2] == 52)
+//           {
+//             std::cout << "1:)" << std::endl;
+//             std::cout << "m: " << std::scientific << m << "dm: " << std::scientific << dm << std::endl;
+//           }
+//           if(p[0]==0 and p[1]==0 and p[2] == 0)
+//           {
+//             std::cout << "2:)" << std::endl;
+//             std::cout << "m: " << std::scientific << m << "dm: " << std::scientific << dm << std::endl;
+//           }
+//           if(m>0.0)
+//           {
+//             std::cout << "3:)" << std::endl;
+//             std::cout << "m: " << std::scientific << m << "dm: " << std::scientific << dm << std::endl;
+//           }
         }
         else
         {
@@ -1549,10 +1549,9 @@ void DetailedP02Sim::init(Parameters &params_,
       cout << endl;
     }
     isVesselListGood(vl);
-    if(tumorgroup)
-    {
-      SetupTissuePhases(phases, grid, mtboxes, tumorgroup);//filling
-    }
+    //the tissue phase needs to be set in every case!!!!
+    SetupTissuePhases(phases, grid, mtboxes, tumorgroup);//filling
+    
     
     //set up field with same discrete points as in the given grid, leave data memory uninitialized
     //po2field is declared by mother function by not initialized, that happening here

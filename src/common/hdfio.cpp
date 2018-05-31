@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "continuum-grid.h"
 
 #include <boost/foreach.hpp>
+#include <boost/multi_array.hpp>
 #include <stdexcept>
 
 template<class T>
@@ -1243,70 +1244,71 @@ INSTANTIATE_VEC(double)
 
 /** from hdf_wrapper_array3d.cpp
  */
+
+
+//arr3d.data = malloc(arr3d.a * arr3d.b * arr3d.c * sizeof *arr3d.data);
+
+//arr3d[r][c][d]
+// becomes:
+//arr3d.data[r * (arr3d.b * arr3d.c) + c * arr3d.c + d];
+
 template<class T>
 H5::DataSet WriteArray3D(H5::Group &file, const std::string &DATASET_NAME, const ConstArray3d<T> &a)
 {
+#ifdef NDEBUG
   //std::cout << " in write Array 3D" << std::endl;std::cout.flush();
+#endif
   const Int3 s = a.size();
   const int rank = 3;
   hsize_t     dims[rank];       // dataset dimensions
   dims[0] = s[0];
   dims[1] = s[1];
   dims[2] = s[2];
+  // allocate array using the "extents" helper. 
+  // This makes it easier to see how big the array is
+  // this works fine with hdf5
+  boost::multi_array<T, 3>  arr_3d_data(boost::extents[s[0]][s[1]][s[2]]);
+  
   H5::DataSpace dspace = H5::DataSpace( rank, dims);
   H5::DataSet dataset = file.createDataSet(DATASET_NAME, H5::PredType::NATIVE_FLOAT,dspace);
  
   /** 
    * need to allocate array on heap, stack might be too small
+   * I messed up the heap allocation, by hand. 
+   * Now I delegate the messy work to boost.
    */
-  T ***ptr3D = NULL;
-  
-  ptr3D = new T**[s[0]];
+//   T ***ptr3D = NULL;
+//   
+//   ptr3D = new T**[s[0]];
+//   for(int i = 0; i< s[0];i++)
+//   {
+//     ptr3D[i] = new T*[s[1]];
+//     for(int ii=0; ii< s[1]; ii++)
+//     {
+//       ptr3D[i][ii]= new T[s[2]];
+//       
+//       for(int iii=0; iii<s[2]; iii++)
+//       {
+//         ptr3D[i][ii][iii] = a(i,ii,iii);
+//       }
+//     }
+//   }
+
   for(int i = 0; i< s[0];i++)
-  {
-    ptr3D[i] = new T*[s[1]];
     for(int ii=0; ii< s[1]; ii++)
-    {
-      ptr3D[i][ii]= new T[s[2]];
-      
       for(int iii=0; iii<s[2]; iii++)
-      {
-        ptr3D[i][ii][iii] = a(i,ii,iii);
-      }
-    }
-  }
-	//tmp[i][ii][iii] = a[i][ii][iii];
+        arr_3d_data[i][ii][iii] = a(i,ii,iii);
     
-  //tmp.swapAxes(0,2);
-  //tmp.fill(a);
   // Write the data to the dataset using default memory space, file
 	// space, and transfer properties.
   try{
-    //dataset.write(&tmp, H5::PredType::NATIVE_FLOAT);
-    dataset.write(ptr3D, H5::PredType::NATIVE_FLOAT);
+    dataset.write(arr_3d_data.data(), H5::PredType::NATIVE_FLOAT);
   }
   catch(H5::Exception e)
   {
     e.printError();
   }
-  /** delete stack
-   */
-  for(int i=0;i<s[0];i++)
-  {
-      for(int j=0;j<s[1];j++)
-      {
-          delete[] ptr3D[i][j];   
-      }
-      delete[] ptr3D[i];
-  }
-  delete ptr3D;
-  
   return dataset;
-//     h5cpp::Dataspace dspace = h5cpp::Dataspace::simple_dims(s[0],s[1],s[2]);
-//     Array3d<T> tmp(Int3(s[2],s[1],s[0]));
-//     tmp.swapAxes(0,2);
-//     tmp.fill(a);
-//     return h5cpp::create_dataset<T>(file, id, dspace, tmp.getPtr(), h5cpp::CREATE_DS_COMPRESSED);
 }
 
 

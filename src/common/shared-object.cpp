@@ -89,6 +89,11 @@ TumorTypes determineTumorType(boost::optional<H5::Group> tumorgroup)
       cout << " Attribute TYPE not found" << endl;
     }
   }
+  else
+  {
+    //means not tumorgroup is not initialized
+    tumortype = TumorTypes::NONE;
+  }
 //     if( tumorgroup->attrs().exists("TYPE") )
 //     {
 //       std::string detailedTumorDescription = tumorgroup->attrs().get<std::string>("TYPE");
@@ -137,6 +142,9 @@ void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDe
   TumorTypes tumortype = determineTumorType(tumorgroup);
   if( tumortype == TumorTypes::NONE )
   {
+#ifndef NDEBUG
+    std::cout << "no tumor found: setting everything to regular tissue!" << std::endl;
+#endif
     // if there is no tumorgroup provided, we fill everything with normal tissue
     // 1 means singel tissue phase
     phases = TissuePhases(1, grid.Box());
@@ -144,6 +152,9 @@ void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDe
   }
   else if( tumortype == TumorTypes::FAKE)
   {
+#ifndef NDEBUG
+    std::cout << "fake tumor found: interpolating tissue/ tumor fraction from TUMOR_RADIUS" << std::endl;
+#endif
     //there is a faketumor group provided
     //double tumor_radius = tumorgroup->attrs().get<double>("TUMOR_RADIUS");
     double tumor_radius;
@@ -166,6 +177,9 @@ void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDe
   }
   else if (tumortype == TumorTypes::BULKTISSUE)
   {
+#ifndef NDEBUG
+    std::cout << "Bulk Tissue tumor found: reading data" << std::endl;
+#endif
     //there is a bulktissue tumor group provided
     H5::DataSet cell_vol_fraction_ds = tumorgroup->openDataSet("conc");
     H5::DataSet tumor_fraction_ds = tumorgroup->openDataSet("ptc");
