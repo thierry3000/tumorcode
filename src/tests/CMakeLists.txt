@@ -27,9 +27,9 @@ endif()
 # add_executable(test_level_set test_level_set.cpp)
 # target_link_libraries(test_level_set ${myLibs})
 
-add_executable(test_elliptic_solver test_elliptic_solver.cpp)
-target_link_libraries(test_elliptic_solver ${myLibs})
-install(TARGETS test_elliptic_solver RUNTIME DESTINATION bin)
+# add_executable(test_elliptic_solver test_elliptic_solver.cpp)
+# target_link_libraries(test_elliptic_solver ${myLibs})
+# install(TARGETS test_elliptic_solver RUNTIME DESTINATION bin)
 
 #set_target_properties(test_pagmo PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX} LINK_FLAGS "-rdynamic")
 #but not the headers

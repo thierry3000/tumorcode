@@ -718,6 +718,7 @@ void Model::CollapseVessels()
 	{
 	  //do not consider sprouts here, v->timeSprout initialized by -1
 	  if( v->timeSprout>=0 ) continue;
+    //printf("params.bShearStressControlledDilatationAndRadiusDependentCollapse activated\n");
 	  //if to small or not circulated --> kill
 	  if (v->reference_r<params.radMin || !v->IsCirculated())
 	  {
@@ -726,6 +727,7 @@ void Model::CollapseVessels()
 	    {
 	      //get random between 0 and 1
 	      double r = rnd.Get01();
+        //printf("r: %f, params.probCollapse: %f, v->reference_r: %f, params.radMin: %f\n", r, params.probCollapse, v->reference_r, params.radMin);
 	      // sometimes we kill
 	      bKill |= r<params.probCollapse;//bKill = bKill | r<params.probCollapse
 	    }
@@ -754,8 +756,12 @@ void Model::CollapseVessels()
 	    }
 	    else
 	    {
-	      //even if it is circulated it will be killed here
-	      double factor_fc = StabilityAmountDueToShearStress(v);
+	      //even if it is circulated it may be killed here
+	      double factor_fc = StabilityAmountDueToShearStress(v);  //returns 1. if shearforce is above threshold or zero else
+        // inline T Lerp( U x, const T &a, const T &b ) {  return T((1.0-x)*a + x*b); }
+        // b=0, 
+        // if factor_fc = 1 --> pcoll = 0
+        // if factor_fc = 0 --> pcoll = params.probCollapse
 	      double pcoll = Lerp<double>( factor_fc, params.probCollapse, 0 );
 	      //std::printf("pcoll: %f\n",pcoll);
 	      bKill |= r<pcoll;

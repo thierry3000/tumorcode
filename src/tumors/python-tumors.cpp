@@ -319,6 +319,8 @@ void run_bulktissue_no_vessels(const py::str &param_info_str)
       //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
       MPI_Init_thread(0, NULL, 1,&prov);
 #endif
+    signal(SIGSEGV, handler);
+    signal(SIGFPE, handler);
     BulkTissueWithoutVessels::run(all_pt_params);
   }
   catch(std::exception &ex)
@@ -354,6 +356,8 @@ void run_bulktissue_with_vessels(const py::str &param_info_str)
       //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
       MPI_Init_thread(0, NULL, 1,&prov);
 #endif
+    signal(SIGSEGV, handler);
+    signal(SIGFPE, handler);
     theBulkTissueSim.run(pt_params);
   }
   catch(std::exception &ex)

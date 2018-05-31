@@ -236,6 +236,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
   last_chem_update = -1;
 
   UpdateVesselVolumeFraction();
+  std::cout<< "vessel volume fraction updated" << std::endl;
 
   auto obtain_vessel_volume = [=](const BBox3 &bbox) -> Array3df
   {
@@ -253,7 +254,11 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
                       all_pt_params.get_child("tumor", ptree()));
   tumor_radius_estimate = EstimateTumorRadius(grid, mtboxes, state.tumor.ls);
   
+  std::cout<< "tumor_model initialized" << std::endl;
+  
   calcChemFields();
+  
+  std::cout<< "calcChemFields executed" << std::endl;
 
 //   {
 //     //store this now for the first evaluation of the vessel model
@@ -284,11 +289,15 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
   };
   
   //this starts the simulation
+  std::cout<< "bulktissue simulation started" << std::endl;
   NewSteppers::run(doStep, doObserve, all_pt_params);
 
   if (failFlag)
   {
-    writeOutput(std::numeric_limits<double>::quiet_NaN());
+    std::cout<< "failFlag case" << std::endl;
+    //intel bug?
+    //writeOutput(std::numeric_limits<double>::quiet_NaN());
+    writeOutput(std::numeric_limits<double>::max());
   }
 
   return 1;
@@ -303,10 +312,16 @@ bool BulkTissue::NewTumorSim::doStep(NewSteppers::StepControl &ctrl)
   if (vessel_step_ctrl.t < tumor_step_ctrl.t)
   {
     advanceVesselState();
+#ifndef NDEBUG
+    std::cout << "adavanceVesselState done" << std::endl;std::cout.flush();
+#endif
   }
   else
   {
     advanceTumorState(ctrl.dt);
+#ifndef NDEBUG
+    std::cout << "adavanceTumorState done" << std::endl;std::cout.flush();
+#endif
   }
 
   double time = my::min(vessel_step_ctrl.t, tumor_step_ctrl.t);
@@ -319,7 +334,9 @@ bool BulkTissue::NewTumorSim::doStep(NewSteppers::StepControl &ctrl)
     calcChemFields();
     last_chem_update = time;
   }
-
+#ifndef NDEBUG
+  std::cout << "chemicals done" << std::endl;std::cout.flush();
+#endif
   bool stopFlag = false;
   if (checkStop)
   {
@@ -331,6 +348,9 @@ bool BulkTissue::NewTumorSim::doStep(NewSteppers::StepControl &ctrl)
   }
 
   cout << format("master t = %f, dt = %f") % ctrl.t % ctrl.dt << endl;
+#ifndef NDEBUG
+  std::cout << "stopFlag" << stopFlag << std::endl;std::cout.flush();
+#endif
   return !stopFlag;
 }
 
@@ -621,11 +641,12 @@ void BulkTissue::NewTumorSim::writeOutput(double time)
   bool has_grp = false;
   // vessels
   H5::Group h5_vessels = gout.createGroup("vessels");
+  std::cout << " start Write Vessel list " << std::endl;
   WriteVesselList3d(*state.vessels, h5_vessels);
+  std::cout << " done Write Vessel list " << std::endl;
   // tumor
-  //H5::Group ld_group_tum = f.root().require_group("field_ld", &has_grp);
+  
   H5::Group ld_group_tum;
-  //boost::optional<H5::Group> ld_group_tum;
   try{
     ld_group_tum = f.openGroup("field_ld");
     has_grp = true;
@@ -636,17 +657,22 @@ void BulkTissue::NewTumorSim::writeOutput(double time)
     ld_group_tum = f.createGroup("field_ld");
     grid.ld.WriteHdfLd(ld_group_tum);
   }
+  
+  
   //H5::Group ld_group_tum = f.openGroup("field_ld");
 //   if (!has_grp)
 //     //WriteHdfLd(ld_group_tum, grid.ld);
 //     grid.ld.WriteHdfLd(ld_group_tum);
   g = gout.createGroup("tumor");
   tumor_model.writeH5(g, state.tumor, time, ld_group_tum);
+  
   // chem fields
   WriteScalarField(gout, "fieldGf", state.gffield, grid.ld, ld_group_tum);
   WriteScalarField(gout, "fieldOxy", state.o2field, grid.ld, ld_group_tum);
+  
   // vessel continuum
   UpdateVesselVolumeFraction();
+  std::cout << " UpdateVesselVolumeFraction " << std::endl;
   WriteScalarField(gout, "vessel_volume_fraction", vessel_volume_fraction, grid.ld, ld_group_tum);
   WriteScalarField(gout, "oxy_source_lin", vessel_o2src_clin, grid.ld, ld_group_tum);
   ++output_num;

@@ -508,7 +508,14 @@ std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptr
   std::unique_ptr<VesselList3d> vl;
   typedef polymorphic_latticedata::LatticeData LatticeData;
   string type_of_vessel_network;
-  readAttrFromH5(vesselgroup, string("CLASS"), type_of_vessel_network);
+  try
+  {
+    readAttrFromH5(vesselgroup, string("CLASS"), type_of_vessel_network);
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
 
   if(type_of_vessel_network == "GRAPH")
   {

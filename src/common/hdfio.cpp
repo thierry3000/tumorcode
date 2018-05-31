@@ -340,16 +340,21 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
 #ifndef NDEBUG
     std::cout<<"lattice found" << std::endl;
 #endif
-    try
-    {
-      string graph_type;
-      readAttrFromH5(g,string("CLASS"),graph_type);
-    }
-    catch(H5::Exception e)
-    {
-      e.dontPrint();
-       writeAttrToH5(g,string("CLASS"), string("GRAPH"));
-    }
+    //reading data in a write function does not make sense.
+    writeAttrToH5(g,string("CLASS"), string("GRAPH"));
+    
+    // CHECK THIS!!!
+//     try
+//     {
+//       string graph_type;
+//       readAttrFromH5(g,string("CLASS"),graph_type);
+//     }
+//     catch(H5::Exception e)
+//     {
+//       //e.dontPrint();
+//       writeAttrToH5(g,string("CLASS"), string("GRAPH"));
+//     }
+    
     //lattice stuff is writen to hdf
     H5::Group lattice_group = g.createGroup("lattice");
     //vl.Ld().WriteHdf(g.create_group("lattice"));
@@ -722,15 +727,9 @@ void ReadHdfGraph( H5::Group &g, VesselList3d *vl )
 template<class T>
 H5::DataSet WriteScalarField(H5::Group &g, const string &name, ConstArray3d<T> arr, const LatticeDataQuad3d &ld, const H5::Group &ldgroup)
 {
-  //arr = arr[ld.Box()];
-  //h5cpp::Dataset ds = WriteArray3D<T>(g, name, arr, disktype);
-  //H5::DataSet ds
   H5::DataSet ds = WriteArray3D<T>(g, name, arr);
-//   h5cpp::Attributes a = ds.attrs();
   writeAttrToH5(ds, string("TYPE"), string("FIELD_QUAD3D"));
   writeAttrToH5(ds, string("LATTICE_PATH"), ldgroup.getObjName());
-//   a.set("TYPE", "FIELD_QUAD3D");
-//   a.set("LATTICE_PATH", ldgroup.get_name());
   return ds;
 }
 
@@ -1247,6 +1246,7 @@ INSTANTIATE_VEC(double)
 template<class T>
 H5::DataSet WriteArray3D(H5::Group &file, const std::string &DATASET_NAME, const ConstArray3d<T> &a)
 {
+  //std::cout << " in write Array 3D" << std::endl;std::cout.flush();
   const Int3 s = a.size();
   const int rank = 3;
   hsize_t     dims[rank];       // dataset dimensions
@@ -1255,12 +1255,26 @@ H5::DataSet WriteArray3D(H5::Group &file, const std::string &DATASET_NAME, const
   dims[2] = s[2];
   H5::DataSpace dspace = H5::DataSpace( rank, dims);
   H5::DataSet dataset = file.createDataSet(DATASET_NAME, H5::PredType::NATIVE_FLOAT,dspace);
-  //Array3d<T> tmp(Int3(s[0],s[1],s[2]));
-  T tmp[s[0]][s[1]][s[2]];
+ 
+  /** 
+   * need to allocate array on heap, stack might be too small
+   */
+  T ***ptr3D = NULL;
+  
+  ptr3D = new T**[s[0]];
   for(int i = 0; i< s[0];i++)
+  {
+    ptr3D[i] = new T*[s[1]];
     for(int ii=0; ii< s[1]; ii++)
+    {
+      ptr3D[i][ii]= new T[s[2]];
+      
       for(int iii=0; iii<s[2]; iii++)
-	tmp[i][ii][iii] = a(i,ii,iii);
+      {
+        ptr3D[i][ii][iii] = a(i,ii,iii);
+      }
+    }
+  }
 	//tmp[i][ii][iii] = a[i][ii][iii];
     
   //tmp.swapAxes(0,2);
@@ -1268,12 +1282,25 @@ H5::DataSet WriteArray3D(H5::Group &file, const std::string &DATASET_NAME, const
   // Write the data to the dataset using default memory space, file
 	// space, and transfer properties.
   try{
-    dataset.write(&tmp, H5::PredType::NATIVE_FLOAT);
+    //dataset.write(&tmp, H5::PredType::NATIVE_FLOAT);
+    dataset.write(ptr3D, H5::PredType::NATIVE_FLOAT);
   }
   catch(H5::Exception e)
   {
     e.printError();
   }
+  /** delete stack
+   */
+  for(int i=0;i<s[0];i++)
+  {
+      for(int j=0;j<s[1];j++)
+      {
+          delete[] ptr3D[i][j];   
+      }
+      delete[] ptr3D[i];
+  }
+  delete ptr3D;
+  
   return dataset;
 //     h5cpp::Dataspace dspace = h5cpp::Dataspace::simple_dims(s[0],s[1],s[2]);
 //     Array3d<T> tmp(Int3(s[2],s[1],s[0]));
@@ -1296,30 +1323,58 @@ H5::DataSet WriteVectorArray3D(H5::Group  &file,const std::string &id, const Con
   H5::DataSpace dspace = H5::DataSpace( rank, dims);
   H5::DataSet dataset = file.createDataSet(id, H5::PredType::NATIVE_FLOAT,dspace);
   
-  float tmp[s[0]][s[1]][s[2]][3];
+//   float tmp[s[0]][s[1]][s[2]][3];
+//   for(int i = 0; i< s[0];i++)
+//     for(int ii=0; ii< s[1]; ii++)
+//       for(int iii=0; iii<s[2]; iii++)
+// 	for(int dim = 0; dim <3; dim++)
+// 	  tmp[i][ii][iii][dim] = a(i,ii,iii)[dim];
+  
+  /** 
+   * need to allocate array on heap, stack might be too small
+   */
+  Vector ***ptr3D = NULL;
+  //std::cout << " WriteVectorArray3D: " << id << std::endl;
+  ptr3D = new Vector**[s[0]];
   for(int i = 0; i< s[0];i++)
+  {
+    ptr3D[i] = new Vector*[s[1]];
     for(int ii=0; ii< s[1]; ii++)
+    {
+      ptr3D[i][ii]= new Vector[s[2]];
+      
       for(int iii=0; iii<s[2]; iii++)
-	for(int dim = 0; dim <3; dim++)
-	  tmp[i][ii][iii][dim] = a(i,ii,iii)[dim];
+      {
+        //std::cout << "i: " << i << " ii: " << ii << " iii: " << iii << std::endl;std::cout.flush();
+        //std::cout << " a(i,ii,iii): " << a(i,ii,iii) << std::endl; std::cout.flush();
+        //tmp[i][ii][iii] = a(i,ii,iii);
+        ptr3D[i][ii][iii] = a(i,ii,iii);
+      }
+    }
+  }
 	
- 
-	
-	//tmp[i][ii][iii] = a(i,ii,iii);
-	//tmp[i][ii][iii] = Vector();
-//     h5cpp::Dataspace dspace = h5cpp::Dataspace::simple_dims(s[0],s[1],s[2], sizeof(Vector)/sizeof(typename Vector::value_type));
-//     Array3d<Vector> tmp(Int3(s[2],s[1],s[0]));
-//     tmp.swapAxes(0,2);
-//     tmp.fill(a);
-//     return h5cpp::create_dataset(file, id, dspace, (typename Vector::value_type const*)tmp.getPtr(), h5cpp::CREATE_DS_COMPRESSED);
 
   try{
-    dataset.write(&tmp, H5::PredType::NATIVE_FLOAT);
+    //dataset.write(&tmp, H5::PredType::NATIVE_FLOAT);
+    dataset.write(ptr3D, H5::PredType::NATIVE_FLOAT);
   }
   catch(H5::Exception e)
   {
     e.printError();
   }
+  
+  /** delete stack
+   */
+  for(int i=0;i<s[0];i++)
+  {
+      for(int j=0;j<s[1];j++)
+      {
+          delete[] ptr3D[i][j];   
+      }
+      delete[] ptr3D[i];
+  }
+  delete ptr3D;
+  
   return dataset;
 }
 

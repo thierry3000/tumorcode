@@ -456,8 +456,13 @@ std::pair<double, double> Parameters::ComputeUptake(double po2, float *tissue_ph
   else
   {
     po2 = std::max(0., po2); // errors can make po2 negative, but we still want to use the consumption rates for at least po2=0
+    //std::cout << "phase_count: " << phases_count << std::endl;
+    // phase count is 0 in the cell based simulations --> fix that
     for (int i=0; i<phases_count; ++i)
     {
+#ifndef DEBUG
+    std::cout << "po2_mmcons_m0[" << i << "]:" << po2_mmcons_m0[i] << std::endl;
+#endif
       double t1 = 1./(po2+po2_mmcons_k[i]);
       double m  = po2_mmcons_m0[i]*po2*t1;
       double dm = po2_mmcons_m0[i]*po2_mmcons_k[i]*t1*t1; // Fixed formula for first derivative
@@ -1315,6 +1320,21 @@ void ComputePo2Field(const Parameters &params,
           * oxygen uptake of tissue according michalis menten model or simpler
           */
           boost::tie(m, dm) = params.ComputeUptake(po2, phases_loc.data(), phases.count);
+          if(p[0]==59 and p[1]==62 and p[2] == 52)
+          {
+            std::cout << "1:)" << std::endl;
+            std::cout << "m: " << std::scientific << m << "dm: " << std::scientific << dm << std::endl;
+          }
+          if(p[0]==0 and p[1]==0 and p[2] == 0)
+          {
+            std::cout << "2:)" << std::endl;
+            std::cout << "m: " << std::scientific << m << "dm: " << std::scientific << dm << std::endl;
+          }
+          if(m>0.0)
+          {
+            std::cout << "3:)" << std::endl;
+            std::cout << "m: " << std::scientific << m << "dm: " << std::scientific << dm << std::endl;
+          }
         }
         else
         {
@@ -1322,17 +1342,23 @@ void ComputePo2Field(const Parameters &params,
           * or more complicated based on single cells
           */
           float value = (*cell_based_o2_uptake)(p);
-          //if(value>0)
+          if(p[0]==59 and p[1]==62 and p[2] == 52)
           {
-            //std::cout << "cell_based" << std::endl;
-            //std::cout << value << std::endl;
+            //create a test case for a certain set of vessels
+            value=.042;
+          }
+          if(!value==0)
+          {
+            std::cout << "cell_based" << std::endl;
+            std::cout << value << std::endl;
             /** 
              * I do not have a dependency of the metabolics
              * to the pressure, so dm = 0
              * --> lin_coeff = 0
              * --> consumption_const = -m
              */
-            dm = 0;
+            //dm = 0;
+            dm = value/po2;
             m = value;
           }
         }
@@ -1381,7 +1407,8 @@ void ComputePo2Field(const Parameters &params,
   int solverReturn = 0;
   int solverReturn2 = 0;
   
-  try {
+  try 
+  {
     //EllipticEquationSolver &&solver = EllipticEquationSolver{mb.m, mb.rhs, solver_params};
     EllipticEquationSolver solver(mb.m, mb.rhs, solver_params);
     //EllipticEquationSolver solver;
@@ -1530,8 +1557,11 @@ void DetailedP02Sim::init(Parameters &params_,
     //set up field with same discrete points as in the given grid, leave data memory uninitialized
     //po2field is declared by mother function by not initialized, that happening here
     po2field = Array3df(grid.Box(), Cons::DONT);
+    /*
+     * I do not yet know why, but this leads to trouble mit gcc-8
+     */
     po2vessels.resize(vl.GetECount(), Float2(NANf()));
-    // I try this hardcoded before do it with variables: read in po2field from previous iteration 
+    // I try this hardcoded before do it with variables: read in po2field from previous iteration
     if(previous_po2field and previous_po2vessels)
     {
       cout<<"works"<<endl;
@@ -1596,8 +1626,6 @@ void DetailedP02Sim::init(Parameters &params_,
     {
       po2field.fill(params.debug_zero_o2field ? 0.f : params.po2init_cutoff);
     }
-    
-    
     
     
     /** executes topological ordering

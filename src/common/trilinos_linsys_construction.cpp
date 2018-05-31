@@ -387,22 +387,25 @@ EllipticEquationSolver::EllipticEquationSolver(Teuchos::RCP<Epetra_CrsMatrix> &_
   std::cout << "default constructor called called" << std::endl;
   std::cout.flush();
 #endif
-  try
-  { 
-    //int success = init(sys_matrix,rhs,params);
-    int success = init();
-    if( not (success == 0))
-    {
-      throw 42;
-    }
-  }
-  catch(int e)
-  {
-    if(e == 42)
-    {
-      std::cout << "init EllipticEquationSolver not successfull" << std::endl;
-    }
-  }
+  int success = init();
+/**
+ * on some sytems the try, catch of integers works different, so I skip that here.
+ */
+//   try
+//   { 
+//     int success = init();
+//     if( not (success == 0))
+//     {
+//       throw 42;
+//     }
+//   }
+//   catch(int e)
+//   {
+//     if(e == 42)
+//     {
+//       std::cout << "init EllipticEquationSolver not successfull" << std::endl;
+//     }
+//   }
 }
 
 /**
@@ -449,7 +452,6 @@ int EllipticEquationSolver::init()
 #endif
   
   bool success = true;
-  
   try 
   {
     bool proc_verbose = verbose;

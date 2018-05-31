@@ -356,10 +356,13 @@ if __name__ == '__main__':
 
       elif 'out' in d:
         vesselgroup = f[join('/',d+'/vessels')]['.']
-        if '/parameters/useConstO2' in f:
+        if '/parameters' in f:
           useConstO2 = f['/parameters'].attrs['useConstO2']
+          # comes as string
+          useConstO2 = bool(useConstO2)
         else:
           useConstO2 = False
+          
         if useConstO2:
           ''' the po2_node will not be present in this case '''
           graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)

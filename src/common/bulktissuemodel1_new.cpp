@@ -217,11 +217,12 @@ void Model::cloneState(Model::State& u, const Model::State& v)
 }
 
 
-void Model::init(const ContinuumGrid &grid_, const DomainDecomposition &mtboxes_,
-            Model::State& state,
-            DataRequestCallback obtain_vessel_volume_,
-            DataRequestCallback obtain_oxygen_conc_,
-            const ptree& pt_params_)
+void Model::init(const ContinuumGrid &grid_, 
+                 const DomainDecomposition &mtboxes_,
+                 Model::State& state,
+                 DataRequestCallback obtain_vessel_volume_,
+                 DataRequestCallback obtain_oxygen_conc_,
+                 const ptree& pt_params_)
 {
   grid = &grid_;
   mtboxes = &mtboxes_;
@@ -1106,10 +1107,8 @@ void Model::writeH5(H5::Group &g, State &state, double t, H5::Group &ld_group) c
   }
   if (pt_params.get<bool>("write_levelset_function"))
     WriteScalarField(g, string("ls"), state.ls.phi[grid->ir.cells], grid->ld, ld_group);
-  
   WriteScalarField(g, string("obstacle"), other_volume[grid->ir.cells], grid->ld, ld_group);
   WriteAveragedFaceVariableField(g, string("vel"), grid->dim, ost.velocities.data(), grid->ld, ld_group);
-  
   if (params.use_necrotic_regions)
   {
     WriteScalarField(g, string("necro"), ost.phi_necro[grid->ir.cells], grid->ld, ld_group);
