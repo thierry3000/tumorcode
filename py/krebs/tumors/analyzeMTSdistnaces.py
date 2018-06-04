@@ -102,7 +102,7 @@ if __name__ == '__main__':
     pp.attach_note("klsdfjal")
     
     distances_to_vessels(goodArguments, pp);
-    cell_endities = ['o2', 'pH_ex', 'AcL_ex', 'glucose_ex']
+    cell_endities = ['o2', 'pH_ex', 'glucose_ex','cell_age','cell_no_neigh', 'cell_o2_consumption_rate', 'cell_phase', 'cell_phase_age','cell_radii']
     for cell_endity in cell_endities:
       #scatter_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)
       hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)

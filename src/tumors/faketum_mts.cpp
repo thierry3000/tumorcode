@@ -132,6 +132,7 @@ FakeTumMTS::Parameters::Parameters()
   stopping_radius_fraction = 0.6;
   paramset_name = "aname";
   useConstO2 = true;
+  useTumorcodeVessels = true;
 }
 
 void FakeTumMTS::Parameters::assign(const ptree &pt)
@@ -139,6 +140,7 @@ void FakeTumMTS::Parameters::assign(const ptree &pt)
   #define DOPT(name) boost::property_tree::get(name, #name, pt)
   int lattice_size_per_single_dim;
   DOPT(useConstO2);
+  DOPT(useTumorcodeVessels);
   DOPT(paramset_name);
   DOPT(out_intervall);
   DOPT(tend);
@@ -178,6 +180,7 @@ ptree FakeTumMTS::Parameters::as_ptree() const
   boost::property_tree::ptree pt;
   #define DOPT(name) pt.put(#name, name)
   DOPT(useConstO2);
+  DOPT(useTumorcodeVessels);
   DOPT(paramset_name);
   DOPT(out_intervall);
   DOPT(apply_adaption_intervall);
@@ -486,8 +489,10 @@ int FakeTumMTS::FakeTumorSimMTS::run()
        */
       /* increment tumor time */
       time += params.dt;
+      
       /* propergate cells in time until current fake tumor time */
       cout << boost::format("advance milotti until: %f\n") % time;
+      cout.flush();
 #ifdef W_timing
       currentTiming.begin_doMilottiStep = std::chrono::steady_clock::now();
 #endif
@@ -518,7 +523,10 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       /**
       * do a vessel model remodeling step 
       */
+#ifndef NDEBUG
       cout << boost::format("start vessel remodel step! \n");
+#endif
+
 #ifdef W_timing
       currentTiming.begin_doStep = std::chrono::steady_clock::now();
 #endif
@@ -558,6 +566,7 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
 void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
 {
   cout << format("start mts at tumor time: %f\n" ) % time;
+  cout.flush();
   //std::cout << "o2_uptake before milotti" << std::endl;
   //std::cout << state.cell_O2_consumption(0,0,0) << std::endl;
   /** 
@@ -913,7 +922,9 @@ void FakeTumMTS::FakeTumorSimMTS::insertGFCoefficients(int box_index, const BBox
 
 void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index( H5::Group &out_cell_group)
 {
+#ifndef NDEBUG
   cout<< "going to write cells to a hdf file" << endl;
+#endif
   int numberOfCells = tumorcode_pointer_to_currentCellsSystem->Get_ncells();
   std::vector<double> x = tumorcode_pointer_to_currentCellsSystem->Get_x();
   std::vector<double> y = tumorcode_pointer_to_currentCellsSystem->Get_y();
@@ -1181,71 +1192,83 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
   delete [] ANN_nnIdx;
   delete [] ANN_dists;
   annClose();
+#ifndef NDEBUG
   cout << "annClose called" << endl;
+#endif
   //transfere this nice informations to vbl
   //note this could nicely done in parallel
   tumorcode_pointer_to_currentCellsSystem->clean_BloodVesselVector();
-  cout << "cleaned BloodVesselVector" << endl;cout.flush();
-  for( int i = 0; i<numberOfCells ;++i)
-  {
-    Float3 buffer;
-    std::array<double,3> bufferToFill;
 #ifndef NDEBUG
-    //printf("ecnt: %i, po2Store.size(): %i,  cell_i: %i, ann_to_vl[i]: %i", ecnt, po2Store.size(), i, ann_to_vl[i]);
-    if(ann_to_vl[i]<po2Store.size())
-    {
-      printf("ann_to_vl[i]: %i, po2Store.size(): %i \n", ann_to_vl[i], po2Store.size());
-      myAssert(ann_to_vl[i]<po2Store.size());
-    }
+  cout << "cleaned BloodVesselVector" << endl;cout.flush();
 #endif
-    const Vessel* v= vl->GetEdge(ann_to_vl[i]);
-    vbl::BloodVessel suggestion = vbl::BloodVessel();
-    
-    /****** topology ****/
-    suggestion.SetBloodVesselR(v->r);
-    double otherr=suggestion.GetBloodVesselR();
-    //we use the Eigen3 library to store array, this is faster
-    //pos a
-    buffer = vl->Ld().LatticeToWorld(v->LPosA());
-    bufferToFill = {buffer[0], buffer[1], buffer[2]};
-    suggestion.SetBloodVessela(bufferToFill);
-    //pos b
-    buffer = vl->Ld().LatticeToWorld(v->LPosB());
-    bufferToFill = {buffer[0], buffer[1], buffer[2]};
-    suggestion.SetBloodVesselb(bufferToFill);
-    
-    /****** dynamics ****/
-    //cout << "Main: chemical blood vessel variables " << endl; 
 
-  //     suggestion.SetBloodVesselO2start( envO2 );
-  //     suggestion.SetBloodVesselO2end( envO2 );
-    if(params.useConstO2)
+  if(params.useTumorcodeVessels)
+  {
+    for( int i = 0; i<numberOfCells ;++i)
     {
-      //do not use the po2Store!!!
-      float envO2 = vbl::O2_BV;
-      suggestion.SetBloodVesselO2start(envO2);
-      suggestion.SetBloodVesselO2end(envO2);
-    }
-    else
-    {
-      float o2_a = to_vbl_o2_units(po2Store[v->Index()][0]);
-      suggestion.SetBloodVesselO2start( o2_a );
-      float o2_b = to_vbl_o2_units(po2Store[v->Index()][1]);
-      suggestion.SetBloodVesselO2end( o2_b );
-    }
+      Float3 buffer;
+      std::array<double,3> bufferToFill;
+  #ifndef NDEBUG
+      //printf("ecnt: %i, po2Store.size(): %i,  cell_i: %i, ann_to_vl[i]: %i", ecnt, po2Store.size(), i, ann_to_vl[i]);
+      if(ann_to_vl[i]<po2Store.size())
+      {
+        printf("ann_to_vl[i]: %i, po2Store.size(): %i \n", ann_to_vl[i], po2Store.size());
+        myAssert(ann_to_vl[i]<po2Store.size());
+      }
+  #endif
+      const Vessel* v= vl->GetEdge(ann_to_vl[i]);
+      vbl::BloodVessel suggestion = vbl::BloodVessel();
+      
+      /****** topology ****/
+      suggestion.SetBloodVesselR(v->r);
+      double otherr=suggestion.GetBloodVesselR();
+      //we use the Eigen3 library to store array, this is faster
+      //pos a
+      buffer = vl->Ld().LatticeToWorld(v->LPosA());
+      bufferToFill = {buffer[0], buffer[1], buffer[2]};
+      suggestion.SetBloodVessela(bufferToFill);
+      //pos b
+      buffer = vl->Ld().LatticeToWorld(v->LPosB());
+      bufferToFill = {buffer[0], buffer[1], buffer[2]};
+      suggestion.SetBloodVesselb(bufferToFill);
+      
+      /****** dynamics ****/
+      //cout << "Main: chemical blood vessel variables " << endl; 
 
-    suggestion.SetBloodVesselCO2start( 0. );
-    suggestion.SetBloodVesselCO2end( 0. );
-    
-    double envG = vbl::G_BV;
-    suggestion.SetBloodVesselG( envG );
-    
-    double envA = vbl::A_BV;
-    suggestion.SetBloodVesselA( envA );
+    //     suggestion.SetBloodVesselO2start( envO2 );
+    //     suggestion.SetBloodVesselO2end( envO2 );
+      if(params.useConstO2)
+      {
+        //do not use the po2Store!!!
+        float envO2 = vbl::O2_BV;
+        suggestion.SetBloodVesselO2start(envO2);
+        suggestion.SetBloodVesselO2end(envO2);
+      }
+      else
+      {
+        float o2_a = to_vbl_o2_units(po2Store[v->Index()][0]);
+        suggestion.SetBloodVesselO2start( o2_a );
+        float o2_b = to_vbl_o2_units(po2Store[v->Index()][1]);
+        suggestion.SetBloodVesselO2end( o2_b );
+      }
 
-    suggestion.SetBloodVesselAcL( 0. );
-    
-    tumorcode_pointer_to_currentCellsSystem->Add_BloodVesselVector(suggestion);
+      suggestion.SetBloodVesselCO2start( 0. );
+      suggestion.SetBloodVesselCO2end( 0. );
+      
+      double envG = vbl::G_BV;
+      suggestion.SetBloodVesselG( envG );
+      
+      double envA = vbl::A_BV;
+      suggestion.SetBloodVesselA( envA );
+
+      suggestion.SetBloodVesselAcL( 0. );
+      
+      tumorcode_pointer_to_currentCellsSystem->Add_BloodVesselVector(suggestion);
+    }
+  }
+  else
+  {
+    //tumorcode vessels not used
   }
   cout << "exit find nearest" << endl;cout.flush();
 }

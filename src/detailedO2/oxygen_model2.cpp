@@ -1338,19 +1338,22 @@ void ComputePo2Field(const Parameters &params,
         }
         else
         {
+          boost::tie(m, dm) = params.ComputeUptake(po2, phases_loc.data(), phases.count);
           /** 
           * or more complicated based on single cells
+          * 
+          * for the Michaelis Menten uptake: m is positive
+          * the cell based uptake value comes as negative
           */
           float value = (*cell_based_o2_uptake)(p);
-          if(p[0]==59 and p[1]==62 and p[2] == 52)
+          value = value * (-1);
+//           if(p[0]==59 and p[1]==62 and p[2] == 52)
+//           {
+//             //create a test case for a certain set of vessels
+//             value=.0042;
+//           }
+          if(!value==0 and p[0]==59 and p[1]==62 and p[2] == 52)
           {
-            //create a test case for a certain set of vessels
-            value=.042;
-          }
-          if(!value==0)
-          {
-            std::cout << "cell_based" << std::endl;
-            std::cout << value << std::endl;
             /** 
              * I do not have a dependency of the metabolics
              * to the pressure, so dm = 0
@@ -1358,8 +1361,10 @@ void ComputePo2Field(const Parameters &params,
              * --> consumption_const = -m
              */
             //dm = 0;
-            dm = value/po2;
+            //dm = value/po2;
             m = value;
+            std::cout << "cell_based:" << std::endl;
+            std::cout << "value: " << value << ", m: " << m << ", dm: " << dm << std::endl;
           }
         }
         double consumption_coeff = -dm;

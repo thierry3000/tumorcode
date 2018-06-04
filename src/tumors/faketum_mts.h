@@ -115,6 +115,7 @@ struct Parameters
   Int3 lattice_size = {20,20,20};
   double lattice_scale = 10;
   bool useConstO2;
+  bool useTumorcodeVessels;
   
   Parameters();
   void assign(const ptree &pt);
