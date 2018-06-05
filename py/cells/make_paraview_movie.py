@@ -193,6 +193,6 @@ def create_screen_shot(number):
   Delete(renderView1)
   del renderView1
 if __name__ == '__main__':
-  for i in range(448,450):
+  for i in range(001,503):
     print('creating screenshot for timestep %i' %i)
     create_screen_shot(i)

@@ -544,7 +544,7 @@ void ReadHdfGraph( H5::Group &g, VesselList3d *vl )
       readDataSetFromGroup(gnodes,string("lattice_pos"),a);
       for(int i=0; i<ncnt; ++i)
       {
-	vl->InsertNode(ld.SiteToLattice(a[i]));
+        vl->InsertNode(ld.SiteToLattice(a[i]));
       }
     }//end interrupt
   }
@@ -669,48 +669,43 @@ void ReadHdfGraph( H5::Group &g, VesselList3d *vl )
 //     }
 //   }
 
-  try
+/**
+ * Error handling is now done inside the hdf5 interface
+ */
+  DynArray <int> bc_node_index;
+  DynArray <int> bctyp_index;
+  DynArray <float> values_of_bcs;
+  DynArray <float> bc_conductivity_value;
+  /* for old files the boundary arrays are not present
+    */
+  readDataSetFromGroup(gnodes, string("bc_node_index"),bc_node_index );
+  readDataSetFromGroup(gnodes, string("bc_type"),bctyp_index );
+  readDataSetFromGroup(gnodes, string("bc_value"),values_of_bcs );
+  readDataSetFromGroup(gnodes, string("bc_conductivity_value"),bc_conductivity_value );
+  for(int i=0; i<bc_node_index.size(); ++i)
   {
-    DynArray <int> bc_node_index;
-    DynArray <int> bctyp_index;
-    DynArray <float> values_of_bcs;
-    DynArray <float> bc_conductivity_value;
-//     h5cpp::read_dataset<int>(gnodes.open_dataset("bc_node_index")     ,bc_node_index);
-//     h5cpp::read_dataset<int>(gnodes.open_dataset("bc_type")           ,bctyp_index);
-//     h5cpp::read_dataset<float>(gnodes.open_dataset("bc_value")          ,values_of_bcs);
-//     h5cpp::read_dataset<float>(gnodes.open_dataset("bc_conductivity_value") ,bc_conductivity_value);
-    readDataSetFromGroup(gnodes, string("bc_node_index"),bc_node_index );
-    readDataSetFromGroup(gnodes, string("bc_type"),bctyp_index );
-    readDataSetFromGroup(gnodes, string("bc_value"),values_of_bcs );
-    readDataSetFromGroup(gnodes, string("bc_conductivity_value"),bc_conductivity_value );
-    for(int i=0; i<bc_node_index.size(); ++i)
+    #ifdef DEBUG
+    cerr<<format("root index %i of #%i, bctype %i, value: %f, conductivity: %f\n") % bc_node_index[i] % bc_node_index.size() % bctyp_index[i] % values_of_bcs[i] % bc_conductivity_value[i];
+    #endif
+    VesselNode* nd = vl->GetNode(bc_node_index[i]);
+    nd->flags.AddBits(BOUNDARY);
+    FlowBC bc; 
+    switch (bctyp_index[i])
     {
-      #ifdef DEBUG
-      cerr<<format("root index %i of #%i, bctype %i, value: %f, conductivity: %f\n") % bc_node_index[i] % bc_node_index.size() % bctyp_index[i] % values_of_bcs[i] % bc_conductivity_value[i];
-      #endif
-      VesselNode* nd = vl->GetNode(bc_node_index[i]);
-      nd->flags.AddBits(BOUNDARY);
-      FlowBC bc; 
-      switch (bctyp_index[i])
-      {
-        case FlowBC::PIN:
-          bc = FlowBC(FlowBC::PIN, values_of_bcs[i]);
-          break;
-        case FlowBC::CURRENT:
-          bc = FlowBC(FlowBC::CURRENT, values_of_bcs[i]);
-          break;
-        case FlowBC::RESIST:
-          bc = FlowBC(FlowBC::RESIST, bc_conductivity_value[i], values_of_bcs[i]);
-          break;
-      }
-      vl->SetBC(nd, bc);
+      case FlowBC::PIN:
+        bc = FlowBC(FlowBC::PIN, values_of_bcs[i]);
+        break;
+      case FlowBC::CURRENT:
+        bc = FlowBC(FlowBC::CURRENT, values_of_bcs[i]);
+        break;
+      case FlowBC::RESIST:
+        bc = FlowBC(FlowBC::RESIST, bc_conductivity_value[i], values_of_bcs[i]);
+        break;
     }
+    vl->SetBC(nd, bc);
   }
-  catch(H5::Exception error)
-  {
-    error.printError();
-  }
-  
+    
+
   DynArray<int> flags;
   DynArray<float> aflt;
 //   h5cpp::read_dataset<int>(gedges.open_dataset("flags"),flags);
@@ -974,30 +969,32 @@ void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> 
   try{
     dset = g.openDataSet(dataset_name);
     dataspace = dset.getSpace();
+    hsize_t rank = dataspace.getSimpleExtentNdims();
+    hsize_t dims[rank];
+    hsize_t max_dims[rank];
+    hsize_t again = dataspace.getSimpleExtentDims(dims,max_dims);
+#ifndef NDEBUG
+    cout << "rank: " << rank << endl;
+    for(int i=0; i<rank; i++)
+    {
+      cout << "dims[" << i << "]" << " = " << dims[i] << endl;
+    }
+#endif
+  
+    boost::multi_array<T,1> arr_data(boost::extents[dims[0]]);
+    H5::DataType thisWritingType = getH5TypeFromCpp<T>();
+
+    dset.read(arr_data.data(), thisWritingType);
+    readIn.resize(dims[0]);
+    
+    for( int i=0;i<dims[0];++i)
+    {
+      readIn[i] = arr_data[i];
+    }
   }
   catch(H5::Exception e)
   {
     e.printError();
-  }
-  hsize_t dims[dataspace.getSimpleExtentNdims()];
-  cout << dataspace.getSimpleExtentDims(dims) << endl;
-  cout << dims[0] << endl;
-  cout << dims[1] << endl;
-  
-  /* here is an error, if I uncomment this: every thing runs smoothly,
-   * after commenting, it breaks! but why?
-   */
-//   cout << dataspace.getSimpleExtentDims(dims) << endl;
-//   cout << dims[0] << endl;
-//   cout << dims[1] << endl;
-  T arr[dims[0]];
-  H5::DataType thisWritingType = getH5TypeFromCpp<T>();
-//#pragma omp critial
-  dset.read(&arr, thisWritingType);
-  readIn.resize(dims[0]);
-  for( int i=0;i<dims[0];++i)
-  {
-    readIn[i] = arr[i];
   }
 }
 
@@ -1322,60 +1319,26 @@ H5::DataSet WriteVectorArray3D(H5::Group  &file,const std::string &id, const Con
   dims[1] = s[1];
   dims[2] = s[2];
   dims[3] = 3;
+  std::cout << " Warning: untested!" << std::endl;
+  boost::multi_array<typename Vector::Scalar, 4>  arr_3d_data(boost::extents[s[0]][s[1]][s[2]][3]);
   H5::DataSpace dspace = H5::DataSpace( rank, dims);
   H5::DataSet dataset = file.createDataSet(id, H5::PredType::NATIVE_FLOAT,dspace);
   
-//   float tmp[s[0]][s[1]][s[2]][3];
-//   for(int i = 0; i< s[0];i++)
-//     for(int ii=0; ii< s[1]; ii++)
-//       for(int iii=0; iii<s[2]; iii++)
-// 	for(int dim = 0; dim <3; dim++)
-// 	  tmp[i][ii][iii][dim] = a(i,ii,iii)[dim];
-  
-  /** 
-   * need to allocate array on heap, stack might be too small
-   */
-  Vector ***ptr3D = NULL;
-  //std::cout << " WriteVectorArray3D: " << id << std::endl;
-  ptr3D = new Vector**[s[0]];
   for(int i = 0; i< s[0];i++)
-  {
-    ptr3D[i] = new Vector*[s[1]];
     for(int ii=0; ii< s[1]; ii++)
-    {
-      ptr3D[i][ii]= new Vector[s[2]];
-      
       for(int iii=0; iii<s[2]; iii++)
-      {
-        //std::cout << "i: " << i << " ii: " << ii << " iii: " << iii << std::endl;std::cout.flush();
-        //std::cout << " a(i,ii,iii): " << a(i,ii,iii) << std::endl; std::cout.flush();
-        //tmp[i][ii][iii] = a(i,ii,iii);
-        ptr3D[i][ii][iii] = a(i,ii,iii);
-      }
-    }
-  }
+        for(int iiii=0; iiii<3; iiii++)
+          arr_3d_data[i][ii][iii][iiii] = a(i,ii,iii)[iiii];
 	
 
   try{
     //dataset.write(&tmp, H5::PredType::NATIVE_FLOAT);
-    dataset.write(ptr3D, H5::PredType::NATIVE_FLOAT);
+    dataset.write(arr_3d_data.data(), H5::PredType::NATIVE_FLOAT);
   }
   catch(H5::Exception e)
   {
     e.printError();
   }
-  
-  /** delete stack
-   */
-  for(int i=0;i<s[0];i++)
-  {
-      for(int j=0;j<s[1];j++)
-      {
-          delete[] ptr3D[i][j];   
-      }
-      delete[] ptr3D[i];
-  }
-  delete ptr3D;
   
   return dataset;
 }
