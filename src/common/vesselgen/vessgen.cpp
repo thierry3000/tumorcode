@@ -185,7 +185,7 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
     }
     catch(H5::Exception e)
     {
-      e.printError();
+      e.printErrorStack();
     }
     //CalcFlow(grower.get_vl(),);
     

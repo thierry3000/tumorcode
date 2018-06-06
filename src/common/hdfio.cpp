@@ -132,7 +132,7 @@ void readAttrFromH5(U &g, const string &attr_name, T &output_buffer)
   }
   catch(H5::Exception error)
   {
-    error.printError();
+    error.printErrorStack();
   }
 }
 template<>
@@ -157,7 +157,7 @@ void readAttrFromH5<H5::DataSet, string>(H5::DataSet &g, const string &attr_name
   }
   catch(H5::Exception error)
   {
-    error.printError();
+    error.printErrorStack();
   }
   output_buffer = strreadbuf;
 }
@@ -183,7 +183,7 @@ void readAttrFromH5<H5::Group, string>(H5::Group &g, const string &attr_name, st
   }
   catch(H5::Exception error)
   {
-    error.printError();
+    error.printErrorStack();
   }
   output_buffer = strreadbuf;
 }
@@ -214,7 +214,7 @@ void writeAttrToH5(U &h, const string &attr_name,  const T &value)
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   attr_out.write(thisType, &value);
 };
@@ -234,7 +234,7 @@ void writeAttrToH5<H5::Group,string>(H5::Group &h, const string &attr_name, cons
   }
   catch(H5::Exception error)
   {
-    error.printError();
+    error.printErrorStack();
   }
 };
 template<>
@@ -254,7 +254,7 @@ void writeAttrToH5<H5::DataSet,string>(H5::DataSet &h, const string &attr_name, 
     }
     catch(H5::Exception error)
     {
-      error.printError();
+      error.printErrorStack();
     }
   }
 };
@@ -326,7 +326,7 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
   }
   catch(H5::Exception e)
   {
-    //e.printError();
+    //e.printErrorStack();
     h5_nodes = g.openGroup("nodes");
   }
   writeAttrToH5(h5_nodes, string("COUNT"), ncnt);
@@ -453,7 +453,7 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
   catch(H5::Exception& e)
   {
     /* group does not exists, create it */
-    e.printError();
+    e.printErrorStack();
   }
 
   {
@@ -869,17 +869,17 @@ template string getH5GroupName<H5::DataSet>(H5::DataSet g);
 //     // catch failure caused by the H5File operations
 //     catch( H5::FileIException error )
 //     {
-//       error.printError();
+//       error.printErrorStack();
 //     }
 //     // catch failure caused by the DataSet operations
 //     catch( H5::DataSetIException error )
 //     {
-//       error.printError();
+//       error.printErrorStack();
 //     }
 //     // catch failure caused by the DataSpace operations
 //     catch( H5::DataSpaceIException error )
 //     {
-//       error.printError();
+//       error.printErrorStack();
 //     }
 //     
 //   }//end if
@@ -955,7 +955,7 @@ H5::DataSet writeDataSetToGroup(H5::Group &g, const string &dataset_name, DynArr
   }
   catch( H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   return ds;
 }
@@ -994,7 +994,7 @@ void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> 
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
 }
 
@@ -1303,7 +1303,7 @@ H5::DataSet WriteArray3D(H5::Group &file, const std::string &DATASET_NAME, const
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   return dataset;
 }
@@ -1337,7 +1337,7 @@ H5::DataSet WriteVectorArray3D(H5::Group  &file,const std::string &id, const Con
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   
   return dataset;

@@ -528,7 +528,7 @@ std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptr
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
 
   if(type_of_vessel_network == "GRAPH")
@@ -818,7 +818,7 @@ void WriteVesselList3d(const VesselList3d &vl, H5::Group &vesselgroup, const ptr
     catch(H5::Exception e)
     {
       cout<< "bad error" <<endl;
-      e.printError();
+      e.printErrorStack();
     }
     
 

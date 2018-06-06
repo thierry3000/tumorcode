@@ -234,7 +234,7 @@ bool IffDrugApp3d::InitNewState()
     }
     catch( H5::Exception error)
     {
-      //std::cout << error.printError();
+      //std::cout << error.printErrorStack();
     }
 
     FOR_BBOX3(p, grid.ld.Box())

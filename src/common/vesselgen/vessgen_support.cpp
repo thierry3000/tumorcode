@@ -176,7 +176,7 @@ void DoOutput(H5::Group &root,
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
     e.printErrorStack();
   }
     
@@ -194,7 +194,7 @@ void DoOutput(H5::Group &root,
   }
   catch( H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
     h5_nodes = vesselgrp.createGroup("nodes");
   }
     

@@ -211,7 +211,7 @@ int FakeTum::FakeTumorSim::run()
     }
     catch(H5::Exception e)
     {
-      e.printError();
+      e.printErrorStack();
     }
     
     ptree pt;
@@ -239,7 +239,7 @@ int FakeTum::FakeTumorSim::run()
     }
     catch(H5::Exception e)
     {
-      e.printError();
+      e.printErrorStack();
     }
     
     file.close();
@@ -367,7 +367,7 @@ void FakeTum::FakeTumorSim::writeOutput()
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
 
 //   h5::Attributes a = root.attrs();
@@ -413,7 +413,7 @@ void FakeTum::FakeTumorSim::writeOutput()
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   
   f.close();

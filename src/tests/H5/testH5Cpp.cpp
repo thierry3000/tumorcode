@@ -134,7 +134,7 @@ void writeAttrToH5(H5::Group g, const string &attr_name, const  string &value)
     }
     catch(H5::Exception error)
     {
-      error.printError();
+      error.printErrorStack();
     }
    
   }
@@ -312,7 +312,7 @@ void readAttrFromH5(H5::Group g, const string &attr_name, T &output_buffer)
   }
   catch(H5::Exception error)
   {
-    error.printError();
+    error.printErrorStack();
   }
 }
 template<>

@@ -799,7 +799,7 @@ void runSimpleSteppersTest(const std::string &fn_out)
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   writeAttrToH5(root, string("lambda"), lambda);
   //f.root().attrs().set("lambda", lambda);

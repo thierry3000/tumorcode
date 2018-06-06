@@ -41,7 +41,7 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   //h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
   

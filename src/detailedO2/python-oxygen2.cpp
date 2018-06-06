@@ -168,7 +168,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
       // catch failure caused by the H5File operations
    catch( H5::FileIException error )
    {
-      error.printError();
+      error.printErrorStack();
    }
     
   // THIIIIRYYYYY, filter muss = false sein sonst stimmt in der Ausgabe in der Hdf5 Datei die Anzahl der Vessels nicht mehr mit den daten im recomputed_flow Verzeichnis ueberein!
@@ -268,7 +268,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   
   //cout << "c++ part of detailedO2 finished" << std::endl;
@@ -298,7 +298,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
 //    }
 //    catch(H5::Exception e)
 //    {
-//      e.printError();
+//      e.printErrorStack();
 //    }
 
 //     h5cpp::Group root = o2File->root();

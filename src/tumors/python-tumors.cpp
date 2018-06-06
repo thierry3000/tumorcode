@@ -366,7 +366,7 @@ void run_bulktissue_with_vessels(const py::str &param_info_str)
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   //return 0;
 }

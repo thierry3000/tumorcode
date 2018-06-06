@@ -195,7 +195,7 @@ PyLd* read_lattice_data_from_hdf_by_filename(const string fn, const string path)
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   string TYPE;
   readAttrFromH5(g_ld, string("TYPE"), TYPE);

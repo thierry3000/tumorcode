@@ -314,7 +314,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     }
     catch(H5::Exception e)
     {
-      e.printError();
+      e.printErrorStack();
     }
     
     ptree pt;
@@ -343,7 +343,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     }
     catch(H5::Exception e)
     {
-      e.printError();
+      e.printErrorStack();
     }
     file.close();
     
@@ -605,7 +605,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   
   if (output_num == 0)
@@ -632,7 +632,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
     }
     catch( H5::Exception e)
     {
-      e.printError();
+      e.printErrorStack();
     }
   }
   
@@ -703,7 +703,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
     /* write oxygen stuff */
   try 
@@ -725,7 +725,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   }
   catch(H5::Exception e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   
   f.close();

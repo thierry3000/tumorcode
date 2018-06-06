@@ -201,6 +201,7 @@ find_package(LAPACK REQUIRED)
 find_package(BLAS REQUIRED)
 
 find_package(PNG REQUIRED)
+#this is not a standard cmake package, thats why it does not work on cineca
 find_package(TBB REQUIRED)
 find_package(Trilinos REQUIRED)
 message(STATUS "Your Trilions depends on: ${Trilinos_TPL_LIST}")
@@ -283,7 +284,6 @@ message(STATUS "HDF5_CXX_LIBRARIES      = ${HDF5_CXX_LIBRARIES}")
 message(STATUS "HDF5_C_LIBRARIES    	= ${HDF5_C_LIBRARIES}")
 message(STATUS "HDF5_LIBRARY_DIRS	= ${HDF5_LIBRARY_DIRS}")
 message(STATUS "HDF5_INCLUDE_DIRS	= ${HDF5_INCLUDE_DIRS}")
-#set (HDF5_INCLUDE_DIRS CACHE PATH "/usr/include/hdf5/openmpi")
 
 
 message(STATUS "Boost_lib dirs     	= ${Boost_LIBRARY_DIRS}")
@@ -320,8 +320,8 @@ set(myLibs
   ${myLibs} #maybe something is already there
   common  # part of this software
   mwlib   # part of this software
-  tbb
-  #${TBB_LIBRARIES}
+  #tbb
+  ${TBB_LIBRARIES}
   ${Trilinos_LIBRARIES} # -> trilinos
   ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
   ${Boost_PYTHON_LIBRARY}
@@ -339,7 +339,7 @@ set(myLibs
   mwlib   # part of this software
   numpycpp #see https://github.com/DaWelter/numpycpp
   tbb
-  #${TBB_LIBRARIES}
+  ${TBB_LIBRARIES}
   ${Trilinos_LIBRARIES} # -> trilinos
   ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
   ${Boost_PYTHON_LIBRARY}
