@@ -28,7 +28,9 @@ if(USE_MILOTTI_MTS)
   find_package(CGAL REQUIRED)
   if(CGAL_FOUND)
     message("Found CGAL_LIBRARY: ${CGAL_LIBRARY})")
-    #set(myLibs "${myLibs};${CGAL_LIBRARY}" )
+    message("Found CGAL_INCLUDE_DIRS: ${CGAL_INCLUDE_DIRS}")
+    include_directories(${CGAL_INCLUDE_DIRS})
+    set(myLibs "${myLibs};${CGAL_LIBRARY}" )
   endif()
 
   ### GMP
