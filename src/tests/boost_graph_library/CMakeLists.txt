@@ -1,0 +1,30 @@
+# note Ifpack2 not provided on durga
+message("added boost graph tests")
+
+string(COMPARE EQUAL "$ENV{CLUSTER}" "lusi-arch" string_compare_result)
+#message("$ENV{CLUSTER}")
+#message("string_compare_result: ${string_compare_result}")
+if(string_compare_result)
+  find_package(Boost REQUIRED COMPONENTS "graph")
+  message("Boost_GRAPH_LIBRARY: ${Boost_GRAPH_LIBRARY}")
+  set(myLibs "${myLibs};${Boost_GRAPH_LIBRARY}")
+  add_executable(quick_tour quick_tour.cpp)
+  target_link_libraries(quick_tour ${Boost_GRAPH_LIBRARY})
+  install(TARGETS quick_tour RUNTIME DESTINATION bin)
+  
+  find_package(Boost REQUIRED COMPONENTS "graph_parallel")
+  message("Boost_GRAPH_LIBRARY: ${Boost_GRAPH_PARALLEL_LIBRARY}")
+  find_package(Boost REQUIRED COMPONENTS "serialization")
+  message("Boost_MPI_LIBRARY: ${Boost_SERIALIZATION_LIBRARY}")
+  find_package(Boost REQUIRED COMPONENTS "mpi")
+  message("Boost_MPI_LIBRARY: ${Boost_MPI_LIBRARY}")
+  find_package(Boost REQUIRED COMPONENTS "system")
+  message("Boost_MPI_LIBRARY: ${Boost_SYSTEM_LIBRARY}")
+  
+  find_package(MPI REQUIRED)
+  message(STATUS "MPI libs         = ${MPI_CXX_LIBRARIES}")
+  
+  add_executable(pbg_dijkstra dijkstra_shortest_paths.cpp)
+  target_link_libraries(pbg_dijkstra "${Boost_GRAPH_PARALLEL_LIBRARY};${Boost_MPI_LIBRARY};${Boost_SERIALIZATION_LIBRARY};${Boost_SYSTEM_LIBRARY};${MPI_CXX_LIBRARIES}")
+  install(TARGETS pbg_dijkstra RUNTIME DESTINATION bin)
+endif()
