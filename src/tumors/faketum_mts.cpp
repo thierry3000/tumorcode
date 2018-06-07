@@ -67,9 +67,9 @@ void FakeTumMTS::FakeTumorSimMTS::initMilotti()
   
   tumorcode_pointer_to_currentCellsSystem->Set_time_from_CGAL(0.);	// Timer reset from last call to CGAL
   if(run_type == 0 || run_type == 1)
-    tumorcode_pointer_to_currentCellsSystem->Print2logfile("Cell status at the end of initialization");
+    tumorcode_pointer_to_currentCellsSystem->Print2logfile(std::string("Cell status at the end of initialization"));
   else if (run_type == 2)
-    tumorcode_pointer_to_currentCellsSystem->Print2logfile("Cell status at restart of simulation");
+    tumorcode_pointer_to_currentCellsSystem->Print2logfile(std::string("Cell status at restart of simulation"));
   
 
   tumorcode_pointer_to_currentCellsSystem->CPU_timer(vbl::timer_button::Start_timer);		// start del CPU timer (e reset del timer degli intertempi)
@@ -584,7 +584,7 @@ void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
    */
   if ( tumorcode_pointer_to_currentCellsSystem->Get_ready2start() )
   {
-    tumorcode_pointer_to_currentCellsSystem->Print2logfile("Cells at the end of the run");
+    tumorcode_pointer_to_currentCellsSystem->Print2logfile(std::string("Cells at the end of the run"));
     tumorcode_pointer_to_currentCellsSystem->WriteCellsSystem( );					// dump of the final configuration
   }
   
