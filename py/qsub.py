@@ -48,10 +48,11 @@ is_client = False
 
 def parse_args(argv):
   import argparse
-  parserQueue = argparse.ArgumentParser(prog='qsub',description='Queing system parser.')
-  memory_option = parserQueue.add_argument('-m', '--memory', help= 'Memory assigned by the queing system', type=str, default = None)
+  parserQueue = argparse.ArgumentParser(prog='qsub',description='Queueing system parser.')
+  memory_option = parserQueue.add_argument('-m', '--memory', help= 'Memory assigned by the queueing system', type=str, default = None)
   days_option = parserQueue.add_argument('-d', '--days', help= 'runtime for job in days', type=float, default = None)
   threads_option = parserQueue.add_argument('-n', '--numThreads', help= 'num of threads for job', type=int, default = None)
+  cineca_debub_option = parserQueue.add_argument('-c', '--cinecaDebug', help= 'if true, we submit do debug queue', default=False, action='store_true')
 #  global defaultMemory
 #  defaultMemory = memory_option.default
 #  global defaultDays
@@ -154,54 +155,79 @@ def write_directives_qsub_(f,name=None, mem=None, num_cpus=None, days=None, hour
     
     
 def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, hours=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False):
-  #print >>f, '#PBS -j oe'
-  #if jobfiledir and not outdir: #DEPRECATED
-  #  outdir = jobfiledir
-  #if outdir is not None:
-  #  print >>f, '#PBS -o %s' % (outdir)
-  #print >>f, 'cd $SLURM_SUBMIT_DIR'
-#  mem = goodArgumentsQueue.memory
-#  num_cpus = goodArgumentsQueue.numThreads
-#  days = goodArgumentsQueue.days
-  if name:
-    print >>f, '#SBATCH --job-name=%s' % name
-  if num_cpus == 1:
-    print >>f, '#SBATCH --cpus-per-task=1'
-    print >>f, '#SBATCH --ntasks=1'
-    print >>f, '#SBATCH --partition=onenode'
-  if num_cpus > 1 and not goodArgumentsQueue.mpi:
-    print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
-    print >>f, '#SBATCH --ntasks=1'
-    print >>f, '#SBATCH --nodes=1'
-    print >>f, '#SBATCH --partition=onenode'
-    print >>f, '#SBATCH --ntasks-per-node=1'
-    # this is for sparing the nodes with lots of cores
-    #print >>f, '#SBATCH --exclude=leak[57-64]'
-    #print >>f, '#SBATCH --nodelist=leak62'
+  hpc_system = os.environ.get('HPC_SYSTEM', None)
+  if hpc_system == 'marconi':
+    print >>f, '#SBATCH --account=uTS18_Milotti'
+    if name:
+      print >>f, '#SBATCH --job-name=%s' % name
+      
+    if num_cpus == 1:
+      print >>f, '#SBATCH --cpus-per-task=1'
+      print >>f, '#SBATCH --ntasks=1'
+      
+    if num_cpus > 1 and not goodArgumentsQueue.mpi:
+      print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
+      print >>f, '#SBATCH --ntasks=1'
+      print >>f, '#SBATCH --nodes=1'
+      print >>f, '#SBATCH --ntasks-per-node=1'
+      
+    if goodArgumentsQueue.cinecaDebug:
+      print >>f, '#SBATCH --partition=bdw_usr_dbg'
+      print >>f, '#SBATCH --time=0-00:10:00'
+    else:
+      print >>f, '#SBATCH --partition=bdw_usr_prod'
+      if days or hours:
+        days, hours = fmtDate_(days, hours)
+        days = 0
+        hours = 23
+        print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)
+      
+    if mem:
+      if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
+        raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
+      print >>f, '#SBATCH --mem=%s' % mem
+      
     
-    
-    #print >>f, '#SBATCH --resv-ports'
-  #MPI
-  if num_cpus > 1 and goodArgumentsQueue.mpi:
-    print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
-#    print >>f, '#SBATCH --ntasks=50'
-    print >>f, '#SBATCH --ntasks-per-node=1'
-    print >>f, '#SBATCH --nodes=3'
-    print >>f, '#SBATCH --partition=mpi'
-#    print >>f, '#SBATCH --resv-ports'
-#    print >>f, '#SBATCH --ntasks-per-node=8'
-  if days or hours:
-    days, hours = fmtDate_(days, hours)
-    print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)
-  if mem:
-    if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
-      raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
-    print >>f, '#SBATCH --mem=%s' % mem
-    if num_cpus > 1:
-      mem_per_cpu='8500MB'
-      print >>f, '#SBATCH --mem-per-cpu=%s' % mem_per_cpu
-  #if export_env:
-  #  print >>f, '#PBS -V'
+  if not hpc_system:
+    if name:
+      print >>f, '#SBATCH --job-name=%s' % name
+    if num_cpus == 1:
+      print >>f, '#SBATCH --cpus-per-task=1'
+      print >>f, '#SBATCH --ntasks=1'
+      print >>f, '#SBATCH --partition=onenode'
+    if num_cpus > 1 and not goodArgumentsQueue.mpi:
+      print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
+      print >>f, '#SBATCH --ntasks=1'
+      print >>f, '#SBATCH --nodes=1'
+      print >>f, '#SBATCH --partition=onenode'
+      print >>f, '#SBATCH --ntasks-per-node=1'
+      # this is for sparing the nodes with lots of cores
+      #print >>f, '#SBATCH --exclude=leak[57-64]'
+      #print >>f, '#SBATCH --nodelist=leak62'
+      
+      
+      #print >>f, '#SBATCH --resv-ports'
+    #MPI
+    if num_cpus > 1 and goodArgumentsQueue.mpi:
+      print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
+  #    print >>f, '#SBATCH --ntasks=50'
+      print >>f, '#SBATCH --ntasks-per-node=1'
+      print >>f, '#SBATCH --nodes=3'
+      print >>f, '#SBATCH --partition=mpi'
+  #    print >>f, '#SBATCH --resv-ports'
+  #    print >>f, '#SBATCH --ntasks-per-node=8'
+    if days or hours:
+      days, hours = fmtDate_(days, hours)
+      print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)
+    if mem:
+      if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
+        raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
+      print >>f, '#SBATCH --mem=%s' % mem
+      if num_cpus > 1:
+        mem_per_cpu='8500MB'
+        print >>f, '#SBATCH --mem-per-cpu=%s' % mem_per_cpu
+    #if export_env:
+    #  print >>f, '#PBS -V'
 
 
 def submit_(interpreter, submission_program, script):
@@ -489,6 +515,8 @@ def submit(obj, **qsubopts):
     print("goodArgumentsQueue")
     print(goodArgumentsQueue)
     prog = determine_submission_program_()
+    print("determined program: %s" %prog)
+    
     if prog == 'sbatch':
       submit_slurm(obj, prog, **qsubopts)
     elif prog == 'qsub':
