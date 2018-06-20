@@ -239,10 +239,10 @@ void export_network_for_povray(const np::ndarray edges,
   for (int i=0; i<num_nodes; ++i)
   {
     //Float3 p(pos(i,0),pos(i,1),pos(i,2));
-    Float3 p(
-      py::extract<float>(pos[i][0]),
-             py::extract<float>(pos[i][1]),
-             py::extract<float>(pos[i][2]));
+    float pos_1 = py::extract<float>(pos[i][0]);
+    float pos_2 = py::extract<float>(pos[i][1]);
+    float pos_3 = py::extract<float>(pos[i][2]);
+    Float3 p(pos_1, pos_2, pos_3);
 
     int intersect = cp ? cp->clipSphere(p, noderad[i]) : CLIP_NONE;
     if (intersect == CLIP_FULL) continue;

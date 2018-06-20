@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
 project(tumorcode C CXX)
-set(CMAKE_CXX_STANDARD 11)
 
 if(FALSE)
 ###############  set up spack stuff  ##############
@@ -70,14 +69,14 @@ add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src"
 endif()
 
 ## HDF5-cpp-wrapper does not need compilation
-if( False )
 configure_file(externalProjects/HDF5-cpp-wrapper/CMakeLists.txt.in externalProjects/HDF5-cpp-wrapper/CMakeLists.txt)
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper" )
 execute_process(COMMAND "${CMAKE_COMMAND}" --build .
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper" )
 include_directories("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src")
-endif()
+# add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src"
+#                  "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-build")
 
 ## ANN
 # it is now supposed, that ANN is present on the system
@@ -99,9 +98,8 @@ endif()
 #                  "${CMAKE_BINARY_DIR}/externalProjects/ANN-build")
 
 list(APPEND CMAKE_CXX_SOURCE_FILE_EXTENSIONS c)
-#add_definitions(-DSILENT)
+add_definitions(-DSILENT)
 find_package(Threads REQUIRED)
-message("CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
 # set a search path for additional custom cmake modules.
 # according to recommendation in https://cmake.org/Wiki/CMake:How_To_Find_Libraries
 message("CMAKE_ROOT: ${CMAKE_ROOT}")
@@ -111,11 +109,8 @@ message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 message("CMAKE_EXE_LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
 message("TrilinosDIR: ${TrilinosDIR}")
 
+
 include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)
-option(BUILD_TESTS "decide to create the tests" ON)
-if(BUILD_TESTS)
-  message("Building tests!")
-endif()
 
 option(USE_MILOTTI_MTS "decide to use libvbl.so" OFF)
 if(USE_MILOTTI_MTS)
@@ -124,20 +119,13 @@ if(USE_MILOTTI_MTS)
 endif()
 option(USE_ADAPTION "decide to build the adaption library" OFF)
 CMAKE_DEPENDENT_OPTION(USE_PAGMO "Use Pagmo" OFF "USE_ADAPTION" ON)
-CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" OFF
-                       "USE_ADAPTION;USE_PAGMO" ON)
+#CMAKE_DEPENDENT_OPTION(USE_PAGMO_MPI "MPI version of Pagmo" OFF "USE_ADAPTION;USE_PAGMO" ON)
 option(TOTAL_SILENCE "suppress all output, good for running on cluster" OFF)
 if(TOTAL_SILENCE)
   message("TOTAL_SILENCE preprocessor defined")
   add_definitions(-DTOTAL_SILENCE)
 endif()
 
-#now this became a python dict parameter
-# option(USE_DETAILED_O2 "decide to use the detailed oxygen calculation" OFF)
-# if(USE_DETAILED_O2)
-#   message("USE_DETAILED_O2 preprocessor defined")
-#   add_definitions(-DUSE_DETAILED_O2)
-# endif()
 
 #It would be nicer to see if pagmo was compilled 
 #with mpi automatically, pagmo2 is supporting that
@@ -192,8 +180,7 @@ endif()
 #note there are system without eigen, so let the configure fail here
 find_package(Eigen3 3.2 QUIET)
 #find_package(HDF5 1.8.10 REQUIRED)
-find_package(HDF5 COMPONENTS C CXX HL REQUIRED)
-#find_package(HDF5 REQUIRED)
+find_package(HDF5 REQUIRED)
 if(HDF5_IS_PARALLEL)
   message(WARNING "your hdf5 is parallel, you probably need mpi")
 endif()
@@ -201,7 +188,6 @@ find_package(LAPACK REQUIRED)
 find_package(BLAS REQUIRED)
 
 find_package(PNG REQUIRED)
-#this is not a standard cmake package, thats why it does not work on cineca
 find_package(TBB REQUIRED)
 find_package(Trilinos REQUIRED)
 message(STATUS "Your Trilions depends on: ${Trilinos_TPL_LIST}")
@@ -210,7 +196,7 @@ if (";${Trilinos_TPL_LIST};" MATCHES ";MPI;")
   set(MPI_NEEDED TRUE)
 endif()
 
-if (MPI_NEEDED OR USE_PAGMO_MPI)
+if (MPI_NEEDED)
   #set(MPI_CXX_COMPILER "/usr/bin/mpic++.openmpi") --> system dependent, move to do configure
   find_package(MPI REQUIRED)
   add_definitions(-DMPI_NEEDED)
@@ -276,12 +262,12 @@ ENDIF()
 message(STATUS "Numpy include dirs  	=${PYTHON_NUMPY_INCLUDE_DIR}")
 message(STATUS "PYTHON_LIBRARIES 	=${PYTHON_LIBRARIES}")
 
-message(STATUS "Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE         	=${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}")
+#message(STATUS "Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE         	=${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}")
 message(STATUS "LAPACK lib 					=${LAPACK_LIBRARIES}")
 message(STATUS "BLAS_LIBRARIES   	= ${BLAS_LIBRARIES}")
-message(STATUS "automatic hdf5 detection")
 message(STATUS "HDF5_CXX_LIBRARIES      = ${HDF5_CXX_LIBRARIES}")
 message(STATUS "HDF5_C_LIBRARIES    	= ${HDF5_C_LIBRARIES}")
+message(STATUS "HDF5_LIBRARIES    	= ${HDF5_LIBRARIES}")
 message(STATUS "HDF5_LIBRARY_DIRS	= ${HDF5_LIBRARY_DIRS}")
 message(STATUS "HDF5_INCLUDE_DIRS	= ${HDF5_INCLUDE_DIRS}")
 
@@ -323,7 +309,7 @@ set(myLibs
   #tbb
   ${TBB_LIBRARIES}
   ${Trilinos_LIBRARIES} # -> trilinos
-  ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
+  #${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
   ${Boost_PYTHON_LIBRARY}
   ${HDF5_LIBRARIES}
   ${HDF5_CXX_LIBRARIES}
@@ -338,20 +324,18 @@ set(myLibs
   common  # part of this software
   mwlib   # part of this software
   numpycpp #see https://github.com/DaWelter/numpycpp
-  tbb
+  #tbb
   ${TBB_LIBRARIES}
   ${Trilinos_LIBRARIES} # -> trilinos
-  ${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
+  #${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
   ${Boost_PYTHON_LIBRARY}
   ${HDF5_LIBRARIES}
+  ${HDF5_CXX_LIBRARIES}
   ${LAPACK_LIBRARIES}
   ${BLAS_LIBRARIES}
   ${PNG_LIBRARIES}
   ${PYTHON_LIBRARIES}
 )
-endif()
-if(USE_MILOTTI_MTS)
-  set(myLibs "${myLibs};${Boost_PYTHON_LIBRARY}")
 endif()
 #message(STATUS "myLibs = ${myLibs}")
 
@@ -383,7 +367,7 @@ if (NOT IS_INTEL_COMPILER)
   message("Set for gnu gxx")
   set(Warnings "-Wall -Wextra -Wno-sign-compare -Wno-reorder -Wno-deprecated -Wuninitialized -Wno-unused-parameter -Wno-unused-variable -Wno-unused-result -Wno-unused-function -Wno-unused-local-typedefs") # -Wno-unknown-pragmas   -Wpointer-arith -Wwrite-strings -Woverloaded-virtual -Wno-long-long  -Wuninitialized ")
   set(Warnings "${Warnings} -Wno-deprecated-declarations")  # -Wswitch -Wno-extra -Wsynth
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} ${CMAKE_THREAD_LIBS_INIT} -fPIC -ftemplate-depth-128")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} -pthread -fPIC -ftemplate-depth-128")
 else()
   #1478 is a deprecation warning for auto_ptr
   #set(Warnings "-gcc -cxxlib -wd1478") #gnu++0x
@@ -402,7 +386,7 @@ if (IS_INTEL_COMPILER)
 endif()
 
 #-fstrict-aliasing
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} ${CMAKE_THREAD_LIBS_INIT} -fPIC -ftemplate-depth-128")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} -pthread -fPIC -ftemplate-depth-128")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -g -Wno-unknown-pragmas" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O2 -g") # -funroll-all-loops
 if (MAX_OPTIMIZATION)
@@ -427,6 +411,8 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 #message("executables go to ${EXECUTABLE_OUTPUT_PATH}")
 
 #endif()
+
+message(STATUS "myLibs = ${myLibs}")
 
 # defer to build scripts in the src dir
 add_subdirectory(src)
