@@ -747,6 +747,7 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
     std::vector<double> x = tumorcode_pointer_to_currentCellsSystem->Get_x();
     std::vector<double> y = tumorcode_pointer_to_currentCellsSystem->Get_y();
     std::vector<double> z = tumorcode_pointer_to_currentCellsSystem->Get_z();
+    std::vector<double> cell_radius = tumorcode_pointer_to_currentCellsSystem->Get_r();
     
     std::vector<double> O2Rates = tumorcode_pointer_to_currentCellsSystem->Get_O2Rate();
     
@@ -757,7 +758,7 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
         for(int i=0; i<x.size();++i)
         {
           Float3 pos(x[i],y[i],z[i]);
-          AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)1.0);
+          AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)(cell_radius[i]/n_cells));
           
           auto this_o2_rate = O2Rates[i];
           AddSmoothDelta(cell_O2src, bbox, grid.ld, grid.dim, pos, (float) this_o2_rate );
