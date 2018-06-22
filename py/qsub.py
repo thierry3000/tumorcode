@@ -53,6 +53,7 @@ def parse_args(argv):
   days_option = parserQueue.add_argument('-d', '--days', help= 'runtime for job in days', type=float, default = None)
   threads_option = parserQueue.add_argument('-n', '--numThreads', help= 'num of threads for job', type=int, default = None)
   cineca_debub_option = parserQueue.add_argument('-c', '--cinecaDebug', help= 'if true, we submit do debug queue', default=False, action='store_true')
+  cineca_special_option = parserQueue.add_argument('-s', '--cinecaSpecial', help= 'if true, we submit to bdw_qos_special queue', default=False, action='store_true')
 #  global defaultMemory
 #  defaultMemory = memory_option.default
 #  global defaultDays
@@ -175,7 +176,11 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
       print >>f, '#SBATCH --partition=bdw_usr_dbg'
       print >>f, '#SBATCH --time=0-00:10:00'
     else:
-      print >>f, '#SBATCH --partition=bdw_usr_prod'
+      if goodArgumentsQueue.cinecaSpecial:
+	print >>f, '#SBATCH -p bdw_usr_prod'  
+	print >>f, '#SBATCH --qos=bdw_qos_special'
+      else:
+        print >>f, '#SBATCH --partition=bdw_usr_prod'
       if days or hours:
         days, hours = fmtDate_(days, hours)
         days = 0
@@ -186,6 +191,7 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
       if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
         raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
       print >>f, '#SBATCH --mem=%s' % mem
+#    print >>f, 'export OMP_NUM_THREADS=%i' % num_cpus
       
     
   if not hpc_system:

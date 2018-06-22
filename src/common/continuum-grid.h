@@ -66,7 +66,8 @@ public:
     int global_index;
   };
   DynArray<ThreadBox> boxes;
-  boost::array<DynArray<ThreadBox>, 32> by_thread;
+  //cinecas marconi has 36 cores shared, for other systems this has to be increase even further
+  boost::array<DynArray<ThreadBox>, 48> by_thread;
   ThreadBox largestBox;
 public:
   DomainDecomposition(const DynArray<BBox3> &boxes);
