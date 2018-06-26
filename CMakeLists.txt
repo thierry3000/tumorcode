@@ -180,7 +180,7 @@ endif()
 #note there are system without eigen, so let the configure fail here
 find_package(Eigen3 3.2 QUIET)
 #find_package(HDF5 1.8.10 REQUIRED)
-find_package(HDF5 REQUIRED)
+find_package(HDF5 REQUIRED COMPONENTS CXX)
 if(HDF5_IS_PARALLEL)
   message(WARNING "your hdf5 is parallel, you probably need mpi")
 endif()
@@ -312,7 +312,6 @@ set(myLibs
   #${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
   ${Boost_PYTHON_LIBRARY}
   ${HDF5_LIBRARIES}
-  ${HDF5_CXX_LIBRARIES}
   ${LAPACK_LIBRARIES}
   ${BLAS_LIBRARIES}
   ${PNG_LIBRARIES}
@@ -330,7 +329,6 @@ set(myLibs
   #${Boost_PROGRAM_OPTIONS_LIBRARY_RELEASE}
   ${Boost_PYTHON_LIBRARY}
   ${HDF5_LIBRARIES}
-  ${HDF5_CXX_LIBRARIES}
   ${LAPACK_LIBRARIES}
   ${BLAS_LIBRARIES}
   ${PNG_LIBRARIES}
