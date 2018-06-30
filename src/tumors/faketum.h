@@ -38,6 +38,7 @@ struct Parameters
 {
   double out_intervall, tend;
   double dt;
+  double latest_executed_timepoint;
   
   string message;
   string fn_out, fn_vessel, vesselfile_message;
@@ -85,7 +86,7 @@ struct FakeTumorSim : public boost::noncopyable
 //   int run(const ptree &params);
   int run();
   void doStep(double dt);
-  void writeOutput();
+  void writeOutput(bool doPermanentSafe);
 };
 }//end FakeTum
 #endif //_FAKETUM_H_

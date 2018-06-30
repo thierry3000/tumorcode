@@ -100,27 +100,26 @@ H5::DataType getH5TypeFromCpp()
 }
 
 
-// void readAttrFromH5(H5::Group g, const string &attr_name, string &output_buffer)
-// { 
-//   H5::Attribute att_to_read = g.openAttribute(attr_name);
-//   //H5::DataType type = att_to_read.getDataType();
-//   
-//   // Create new dataspace for attribute
-//   H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
-// 
-//   // Create new string datatype for attribute
-//   H5::StrType strdatatype(H5::PredType::C_S1, 256); // of length 256 characters
-// 
-//   // Set up read buffer for attribute
-//   H5std_string strreadbuf ("");
-// 
-//   // Create attribute and write to it
-//   att_to_read.read(strdatatype, strreadbuf); 
-//   output_buffer = strreadbuf;
-// }
 
-template<class U,class T>
-void readAttrFromH5(U &g, const string &attr_name, T &output_buffer)
+
+// template<class U,class T>
+// void readAttrFromH5(U &g, const string &attr_name, T &output_buffer)
+// {
+//   H5::Attribute att_to_read;
+//   H5::DataType type; 
+//   try
+//   {
+//     att_to_read = g.openAttribute(attr_name);
+//     type = att_to_read.getDataType();
+//     att_to_read.read(type, &output_buffer);
+//   }
+//   catch(H5::Exception error)
+//   {
+//     error.printErrorStack();
+//   }
+// }
+template<class T>
+void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer)
 {
   H5::Attribute att_to_read;
   H5::DataType type; 
@@ -135,34 +134,63 @@ void readAttrFromH5(U &g, const string &attr_name, T &output_buffer)
     error.printErrorStack();
   }
 }
+
+
+// template<>
+// void readAttrFromH5<H5::DataSet, string>(H5::DataSet &g, const string &attr_name, string &output_buffer)
+// { 
+//   H5::Attribute att_to_read = g.openAttribute(attr_name);
+//   //H5::DataType type = att_to_read.getDataType();
+//   
+//   // Create new dataspace for attribute
+//   H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
+// 
+//   // Create new string datatype for attribute
+//   H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
+// 
+//   // Set up read buffer for attribute
+//   H5std_string strreadbuf ("");
+// 
+//   // Create attribute and write to it
+//   try
+//   {
+//     att_to_read.read(strdatatype, strreadbuf);
+//   }
+//   catch(H5::Exception error)
+//   {
+//     error.printErrorStack();
+//   }
+//   output_buffer = strreadbuf;
+// }
+// template<>
+// void readAttrFromH5<H5::Group, string>(H5::Group &g, const string &attr_name, string &output_buffer)
+// { 
+//   H5::Attribute att_to_read = g.openAttribute(attr_name);
+//   //H5::DataType type = att_to_read.getDataType();
+//   
+//   // Create new dataspace for attribute
+//   H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
+// 
+//   // Create new string datatype for attribute
+//   H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
+// 
+//   // Set up read buffer for attribute
+//   H5std_string strreadbuf ("");
+// 
+//   // Create attribute and write to it
+//   try
+//   {
+//     att_to_read.read(strdatatype, strreadbuf);
+//   }
+//   catch(H5::Exception error)
+//   {
+//     error.printErrorStack();
+//   }
+//   output_buffer = strreadbuf;
+// }
+
 template<>
-void readAttrFromH5<H5::DataSet, string>(H5::DataSet &g, const string &attr_name, string &output_buffer)
-{ 
-  H5::Attribute att_to_read = g.openAttribute(attr_name);
-  //H5::DataType type = att_to_read.getDataType();
-  
-  // Create new dataspace for attribute
-  H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
-
-  // Create new string datatype for attribute
-  H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
-
-  // Set up read buffer for attribute
-  H5std_string strreadbuf ("");
-
-  // Create attribute and write to it
-  try
-  {
-    att_to_read.read(strdatatype, strreadbuf);
-  }
-  catch(H5::Exception error)
-  {
-    error.printErrorStack();
-  }
-  output_buffer = strreadbuf;
-}
-template<>
-void readAttrFromH5<H5::Group, string>(H5::Group &g, const string &attr_name, string &output_buffer)
+void readAttrFromH5<string>(H5::H5Location &g, const string &attr_name, string &output_buffer)
 { 
   H5::Attribute att_to_read = g.openAttribute(attr_name);
   //H5::DataType type = att_to_read.getDataType();
@@ -1171,31 +1199,44 @@ INSTANTIATE2(string)
 
 #undef INSTANTIATE2
 
-#define INSTANTIATE_H5Cpp_read(U,T)\
-  template void readAttrFromH5<U, T>(U &g, const string &name, T &output_buffer);
-INSTANTIATE_H5Cpp_read(H5::Group, float)
-INSTANTIATE_H5Cpp_read(H5::Group, Float3)
-INSTANTIATE_H5Cpp_read(H5::Group, double)
-INSTANTIATE_H5Cpp_read(H5::Group, Double3)
-INSTANTIATE_H5Cpp_read(H5::Group, int)
-INSTANTIATE_H5Cpp_read(H5::Group, Int3)
-INSTANTIATE_H5Cpp_read(H5::Group, Int6)
-INSTANTIATE_H5Cpp_read(H5::Group, bool)
-INSTANTIATE_H5Cpp_read(H5::Group, uchar)
-INSTANTIATE_H5Cpp_read(H5::Group, Bool3)
-//INSTANTIATE_H5Cpp_read(H5::Group, string)
+// #define INSTANTIATE_H5Cpp_read(U,T)\
+//   template void readAttrFromH5<U, T>(U &g, const string &name, T &output_buffer);
+// INSTANTIATE_H5Cpp_read(H5::Group, float)
+// INSTANTIATE_H5Cpp_read(H5::Group, Float3)
+// INSTANTIATE_H5Cpp_read(H5::Group, double)
+// INSTANTIATE_H5Cpp_read(H5::Group, Double3)
+// INSTANTIATE_H5Cpp_read(H5::Group, int)
+// INSTANTIATE_H5Cpp_read(H5::Group, Int3)
+// INSTANTIATE_H5Cpp_read(H5::Group, Int6)
+// INSTANTIATE_H5Cpp_read(H5::Group, bool)
+// INSTANTIATE_H5Cpp_read(H5::Group, uchar)
+// INSTANTIATE_H5Cpp_read(H5::Group, Bool3)
+// 
+// 
+// INSTANTIATE_H5Cpp_read(H5::DataSet, float)
+// INSTANTIATE_H5Cpp_read(H5::DataSet, Float3)
+// INSTANTIATE_H5Cpp_read(H5::DataSet, double)
+// INSTANTIATE_H5Cpp_read(H5::DataSet, Double3)
+// INSTANTIATE_H5Cpp_read(H5::DataSet, int)
+// INSTANTIATE_H5Cpp_read(H5::DataSet, Int3)
+// INSTANTIATE_H5Cpp_read(H5::DataSet, Int6)
+// INSTANTIATE_H5Cpp_read(H5::DataSet, bool)
+// INSTANTIATE_H5Cpp_read(H5::DataSet, uchar)
+// INSTANTIATE_H5Cpp_read(H5::DataSet, Bool3)
+// #undef INSTANTIATE_H5Cpp_read
 
-INSTANTIATE_H5Cpp_read(H5::DataSet, float)
-INSTANTIATE_H5Cpp_read(H5::DataSet, Float3)
-INSTANTIATE_H5Cpp_read(H5::DataSet, double)
-INSTANTIATE_H5Cpp_read(H5::DataSet, Double3)
-INSTANTIATE_H5Cpp_read(H5::DataSet, int)
-INSTANTIATE_H5Cpp_read(H5::DataSet, Int3)
-INSTANTIATE_H5Cpp_read(H5::DataSet, Int6)
-INSTANTIATE_H5Cpp_read(H5::DataSet, bool)
-INSTANTIATE_H5Cpp_read(H5::DataSet, uchar)
-INSTANTIATE_H5Cpp_read(H5::DataSet, Bool3)
-//INSTANTIATE_H5Cpp_read(H5::DataSet, string)
+#define INSTANTIATE_H5Cpp_read(T)\
+  template void readAttrFromH5<T>(H5::H5Location &g, const string &name, T &output_buffer);
+INSTANTIATE_H5Cpp_read(float)
+INSTANTIATE_H5Cpp_read(Float3)
+INSTANTIATE_H5Cpp_read(double)
+INSTANTIATE_H5Cpp_read(Double3)
+INSTANTIATE_H5Cpp_read(int)
+INSTANTIATE_H5Cpp_read(Int3)
+INSTANTIATE_H5Cpp_read(Int6)
+INSTANTIATE_H5Cpp_read(bool)
+INSTANTIATE_H5Cpp_read(uchar)
+INSTANTIATE_H5Cpp_read(Bool3)
 #undef INSTANTIATE_H5Cpp_read
 
 #define INSTANTIATE_H5Cpp1_write(U,T)\

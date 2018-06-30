@@ -174,6 +174,9 @@ Float3 FakeTum::FakeTumorSim::getGfGrad(const Float3 &pos) const
 //int FakeTum::FakeTumorSim::run(const ptree &pt_params)
 int FakeTum::FakeTumorSim::run()
 {
+#ifndef NDEBUG
+  std::cout << "starting FakeTumor run in c++" << std::endl;
+#endif
 //   {
 //     FakeTum::Parameters::update_ptree(all_pt_params, pt_params);
 //     this->params.assign(all_pt_params);
@@ -312,13 +315,17 @@ int FakeTum::FakeTumorSim::run()
     }
 #endif
 #endif
+    
     if (time >= next_output_time - params.dt * 0.1)
     {
-      
-      writeOutput();
+      //this happens only for fixed instances of time
+      writeOutput(true);
       next_output_time += params.out_intervall;
     }
-
+    //for a rerun we need to access the latest instant of time
+    params.latest_executed_timepoint = time;
+    writeOutput(false);
+    
     if (time > params.tend) break;
     
     double size_limit = 0.5*maxCoeff(Size(vl->Ld().GetWorldBox())) * params.stopping_radius_fraction; 
@@ -354,7 +361,8 @@ void FakeTum::FakeTumorSim::doStep(double dt)
   tumor_radius += dt * params.tumor_speed;
 }
 
-void FakeTum::FakeTumorSim::writeOutput()
+
+void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   H5::H5File f;
@@ -374,6 +382,8 @@ void FakeTum::FakeTumorSim::writeOutput()
 //   
   if (output_num == 0)
   {
+    root.createGroup("last_state");
+    
     h5_parameters = root.createGroup("parameters");
     h5_vessel_parameters = h5_parameters.createGroup("vessels");
     writeAttrToH5(root, string("MESSAGE"), params.message);
@@ -392,7 +402,15 @@ void FakeTum::FakeTumorSim::writeOutput()
   }
   
   try{
-    gout = root.createGroup(str(format("out%04i") % output_num));
+    if(!doPermanentSafe)
+    {
+      root.unlink("last_state");
+      gout=root.createGroup("last_state");
+    }
+    else
+    {
+      gout = root.createGroup(str(format("out%04i") % output_num));
+    }
     writeAttrToH5(gout, string("time"), time);
     writeAttrToH5(gout, string("OUTPUT_NUM"), output_num);
     H5::Group h5_current_vessels = gout.createGroup("vessels");

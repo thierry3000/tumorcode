@@ -257,9 +257,103 @@ void run_fakeTumor(const py::str &param_info_str)
     std::cout << ex.what();
   }
 }
+
+// void printObjectName(H5::H5Location&, H5std_string, void*)
+// {
+//   
+// }
+//typedef void(* 	attr_operator_t )(H5Object &loc, const H5std_string attr_name, void *operator_data)
+
+//H5::attr_operator_t printObjectNameH5;
+// void printObjectName( H5::H5Location &g, const H5std_string attr_name, void* operator_data)
+// {
+//   try
+//   {
+//     std::cout << attr_name << std::endl;
+//   }
+//   catch(H5::Exception e)
+//   {
+//     e.printError();
+//   }
+// }
+
+
+void rerun_fakeTumor(const py::str &filename_of_previous_run)
+{
+  std::cout << "rerun_fakeTumor on c++ called" << std::endl;
+  char const* fn_of_previous_sim_c_str = py::extract<char const*>(filename_of_previous_run);
+#ifdef DEBUG
+  std::cout << "with previous simulation file: " << std::endl;
+  //std::printf("%s\n",filename_of_previous_run );
+  
+   // Print it using printf
+  std::printf("%s\n", fn_of_previous_sim_c_str);
+#endif
+  feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+  FakeTum::FakeTumorSim s;
+  //construct default parameters
+  //get default params
+  ptree bfSettings = s.params.bfparams.as_ptree();
+  ptree vesselSettings = s.vessel_model.params.as_ptree();
+  
+#ifdef USE_ADAPTION
+  ptree adaptionSettings = s.params.adap_params.as_ptree();
+  if(pt_params.count("adaption")>0)
+  {
+    boost::property_tree::update(adaptionSettings, pt_params.get_child("adaption"));
+  }
+  s.params.adap_params.assign(adaptionSettings);
+#endif
+  ptree fakeTumSettings = s.params.as_ptree();
+  //update with read in params
+  H5::H5File file;
+  H5::Group h5_params_of_previous_run;
+  H5::Group h5_vessel_params_of_previous_run;
+  H5::Group h5_calcflow_of_previous_run;
+  try{
+    file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
+    h5_params_of_previous_run = file.openGroup("/parameters");
+    h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
+    h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
+  }
+  catch(H5::Exception e)
+  {
+    e.printErrorStack();
+  }
+  ReadHdfPtree(vesselSettings, h5_vessel_params_of_previous_run);
+  ReadHdfPtree(bfSettings, h5_calcflow_of_previous_run);
+  ReadHdfPtree(fakeTumSettings, h5_params_of_previous_run);
+  
+  //boost::property_tree::update(vesselSettings, pt_params.get_child("vessels"));
+  //boost::property_tree::update(bfSettings, pt_params.get_child("calcflow"));
+  //boost::property_tree::update(fakeTumSettings, pt_params);
+  
+  s.vessel_model.params.assign(vesselSettings);
+  s.params.bfparams.assign(bfSettings);
+  s.params.assign(fakeTumSettings);
+  
+  try
+  {
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
+    int returnCode = s.run();
+  }
+  catch(std::exception &ex)
+  {
+    std::cout << ex.what();
+  }
+}
 void export_faketum()
 {
   py::def("run_faketum_", run_fakeTumor);
+  py::def("rerun_faketum_", rerun_fakeTumor);
 }
 
 /** @brief BulkTissue no vessels
