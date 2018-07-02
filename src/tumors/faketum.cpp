@@ -210,7 +210,7 @@ int FakeTum::FakeTumorSim::run()
     H5::Group h5_vessels;
     try{
       file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
-      h5_vessels = file.openGroup("vessels");
+      h5_vessels = file.openGroup(params.vessel_path);
     }
     catch(H5::Exception e)
     {
@@ -342,6 +342,7 @@ int FakeTum::FakeTumorSim::run()
 //       writeVesselsafter_initial_adaption = false;
 //     }
     time += params.dt;
+    ++output_num;
     ++num_iteration;
   }
 
@@ -388,6 +389,7 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     h5_vessel_parameters = h5_parameters.createGroup("vessels");
     writeAttrToH5(root, string("MESSAGE"), params.message);
     writeAttrToH5(root, string("VESSELTREEFILE"), params.fn_vessel);
+    writeAttrToH5(root, string("VESSELTREEPATH"), params.vessel_path);
     writeAttrToH5(root, string("OUTPUT_NAME"), params.fn_out);
     writeAttrToH5(root, string("VESSELFILE_MESSAGE"), params.vesselfile_message);
     writeAttrToH5(root, string("VESSELFILE_ENSEMBLE_INDEX"), params.vesselfile_ensemble_index);
@@ -435,5 +437,5 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
   }
   
   f.close();
-  ++output_num;
+  
 }

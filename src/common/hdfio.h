@@ -121,8 +121,8 @@ void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer
 /** @brief
  * write attributes to Group or DataSet
  */
-template <class U, class T>
-void writeAttrToH5(U &h, const string &attr_name,  const T &value);
+template <class T>
+void writeAttrToH5(H5::H5Location &h, const string &attr_name,  const T &value);
 
 
 

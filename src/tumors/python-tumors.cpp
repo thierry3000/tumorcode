@@ -239,6 +239,9 @@ void run_fakeTumor(const py::str &param_info_str)
   s.params.bfparams.assign(bfSettings);
   s.params.assign(fakeTumSettings);
   
+  //since the rerun option, we need that to be flexible
+  s.params.vessel_path = std::string("vessels");
+  
   try
   {
 #ifdef EPETRA_MPI
@@ -332,6 +335,9 @@ void rerun_fakeTumor(const py::str &filename_of_previous_run)
   s.params.bfparams.assign(bfSettings);
   s.params.assign(fakeTumSettings);
   
+  //override read in vessels
+  s.params.fn_vessel = fn_of_previous_sim_c_str;
+  s.params.vessel_path = std::string("last_state/vessels");
   try
   {
 #ifdef EPETRA_MPI

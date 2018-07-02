@@ -41,7 +41,7 @@ struct Parameters
   double latest_executed_timepoint;
   
   string message;
-  string fn_out, fn_vessel, vesselfile_message;
+  string fn_out, fn_vessel, vessel_path, vesselfile_message;
   string paramset_name;
   int vesselfile_ensemble_index;
   double rGf;
