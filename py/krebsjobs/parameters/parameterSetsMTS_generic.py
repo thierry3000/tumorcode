@@ -48,7 +48,7 @@ milotti_mts['detailedo2'] = parameterSetsO2.milotti_o2
 milotti_mts['detailedo2'].update(
     useCellBasedUptake=True
     )
-milotti_mts['vessels'] = parameterSetsFakeTumor.milotti_mts_3
+milotti_mts['vessels'] = parameterSetsFakeTumor.milotti_mts_3['vessels']
 milotti_mts.update(
     out_intervall = 1,
     tumor_speed = 0.2,
@@ -61,11 +61,230 @@ milotti_mts.update(
     tend=1400.,
     useConstO2 = False,
     )
-
+milotti_mts = deepcopy(milotti_mts)
+milotti_mts['detailedo2'].update(
+    solubility_tissue = 2.8e-5,
+    extra_tissue_source_const = 0.0,
+    )
 milotti_mts_2 = deepcopy(milotti_mts)
 milotti_mts_2.update(
     useConstO2=True,
     )
+#note: one needs more than 5 iterations for the bisect to converge
+'''
+error in function boost::math::tools::bisect<d>: No change of sign in 
+boost::math::tools::bisect, either there is no root to find, 
+or there are multiple roots in the interval (f(min) = 7.2726904991920653)
+'''
+milotti_mts_3 = deepcopy(milotti_mts)
+milotti_mts_3['detailedo2'].update(
+    max_iter = 5,
+    )
+
+milotti_mts_4 = deepcopy(milotti_mts)
+milotti_mts_4['detailedo2'].update(
+    rO2Consumtion = 5.,
+    )
+milotti_mts_5 = deepcopy(milotti_mts)
+milotti_mts_5.update(
+    rO2Consumtion = 30.,
+    )
+milotti_mts_6 = deepcopy(milotti_mts)
+milotti_mts_6.update(
+    tumor_radius = 10.,
+    tumor_speed = 1.,
+    out_intervall = 1,
+    tend=1000.,
+    )
+milotti_mts_6['vessels'].update(
+    radInit = 2.6,
+    radMin = 3.5,
+    probCollapse = 0.1,
+    forceCollapse = 0.00025,
+    bShearStressControlledDilatationAndRadiusDependentCollapse = False,
+)
+milotti_mts_7 = deepcopy(milotti_mts_6)
+milotti_mts_7['useTumorcodeVessels'] = True
+milotti_mts_7['detailedo2'].update(
+    max_iter = 50,
+    loglevel=1,
+    useCellBasedUptake=True,
+    michaelis_menten_uptake = True,
+    )
+milotti_mts_7b = deepcopy(milotti_mts_7)
+milotti_mts_7b.update(
+	tend=9999.,
+)
+milotti_mts_7c = deepcopy(milotti_mts_7b)
+milotti_mts_7c.update(
+	rGf = 1.,
+	gf_production_threshold = 0.01,
+)
+milotti_mts_8 = deepcopy(milotti_mts_7)
+#milotti_mts_8['useTumorcodeVessels'] = False
+milotti_mts_8.update(
+    useConstO2 = True,
+    )
+milotti_mts_8b= deepcopy(milotti_mts_8)
+milotti_mts_8b.update(
+    tend=9999.,
+    )
+milotti_mts_8c= deepcopy(milotti_mts_8b)
+milotti_mts_8c.update(
+    rGf = 1.,
+    gf_production_threshold = 0.01,
+    )
+''' changed g_env[k] to g_env[i]
+    old geometry as sent from milotti by email
+'''
+'''
+no const o2, skip convergence
+'''
+milotti_mts_9 = deepcopy(milotti_mts_7)
+milotti_mts_9['detailedo2'].update(
+    max_iter = 200,
+    convergence_tolerance = 1e-2,
+    )
+milotti_mts_10 = deepcopy(milotti_mts_7)
+milotti_mts_10.update(
+    rO2Consumtion = 5.,
+    )
+milotti_mts_11 = deepcopy(milotti_mts_7)
+milotti_mts_11.update(
+    rO2Consumtion = 30.,
+    )
+milotti_mts_12 = deepcopy(milotti_mts_7)
+milotti_mts_12.update(
+    rO2Consumtion = 50.,
+    )
+milotti_mts_13 = deepcopy(milotti_mts_7c)
+milotti_mts_13.update(
+	rGf = 1.,
+	gf_production_threshold = 1e8,
+)
+milotti_mts_14 = deepcopy(milotti_mts_13)
+milotti_mts_14.update(
+	useConstO2 = True,
+)
+milotti_mts_14['vessels'].update(
+	gfVessProl = 1e8,
+)
+vbl = dict(
+    tissuePressureDistribution = 'sphere',
+    gf_production_threshold =  0.01,
+    lattice_size = 20,
+    lattice_scale = 50.0,
+    tumor_speed = 1.0,
+    useTumorcodeVessels = True,
+    rGf = 1.0,
+    dt = 1,
+    tend = 9999.0,
+    message ='',
+    tumor_radius = 10.0,
+    num_threads = 6,
+    rO2Consumtion = 10.0,
+    tissuePressureWidth = 500.0,
+    tissuePressureCenterFraction = 0.0,
+    stopping_radius_fraction = 0.6,
+    useConstO2 = False,
+    out_intervall = 1,
+    detailedo2 = dict(
+        solubility_plasma = 3.1e-05,
+        solubility_tissue = 2.8e-05,
+        rd_tum = 50.0,
+        mmcons_k_norm = 4.0,
+        mmcons_k_tum = 2.0,
+        mmcons_k_necro = 2.0,
+        mmcons_m0_norm = 6.1e-05,
+        mmcons_m0_tum = 0.000244,
+        mmcons_m0_necro = 0.0,
+        rd_norm = 150.0,
+        po2init_r0 = 55.0,
+        massTransferCoefficientModelNumber = 1,
+        rd_necro = 150.0,
+        D_plasma = 2750.0,
+        extra_tissue_source_linear = 0.0,
+        extra_tissue_source_const = 0.0,
+        tissue_po2_boundary_condition = 'neumann',
+        tissue_boundary_value = 0.0,
+        sat_curve_p50 = 27.0,
+        detailedO2name = 'vbl_o2',
+        po2init_dr = 1.0,
+        po2init_cutoff = 100.0,
+        axial_integration_step_factor = 0.25,
+        michaelis_menten_uptake = True,
+        approximateInsignificantTransvascularFlux = True,
+        conductivity_coeff1 = 8,
+        conductivity_coeff2 = 4.7,
+        conductivity_coeff3 = 0, 
+        max_iter = 50,
+        transvascular_ring_size = 0.5,
+        c0 = 0.5,
+        convergence_tolerance = 0.001,
+        num_threads = 4,
+        loglevel = 1,
+        debug_zero_o2field = False,
+        useCellBasedUptake = True,
+        calcflow = dict(
+            viscosityPlasma = 1.2e-06,
+            rheology = 'RheologySecomb2005',
+            includePhaseSeparationEffect = 1,
+            inletHematocrit =  0.45
+            ),
+        sat_curve_exponent = 2.7,
+        haemoglobin_binding_capacity = 0.5,
+        debug_fn = 'none.h5',
+        grid_lattice_const = 50.0
+        ),
+    vessels = dict(
+        dematuration_rate = 0.05,
+        forceCollapse = 0.00025,
+        onlyReduceMaturationIfUnderperfused = True,
+        timeProlEcSprout = 2,
+        bShearStressControlledDilatationAndRadiusDependentCollapse = False,
+        maturation_crit = 0,
+        radInit = 2.6,
+        isShearForceEffectLinear = False,
+        forceEnlarge = 0.01,
+        bSproutModelSimple = False,
+        bRelativeShearforceCollapse = False,
+        timeEcRadiusInflate = 144,
+        gfVessProl = 0.01,
+        sproutDelay = 12,
+        pressMax = 13,
+        radiusSmoothingDiffusionCoeff = 1,
+        timeProlEcSproutLifetime = 50,
+        pressMin = 0,
+        distSproutMin = 8,
+        radMax = 8.14502,
+        radMin = 3.5,
+        timeEcRadiusDeflate = 60,
+        bRadiusSmoothing = False,
+        vesselCompressionFactor = 1,
+        seed = 12348,
+        sproutMaxVesselWallThickness = 50,
+        sproutMaxVesselWallThicknessArterial = 50,
+        probCollapse =  0.1
+        ),
+#    calcflow = dict(
+#        viscosityPlasma = 1.2e-06,
+#        rheology = 'RheologyForHuman',
+#        includePhaseSeparationEffect = False,
+#        inletHematocrit = 0.37
+#        ),
+)
+vbl['calcflow'] = vbl['detailedo2']['calcflow']
+
+vbl_disable_vessel_remodelling = deepcopy(vbl) #former milotti_mts_14
+vbl_disable_vessel_remodelling['vessels']['gfVessProl'] = 1e8
+
+vbl_dvr_const_o2 = deepcopy(vbl_disable_vessel_remodelling)
+vbl_dvr_const_o2['useConstO2'] = True
+
+vbl_const_o2 = deepcopy(vbl)
+vbl_const_o2['useConstO2'] = True
 
 if __name__ == '__main__':
-  print(milotti_detailed)
+  #print(milotti_mts_13)
+  aDict = milotti_mts_7c['vessels']
+  print(vbl)
