@@ -40,6 +40,8 @@ struct Parameters
   double dt;
   double latest_executed_timepoint;
   
+  bool isRerun;
+  
   string message;
   string fn_out, fn_vessel, vessel_path, vesselfile_message;
   string paramset_name;
@@ -72,6 +74,8 @@ struct FakeTumorSim : public boost::noncopyable
 
   double tumor_radius;
   double time;
+  double next_output_time;
+  double next_adaption_time;
   int num_iteration;
   int output_num;
 

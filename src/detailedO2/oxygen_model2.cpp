@@ -999,11 +999,14 @@ void ComputeVesselO2Conc(const VesselNode* node, const Parameters &params, Vesse
   double qblood = 0., qrbc = 0., mo2flux = 0.;
   int num_inflow_nodes = 0, num_outflow_nodes = 0;
   
-  for (int i=0; i<node->Count(); ++i)//loop over incoming edges see eq. (12)
+  //loop over incoming edges see eq. (12)
+  for (int i=0; i<node->Count(); ++i)
   {
     NodeNeighbor<const VesselNode*, const Vessel*> nb = node->GetNode(i);
-    if (!nb.edge->IsCirculated()) continue;
-    if (nb.node->press <= node->press) continue;
+    if (!nb.edge->IsCirculated()) 
+      continue;
+    if (nb.node->press <= node->press) 
+      continue;
     ++num_inflow_nodes;
     int side_index = (nb.edge->NodeA() == node) ? 0 : 1;
     double po2_vess = vesselpo2[nb.edge->Index()][side_index];
@@ -1027,11 +1030,14 @@ void ComputeVesselO2Conc(const VesselNode* node, const Parameters &params, Vesse
     myAssert(po2 <= 1000.);
   }
   
-  for (int i=0; i<node->Count(); ++i)//loop over outgoing edges
+  //loop over outgoing edges
+  for (int i=0; i<node->Count(); ++i)
   {
     NodeNeighbor<const VesselNode*, const Vessel*> nb = node->GetNode(i);
-    if (!nb.edge->IsCirculated()) continue;
-    if (nb.node->press >= node->press) continue;
+    if (!nb.edge->IsCirculated()) 
+      continue;
+    if (nb.node->press >= node->press) 
+      continue;
     ++num_outflow_nodes;
     int side_index = (nb.edge->NodeA() == node) ? 0 : 1;
     vesselpo2[nb.edge->Index()][side_index] = po2;//write the calculated pressure to the corresponding lattice sites

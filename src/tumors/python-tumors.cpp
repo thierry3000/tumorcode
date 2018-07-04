@@ -241,7 +241,7 @@ void run_fakeTumor(const py::str &param_info_str)
   
   //since the rerun option, we need that to be flexible
   s.params.vessel_path = std::string("vessels");
-  
+  s.params.isRerun = false;
   try
   {
 #ifdef EPETRA_MPI
@@ -313,6 +313,7 @@ void rerun_fakeTumor(const py::str &filename_of_previous_run)
   H5::Group h5_params_of_previous_run;
   H5::Group h5_vessel_params_of_previous_run;
   H5::Group h5_calcflow_of_previous_run;
+  H5::Group last_state;
   try{
     file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
     h5_params_of_previous_run = file.openGroup("/parameters");
@@ -338,6 +339,22 @@ void rerun_fakeTumor(const py::str &filename_of_previous_run)
   //override read in vessels
   s.params.fn_vessel = fn_of_previous_sim_c_str;
   s.params.vessel_path = std::string("last_state/vessels");
+  //s.params.vessel_path = std::string("vessels");
+  try{
+    last_state = file.openGroup("/last_state");
+  }
+  catch(H5::Exception e)
+  {
+    e.printErrorStack();
+  }
+  s.params.isRerun = true;
+  readAttrFromH5(last_state, string("OUTPUT_NUM"), s.output_num);
+  readAttrFromH5(last_state, string("NUM_ITERATION"), s.num_iteration);
+  readAttrFromH5(last_state, string("time"), s.time);
+  readAttrFromH5(last_state, string("NEXT_OUTPUT_TIME"), s.next_output_time);
+  readAttrFromH5(last_state, string("NEXT_ADAPTION_TIME"), s.next_adaption_time);
+  file.close();
+  
   try
   {
 #ifdef EPETRA_MPI

@@ -116,6 +116,8 @@ struct Parameters
   double lattice_scale = 10;
   bool useConstO2;
   bool useTumorcodeVessels;
+  int output_num;
+  double time;
   
   Parameters();
   void assign(const ptree &pt);

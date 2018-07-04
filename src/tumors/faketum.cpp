@@ -39,6 +39,7 @@ FakeTum::Parameters::Parameters()
   stopping_radius_fraction = 0.6;
   paramset_name = "aname";
   message = "";
+  isRerun = false;
 #ifdef USE_ADAPTION
   apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
 #endif
@@ -60,6 +61,7 @@ void FakeTum::Parameters::assign(const ptree &pt)
   DOPT(stopping_radius_fraction);
   DOPT(tissuePressureWidth);
   DOPT(tissuePressureCenterFraction);
+  DOPT(isRerun);
 //   std::vector<string> myOptions = {"message", 
 //     "paramset_name", 
 //     "num_threads",
@@ -115,6 +117,7 @@ ptree FakeTum::Parameters::as_ptree() const
   DOPT(rGf);
   DOPT(tumor_radius);
   DOPT(tumor_speed);
+  DOPT(isRerun);
   DOPT(stopping_radius_fraction);
   if (tissuePressureDistribution == TISSUE_PRESSURE_SPHERE) pt.put("tissuePressureDistribution", "sphere");
   else if (tissuePressureDistribution == TISSUE_PRESSURE_SHELL) pt.put("tissuePressureDistribution", "shell");
@@ -195,7 +198,7 @@ int FakeTum::FakeTumorSim::run()
 //   }
   // direct cout through log
   cout.rdbuf(my::log().rdbuf());
-  {
+  
 // #ifdef USE_ADAPTION
 //     ptree adaptionSettings = params.adap_params.as_ptree();
 //     boost::property_tree::update(adaptionSettings,(pt_params.get_child("adaption")).get_child("adaption"));
@@ -204,73 +207,82 @@ int FakeTum::FakeTumorSim::run()
 //     // do be done
 //     //this->params.adap_params.radMin_for_kill = this->model.params.radMin;
 // #endif
-    //HACK2018
-    //my::SetNumThreads(params.num_threads);
-    H5::H5File file;
-    H5::Group h5_vessels;
-    try{
-      file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
-      h5_vessels = file.openGroup(params.vessel_path);
-    }
-    catch(H5::Exception e)
-    {
-      e.printErrorStack();
-    }
-    
-    ptree pt;
+  //HACK2018
+  //my::SetNumThreads(params.num_threads);
+  H5::H5File file;
+  H5::Group h5_vessels;
+  try{
+    file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
+    h5_vessels = file.openGroup(params.vessel_path);
+  }
+  catch(H5::Exception e)
+  {
+    e.printErrorStack();
+  }
+  
+  ptree pt;
+  if( ! params.isRerun)
+  {
     pt.put("scale subdivide", 10.);
-    vl = ReadVesselList3d(h5_vessels, pt);
-    
-    // adjust vessel list ld
-    const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
-    vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
+  }
+  vl = ReadVesselList3d(h5_vessels, pt);
+  
+  // adjust vessel list ld
+  const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
+  vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
 
-    cout << "--------------------"<< endl;
-    cout << "Vessel Lattice is: " << endl;
-    vl->Ld().print(cout); cout  << endl;
-    cout << "--------------------"<< endl;
+  cout << "--------------------"<< endl;
+  cout << "Vessel Lattice is: " << endl;
+  vl->Ld().print(cout); cout  << endl;
+  cout << "--------------------"<< endl;
 
-    H5::Group h5params = file.openGroup("/parameters");
-    
-    try{
-      string message;
-      readAttrFromH5(h5params, string("MESSAGE"),message);
-      params.vesselfile_message = message;
-      int index;
-      readAttrFromH5(h5params, string("ENSEMBLE_INDEX"),index);
-      params.vesselfile_ensemble_index = index;
-    }
-    catch(H5::Exception e)
-    {
-      e.printErrorStack();
-    }
-    
-    file.close();
-    
+  H5::Group h5params = file.openGroup("/parameters");
+  
+  /* this part is for multiple files
+    * -> spared for later
+    */
+  /*
+  try{
+    string message;
+    readAttrFromH5(h5params, string("MESSAGE"),message);
+    params.vesselfile_message = message;
+    int index;
+    readAttrFromH5(h5params, string("ENSEMBLE_INDEX"),index);
+    params.vesselfile_ensemble_index = index;
+  }
+  catch(H5::Exception e)
+  {
+    e.printErrorStack();
+  
+  */
+  file.close();
+  
 //     params.vesselfile_message = file.root().open_group("parameters").attrs().get<string>("MESSAGE");
 //     params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
-    
-    VesselModel1::Callbacks callbacks;
-    callbacks.getGf = boost::bind(&FakeTumorSim::getGf, boost::ref(*this), _1);
-    callbacks.getPress = boost::bind(&FakeTumorSim::getPress, boost::ref(*this), _1);
-    callbacks.getTumorDens = boost::bind(&FakeTumorSim::getTumorDens, boost::ref(*this), _1);
-    callbacks.getGfGrad = boost::bind(&FakeTumorSim::getGfGrad, boost::ref(*this), _1);
+  
+  VesselModel1::Callbacks callbacks;
+  callbacks.getGf = boost::bind(&FakeTumorSim::getGf, boost::ref(*this), _1);
+  callbacks.getPress = boost::bind(&FakeTumorSim::getPress, boost::ref(*this), _1);
+  callbacks.getTumorDens = boost::bind(&FakeTumorSim::getTumorDens, boost::ref(*this), _1);
+  callbacks.getGfGrad = boost::bind(&FakeTumorSim::getGfGrad, boost::ref(*this), _1);
 
-    /* need to compute flow because shearforce must be
-     * known and be consistent with current parameters.
-     * Shear force is used e.g. in model.Init to initialize
-     * f_initial. */
-    CalcFlow(*vl, params.bfparams); 
-    vessel_model.Init(vl.get(), this->vessel_model.params, callbacks);
-  }
+  /* need to compute flow because shearforce must be
+    * known and be consistent with current parameters.
+    * Shear force is used e.g. in model.Init to initialize
+    * f_initial. */
+  CalcFlow(*vl, params.bfparams); 
+  vessel_model.Init(vl.get(), this->vessel_model.params, callbacks);
+  
 
   tumor_radius = params.tumor_radius;
-  time = 0.;
-  num_iteration = 0.;
-  output_num = 0;
-  
-  double next_output_time = 0.;
-  double next_adaption_time = 0.;
+  if( !params.isRerun)
+  {
+    time = 0.;
+    num_iteration = 0.;
+    output_num = 0;
+    next_output_time = 0;
+    next_adaption_time = 0;
+  }
   
   //for the adaption it could be usefull to have the
   //vessel network after the adaption in the beginning   ---> done automatically since adaption is in tum-only-vessels
@@ -366,13 +378,20 @@ void FakeTum::FakeTumorSim::doStep(double dt)
 void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
-  H5::H5File f;
+  H5::H5File f_out;
   H5::Group root, gout, h5_tum, h5_parameters, h5_vessel_parameters;
   H5::Attribute a;
+  std::cout << "threads: " << omp_get_num_threads() << std::endl;
   try{
-    f = H5::H5File(params.fn_out, output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
-    //f = H5::H5File(params.fn_out, H5F_ACC_RDWR );
-    root = f.openGroup("/");
+    if( !params.isRerun)
+    {
+      f_out = H5::H5File(params.fn_out, output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
+    }
+    else
+    {
+      f_out = H5::H5File(params.fn_out, H5F_ACC_RDWR );
+    }
+    root = f_out.openGroup("/");
   }
   catch(H5::Exception e)
   {
@@ -415,6 +434,9 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     }
     writeAttrToH5(gout, string("time"), time);
     writeAttrToH5(gout, string("OUTPUT_NUM"), output_num);
+    writeAttrToH5(gout, string("NUM_ITERATION"), num_iteration);
+    writeAttrToH5(gout, string("NEXT_OUTPUT_TIME"), next_output_time);
+    writeAttrToH5(gout, string("NEXT_ADAPTION_TIME"), next_adaption_time);
     H5::Group h5_current_vessels = gout.createGroup("vessels");
     WriteVesselList3d(*vl, h5_current_vessels);
     LatticeDataQuad3d ld;
@@ -435,7 +457,6 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
   {
     e.printErrorStack();
   }
-  
-  f.close();
+  f_out.close();
   
 }
