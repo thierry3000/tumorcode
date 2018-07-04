@@ -32,12 +32,14 @@ import pprint
 import numpy as np
 import h5py
 import identifycluster
-if identifycluster.getname()=='snowden':
-  print('Install vtk on snowden!!!')
-  #return 0
-else:
-  from vtk import *
-#from vtk import *
+#if identifycluster.getname()=='snowden':
+#  print('Install vtk on snowden!!!')
+#  #done ;-)
+#  #return 0
+#else:
+#  from vtk import *
+  
+from vtk import *
 from vtkcommon import *
 import extensions
 import itertools

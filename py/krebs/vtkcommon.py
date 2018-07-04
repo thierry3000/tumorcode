@@ -28,12 +28,7 @@ from os.path import join, basename, dirname, splitext
 #add path to curvature
 sys.path.append(join(dirname(__file__),'..'))
 from curvature import estimateCurvatures
-import identifycluster
-if identifycluster.getname()=='snowden':
-  import pyvtk as vtk
-else:
-  import vtk
-
+import vtk
 
 def vtkArrayFactory(dtype):
   """return a vtk array type for an element type.

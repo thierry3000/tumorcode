@@ -28,12 +28,7 @@ import posixpath
 import numpy as np
 import h5py
 import collections
-import extensions # for asarray with h5py support
-import identifycluster
-if identifycluster.getname()=='snowden':
-  import pyvtk as vtk
-else:
-  import vtk
+import vtk
 import vtkcommon
 import myutils
 import krebsutils as ku
