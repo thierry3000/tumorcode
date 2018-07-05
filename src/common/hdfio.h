@@ -114,16 +114,24 @@ H5::DataType getH5TypeFromCpp();
 //template<class U, class T>
 //void readAttrFromH5(U &g, const string &attr_name, T &output_buffer);
 
+#if H5_VERS_MINOR > 9
+template<class T>
+void readAttrFromH5(H5::H5Object &g, const string &attr_name, T &output_buffer);
+#else //#if H5_VERS_MINOR > 9
 template<class T>
 void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer);
-
+#endif //#if H5_VERS_MINOR > 9
 
 /** @brief
  * write attributes to Group or DataSet
  */
+#if H5_VERS_MINOR > 9
+template <class T>
+void writeAttrToH5(H5::H5Object &h, const string &attr_name,  const T &value);
+#else //#if H5_VERS_MINOR > 9
 template <class T>
 void writeAttrToH5(H5::H5Location &h, const string &attr_name,  const T &value);
-
+#endif //#if H5_VERS_MINOR > 9
 
 
 template<class T>

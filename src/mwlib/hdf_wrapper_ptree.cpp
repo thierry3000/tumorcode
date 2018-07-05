@@ -90,6 +90,25 @@ void printObjectName( H5::H5Location &g, const H5std_string attr_name, void* ope
   }
 }
 
+#if H5_VERS_MINOR > 9
+void add_all_attributes_to_ptree( H5::H5Object &g, const H5std_string attr_name, void* p_to_user_data)
+{
+  boost::property_tree::ptree *pt = static_cast<boost::property_tree::ptree *>(p_to_user_data);
+  try
+  {
+    std::string output_buffer; // I hope all ptree values are also strings
+    readAttrFromH5(g, attr_name, output_buffer);
+#ifndef NDEBUG
+    std::cout << "adding " << attr_name << " : " << output_buffer << " to ptree." << std::endl;
+#endif
+    pt->put(attr_name, output_buffer);
+  }
+  catch(H5::Exception e)
+  {
+    e.printError();
+  }
+}
+#else // H5_VERS_MINOR > 9
 void add_all_attributes_to_ptree( H5::H5Location &g, const H5std_string attr_name, void* p_to_user_data)
 {
   boost::property_tree::ptree *pt = static_cast<boost::property_tree::ptree *>(p_to_user_data);
@@ -107,6 +126,8 @@ void add_all_attributes_to_ptree( H5::H5Location &g, const H5std_string attr_nam
     e.printError();
   }
 }
+#endif // H5_VERS_MINOR > 9
+
 
 void ReadHdfPtree(boost::property_tree::ptree &pt, H5::Group &f, HdfWritePtreeAs storage_mode)
 {

@@ -180,5 +180,7 @@ if __name__ == '__main__':
     print('starting rerun with file: %s' % goodArguments.vesselFileNames[0].name)
     if not os.path.isfile(goodArguments.vesselFileNames[0].name):
       raise AssertionError('The file %s is not present!'%goodArguments.vesselFileNames[0].name)
-    rerun(str(goodArguments.vesselFileNames[0].name), 'rerun_of_', '2GB', 5.)
+    string_to_provide = str(goodArguments.vesselFileNames[0].name)
+    goodArguments.vesselFileNames[0].close()
+    rerun(string_to_provide, 'rerun_of_', '2GB', 5.)
     

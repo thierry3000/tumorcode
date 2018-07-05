@@ -118,6 +118,25 @@ H5::DataType getH5TypeFromCpp()
 //     error.printErrorStack();
 //   }
 // }
+
+#if H5_VERS_MINOR > 9
+template<class T>
+void readAttrFromH5(H5::H5Object &g, const string &attr_name, T &output_buffer)
+{
+  H5::Attribute att_to_read;
+  H5::DataType type; 
+  try
+  {
+    att_to_read = g.openAttribute(attr_name);
+    type = att_to_read.getDataType();
+    att_to_read.read(type, &output_buffer);
+  }
+  catch(H5::Exception error)
+  {
+    error.printErrorStack();
+  }
+}
+#else //#if H5_VERS_MINOR > 9
 template<class T>
 void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer)
 {
@@ -134,6 +153,7 @@ void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer
     error.printErrorStack();
   }
 }
+#endif //#if H5_VERS_MINOR > 9
 
 
 // template<>
@@ -189,6 +209,34 @@ void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer
 //   output_buffer = strreadbuf;
 // }
 
+#if H5_VERS_MINOR > 9
+template<>
+void readAttrFromH5<string>(H5::H5Object &g, const string &attr_name, string &output_buffer)
+{ 
+  H5::Attribute att_to_read = g.openAttribute(attr_name);
+  //H5::DataType type = att_to_read.getDataType();
+  
+  // Create new dataspace for attribute
+  H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
+
+  // Create new string datatype for attribute
+  H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
+
+  // Set up read buffer for attribute
+  H5std_string strreadbuf ("");
+
+  // Create attribute and write to it
+  try
+  {
+    att_to_read.read(strdatatype, strreadbuf);
+  }
+  catch(H5::Exception error)
+  {
+    error.printErrorStack();
+  }
+  output_buffer = strreadbuf;
+}
+#else //#if H5_VERS_MINOR > 9
 template<>
 void readAttrFromH5<string>(H5::H5Location &g, const string &attr_name, string &output_buffer)
 { 
@@ -215,7 +263,40 @@ void readAttrFromH5<string>(H5::H5Location &g, const string &attr_name, string &
   }
   output_buffer = strreadbuf;
 }
+#endif //#if H5_VERS_MINOR > 9
 
+#if H5_VERS_MINOR > 9
+template <class T>
+void writeAttrToH5(H5::H5Object &h, const string &attr_name,  const T &value)
+{ 
+  H5::DataType thisType = getH5TypeFromCpp<T>();
+  const int rank = 2;
+  hsize_t dims[rank];
+  dims[0] = 1;
+  if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
+  {
+    dims[1] = 3;
+  }
+  else
+  {
+    dims[1] = 1;
+  }
+  if(typeid(T) == typeid(Int6))
+  {
+    dims[1] = 6;
+  }
+  H5::DataSpace mspace = H5::DataSpace( rank, dims);
+  H5::Attribute attr_out;
+  try{
+    attr_out = h.createAttribute(attr_name, thisType, mspace);
+  }
+  catch(H5::Exception e)
+  {
+    e.printErrorStack();
+  }
+  attr_out.write(thisType, &value);
+};
+#else //#if H5_VERS_MINOR > 9
 template <class T>
 void writeAttrToH5(H5::H5Location &h, const string &attr_name,  const T &value)
 { 
@@ -246,6 +327,30 @@ void writeAttrToH5(H5::H5Location &h, const string &attr_name,  const T &value)
   }
   attr_out.write(thisType, &value);
 };
+
+#endif //#if H5_VERS_MINOR > 9
+
+#if H5_VERS_MINOR > 9
+template<>
+void writeAttrToH5<string>(H5::H5Object &h, const string &attr_name, const string &value)
+{ 
+  // Create new dataspace for attribute
+  H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
+  // Create new string datatype for attribute
+  H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
+  // Set up write buffer for attribute
+  const H5std_string strwritebuf (value);
+  try
+  {
+    H5::Attribute myatt_in = h.createAttribute(attr_name, strdatatype, attr_dataspace);
+    myatt_in.write(strdatatype, strwritebuf);
+  }
+  catch(H5::Exception error)
+  {
+    error.printErrorStack();
+  }
+};
+#else //#if H5_VERS_MINOR > 9
 template<>
 void writeAttrToH5<string>(H5::H5Location &h, const string &attr_name, const string &value)
 { 
@@ -265,6 +370,7 @@ void writeAttrToH5<string>(H5::H5Location &h, const string &attr_name, const str
     error.printErrorStack();
   }
 };
+#endif //#if H5_VERS_MINOR > 9
 // template<>
 // void writeAttrToH5<H5::DataSet,string>(H5::DataSet &h, const string &attr_name, const string &value)
 // { 
@@ -1240,20 +1346,37 @@ INSTANTIATE2(string)
 // INSTANTIATE_H5Cpp_read(H5::DataSet, Bool3)
 // #undef INSTANTIATE_H5Cpp_read
 
-#define INSTANTIATE_H5Cpp_read(T)\
-  template void readAttrFromH5<T>(H5::H5Location &g, const string &name, T &output_buffer);
-INSTANTIATE_H5Cpp_read(float)
-INSTANTIATE_H5Cpp_read(Float3)
-INSTANTIATE_H5Cpp_read(double)
-INSTANTIATE_H5Cpp_read(Double3)
-INSTANTIATE_H5Cpp_read(int)
-INSTANTIATE_H5Cpp_read(Int3)
-INSTANTIATE_H5Cpp_read(Int6)
-INSTANTIATE_H5Cpp_read(bool)
-INSTANTIATE_H5Cpp_read(uchar)
-INSTANTIATE_H5Cpp_read(Bool3)
-#undef INSTANTIATE_H5Cpp_read
-
+#if H5_VERS_MINOR > 9
+  #define INSTANTIATE_H5Cpp_read(T)\
+    template void readAttrFromH5<T>(H5::H5Object &g, const string &name, T &output_buffer);
+  INSTANTIATE_H5Cpp_read(float)
+  INSTANTIATE_H5Cpp_read(Float3)
+  INSTANTIATE_H5Cpp_read(double)
+  INSTANTIATE_H5Cpp_read(Double3)
+  INSTANTIATE_H5Cpp_read(int)
+  INSTANTIATE_H5Cpp_read(Int3)
+  INSTANTIATE_H5Cpp_read(Int6)
+  INSTANTIATE_H5Cpp_read(bool)
+  INSTANTIATE_H5Cpp_read(uchar)
+  INSTANTIATE_H5Cpp_read(Bool3)
+  #undef INSTANTIATE_H5Cpp_read
+#else //#if H5_VERS_MINOR > 9
+  #define INSTANTIATE_H5Cpp_read(T)\
+    template void readAttrFromH5<T>(H5::H5Location &g, const string &name, T &output_buffer);
+  INSTANTIATE_H5Cpp_read(float)
+  INSTANTIATE_H5Cpp_read(Float3)
+  INSTANTIATE_H5Cpp_read(double)
+  INSTANTIATE_H5Cpp_read(Double3)
+  INSTANTIATE_H5Cpp_read(int)
+  INSTANTIATE_H5Cpp_read(Int3)
+  INSTANTIATE_H5Cpp_read(Int6)
+  INSTANTIATE_H5Cpp_read(bool)
+  INSTANTIATE_H5Cpp_read(uchar)
+  INSTANTIATE_H5Cpp_read(Bool3)
+  #undef INSTANTIATE_H5Cpp_read
+#endif //#if H5_VERS_MINOR > 9
+  
+  
 // #define INSTANTIATE_H5Cpp1_write(U,T)\
 //   template void writeAttrToH5<U,T>(U &h, const string &name, const T &output_buffer);
 // INSTANTIATE_H5Cpp1_write(H5::Group, float)
@@ -1284,23 +1407,40 @@ INSTANTIATE_H5Cpp_read(Bool3)
 // //INSTANTIATE_H5Cpp1_write(H5::DataSet, string)
 // #undef INSTANTIATE_H5Cpp1_write
 
-
-#define INSTANTIATE_H5Cpp1_write(T)\
-  template void writeAttrToH5<T>(H5::H5Location &h, const string &name, const T &output_buffer);
-INSTANTIATE_H5Cpp1_write(float)
-INSTANTIATE_H5Cpp1_write(Float3)
-INSTANTIATE_H5Cpp1_write(double)
-INSTANTIATE_H5Cpp1_write(Double3)
-INSTANTIATE_H5Cpp1_write(int)
-INSTANTIATE_H5Cpp1_write(Int3)
-INSTANTIATE_H5Cpp1_write(Int6)
-INSTANTIATE_H5Cpp1_write(bool)
-INSTANTIATE_H5Cpp1_write(uchar)
-INSTANTIATE_H5Cpp1_write(Bool3)
-INSTANTIATE_H5Cpp1_write(unsigned long)
-//INSTANTIATE_H5Cpp1_write(H5::Group, string)
-#undef INSTANTIATE_H5Cpp1_write
-
+#if H5_VERS_MINOR > 9
+  #define INSTANTIATE_H5Cpp1_write(T)\
+    template void writeAttrToH5<T>(H5::H5Object &h, const string &name, const T &output_buffer);
+  INSTANTIATE_H5Cpp1_write(float)
+  INSTANTIATE_H5Cpp1_write(Float3)
+  INSTANTIATE_H5Cpp1_write(double)
+  INSTANTIATE_H5Cpp1_write(Double3)
+  INSTANTIATE_H5Cpp1_write(int)
+  INSTANTIATE_H5Cpp1_write(Int3)
+  INSTANTIATE_H5Cpp1_write(Int6)
+  INSTANTIATE_H5Cpp1_write(bool)
+  INSTANTIATE_H5Cpp1_write(uchar)
+  INSTANTIATE_H5Cpp1_write(Bool3)
+  INSTANTIATE_H5Cpp1_write(unsigned long)
+  //INSTANTIATE_H5Cpp1_write(H5::Group, string)
+  #undef INSTANTIATE_H5Cpp1_write
+#else //#if H5_VERS_MINOR > 9
+  #define INSTANTIATE_H5Cpp1_write(T)\
+    template void writeAttrToH5<T>(H5::H5Location &h, const string &name, const T &output_buffer);
+  INSTANTIATE_H5Cpp1_write(float)
+  INSTANTIATE_H5Cpp1_write(Float3)
+  INSTANTIATE_H5Cpp1_write(double)
+  INSTANTIATE_H5Cpp1_write(Double3)
+  INSTANTIATE_H5Cpp1_write(int)
+  INSTANTIATE_H5Cpp1_write(Int3)
+  INSTANTIATE_H5Cpp1_write(Int6)
+  INSTANTIATE_H5Cpp1_write(bool)
+  INSTANTIATE_H5Cpp1_write(uchar)
+  INSTANTIATE_H5Cpp1_write(Bool3)
+  INSTANTIATE_H5Cpp1_write(unsigned long)
+  //INSTANTIATE_H5Cpp1_write(H5::Group, string)
+  #undef INSTANTIATE_H5Cpp1_write
+#endif //#if H5_VERS_MINOR > 9
+  
 #define INSTANTIATE_VEC(T)\
   template H5::DataSet WriteAveragedFaceVariableField<T>(H5::Group &file, const string &id, int dim, const ConstArray3d<T> *face_fields, const LatticeDataQuad3d &ld, const H5::Group &ldgroup);\
   template H5::DataSet WriteVectorField<Vec<T,3> >(H5::Group &g, const string &name, ConstArray3d<Vec<T,3> > arr, const LatticeDataQuad3d &ld, const H5::Group &ldgroup);\

@@ -309,14 +309,14 @@ void rerun_fakeTumor(const py::str &filename_of_previous_run)
 #endif
   ptree fakeTumSettings = s.params.as_ptree();
   //update with read in params
-  H5::H5File file;
+  H5::H5File *file;
   H5::Group h5_params_of_previous_run;
   H5::Group h5_vessel_params_of_previous_run;
   H5::Group h5_calcflow_of_previous_run;
   H5::Group last_state;
   try{
-    file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
-    h5_params_of_previous_run = file.openGroup("/parameters");
+    file = new H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
+    h5_params_of_previous_run = file->openGroup("/parameters");
     h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
     h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
   }
@@ -341,7 +341,7 @@ void rerun_fakeTumor(const py::str &filename_of_previous_run)
   s.params.vessel_path = std::string("last_state/vessels");
   //s.params.vessel_path = std::string("vessels");
   try{
-    last_state = file.openGroup("/last_state");
+    last_state = file->openGroup("/last_state");
   }
   catch(H5::Exception e)
   {
@@ -353,7 +353,8 @@ void rerun_fakeTumor(const py::str &filename_of_previous_run)
   readAttrFromH5(last_state, string("time"), s.time);
   readAttrFromH5(last_state, string("NEXT_OUTPUT_TIME"), s.next_output_time);
   readAttrFromH5(last_state, string("NEXT_ADAPTION_TIME"), s.next_adaption_time);
-  file.close();
+  file->close();
+  delete file;
   
   try
   {

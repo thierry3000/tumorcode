@@ -209,11 +209,12 @@ int FakeTum::FakeTumorSim::run()
 // #endif
   //HACK2018
   //my::SetNumThreads(params.num_threads);
-  H5::H5File file;
+  H5::H5File *p_file;
   H5::Group h5_vessels;
   try{
-    file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
-    h5_vessels = file.openGroup(params.vessel_path);
+    //file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
+    p_file = new H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
+    h5_vessels = p_file->openGroup(params.vessel_path);
   }
   catch(H5::Exception e)
   {
@@ -236,7 +237,7 @@ int FakeTum::FakeTumorSim::run()
   vl->Ld().print(cout); cout  << endl;
   cout << "--------------------"<< endl;
 
-  H5::Group h5params = file.openGroup("/parameters");
+  H5::Group h5params = p_file->openGroup("/parameters");
   
   /* this part is for multiple files
     * -> spared for later
@@ -255,7 +256,9 @@ int FakeTum::FakeTumorSim::run()
     e.printErrorStack();
   
   */
-  file.close();
+  //file.close();
+  p_file->close();
+  delete p_file;
   
 //     params.vesselfile_message = file.root().open_group("parameters").attrs().get<string>("MESSAGE");
 //     params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
@@ -389,7 +392,7 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     }
     else
     {
-      f_out = H5::H5File(params.fn_out, H5F_ACC_RDWR );
+      f_out = H5::H5File(params.fn_out, H5F_ACC_TRUNC );
     }
     root = f_out.openGroup("/");
   }
@@ -421,7 +424,7 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     WriteHdfPtree(h5_vessel_parameters,vessel_model.params.as_ptree());
     WriteHdfPtree(h5_parameters, params.as_ptree());
   }
-  
+  f_out.close();
   try{
     if(!doPermanentSafe)
     {
