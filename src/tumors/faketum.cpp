@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "../common/calcflow.h"
 #include "../common/shared-objects.h"
+#include "../python_krebsutils/python_helpers.h"
 
 //Parameters::Parameters()
 FakeTum::Parameters::Parameters()
@@ -174,28 +175,12 @@ Float3 FakeTum::FakeTumorSim::getGfGrad(const Float3 &pos) const
     return Float3(0.);
 }
 
-//int FakeTum::FakeTumorSim::run(const ptree &pt_params)
 int FakeTum::FakeTumorSim::run()
 {
 #ifndef NDEBUG
   std::cout << "starting FakeTumor run in c++" << std::endl;
 #endif
-//   {
-//     FakeTum::Parameters::update_ptree(all_pt_params, pt_params);
-//     this->params.assign(all_pt_params);
-//   }
-//   /***** vessels ******/
-//   {
-//     ptree vesselSettings = vessel_model.params.as_ptree();
-//     boost::property_tree::update(vesselSettings,pt_params.get_child("vessels"));
-//     vessel_model.params.assign(vesselSettings);
-//   }
-//   /****** blood flow ****/
-//   {
-//     ptree bfSettings = params.bfparams.as_ptree();
-//     boost::property_tree::update(bfSettings,pt_params.get_child("calcflow"));
-//     params.bfparams.assign(bfSettings);
-//   }
+
   // direct cout through log
   cout.rdbuf(my::log().rdbuf());
   
@@ -207,14 +192,13 @@ int FakeTum::FakeTumorSim::run()
 //     // do be done
 //     //this->params.adap_params.radMin_for_kill = this->model.params.radMin;
 // #endif
-  //HACK2018
-  //my::SetNumThreads(params.num_threads);
-  H5::H5File *p_file;
+  
+  H5::H5File file;
   H5::Group h5_vessels;
   try{
     //file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
-    p_file = new H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
-    h5_vessels = p_file->openGroup(params.vessel_path);
+    file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
+    h5_vessels = file.openGroup(params.vessel_path);
   }
   catch(H5::Exception e)
   {
@@ -237,7 +221,7 @@ int FakeTum::FakeTumorSim::run()
   vl->Ld().print(cout); cout  << endl;
   cout << "--------------------"<< endl;
 
-  H5::Group h5params = p_file->openGroup("/parameters");
+  H5::Group h5params = file.openGroup("/parameters");
   
   /* this part is for multiple files
     * -> spared for later
@@ -256,9 +240,11 @@ int FakeTum::FakeTumorSim::run()
     e.printErrorStack();
   
   */
-  //file.close();
-  p_file->close();
-  delete p_file;
+  h5_vessels.close();
+  h5params.close();
+  file.close();
+  
+  
   
 //     params.vesselfile_message = file.root().open_group("parameters").attrs().get<string>("MESSAGE");
 //     params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
@@ -294,7 +280,10 @@ int FakeTum::FakeTumorSim::run()
 //   {
 //     writeVesselsafter_initial_adaption = true;
 //   }
-  while (true)
+
+  
+  
+  while (true and not PyCheckAbort())
   {
 #ifdef USE_ADAPTION
 #if 1
@@ -383,8 +372,7 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   H5::H5File f_out;
   H5::Group root, gout, h5_tum, h5_parameters, h5_vessel_parameters;
-  H5::Attribute a;
-  std::cout << "threads: " << omp_get_num_threads() << std::endl;
+  
   try{
     if( !params.isRerun)
     {
@@ -392,7 +380,7 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     }
     else
     {
-      f_out = H5::H5File(params.fn_out, H5F_ACC_TRUNC );
+      f_out = H5::H5File(params.fn_out, H5F_ACC_RDWR );
     }
     root = f_out.openGroup("/");
   }
@@ -401,8 +389,6 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     e.printErrorStack();
   }
 
-//   h5::Attributes a = root.attrs();
-//   
   if (output_num == 0)
   {
     root.createGroup("last_state");
@@ -415,16 +401,10 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     writeAttrToH5(root, string("OUTPUT_NAME"), params.fn_out);
     writeAttrToH5(root, string("VESSELFILE_MESSAGE"), params.vesselfile_message);
     writeAttrToH5(root, string("VESSELFILE_ENSEMBLE_INDEX"), params.vesselfile_ensemble_index);
-//     a.set("MESSAGE",params.message);
-//     a.set("VESSELTREEFILE",params.fn_vessel);
-//     a.set("OUTPUT_NAME", params.fn_out);
-//     a.set("VESSELFILE_MESSAGE", params.vesselfile_message);
-//     a.set("VESSELFILE_ENSEMBLE_INDEX", params.vesselfile_ensemble_index);
-//     g = root.create_group("parameters");
     WriteHdfPtree(h5_vessel_parameters,vessel_model.params.as_ptree());
     WriteHdfPtree(h5_parameters, params.as_ptree());
   }
-  f_out.close();
+  
   try{
     if(!doPermanentSafe)
     {
@@ -461,5 +441,12 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     e.printErrorStack();
   }
   f_out.close();
-  
+  /* close all open groups!!! otherwise hdf5 library will not close the file
+   * see: https://support.hdfgroup.org/HDF5/doc/RM/RM_H5F.html#File-Close
+   */
+  root.close();
+  gout.close();
+  h5_tum.close();
+  h5_parameters.close();
+  h5_vessel_parameters.close();
 }

@@ -293,6 +293,19 @@ void rerun_fakeTumor(const py::str &filename_of_previous_run)
   std::printf("%s\n", fn_of_previous_sim_c_str);
 #endif
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+  
+//   H5::H5File f_out;
+//   try
+//   {
+//     f_out = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY );
+//     //f_out = H5::H5File(params.fn_out, H5F_ACC_TRUNC );
+//   }
+//   catch(H5::Exception e)
+//   {
+//     e.printErrorStack();
+//   }
+//   f_out.close();
+  
   FakeTum::FakeTumorSim s;
   //construct default parameters
   //get default params
@@ -309,14 +322,14 @@ void rerun_fakeTumor(const py::str &filename_of_previous_run)
 #endif
   ptree fakeTumSettings = s.params.as_ptree();
   //update with read in params
-  H5::H5File *file;
+  H5::H5File file;
   H5::Group h5_params_of_previous_run;
   H5::Group h5_vessel_params_of_previous_run;
   H5::Group h5_calcflow_of_previous_run;
   H5::Group last_state;
   try{
-    file = new H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
-    h5_params_of_previous_run = file->openGroup("/parameters");
+    file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
+    h5_params_of_previous_run = file.openGroup("/parameters");
     h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
     h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
   }
@@ -327,6 +340,9 @@ void rerun_fakeTumor(const py::str &filename_of_previous_run)
   ReadHdfPtree(vesselSettings, h5_vessel_params_of_previous_run);
   ReadHdfPtree(bfSettings, h5_calcflow_of_previous_run);
   ReadHdfPtree(fakeTumSettings, h5_params_of_previous_run);
+  h5_vessel_params_of_previous_run.close();
+  h5_calcflow_of_previous_run.close();
+  h5_params_of_previous_run.close();
   
   //boost::property_tree::update(vesselSettings, pt_params.get_child("vessels"));
   //boost::property_tree::update(bfSettings, pt_params.get_child("calcflow"));
@@ -341,7 +357,7 @@ void rerun_fakeTumor(const py::str &filename_of_previous_run)
   s.params.vessel_path = std::string("last_state/vessels");
   //s.params.vessel_path = std::string("vessels");
   try{
-    last_state = file->openGroup("/last_state");
+    last_state = file.openGroup("/last_state");
   }
   catch(H5::Exception e)
   {
@@ -353,8 +369,18 @@ void rerun_fakeTumor(const py::str &filename_of_previous_run)
   readAttrFromH5(last_state, string("time"), s.time);
   readAttrFromH5(last_state, string("NEXT_OUTPUT_TIME"), s.next_output_time);
   readAttrFromH5(last_state, string("NEXT_ADAPTION_TIME"), s.next_adaption_time);
-  file->close();
-  delete file;
+  last_state.close();
+  
+  try
+  {
+    file.close();
+  }
+  catch(H5::Exception &e)
+  {
+    e.printErrorStack();
+  }
+  
+  
   
   try
   {

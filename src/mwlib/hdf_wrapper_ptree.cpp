@@ -66,6 +66,7 @@ void WriteHdfPtree(H5::Group &f, const ptree &pt, HdfWritePtreeAs storage_mode)
     }
   }
 }
+
 void printObjectName(const H5::Group &g)
 {
   try
@@ -143,10 +144,8 @@ void ReadHdfPtree(boost::property_tree::ptree &pt, H5::Group &f, HdfWritePtreeAs
   }
 #endif
 
-  //f.iterateAttrs(&printObjectName, NULL, NULL);
   f.iterateAttrs(&add_all_attributes_to_ptree, NULL, &pt);
-  //h5_vessel_parameters = h5_parameters.createGroup("vessels");
-  //f.itera
+  
 #ifndef NDEBUG
   std::cout << "content of ptree: " << std::endl;
   for( ptree::const_iterator it = pt.begin(); it !=pt.end(); ++it)
@@ -157,41 +156,4 @@ void ReadHdfPtree(boost::property_tree::ptree &pt, H5::Group &f, HdfWritePtreeAs
     std::cout << "key: content " << k << " : " << v.data() << std::endl; 
   }
 #endif
-  /*
-  typedef ptree::const_iterator I;
-  for (I it = pt.begin(); it != pt.end(); ++it)
-  {
-    // get all values as string. There is no other way, because there is no type information stored in ptree
-    const string k = it->first;
-    const ptree &v = it->second;
-    if (!v.data().empty())
-    {
-      if (storage_mode == HDF_WRITE_PTREE_AS_ATTRIBUTE)
-      {
-// 	std::cout << f.getFileName() << std::endl;
-// 	std::cout << "print k: "<< k << "v: " << v.data() << std::endl; 
-	writeAttrToH5(f, k, v.data());
-      }
-      else
-      {
-	DynArray<string> this_data;
-	for( auto entry: v.data())
-	{
-	  this_data.push_back(&entry);
-	}
-	writeDataSetToGroup(f,k, this_data);
-      }
-//         f.attrs().set(k, v.data());
-
-//      else
-//        h5cpp::create_dataset_scalar<string>(f, k, v.data());
-    }
-    // recurse
-    if (v.begin() != v.end())
-    {
-      H5::Group h5_group = f.createGroup(k);
-      WriteHdfPtree(h5_group, v, storage_mode);
-    }
-  }
-  */
 }
