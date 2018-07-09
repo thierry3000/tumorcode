@@ -147,14 +147,14 @@ def run_faketum(configstring_file):
     qsub.printClientInfo()
   with open(configstring_file, 'r') as f:
     configstring = f.read()
-  return tumor_cpp.run_faketum_(configstring)
+  return tumor_cpp.run_faketum_(configstring, False)
   
 def rerun_faketum(filename_of_previous_run):
   if qsub.is_client:
     qsub.printClientInfo()
   #with open(configstring_file, 'r') as f:
   #  configstring = f.read()
-  return tumor_cpp.rerun_faketum_(filename_of_previous_run)
+  return tumor_cpp.run_faketum_(filename_of_previous_run, True)
 
 def run_bulktissue_no_vessels(configstr):
   if qsub.is_client:

@@ -41,6 +41,7 @@ FakeTum::Parameters::Parameters()
   paramset_name = "aname";
   message = "";
   isRerun = false;
+  vessel_path = "vesesls";
 #ifdef USE_ADAPTION
   apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
 #endif
@@ -56,6 +57,7 @@ void FakeTum::Parameters::assign(const ptree &pt)
   DOPT(dt);
   DOPT(fn_out);
   DOPT(fn_vessel);
+  DOPT(vessel_path);
   DOPT(rGf);
   DOPT(tumor_radius);
   DOPT(tumor_speed);
@@ -115,6 +117,7 @@ ptree FakeTum::Parameters::as_ptree() const
 //   DOPT(message);
   DOPT(fn_out);
   DOPT(fn_vessel);
+  DOPT(vessel_path);
   DOPT(rGf);
   DOPT(tumor_radius);
   DOPT(tumor_speed);
