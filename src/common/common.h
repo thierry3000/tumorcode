@@ -36,6 +36,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/asio/ip/host_name.hpp> // get host name
+
+#include <cstdlib> // std::getenv
 
 
 using boost::optional;
@@ -82,5 +85,23 @@ namespace my
   typedef bool (*AbortFunction)();
   extern AbortFunction checkAbort;
 }
+
+struct SystemParameters
+{
+  int num_threads;
+  string cluster;
+  string computing_node;
+  int num_threads_queuing;
+  double mem_in_GB;
+  
+  bool isRerun;
+  int reRunNumber;
+  
+  SystemParameters();
+  void assign(const ptree &pt);
+  ptree as_ptree() const;
+};
+
+void readSystemParameters(SystemParameters &sysParamsToFill);
 
 #endif

@@ -82,36 +82,36 @@ void FakeTumMTS::FakeTumorSimMTS::initMilotti()
   cout << "\nStartup milotti completed" << endl; 
 }
 
-FakeTumMTS::SystemParameters::SystemParameters()
-{
-  num_threads = 1;
-  cluster = "local";
-  computing_node = "local";
-  num_threads_queuing = 1;
-  mem_in_GB = 1;
-}
-void FakeTumMTS::SystemParameters::assign(const boost::property_tree::ptree& pt)
-{
-  #define DOPT(name) boost::property_tree::get(name, #name, pt)
-  DOPT(num_threads);
-  DOPT(cluster);
-  DOPT(computing_node);
-  DOPT(num_threads_queuing);
-  DOPT(mem_in_GB);
-  #undef DOPT
-}
-boost::property_tree::ptree FakeTumMTS::SystemParameters::as_ptree() const
-{
-  boost::property_tree::ptree pt;
-  #define DOPT(name) pt.put(#name, name)
-  DOPT(cluster);
-  DOPT(computing_node);
-  DOPT(num_threads);
-  DOPT(num_threads_queuing);
-  DOPT(mem_in_GB);
-  #undef DOPT
-  return pt;
-}
+// FakeTumMTS::SystemParameters::SystemParameters()
+// {
+//   num_threads = 1;
+//   cluster = "local";
+//   computing_node = "local";
+//   num_threads_queuing = 1;
+//   mem_in_GB = 1;
+// }
+// void FakeTumMTS::SystemParameters::assign(const boost::property_tree::ptree& pt)
+// {
+//   #define DOPT(name) boost::property_tree::get(name, #name, pt)
+//   DOPT(num_threads);
+//   DOPT(cluster);
+//   DOPT(computing_node);
+//   DOPT(num_threads_queuing);
+//   DOPT(mem_in_GB);
+//   #undef DOPT
+// }
+// boost::property_tree::ptree FakeTumMTS::SystemParameters::as_ptree() const
+// {
+//   boost::property_tree::ptree pt;
+//   #define DOPT(name) pt.put(#name, name)
+//   DOPT(cluster);
+//   DOPT(computing_node);
+//   DOPT(num_threads);
+//   DOPT(num_threads_queuing);
+//   DOPT(mem_in_GB);
+//   #undef DOPT
+//   return pt;
+// }
 
 
 FakeTumMTS::Parameters::Parameters()
@@ -133,6 +133,7 @@ FakeTumMTS::Parameters::Parameters()
   paramset_name = "aname";
   useConstO2 = true;
   useTumorcodeVessels = true;
+  vessel_path = "vessels";
 }
 
 void FakeTumMTS::Parameters::assign(const ptree &pt)
@@ -148,6 +149,7 @@ void FakeTumMTS::Parameters::assign(const ptree &pt)
   DOPT(message);
   DOPT(fn_out);
   DOPT(fn_vessel);
+  DOPT(vessel_path);
   DOPT(rGf);
   DOPT(rO2Consumtion);
   DOPT(gf_production_threshold);
@@ -189,6 +191,7 @@ ptree FakeTumMTS::Parameters::as_ptree() const
   DOPT(message);
   DOPT(fn_out);
   DOPT(fn_vessel);
+  DOPT(vessel_path);
   DOPT(rGf);
   DOPT(gf_production_threshold);
   DOPT(rO2Consumtion);
@@ -472,7 +475,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
        */
       findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
       
-      lastTumorGroupWrittenByFakeTumName = writeOutput();//detailedO2 should be calculated prior to this call
+      lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
       currentTiming.reset();
       next_output_time += params.out_intervall;
 
@@ -592,16 +595,23 @@ void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
   //end milotti
 }
 
-std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
+std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
-  H5::H5File f;
-  H5::Group root, gout, h5_tum, h5_cells_out, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_field_ld_group, h5_timing;
-  H5::Attribute a;
+  H5::H5File f_out;
+  H5::Group root, gout, h5_tum, h5_cells_out, h5_o2_last_state, h5_ld_last_state, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup;
+  
   std::string tumOutName = "nothing";
   try{
-    f = H5::H5File(params.fn_out + ".h5", output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
-    root = f.openGroup("/");
+    if( !mySystemParameters.isRerun )
+    {
+      f_out = H5::H5File(params.fn_out + ".h5", output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
+    }
+    else
+    {
+      f_out = H5::H5File(params.fn_out, H5F_ACC_RDWR );
+    }
+    root = f_out.openGroup("/");
   }
   catch(H5::Exception e)
   {
@@ -610,6 +620,8 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   
   if (output_num == 0)
   {
+    root.createGroup("last_state");
+    
     try
     {
       h5_parameters = root.createGroup("parameters");
@@ -638,8 +650,41 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   
   try
   {
-    tumOutName = str(format("out%04i") % output_num);
-    gout = root.createGroup(tumOutName);
+    if( !doPermanentSafe)
+    {
+      root.unlink("last_state");
+      gout = root.createGroup("last_state");
+      writeAttrToH5(gout, "CURRENT_RERUN_NUMBER", mySystemParameters.reRunNumber);
+      //data needed for rerun:
+      //   lattice, detailed o2, fieldGf, fieldO2Consumption
+      WriteScalarField(gout, string("fieldGf"), state.gffield, grid.ld, root.openGroup("field_ld"));
+      WriteScalarField(gout, string("fieldO2Consumption"), state.cell_O2_consumption, grid.ld, root.openGroup("field_ld"));
+      /* write oxygen stuff */
+      try 
+      {
+        if(!params.useConstO2)
+        {
+          // copied from python-oxygen2.cpp
+          // write the detailed o2 stuff necessary for the cells
+          h5_o2_last_state = gout.createGroup("po2");
+          h5_ld_last_state = h5_o2_last_state.createGroup("field_ld");
+          o2_sim.grid.ld.WriteHdfLd(h5_ld_last_state);
+          WriteScalarField<float>(h5_o2_last_state, string("po2field"), o2_sim.po2field, o2_sim.grid.ld, h5_ld_last_state);
+          writeDataSetToGroup(h5_o2_last_state, string("po2vessels"),o2_sim.po2vessels);
+          writeAttrToH5(h5_o2_last_state, string("simType"), string("MTS"));
+          WriteHdfPtree(h5_o2_last_state, o2_sim.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+        }
+      }
+      catch(H5::Exception e)
+      {
+        e.printErrorStack();
+      }
+    }
+    else
+    {
+      tumOutName = str(format("out%04i") % output_num);
+      gout = root.createGroup(tumOutName);
+    }
     writeAttrToH5(gout, string("time"), time);
     writeAttrToH5(gout, string("OUTPUT_NUM"), output_num);
     
@@ -676,7 +721,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
     writeAttrToH5(h5_memory, string("rss_peak"), m.rss_peak);
     
     /* writes the vessel list */
-    H5::Group h5_current_vessels = gout.createGroup("vessels");
+    h5_current_vessels = gout.createGroup("vessels");
     WriteVesselList3d(*vl, h5_current_vessels);
     /* write continuous fields */
     h5_tum = gout.createGroup("tumor");
@@ -687,7 +732,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
     /** BIG DATA HERE 
      * so we output this only every 5.th time step 
      */
-    if( output_num > 0 and (output_num % 5 == 0) )
+    if( ( output_num > 0 and (output_num % 5 == 0) ) or !doPermanentSafe)
     {
       WriteScalarField(h5_tum, string("fieldGf"), state.gffield, grid.ld, root.openGroup("field_ld"));
       WriteScalarField(h5_tum, string("fieldO2Consumption"), state.cell_O2_consumption, grid.ld, root.openGroup("field_ld"));
@@ -705,16 +750,14 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
   {
     e.printErrorStack();
   }
-    /* write oxygen stuff */
+  /* write oxygen stuff */
   try 
   {
     if(!params.useConstO2)
     {
       // copied from python-oxygen2.cpp
       // write the detailed o2 stuff necessary for the cells
-      H5::Group po2outputGroup;
       po2outputGroup = gout.createGroup("po2");
-      H5::Group ldgroup;
       ldgroup = po2outputGroup.createGroup("field_ld");
       o2_sim.grid.ld.WriteHdfLd(ldgroup);
       WriteScalarField<float>(po2outputGroup, string("po2field"), o2_sim.po2field, o2_sim.grid.ld, ldgroup);
@@ -728,8 +771,24 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput()
     e.printErrorStack();
   }
   
-  f.close();
-  ++output_num;
+  root.close();
+  gout.close();
+  h5_tum.close();
+  h5_o2_last_state.close();
+  h5_cells_out.close();
+  h5_parameters.close();
+  h5_vessel_parameters.close();
+  h5_system_parameters.close();
+  h5_o2_parameters.close();
+  h5_field_ld_group.close();
+  h5_timing.close();
+  h5_current_vessels.close();
+  po2outputGroup.close();
+  ldgroup.close();
+  h5_ld_last_state.close();
+  
+  f_out.close();
+  //++output_num;
   
   cout << format("files %s flushed and closed")  % params.fn_out << endl;
   return tumOutName;

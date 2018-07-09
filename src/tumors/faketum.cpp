@@ -30,7 +30,7 @@ FakeTum::Parameters::Parameters()
   out_intervall = 100;
   tend = 1000;
   dt = 1;
-  num_threads = 1;
+  //num_threads = 1;
   tumor_radius = 200.;
   tumor_speed = 2.;  // \mu m / hour
   vesselfile_ensemble_index = 0;
@@ -40,7 +40,7 @@ FakeTum::Parameters::Parameters()
   stopping_radius_fraction = 0.6;
   paramset_name = "aname";
   message = "";
-  isRerun = false;
+  //isRerun = false;
   vessel_path = "vesesls";
 #ifdef USE_ADAPTION
   apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
@@ -51,7 +51,7 @@ void FakeTum::Parameters::assign(const ptree &pt)
 {
   #define DOPT(name) boost::property_tree::get(name, #name, pt);
   DOPT(message);
-  DOPT(num_threads);
+  //DOPT(num_threads);
   DOPT(out_intervall);
   DOPT(tend);
   DOPT(dt);
@@ -64,7 +64,7 @@ void FakeTum::Parameters::assign(const ptree &pt)
   DOPT(stopping_radius_fraction);
   DOPT(tissuePressureWidth);
   DOPT(tissuePressureCenterFraction);
-  DOPT(isRerun);
+  //DOPT(isRerun);
 //   std::vector<string> myOptions = {"message", 
 //     "paramset_name", 
 //     "num_threads",
@@ -110,7 +110,7 @@ ptree FakeTum::Parameters::as_ptree() const
   #define DOPT(name) pt.put(#name, name)
   DOPT(paramset_name);
   DOPT(message);
-  DOPT(num_threads);
+  //DOPT(num_threads);
   DOPT(out_intervall);
   DOPT(tend);
   DOPT(dt);
@@ -121,7 +121,7 @@ ptree FakeTum::Parameters::as_ptree() const
   DOPT(rGf);
   DOPT(tumor_radius);
   DOPT(tumor_speed);
-  DOPT(isRerun);
+  //DOPT(isRerun);
   DOPT(stopping_radius_fraction);
   if (tissuePressureDistribution == TISSUE_PRESSURE_SPHERE) pt.put("tissuePressureDistribution", "sphere");
   else if (tissuePressureDistribution == TISSUE_PRESSURE_SHELL) pt.put("tissuePressureDistribution", "shell");
@@ -209,7 +209,7 @@ int FakeTum::FakeTumorSim::run()
   }
   
   ptree pt;
-  if( ! params.isRerun)
+  if( ! mySystemParameters.isRerun)
   {
     pt.put("scale subdivide", 10.);
   }
@@ -267,7 +267,7 @@ int FakeTum::FakeTumorSim::run()
   
 
   tumor_radius = params.tumor_radius;
-  if( !params.isRerun)
+  if( !mySystemParameters.isRerun)
   {
     time = 0.;
     num_iteration = 0.;
@@ -374,10 +374,10 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   H5::H5File f_out;
-  H5::Group root, gout, h5_tum, h5_parameters, h5_vessel_parameters;
+  H5::Group root, gout, h5_tum, h5_parameters, h5_vessel_parameters,h5_system_parameters;
   
   try{
-    if( !params.isRerun)
+    if( !mySystemParameters.isRerun)
     {
       f_out = H5::H5File(params.fn_out, output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
     }
@@ -398,6 +398,7 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     
     h5_parameters = root.createGroup("parameters");
     h5_vessel_parameters = h5_parameters.createGroup("vessels");
+    h5_system_parameters = h5_parameters.createGroup("system");
     writeAttrToH5(root, string("MESSAGE"), params.message);
     writeAttrToH5(root, string("VESSELTREEFILE"), params.fn_vessel);
     writeAttrToH5(root, string("VESSELTREEPATH"), params.vessel_path);
@@ -405,6 +406,7 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     writeAttrToH5(root, string("VESSELFILE_MESSAGE"), params.vesselfile_message);
     writeAttrToH5(root, string("VESSELFILE_ENSEMBLE_INDEX"), params.vesselfile_ensemble_index);
     WriteHdfPtree(h5_vessel_parameters,vessel_model.params.as_ptree());
+    WriteHdfPtree(h5_system_parameters, mySystemParameters.as_ptree());
     WriteHdfPtree(h5_parameters, params.as_ptree());
   }
   
@@ -413,6 +415,7 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     {
       root.unlink("last_state");
       gout=root.createGroup("last_state");
+      writeAttrToH5(gout, "CURRENT_RERUN_NUMBER", mySystemParameters.reRunNumber);
     }
     else
     {
@@ -423,6 +426,7 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     writeAttrToH5(gout, string("NUM_ITERATION"), num_iteration);
     writeAttrToH5(gout, string("NEXT_OUTPUT_TIME"), next_output_time);
     writeAttrToH5(gout, string("NEXT_ADAPTION_TIME"), next_adaption_time);
+    
     H5::Group h5_current_vessels = gout.createGroup("vessels");
     WriteVesselList3d(*vl, h5_current_vessels);
     LatticeDataQuad3d ld;
@@ -452,4 +456,5 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
   h5_tum.close();
   h5_parameters.close();
   h5_vessel_parameters.close();
+  h5_system_parameters.close();
 }

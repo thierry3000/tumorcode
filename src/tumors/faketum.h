@@ -40,8 +40,7 @@ struct Parameters
   double dt;
   double latest_executed_timepoint;
   
-  bool isRerun;
-  
+  double apply_adaption_intervall;
   string message;
   string fn_out, fn_vessel, vessel_path, vesselfile_message;
   string paramset_name;
@@ -49,7 +48,6 @@ struct Parameters
   double rGf;
   double tumor_radius, tumor_speed;
   double stopping_radius_fraction; // actual-stopping-radius = 0.5*system-length-along-the-longest-dimension * stopping_radius_fraction
-  int num_threads;
   int tissuePressureDistribution;
   double tissuePressureWidth;
   double tissuePressureCenterFraction;
@@ -70,6 +68,7 @@ struct FakeTumorSim : public boost::noncopyable
   VesselModel1::Model vessel_model;
 
   Parameters params;
+  SystemParameters mySystemParameters;
   ptree all_pt_params;
 
   double tumor_radius;

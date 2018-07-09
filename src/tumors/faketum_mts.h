@@ -83,25 +83,16 @@ struct nearest
   double distance = std::numeric_limits<double>::max();
   uint indexOfVessel = 0;
 };
-struct SystemParameters
-{
-  int num_threads;
-  string cluster;
-  string computing_node;
-  int num_threads_queuing;
-  double mem_in_GB;
-  
-  SystemParameters();
-  void assign(const ptree &pt);
-  ptree as_ptree() const;
-};
+
 struct Parameters
 {
   double out_intervall, tend;
   double dt;
+  double latest_executed_timepoint;
+  
   double apply_adaption_intervall;
   string message;
-  string fn_out, fn_vessel, vesselfile_message;
+  string fn_out, fn_vessel, vessel_path, vesselfile_message;
   string paramset_name;
   int vesselfile_ensemble_index;
   double rGf, gf_production_threshold;
@@ -208,7 +199,7 @@ const int ANN_dim = 3;            // space dimension
   TissuePhases phases;//Declaration
   
   FakeTumMTS::Parameters params;
-  FakeTumMTS::SystemParameters mySystemParameters;
+  SystemParameters mySystemParameters;
   //GlucoseModel::GlucoseParams glucoseParams;
   GfModel_Cell gf_model;
   CellBasedO2Uptake o2_uptake_model;
@@ -220,6 +211,8 @@ const int ANN_dim = 3;            // space dimension
 
   double tumor_radius;
   double time;
+  double next_output_time;
+  double next_adaption_time;
   int num_iteration;
   int output_num;
 
@@ -251,7 +244,7 @@ const int ANN_dim = 3;            // space dimension
  * writes the vbl based stuff to the HDF5 file
  * returns the H5 Group name 
  */
-  std::string writeOutput();
+  std::string writeOutput(bool doPermanentSafe);
   void WriteCellsSystemHDF_with_nearest_vessel_index(H5::Group &out_cell_group);
   
   vbl::CellsSystem *tumorcode_pointer_to_currentCellsSystem;
