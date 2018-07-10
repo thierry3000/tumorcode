@@ -25,7 +25,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/shared-objects.h"
 #include "common/continuum-grid.h"
 #include "common/vessels3d.h"
+#include "common/time_stepper_utils_new.h"
 
+#include "common/trilinos_linsys_construction.h"
+
+#include "common/shared-objects.h"
+#include "common/continuum-flow.h"
+
+#include "mwlib/math_ext.h"
+
+#include <boost/math/tools/roots.hpp>
+#include <boost/math/tools/tuple.hpp>
+#include <boost/foreach.hpp>
+#include <exception>
+#include <omp.h>
 
 namespace DetailedPO2
 {
@@ -123,6 +136,13 @@ public:
   string detailedO2name;
   double convergence_tolerance; // field and vessel po2 differences from iteration to iteration must both be lower than this for the iteration to stop
   string tissue_po2_boundary_condition;
+  string input_file_name;
+  string input_group_path;
+  string output_file_name;
+  string output_group_path;
+  string tumor_file_name;
+  string tumor_group_path;
+  string vessel_group_path;
 };
 
 
@@ -159,7 +179,7 @@ struct Measurement : boost::noncopyable
 void TestSaturationCurve();
 void TestSingleVesselPO2Integration();
 
-struct DetailedP02Sim : public boost::noncopyable
+struct DetailedPO2Sim : public boost::noncopyable
 {
   bool world;
   //std::auto_ptr<VesselList3d> vl;
@@ -192,6 +212,14 @@ struct DetailedP02Sim : public boost::noncopyable
   
   Array3df getPo2field();
   DetailedPO2::VesselPO2Storage getVesselPO2Storrage();
+  void WriteOutput(H5::Group &basegroup,
+                 const VesselList3d &vl,
+                 const Parameters &params,
+                 const boost::optional<const VesselPO2Storage&> vesselpo2,
+                 const boost::optional<DynArray<const Vessel*>&> sorted_vessels,
+                 const boost::optional<ContinuumGrid&> grid,
+                 const boost::optional<Array3df> po2field,
+                 const boost::optional<const FiniteVolumeMatrixBuilder&> mbopt);
 };
 // template<class T>
 // static T checkedExtractFromDict(const py::dict &d, const char* name);

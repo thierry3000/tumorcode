@@ -17,24 +17,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "common/shared-objects.h"
-#include "common/continuum-flow.h"
-#include "common/time_stepper_utils_new.h"
-#include "common/trilinos_linsys_construction.h"
-#include "common/vessels3d.h"
 
-#include "mwlib/math_ext.h"
-
-#include <boost/math/tools/roots.hpp>
-#include <boost/math/tools/tuple.hpp>
-#include <boost/foreach.hpp>
 
 #define OUTPUT_PO2INTEGRATION(x)
 #define OUTPUT_PO2MEASURECOMP(x)
 
 #include "oxygen_model2.h"
-#include <exception>
-#include <omp.h>
+
 
 
 #define APPROXIMATE_FEM_TRANSVASCULAR_EXCHANGE_TERMS 1
@@ -44,6 +33,8 @@ namespace DetailedPO2
 {
 // #define PT_ASSIGN(name) boost::property_tree::get(name, #name, pt)
 // #define AS_PTREE(name) pt.put(#name, name);
+  
+
 void Parameters::assign(const ptree &pt)
 {
   #define DOPT(name) boost::property_tree::get(name, #name, pt)
@@ -84,6 +75,13 @@ void Parameters::assign(const ptree &pt)
   DOPT(extra_tissue_source_const);
   DOPT(extra_tissue_source_linear);
   DetailedPO2::Parameters::UpdateInternalValues();
+  DOPT(input_file_name);
+  DOPT(input_group_path);
+  DOPT(output_file_name);
+  DOPT(output_group_path);
+  DOPT(tumor_file_name);
+  DOPT(tumor_group_path);
+  DOPT(vessel_group_path);
   #undef DOPT
 }
 ptree Parameters::as_ptree() const
@@ -130,34 +128,43 @@ ptree Parameters::as_ptree() const
   DOPT(extra_tissue_source_const);
   DOPT(extra_tissue_source_linear);
   
+  DOPT(input_file_name);
+  DOPT(input_group_path);
+  DOPT(output_file_name);
+  DOPT(output_group_path);
+  DOPT(tumor_file_name);
+  DOPT(tumor_group_path);
+  DOPT(vessel_group_path);
   #undef DOPT
   return pt;
 }
-  
-void WriteOutput(H5::Group basegroup,
-                 const VesselList3d &vl,
-                 const Parameters &params,
-                 const boost::optional<const VesselPO2Storage&> vesselpo2,
-                 const boost::optional<DynArray<const Vessel*>&> sorted_vessels,
-                 const boost::optional<ContinuumGrid&> grid,
-                 const boost::optional<Array3df> po2field,
-                 const boost::optional<const FiniteVolumeMatrixBuilder&> mbopt);
-  
 
-inline double NANd() 
-{ 
-  //return std::numeric_limits<double>::quiet_NaN(); 
-  return std::numeric_limits<double>::max();
-}
-inline float NANf() 
-{ 
-  //return std::numeric_limits<float>::quiet_NaN(); 
-  std::numeric_limits<float>::max();
-}
-inline bool isFinite(double x) 
-{ 
-  return std::isfinite(x); 
-}
+
+// void WriteOutput(H5::Group basegroup,
+//                  const VesselList3d &vl,
+//                  const Parameters &params,
+//                  const boost::optional<const VesselPO2Storage&> vesselpo2,
+//                  const boost::optional<DynArray<const Vessel*>&> sorted_vessels,
+//                  const boost::optional<ContinuumGrid&> grid,
+//                  const boost::optional<Array3df> po2field,
+//                  const boost::optional<const FiniteVolumeMatrixBuilder&> mbopt);
+  
+// major trouble with gcc 8
+
+// inline double NANd() 
+// { 
+//   //return std::numeric_limits<double>::quiet_NaN(); 
+//   return std::numeric_limits<double>::max();
+// }
+// inline float NANf() 
+// { 
+//   //return std::numeric_limits<float>::quiet_NaN(); 
+//   std::numeric_limits<float>::max();
+// }
+// inline bool isFinite(double x) 
+// { 
+//   return std::isfinite(x); 
+// }
 
 /*-------------------------------------------------------------*/
 // paramters and basic equation
@@ -275,6 +282,14 @@ Parameters::Parameters()
   conductivity_coeff3 = 0;
   detailedO2name = "none";
   debug_fn = "none";
+  
+  input_file_name= "none";
+  input_group_path= "none";
+  output_file_name= "none";
+  output_group_path= "none";
+  tumor_file_name= "none";
+  tumor_group_path= "none";
+  vessel_group_path= "none";
   
   UpdateInternalValues();
 }
@@ -715,7 +730,7 @@ struct ComputeWallFluxesDiffusive : boost::noncopyable
   ComputeWallFluxesDiffusive(const Parameters &params_, const LatticeDataQuad3d &ld_, double r_, const Array3df &tissuePo2Field_, const TissuePhases &phases_, const Float3 &p_, const Float3 &dp_)
     : params(params_), ld(ld_), r(r_), phases(phases_), p(p_), dp(dp_), tissuePo2Field(tissuePo2Field_)
   {
-    po2tissue = NANd();
+    po2tissue = std::numeric_limits<double>::max();
   }
 
   void StartNewPosition(double x)
@@ -857,7 +872,7 @@ class VascularPO2PropagationImplicitEuler  : public VascularPO2PropagationModel
 {
 public:
   VascularPO2PropagationImplicitEuler(const Parameters &params_) :
-    params(params_), flow_rate(NANd()), h(NANd()), computeFlux(nullptr)
+    params(params_), flow_rate(std::numeric_limits<double>::max()), h(std::numeric_limits<double>::max()), computeFlux(nullptr)
   {
     stepper.set_model(this);
   }
@@ -1010,7 +1025,7 @@ void ComputeVesselO2Conc(const VesselNode* node, const Parameters &params, Vesse
     ++num_inflow_nodes;
     int side_index = (nb.edge->NodeA() == node) ? 0 : 1;
     double po2_vess = vesselpo2[nb.edge->Index()][side_index];
-    myAssert(isFinite(po2_vess));
+    myAssert(std::isfinite(po2_vess));
     const double q = nb.edge->q;
     const double h = nb.edge->hematocrit;
     const double conc = params.BloodPO2ToConc(po2_vess, h);
@@ -1190,7 +1205,7 @@ void IntegrateVesselPO2(const Parameters &params,
     }
     const int side_idx = (upstream_node == v->NodeA()) ? 0 : 1;
     const double po2start = vesselpo2[v->Index()][side_idx];//read out starting point
-    double po2end = NANd();
+    double po2end = std::numeric_limits<double>::max();
     auto sourceGenerationCallback = [&](int i, int numPoints, double x, double weight, double po2, ComputeRadialFluxes &computeFlux) -> void
     {
       computeFlux.AddSourceContributionsTo(matrix_builder, po2, weight);
@@ -1215,7 +1230,7 @@ void IntegrateVesselPO2(const Parameters &params,
 
 
 
-void DetailedP02Sim::PrepareNetworkInfo(const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots)
+void DetailedPO2Sim::PrepareNetworkInfo(const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots)
 {
   DynArray<int> order;
   TopoSortVessels(vl, order);
@@ -1477,7 +1492,7 @@ void ComputePo2Field(const Parameters &params,
 }
 
 
-void DetailedP02Sim::init(Parameters &params_, 
+void DetailedPO2Sim::init(Parameters &params_, 
                           BloodFlowParameters &bfparams_,
                           VesselList3d &vl, 
                           double grid_lattice_const, 
@@ -1495,107 +1510,106 @@ void DetailedP02Sim::init(Parameters &params_,
   CalcFlow(vl, bfparams);
   params = params_;
   world = !vl.HasLattice();
-  
   //multithreading
   //HACK2018
   //my::SetNumThreads(params.num_threads);
+  
+  //this worked only for lattices
+  //int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
+  int dim=0;
+  if (world)
   {
-    //this worked only for lattices
-    //int dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
-    int dim=0;
+    dim = 3;
+  }
+  else
+  {
+    dim = (::Size(vl.Ld().Box())[2]<=1) ? 2 : 3;
+  }
+    
+  if (grid_lattice_size)
+  {
+    ld.Init(*grid_lattice_size, grid_lattice_const);
+    ld.SetCellCentering(Bool3(1, 1, dim>2));
+    wbox = vl.Ld().GetWorldBox();
+    worldCenter = 0.5*(wbox.max + wbox.min);
+    gridCenter = 0.5*(ld.GetWorldBox().max + ld.GetWorldBox().min);
+    ld.SetOriginPosition(ld.GetOriginPosition() + (worldCenter - gridCenter));
+  }
+  else
+  {
+    //added safety space to reduce boundary errors
     if (world)
     {
-      dim = 3;
+      SetupFieldLattice(vl.GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
     }
     else
     {
-      dim = (::Size(vl.Ld().Box())[2]<=1) ? 2 : 3;
+      SetupFieldLattice(vl.Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
     }
-    
-    if (grid_lattice_size)
+  }
+  //grid.init(ld, dim);
+  grid = ContinuumGrid(ld, dim);
+  mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
+  if (params.loglevel > 0)
+  {
+    cout << "continuum grid:" << endl;
+    grid.ld.print(cout);
+    cout << endl;
+    cout << "multithreading:" << endl;
+    //HACK2018
+    //cout << my::GetNumThreads()<<endl;
+    cout << omp_get_max_threads() <<endl;
+  }
+  if (params.loglevel > 0)
+  {
+    cout << "vessel lattice" << endl;
+    if (world)
     {
-      ld.Init(*grid_lattice_size, grid_lattice_const);
-      ld.SetCellCentering(Bool3(1, 1, dim>2));
-      wbox = vl.Ld().GetWorldBox();
-      worldCenter = 0.5*(wbox.max + wbox.min);
-      gridCenter = 0.5*(ld.GetWorldBox().max + ld.GetWorldBox().min);
-      ld.SetOriginPosition(ld.GetOriginPosition() + (worldCenter - gridCenter));
+      cout<<vl.GetWorldBoxFromVesselsOnly()<<endl;
     }
     else
     {
-      //added safety space to reduce boundary errors
-      if (world)
+      vl.Ld().print(cout);
+    }
+    cout << endl;
+  }
+  isVesselListGood(vl);
+  //the tissue phase needs to be set in every case!!!!
+  SetupTissuePhases(phases, grid, mtboxes, tumorgroup);//filling
+  
+  //set up field with same discrete points as in the given grid, leave data memory uninitialized
+  //po2field is declared by mother function by not initialized, that happening here
+  po2field = Array3df(grid.Box(), Cons::DONT);
+  /*
+    * I do not yet know why, but this leads to trouble mit gcc-8
+    */
+  //po2vessels.resize(vl.GetECount());
+  po2vessels.resize(vl.GetECount(), Float2(std::numeric_limits<float>::max()));
+  // I try this hardcoded before do it with variables: read in po2field from previous iteration
+  if(previous_po2field and previous_po2vessels)
+  {
+    cout<<"works"<<endl;
+    po2field.fill(*previous_po2field);
+    /* 
+      * po2vessel has size of vl.GetECount  --> that is the max index range
+      * 
+      */
+    if(vl.GetECount() <= previous_po2vessels->size())
+    {
+      for(int i = 0;i<vl.GetECount();++i)
       {
-        SetupFieldLattice(vl.GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
-      }
-      else
-      {
-        SetupFieldLattice(vl.Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
+        po2vessels[i] = previous_po2vessels->operator[](i);
       }
     }
-    //grid.init(ld, dim);
-    grid = ContinuumGrid(ld, dim);
-    mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
-    if (params.loglevel > 0)
+    else
     {
-      cout << "continuum grid:" << endl;
-      grid.ld.print(cout);
-      cout << endl;
-      cout << "multithreading:" << endl;
-      //HACK2018
-      //cout << my::GetNumThreads()<<endl;
-      cout << omp_get_max_threads() <<endl;
+      for(int i = 0;i<previous_po2vessels->size();++i)
+      {
+        po2vessels[i] = previous_po2vessels->operator[](i);
+      }
+      printf("Warning: more vessels suggested than in previous run present!\n");
     }
-    if (params.loglevel > 0)
-    {
-      cout << "vessel lattice" << endl;
-      if (world)
-      {
-        cout<<vl.GetWorldBoxFromVesselsOnly()<<endl;
-      }
-      else
-      {
-        vl.Ld().print(cout);
-      }
-      cout << endl;
-    }
-    isVesselListGood(vl);
-    //the tissue phase needs to be set in every case!!!!
-    SetupTissuePhases(phases, grid, mtboxes, tumorgroup);//filling
-    
-    
-    //set up field with same discrete points as in the given grid, leave data memory uninitialized
-    //po2field is declared by mother function by not initialized, that happening here
-    po2field = Array3df(grid.Box(), Cons::DONT);
-    /*
-     * I do not yet know why, but this leads to trouble mit gcc-8
-     */
-    po2vessels.resize(vl.GetECount(), Float2(NANf()));
-    // I try this hardcoded before do it with variables: read in po2field from previous iteration
-    if(previous_po2field and previous_po2vessels)
-    {
-      cout<<"works"<<endl;
-      po2field.fill(*previous_po2field);
-      /* 
-       * po2vessel has size of vl.GetECount  --> that is the max index range
-       * 
-       */
-      if(vl.GetECount() <= previous_po2vessels->size())
-      {
-        for(int i = 0;i<vl.GetECount();++i)
-        {
-          po2vessels[i] = previous_po2vessels->operator[](i);
-        }
-      }
-      else
-      {
-        for(int i = 0;i<previous_po2vessels->size();++i)
-        {
-          po2vessels[i] = previous_po2vessels->operator[](i);
-        }
-        printf("Warning: more vessels suggested than in previous run present!\n");
-      }
-      //previous_po2vessels
+    //previous_po2vessels
 //       h5cpp::File f2("/localdisk/thierry/output_milotti/with_o2_sim/fakeTumMTS-default-typeI-sample00-milotti_detailed.h5", "r");
 //       h5cpp::Group po2Group = f2.root().open_group("out0000/po2");
 //       h5cpp::Dataset ds;
@@ -1631,37 +1645,35 @@ void DetailedP02Sim::init(Parameters &params_,
 //     }
       
       
-    }
-    else
-    {
-      po2field.fill(params.debug_zero_o2field ? 0.f : params.po2init_cutoff);
-    }
-    
-    
-    /** executes topological ordering
-     * potential remodelling due to tumor should be considered
-     */
-    sorted_vessels.clear();
-    roots.clear();
-    arterial_roots.clear();
-    PrepareNetworkInfo(vl, sorted_vessels, roots);
-    BOOST_FOREACH(const VesselNode* nd, roots)
-    {
-      if(nd->Count()>0)// there needs to be a connected vessel to check for type
-      {
-	if(nd->GetEdge(0)->IsArtery())
-	{
-	  arterial_roots.push_back(nd);
-	}
-      }
-    }   //note vl is lost after this call!!!!
   }
+  else
+  {
+    po2field.fill(params.debug_zero_o2field ? 0.f : params.po2init_cutoff);
+  }
+    
+  /** executes topological ordering
+    * potential remodelling due to tumor should be considered
+    */
+  sorted_vessels.clear();
+  roots.clear();
+  arterial_roots.clear();
+  PrepareNetworkInfo(vl, sorted_vessels, roots);
+  BOOST_FOREACH(const VesselNode* nd, roots)
+  {
+    if(nd->Count()>0)// there needs to be a connected vessel to check for type
+    {
+      if(nd->GetEdge(0)->IsArtery())
+      {
+        arterial_roots.push_back(nd);
+      }
+    }
+  }   //note vl is lost after this call!!!!
 }
 
 /**
  * @brief Head function called by python interface
  */
-int DetailedP02Sim::run(VesselList3d &vl)
+int DetailedPO2Sim::run(VesselList3d &vl)
 {
   //sets up the linear trilionos matrix system, builder is implemented as struct
   //could use for example different stencils
@@ -1906,7 +1918,7 @@ void Measurement::computeVesselSolution(int idx, DynArray< VesselPO2SolutionReco
  * debug output
 ---------------------------------------------------------------------------- */
 
-void WriteOutput(H5::Group basegroup,
+void DetailedPO2Sim::WriteOutput(H5::Group &basegroup,
                  const VesselList3d &vl,
                  const Parameters &params,
                  const boost::optional<const VesselPO2Storage&> vesselpo2,
@@ -1917,10 +1929,10 @@ void WriteOutput(H5::Group basegroup,
 {
 //     h5cpp::File f(fn,"w");
 //     h5cpp::Group basegroup = grpname.empty() ? f.root() : f.root().create_group(grpname);
-    H5::Group g = basegroup.createGroup("vessels");
+    H5::Group g = basegroup.createGroup("vesselshaha");
     H5::Group h5_edges= g.openGroup("edges");
-    WriteVesselList3d(vl, g, make_ptree("w_all",false)("w_pressure",true));
-
+    //WriteVesselList3d(vl, g, make_ptree("w_all",false)("w_pressure",true));
+    WriteVesselList3d(vl, g, make_ptree("w_all",true)("w_pressure",true));
     if (sorted_vessels)
     {
       DynArray<int> toposort_indices(vl.GetECount());
@@ -1939,7 +1951,7 @@ void WriteOutput(H5::Group basegroup,
       for (int i=0; i<vl.GetECount(); ++i)
       {
         float po2 = ((*vesselpo2)[i][0]+(*vesselpo2)[i][1])*0.5;
-        avg_po2[i] = isFinite(po2) ? po2 : -1.f;
+        avg_po2[i] = std::isfinite(po2) ? po2 : -1.f;
       }
       //h5cpp::create_dataset(g.open_group("edges"), "avgpo2", avg_po2);
       writeDataSetToGroup(h5_edges, string("avgpo2"), avg_po2);
@@ -2111,11 +2123,11 @@ void TestSingleVesselPO2Integration()
   h5cpp::create_dataset(root, "data", h5cpp::Dataspace::simple_dims(N, 3), get_ptr(xyz));
 #endif
 }
-Array3df DetailedP02Sim::getPo2field()
+Array3df DetailedPO2Sim::getPo2field()
 {
   return po2field;
 }
-DetailedPO2::VesselPO2Storage DetailedP02Sim::getVesselPO2Storrage()
+DetailedPO2::VesselPO2Storage DetailedPO2Sim::getVesselPO2Storrage()
 {
   return po2vessels;
 }

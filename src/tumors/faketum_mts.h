@@ -172,7 +172,7 @@ const int ANN_dim = 3;            // space dimension
 	
 	
   VesselModel1::Model vessel_model;
-  DetailedPO2::DetailedP02Sim o2_sim;
+  DetailedPO2::DetailedPO2Sim o2_sim;
   
   void calcChemFields();
   // lattice definition of the continuum field lattice
