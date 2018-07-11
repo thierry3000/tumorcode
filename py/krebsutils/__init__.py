@@ -328,8 +328,11 @@ def filter_graph_byedge2( edges, edge_data, node_data, indices, return_indices=F
     invmap = -1*np.ones((n,),dtype=edges.dtype)
     np.put(invmap,map,np.arange(map.shape[0],dtype=edges.dtype))
     newedges = np.asarray(np.take(invmap,tmpedges), dtype=edges.dtype)
-    new_node_data = tuple( q[map,...] for q in node_data )
     new_edge_data = tuple( q[indices,...] for q in edge_data )
+    new_node_data = tuple( q[map,...] for q in node_data )
+    ''' difficult with position which is dict with 3 entries'''
+    #new_node_data = node_data
+    
     ret = (newedges, new_edge_data, new_node_data)
     if return_indices:
         ret = ret+(indices, map, invmap) # map  is array to obtain old node index from new index by: oldIndex=map[newIndex]

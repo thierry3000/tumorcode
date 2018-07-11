@@ -315,7 +315,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
       h5_vessels = file.openGroup("vessels");
     }
-    catch(H5::Exception e)
+    catch(H5::Exception &e)
     {
       e.printErrorStack();
     }
@@ -344,7 +344,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       readAttrFromH5(h5params, string("ENSEMBLE_INDEX"),index);
       params.vesselfile_ensemble_index = index;
     }
-    catch(H5::Exception e)
+    catch(H5::Exception &e)
     {
       e.printErrorStack();
     }
@@ -613,7 +613,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
     }
     root = f_out.openGroup("/");
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
@@ -642,7 +642,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       h5_field_ld_group = root.createGroup("field_ld");
       grid.ld.WriteHdfLd(h5_field_ld_group);
     }
-    catch( H5::Exception e)
+    catch(H5::Exception &e)
     {
       e.printErrorStack();
     }
@@ -675,7 +675,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
           WriteHdfPtree(h5_o2_last_state, o2_sim.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
         }
       }
-      catch(H5::Exception e)
+      catch(H5::Exception &e)
       {
         e.printErrorStack();
       }
@@ -746,7 +746,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       WriteCellsSystemHDF_with_nearest_vessel_index(h5_cells_out);
     }
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
@@ -766,7 +766,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       WriteHdfPtree(po2outputGroup, o2_sim.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
     }
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }

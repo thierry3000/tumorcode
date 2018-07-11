@@ -38,7 +38,12 @@ namespace DetailedPO2
 void Parameters::assign(const ptree &pt)
 {
   #define DOPT(name) boost::property_tree::get(name, #name, pt)
-  
+  DOPT(po2_mmcons_k_norm);
+  DOPT(po2_mmcons_k_tum);
+  DOPT(po2_mmcons_k_necro);
+  DOPT(po2_mmcons_m0_norm);
+  DOPT(po2_mmcons_m0_tum);
+  DOPT(po2_mmcons_m0_necro);
   DOPT(po2init_r0);
   DOPT(po2init_dr);
   DOPT(po2init_cutoff);
@@ -98,9 +103,17 @@ ptree Parameters::as_ptree() const
   DOPT(sat_curve_exponent);
   //DOPT(S_p50);
   DOPT(sat_curve_p50);
-  DOPT(po2_mmcons_k[TISSUE]);
-  DOPT(po2_mmcons_k[TCS]);
-  DOPT(po2_mmcons_k[DEAD]);
+  DOPT(po2_mmcons_k_norm);
+  DOPT(po2_mmcons_k_tum);
+  DOPT(po2_mmcons_k_necro);
+  DOPT(po2_mmcons_m0_norm);
+  DOPT(po2_mmcons_m0_tum);
+  DOPT(po2_mmcons_m0_necro);
+  
+  //DOPT(po2_mmcons_k[TISSUE]);
+  //DOPT(po2_mmcons_k[TCS]);
+  //DOPT(po2_mmcons_k[DEAD]);
+  
   //DOPT(D_tissue);
   //DOPT(kd);
   DOPT(D_plasma);
@@ -253,12 +266,12 @@ Parameters::Parameters()
   transvascular_ring_size = 0.5;
   tissue_boundary_condition_flags = 0; // neumann bc
   tissue_boundary_value = 0.;
-  po2_mmcons_m0[TISSUE] = 4.5/6.e4;    // corresponds to M_0 in oxygen paper
-  po2_mmcons_k[TISSUE]  = 4.; // mmHg  // corresponds to P_{M50} in oxygen paper
-  po2_mmcons_m0[TCS] = 4.5/6.e4*2.;
-  po2_mmcons_k[TCS]  = 2.; // mmHg
-  po2_mmcons_m0[DEAD] = 0.;
-  po2_mmcons_k[DEAD]  = 2.; // mmHg
+  po2_mmcons_m0_norm = 4.5/6.e4;    // corresponds to M_0 in oxygen paper
+  po2_mmcons_k_norm  = 4.; // mmHg  // corresponds to P_{M50} in oxygen paper
+  po2_mmcons_m0_tum = 4.5/6.e4*2.;
+  po2_mmcons_k_tum  = 2.; // mmHg
+  po2_mmcons_m0_necro = 0.;
+  po2_mmcons_k_necro  = 2.; // mmHg
   michaelis_menten_uptake = false;
   useCellBasedUptake = false;
   
@@ -318,59 +331,59 @@ void Parameters::UpdateInternalValues()
     p *= 0.5;
   }
   conc_neglect_s  = BloodPO2ToConc(p, 1.);
-  SetTissueParamsByDiffusionRadius(D_plasma, solubility_tissue, rd_norm, rd_tum, rd_necro);
+  //SetTissueParamsByDiffusionRadius(D_plasma, solubility_tissue, rd_norm, rd_tum, rd_necro);
 }
 
-void Parameters::writeParametersToHDF(H5::Group& parameter_out_group)
-{
-  //analogues to as_ptree()
-  #define H5OUT(name) writeAttrToH5(parameter_out_group, string(#name), name)
-  H5OUT(po2init_r0);
-  H5OUT(po2init_dr);
-  H5OUT(po2init_cutoff);
-  H5OUT(solubility_plasma); 
-  H5OUT(sat_curve_exponent);
-  H5OUT(sat_curve_p50);
-  H5OUT(po2_mmcons_k[TISSUE]);
-  H5OUT(po2_mmcons_k[TCS]);
-  H5OUT(po2_mmcons_k[DEAD]);
-  H5OUT(D_plasma);
-  H5OUT(solubility_tissue);
-  H5OUT(rd_norm);
-  H5OUT(rd_tum);
-  H5OUT(rd_necro);
-  H5OUT(max_iter);
-  H5OUT(num_threads);
-  H5OUT(convergence_tolerance);
-  H5OUT(axial_integration_step_factor);
-  H5OUT(debug_zero_o2field);
-  //DOPT(grid_lattice_const);
-  
-  H5OUT(michaelis_menten_uptake);
-  H5OUT(massTransferCoefficientModelNumber);
-  H5OUT(conductivity_coeff1);
-  H5OUT(conductivity_coeff2);
-  H5OUT(conductivity_coeff3);
-  H5OUT(detailedO2name);
-  H5OUT(loglevel);
-  H5OUT(tissue_po2_boundary_condition);
-  H5OUT(approximateInsignificantTransvascularFlux);
-  H5OUT(extra_tissue_source_const);
-  H5OUT(extra_tissue_source_linear);
-  H5OUT(tissue_boundary_value);
-  H5OUT(haemoglobin_binding_capacity);
-  H5OUT(transvascular_ring_size);
-  H5OUT(debug_fn);
-  writeAttrToH5(parameter_out_group, string("mmcons_k_norm"), po2_mmcons_k[TISSUE]);
-  writeAttrToH5(parameter_out_group, string("mmcons_k_tum"), po2_mmcons_k[TCS]);
-  writeAttrToH5(parameter_out_group, string("mmcons_k_necro"), po2_mmcons_k[DEAD]);
-  writeAttrToH5(parameter_out_group, string("mmcons_m0_norm"), po2_mmcons_m0[TISSUE]);
-  writeAttrToH5(parameter_out_group, string("mmcons_m0_tum"), po2_mmcons_m0[TCS]);
-  writeAttrToH5(parameter_out_group, string("mmcons_m0_necro"), po2_mmcons_m0[DEAD]);
-  
-#undef H5OUT
-
-}
+// void Parameters::writeParametersToHDF(H5::Group& parameter_out_group)
+// {
+//   //analogues to as_ptree()
+//   #define H5OUT(name) writeAttrToH5(parameter_out_group, string(#name), name)
+//   H5OUT(po2init_r0);
+//   H5OUT(po2init_dr);
+//   H5OUT(po2init_cutoff);
+//   H5OUT(solubility_plasma); 
+//   H5OUT(sat_curve_exponent);
+//   H5OUT(sat_curve_p50);
+//   H5OUT(po2_mmcons_k[TISSUE]);
+//   H5OUT(po2_mmcons_k[TCS]);
+//   H5OUT(po2_mmcons_k[DEAD]);
+//   H5OUT(D_plasma);
+//   H5OUT(solubility_tissue);
+//   H5OUT(rd_norm);
+//   H5OUT(rd_tum);
+//   H5OUT(rd_necro);
+//   H5OUT(max_iter);
+//   H5OUT(num_threads);
+//   H5OUT(convergence_tolerance);
+//   H5OUT(axial_integration_step_factor);
+//   H5OUT(debug_zero_o2field);
+//   //DOPT(grid_lattice_const);
+//   
+//   H5OUT(michaelis_menten_uptake);
+//   H5OUT(massTransferCoefficientModelNumber);
+//   H5OUT(conductivity_coeff1);
+//   H5OUT(conductivity_coeff2);
+//   H5OUT(conductivity_coeff3);
+//   H5OUT(detailedO2name);
+//   H5OUT(loglevel);
+//   H5OUT(tissue_po2_boundary_condition);
+//   H5OUT(approximateInsignificantTransvascularFlux);
+//   H5OUT(extra_tissue_source_const);
+//   H5OUT(extra_tissue_source_linear);
+//   H5OUT(tissue_boundary_value);
+//   H5OUT(haemoglobin_binding_capacity);
+//   H5OUT(transvascular_ring_size);
+//   H5OUT(debug_fn);
+//   writeAttrToH5(parameter_out_group, string("mmcons_k_norm"), po2_mmcons_k[TISSUE]);
+//   writeAttrToH5(parameter_out_group, string("mmcons_k_tum"), po2_mmcons_k[TCS]);
+//   writeAttrToH5(parameter_out_group, string("mmcons_k_necro"), po2_mmcons_k[DEAD]);
+//   writeAttrToH5(parameter_out_group, string("mmcons_m0_norm"), po2_mmcons_m0[TISSUE]);
+//   writeAttrToH5(parameter_out_group, string("mmcons_m0_tum"), po2_mmcons_m0[TCS]);
+//   writeAttrToH5(parameter_out_group, string("mmcons_m0_necro"), po2_mmcons_m0[DEAD]);
+//   
+// #undef H5OUT
+// 
+// }
 
 
 double Parameters::DiffSaturationMaxRateOfChange(double p) const
@@ -448,19 +461,35 @@ double Parameters::ConcToBloodPO2(double conc, double h)  const
  * This sets
  */
 
-void Parameters::SetTissueParamsByDiffusionRadius(double kdiff_, double alpha_, double rdiff_norm_, double rdiff_tum_, double rdiff_necro_)
+// void Parameters::SetTissueParamsByDiffusionRadius(double kdiff_, double alpha_, double rdiff_norm_, double rdiff_tum_, double rdiff_necro_)
+// {
+//   po2_kdiff = kdiff_; // um^2/s
+//   po2_cons_coeff[0] = po2_kdiff/my::sqr(rdiff_norm_)*solubility_tissue; // added TissueSolutbility
+//   po2_cons_coeff[1] = po2_kdiff/my::sqr(rdiff_tum_)*solubility_tissue;
+//   po2_cons_coeff[2] = po2_kdiff/my::sqr(rdiff_necro_)*solubility_tissue;
+// }
+
+void DetailedPO2Sim::SetTissueParamsByDiffusionRadius()
 {
-  po2_kdiff = kdiff_; // um^2/s
-  po2_cons_coeff[0] = po2_kdiff/my::sqr(rdiff_norm_)*solubility_tissue; // added TissueSolutbility
-  po2_cons_coeff[1] = po2_kdiff/my::sqr(rdiff_tum_)*solubility_tissue;
-  po2_cons_coeff[2] = po2_kdiff/my::sqr(rdiff_necro_)*solubility_tissue;
+  //po2_kdiff = kdiff_; // um^2/s
+  // of course these are assumptions!
+  po2_cons_coeff[TISSUE] = params.D_plasma/my::sqr(params.rd_norm)*params.solubility_tissue; // added TissueSolutbility
+  po2_cons_coeff[TCS] = params.D_plasma/my::sqr(params.rd_tum)*params.solubility_tissue;
+  po2_cons_coeff[DEAD] = params.D_plasma/my::sqr(params.rd_necro)*params.solubility_tissue;
 }
 
-
-std::pair<double, double> Parameters::ComputeUptake(double po2, float *tissue_phases, int phases_count) const
+std::pair<double, double> DetailedPO2Sim::ComputeUptake(double po2, float *tissue_phases, int phases_count) const
 {
+  double po2_mmcons_m0[3], po2_mmcons_k[3];
+  po2_mmcons_m0[TISSUE] = params.po2_mmcons_m0_norm;
+  po2_mmcons_m0[TCS] = params.po2_mmcons_m0_tum;
+  po2_mmcons_m0[DEAD] = params.po2_mmcons_m0_necro;
+  po2_mmcons_k[TISSUE] = params.po2_mmcons_k_norm;
+  po2_mmcons_k[TCS] = params.po2_mmcons_k_tum;
+  po2_mmcons_k[DEAD] = params.po2_mmcons_k_necro;
+    
   double dm_total = 0., m_total=0.;
-  if (!michaelis_menten_uptake)
+  if (!params.michaelis_menten_uptake)
   {
     for (int i=0; i<phases_count; ++i)
     {
@@ -1310,7 +1339,7 @@ typedef boost::optional<TissuePhases> OptTissuePhases;
  * 
  * data from previous runs is provided
  */
-void ComputePo2Field(const Parameters &params, 
+void DetailedPO2Sim::ComputePo2Field( 
 		     const ContinuumGrid &grid, 
 		     DomainDecomposition &mtboxes, 
 		     const TissuePhases &phases, 
@@ -1329,7 +1358,7 @@ void ComputePo2Field(const Parameters &params,
     BOOST_FOREACH(const DomainDecomposition::ThreadBox bbox, mtboxes.getCurrentThreadRange())
     {
       //diffusion part of differential equation
-      mb.AddDiffusion<> (bbox, ConstValueFunctor<float>(1.), -params.po2_kdiff);
+      mb.AddDiffusion<> (bbox, ConstValueFunctor<float>(1.), -params.D_plasma);
 
       FOR_BBOX3(p, bbox)
       {
@@ -1340,7 +1369,7 @@ void ComputePo2Field(const Parameters &params,
           /**
           * oxygen uptake of tissue according michalis menten model or simpler
           */
-          boost::tie(m, dm) = params.ComputeUptake(po2, phases_loc.data(), phases.count);
+          boost::tie(m, dm) = ComputeUptake(po2, phases_loc.data(), phases.count);
 //           if(p[0]==59 and p[1]==62 and p[2] == 52)
 //           {
 //             std::cout << "1:)" << std::endl;
@@ -1359,7 +1388,7 @@ void ComputePo2Field(const Parameters &params,
         }
         else
         {
-          boost::tie(m, dm) = params.ComputeUptake(po2, phases_loc.data(), phases.count);
+          boost::tie(m, dm) = ComputeUptake(po2, phases_loc.data(), phases.count);
           /** 
           * or more complicated based on single cells
           * 
@@ -1506,6 +1535,7 @@ void DetailedPO2Sim::init(Parameters &params_,
 {
   this->cell_based_o2_uptake = cell_based_o2_uptake;
   bfparams = bfparams_;
+  SetTissueParamsByDiffusionRadius();
   
   CalcFlow(vl, bfparams);
   params = params_;
@@ -1573,7 +1603,7 @@ void DetailedPO2Sim::init(Parameters &params_,
     }
     cout << endl;
   }
-  isVesselListGood(vl);
+  //isVesselListGood(vl);
   //the tissue phase needs to be set in every case!!!!
   SetupTissuePhases(phases, grid, mtboxes, tumorgroup);//filling
   
@@ -1675,9 +1705,6 @@ void DetailedPO2Sim::init(Parameters &params_,
  */
 int DetailedPO2Sim::run(VesselList3d &vl)
 {
-  //sets up the linear trilionos matrix system, builder is implemented as struct
-  //could use for example different stencils
-  FiniteVolumeMatrixBuilder tissue_diff_matrix_builder;
 
 #if APPROXIMATE_FEM_TRANSVASCULAR_EXCHANGE_TERMS
   tissue_diff_matrix_builder.Init7Point(grid.ld, grid.dim);
@@ -1750,7 +1777,7 @@ int DetailedPO2Sim::run(VesselList3d &vl)
     /*
      * 2) propagate the oxygen from the blood stream to the tissue
      */
-    ComputePo2Field(params, grid, mtboxes, phases, po2field, cell_based_o2_uptake, tissue_diff_matrix_builder, keep_preconditioner);
+    ComputePo2Field(grid, mtboxes, phases, po2field, cell_based_o2_uptake, tissue_diff_matrix_builder, keep_preconditioner);
     
     /*
      * From here on the results are handled
@@ -1815,7 +1842,7 @@ int DetailedPO2Sim::run(VesselList3d &vl)
   IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
   //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
   
-  ComputePo2Field(params, grid, mtboxes, phases, po2field, cell_based_o2_uptake, tissue_diff_matrix_builder, keep_preconditioner);
+  ComputePo2Field(grid, mtboxes, phases, po2field, cell_based_o2_uptake, tissue_diff_matrix_builder, keep_preconditioner);
   cout << "before return field" << endl;
   return 0;
 }
@@ -1917,65 +1944,48 @@ void Measurement::computeVesselSolution(int idx, DynArray< VesselPO2SolutionReco
 /*--------------------------------------------------------------------------
  * debug output
 ---------------------------------------------------------------------------- */
-
-void DetailedPO2Sim::WriteOutput(H5::Group &basegroup,
-                 const VesselList3d &vl,
-                 const Parameters &params,
-                 const boost::optional<const VesselPO2Storage&> vesselpo2,
-                 const boost::optional<DynArray<const Vessel*>&> sorted_vessels,
-                 const boost::optional<ContinuumGrid&> grid,
-                 const boost::optional<Array3df> po2field,
-                 const boost::optional<const FiniteVolumeMatrixBuilder&> mbopt)
+void DetailedPO2Sim::WriteOutput_new(H5::H5File &o2File)
 {
-//     h5cpp::File f(fn,"w");
-//     h5cpp::Group basegroup = grpname.empty() ? f.root() : f.root().create_group(grpname);
-    H5::Group g = basegroup.createGroup("vesselshaha");
-    H5::Group h5_edges= g.openGroup("edges");
-    //WriteVesselList3d(vl, g, make_ptree("w_all",false)("w_pressure",true));
-    WriteVesselList3d(vl, g, make_ptree("w_all",true)("w_pressure",true));
-    if (sorted_vessels)
+  H5::Group po2_out_group;
+  H5::Group outputgroup;
+  H5::Group h5_matrix_builder_info;
+  H5::Group h5_ld_group;
+  
+  H5::Group h5_o2_lattice;
+  H5::Group h5_params;
+  H5::Group h5_meta_data;
+  H5::Group h5_o2_params;
+  H5::Group h5_bf_params;
+  
+  try
+  {
+    po2_out_group = o2File.createGroup(string("/po2"));
+    outputgroup = o2File.createGroup(string("/") + string("po2/") + params.input_group_path);
+    h5_o2_lattice = outputgroup.createGroup("field_ld");
+    h5_params = outputgroup.createGroup("parameters");
+    h5_meta_data = h5_params.createGroup("metadata");
+    h5_o2_params = h5_params.createGroup("o2");
+    h5_bf_params = h5_params.createGroup("calcflow");
+    
+    //additional output options
+    if( params.currentOutputOptions.writeAvgPo2)
     {
-      DynArray<int> toposort_indices(vl.GetECount());
-      for (int i=0; i<vl.GetECount(); ++i)
+      DynArray<float> avg_po2(vl->GetECount());
+      for (int i=0; i<vl->GetECount(); ++i)
       {
-        const Vessel* v = (*sorted_vessels)[i];
-        toposort_indices[v->Index()] = i;
-      }
-      //h5cpp::create_dataset(g.open_group("edges"), "topoorder", toposort_indices);
-      //h5cpp::create_dataset(g.open_group("edges"), "topoorder", toposort_indices);
-      writeDataSetToGroup(h5_edges, string("topoorder"), toposort_indices);
-    }
-    if (vesselpo2)
-    {
-      DynArray<float> avg_po2(vl.GetECount());
-      for (int i=0; i<vl.GetECount(); ++i)
-      {
-        float po2 = ((*vesselpo2)[i][0]+(*vesselpo2)[i][1])*0.5;
+        //float po2 = ((*vesselpo2)[i][0]+(*vesselpo2)[i][1])*0.5;
+        float po2 = (po2vessels[i][0]+po2vessels[i][1])*0.5;
         avg_po2[i] = std::isfinite(po2) ? po2 : -1.f;
       }
-      //h5cpp::create_dataset(g.open_group("edges"), "avgpo2", avg_po2);
-      writeDataSetToGroup(h5_edges, string("avgpo2"), avg_po2);
+      writeDataSetToGroup(outputgroup, string("avgpo2"), avg_po2);
     }
-
-    if (po2field)
+    if( params.currentOutputOptions.writeMatrixBuilderInfo)
     {
-      //h5cpp::Group ld_group = RequireLatticeDataGroup(basegroup, "field_ld", grid->ld);
-      H5::Group ld_group = RequireLatticeDataGroup(basegroup, grid->ld);
-      g = basegroup.createGroup("fields");
-      if (po2field)
-        WriteScalarField(g, "po2field", *po2field, grid->ld, ld_group);
-    }
-
-    if (mbopt)
-    {
-      H5::Group ld_group = RequireLatticeDataGroup(basegroup, grid->ld);
-//       g = basegroup.require_group("fields");
-      g = basegroup.openGroup("fields");
-      
-      const FiniteVolumeMatrixBuilder& mb = *mbopt;
-      const Epetra_CrsMatrix& mat = *mb.m;
-      const Epetra_Vector& rhs = *mb.rhs;
-      const BBox3 bbox = grid->Box();
+      h5_matrix_builder_info = outputgroup.createGroup("fields");
+      h5_ld_group = RequireLatticeDataGroup(outputgroup, grid.ld);
+      const Epetra_CrsMatrix& mat = *tissue_diff_matrix_builder.m;
+      const Epetra_Vector& rhs = *tissue_diff_matrix_builder.rhs;
+      const BBox3 bbox = grid.Box();
       Array3d<double> diagArr(bbox),
                       rhsArr(bbox),
                       rowsumArr(bbox);
@@ -1984,7 +1994,7 @@ void DetailedPO2Sim::WriteOutput(H5::Group &basegroup,
       int    indices[128];
       FOR_BBOX3(p, bbox)
       {
-        int row = grid->ld.LatticeToSite(p);
+        int row = grid.ld.LatticeToSite(p);
         double rowsum = 0;
         mat.ExtractGlobalRowCopy(row, 27, numEntries, values, indices);
         for (int i=0; i<numEntries; ++i)
@@ -1996,11 +2006,144 @@ void DetailedPO2Sim::WriteOutput(H5::Group &basegroup,
         rowsumArr(p) = rowsum;
       }
 
-      WriteScalarField(g, "diag", diagArr, grid->ld, ld_group);
-      WriteScalarField(g, "rowsum", rowsumArr, grid->ld, ld_group);
-      WriteScalarField(g, "rhs", rhsArr, grid->ld, ld_group);
+      WriteScalarField(h5_matrix_builder_info, "diag", diagArr, grid.ld, h5_ld_group);
+      WriteScalarField(h5_matrix_builder_info, "rowsum", rowsumArr, grid.ld, h5_ld_group);
+      WriteScalarField(h5_matrix_builder_info, "rhs", rhsArr, grid.ld, h5_ld_group);
     }
+    if( params.currentOutputOptions.writeTopoorder)
+    {
+      DynArray<int> toposort_indices(vl->GetECount());
+      for (int i=0; i<vl->GetECount(); ++i)
+      {
+        const Vessel* v = sorted_vessels[i];
+        toposort_indices[v->Index()] = i;
+      }
+      writeDataSetToGroup(outputgroup, string("topoorder"), toposort_indices);
+    }
+  }
+  catch( H5::Exception &e)
+  {
+    e.printErrorStack();
+  }
+  
+  writeAttrToH5(outputgroup, string("SOURCE_VESSELS_FILE"), params.input_file_name);
+  writeAttrToH5(outputgroup, string("SOURCE_VESSELS_PATH"), params.input_group_path);
+  writeAttrToH5(outputgroup, string("SOURCE_TISSUE_FILE"), string("none"));
+  writeAttrToH5(outputgroup, string("SOURCE_TISSUE_PATH"), string("none"));
+  
+  grid.ld.WriteHdfLd(h5_o2_lattice);
+  WriteScalarField(outputgroup, string("po2field"), po2field, grid.ld, h5_o2_lattice);
+  writeDataSetToGroup(outputgroup, string("po2vessels"), po2vessels);
+  //WriteHdfPtree(outputgroup, s.metadata, HDF_WRITE_PTREE_AS_DATASETS);
+  WriteHdfPtree(outputgroup, metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  WriteHdfPtree(h5_meta_data, metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  WriteHdfPtree(h5_o2_params, params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  //params.writeParametersToHDF(h5_o2_params);
+  //WriteHdfPtree(h5_o2_params, s.params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  WriteHdfPtree(h5_bf_params, bfparams.as_ptree());
+    
+  po2_out_group.close();
+  outputgroup.close();
+  h5_o2_lattice.close();
+  h5_params.close();
+  h5_meta_data.close();
+  h5_o2_params.close();
+  h5_bf_params.close();
+  h5_matrix_builder_info.close();
+  h5_ld_group.close();
 }
+// void DetailedPO2Sim::WriteOutput(H5::Group &basegroup,
+//                  const VesselList3d &vl,
+//                  const Parameters &params,
+//                  const boost::optional<const VesselPO2Storage&> vesselpo2,
+//                  const boost::optional<DynArray<const Vessel*>&> sorted_vessels,
+//                  const boost::optional<ContinuumGrid&> grid,
+//                  const boost::optional<Array3df> po2field,
+//                  const boost::optional<const FiniteVolumeMatrixBuilder&> mbopt)
+// {
+// //     h5cpp::File f(fn,"w");
+// //     h5cpp::Group basegroup = grpname.empty() ? f.root() : f.root().create_group(grpname);
+//     H5::Group g; 
+//     H5::Group h5_edges;
+//     try
+//     {
+//       g = basegroup.createGroup("vessels_o2");
+//       h5_edges = g.createGroup("edges_o2");
+//     }
+//     catch( H5::Exception &e)
+//     {
+//       e.printErrorStack();
+//     }
+//     //WriteVesselList3d(vl, g, make_ptree("w_all",false)("w_pressure",true));
+//     WriteVesselList3d(vl, g, make_ptree("w_all",true)("w_pressure",true));
+//     if (sorted_vessels)
+//     {
+//       DynArray<int> toposort_indices(vl.GetECount());
+//       for (int i=0; i<vl.GetECount(); ++i)
+//       {
+//         const Vessel* v = (*sorted_vessels)[i];
+//         toposort_indices[v->Index()] = i;
+//       }
+//       //h5cpp::create_dataset(g.open_group("edges"), "topoorder", toposort_indices);
+//       //h5cpp::create_dataset(g.open_group("edges"), "topoorder", toposort_indices);
+//       writeDataSetToGroup(h5_edges, string("topoorder"), toposort_indices);
+//     }
+//     if (vesselpo2)
+//     {
+//       DynArray<float> avg_po2(vl.GetECount());
+//       for (int i=0; i<vl.GetECount(); ++i)
+//       {
+//         float po2 = ((*vesselpo2)[i][0]+(*vesselpo2)[i][1])*0.5;
+//         avg_po2[i] = std::isfinite(po2) ? po2 : -1.f;
+//       }
+//       //h5cpp::create_dataset(g.open_group("edges"), "avgpo2", avg_po2);
+//       writeDataSetToGroup(h5_edges, string("avgpo2"), avg_po2);
+//     }
+// 
+//     if (po2field)
+//     {
+//       //h5cpp::Group ld_group = RequireLatticeDataGroup(basegroup, "field_ld", grid->ld);
+//       H5::Group ld_group = RequireLatticeDataGroup(basegroup, grid->ld);
+//       g = basegroup.createGroup("fields");
+//       if (po2field)
+//         WriteScalarField(g, "po2field", *po2field, grid->ld, ld_group);
+//     }
+// 
+//     if (mbopt)
+//     {
+//       H5::Group ld_group = RequireLatticeDataGroup(basegroup, grid->ld);
+// //       g = basegroup.require_group("fields");
+//       g = basegroup.openGroup("fields");
+//       
+//       const FiniteVolumeMatrixBuilder& mb = *mbopt;
+//       const Epetra_CrsMatrix& mat = *mb.m;
+//       const Epetra_Vector& rhs = *mb.rhs;
+//       const BBox3 bbox = grid->Box();
+//       Array3d<double> diagArr(bbox),
+//                       rhsArr(bbox),
+//                       rowsumArr(bbox);
+//       int numEntries;
+//       double values[128];
+//       int    indices[128];
+//       FOR_BBOX3(p, bbox)
+//       {
+//         int row = grid->ld.LatticeToSite(p);
+//         double rowsum = 0;
+//         mat.ExtractGlobalRowCopy(row, 27, numEntries, values, indices);
+//         for (int i=0; i<numEntries; ++i)
+//         {
+//           if (indices[i] == row) diagArr(p) = values[i];
+//           rowsum += values[i];
+//         }
+//         rhsArr(p) = rhs[row];
+//         rowsumArr(p) = rowsum;
+//       }
+// 
+//       WriteScalarField(g, "diag", diagArr, grid->ld, ld_group);
+//       WriteScalarField(g, "rowsum", rowsumArr, grid->ld, ld_group);
+//       WriteScalarField(g, "rhs", rhsArr, grid->ld, ld_group);
+//     }
+// }
 
 
 

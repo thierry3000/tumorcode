@@ -164,7 +164,7 @@ void DoOutput(H5::Group &root,
     // since world coordinates are introduced this is needed for proper hdf output
     writeAttrToH5(vesselgrp, string("CLASS"), string("GRAPH"));
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.dontPrint();
     vesselgrp = root.openGroup("vessels");
@@ -174,7 +174,7 @@ void DoOutput(H5::Group &root,
   {
     WriteVesselList3d(vl, vesselgrp, make_ptree("w_all",false)("w_pressure",true)("w_flow",true));
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
     e.printErrorStack();
@@ -192,7 +192,7 @@ void DoOutput(H5::Group &root,
   {
     h5_nodes = vesselgrp.openGroup("nodes");
   }
-  catch( H5::Exception e)
+  catch( H5::Exception &e)
   {
     e.printErrorStack();
     h5_nodes = vesselgrp.createGroup("nodes");
@@ -203,7 +203,7 @@ void DoOutput(H5::Group &root,
   {
     h5_node_flags = h5_nodes.openDataSet("nodeflags");
   }
-  catch( H5::Exception e)
+  catch( H5::Exception &e)
   {
     //only write, if it is not there!
     writeDataSetToGroup(h5_nodes, "nodeflags", tmp2);
@@ -219,7 +219,7 @@ void DoOutput(H5::Group &root,
   {
     h5_edges = root.openGroup("vessels/edges");
   }
-  catch( H5::Exception e)
+  catch( H5::Exception &e)
   {
     h5_edges = root.createGroup("vessels/edges");
   }
@@ -312,7 +312,7 @@ void DoOutput(H5::H5File &file,
   {
     h5_data = root.openGroup("data");
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     h5_data = root.createGroup("data");
   }
@@ -337,7 +337,7 @@ void DoOutput(H5::H5File &file,
   {
     h5_param = root.openGroup("parameters");
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     h5_param = root.createGroup("parameters");
   }

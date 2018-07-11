@@ -39,7 +39,7 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
     readInFile = H5::H5File(fn, H5F_ACC_RDONLY);
     g_vess = readInFile.openGroup(vesselgroup_path); // groupname should end by vesselgroup
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
@@ -79,7 +79,7 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
     {
       g_vess.openGroup("recomputed");
     }
-    catch( H5::Exception error )
+    catch(H5::Exception &e)
     {
       H5::Group recomp = g_vess.createGroup("recomputed");
       ptree getEverytingPossible = make_ptree("w_adaption", false);

@@ -73,7 +73,7 @@ void printObjectName(const H5::Group &g)
   {
     std::cout << g.getObjName() << std::endl;
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printError();
   }
@@ -85,7 +85,7 @@ void printObjectName( H5::H5Location &g, const H5std_string attr_name, void* ope
   {
     std::cout << attr_name << std::endl;
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printError();
   }
@@ -104,7 +104,7 @@ void add_all_attributes_to_ptree( H5::H5Object &g, const H5std_string attr_name,
 #endif
     pt->put(attr_name, output_buffer);
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printError();
   }
@@ -122,7 +122,7 @@ void add_all_attributes_to_ptree( H5::H5Location &g, const H5std_string attr_nam
 #endif
     pt->put(attr_name, output_buffer);
   }
-  catch(H5::Exception e)
+  catch()
   {
     e.printError();
   }
@@ -138,7 +138,7 @@ void ReadHdfPtree(boost::property_tree::ptree &pt, H5::Group &f, HdfWritePtreeAs
     std::cout << "read: " << f.getFileName() << std::endl;
     std::cout << "at:   " << f.getObjName() << std::endl;
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printError();
   }

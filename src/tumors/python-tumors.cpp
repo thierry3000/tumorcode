@@ -169,7 +169,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
       h5_system_of_first_run = h5_params_of_previous_run.openGroup("system");
       h5_o2_params_of_previous_run = h5_params_of_previous_run.openGroup("o2");
     }
-    catch(H5::Exception e)
+    catch(H5::Exception &e)
     {
       e.printErrorStack();
     }
@@ -199,7 +199,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
       WriteHdfPtree(h5_system_of_current_run, systemSettings);
       
     }
-    catch(H5::Exception e)
+    catch(H5::Exception &e)
     {
       e.printErrorStack();
     }
@@ -370,7 +370,7 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
       h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
       h5_system_of_first_run = h5_params_of_previous_run.openGroup("system");
     }
-    catch(H5::Exception e)
+    catch(H5::Exception &e)
     {
       e.printErrorStack();
     }
@@ -398,7 +398,7 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
       WriteHdfPtree(h5_system_of_current_run, systemSettings);
       
     }
-    catch(H5::Exception e)
+    catch(H5::Exception &e)
     {
       e.printErrorStack();
     }
@@ -463,7 +463,7 @@ void export_faketum()
 //   {
 //     std::cout << attr_name << std::endl;
 //   }
-//   catch(H5::Exception e)
+//   catch()
 //   {
 //     e.printError();
 //   }
@@ -572,7 +572,7 @@ void run_bulktissue_with_vessels(const py::str &param_info_str)
   {
     std::cout << ex.what();
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }

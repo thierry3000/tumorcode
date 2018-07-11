@@ -651,7 +651,7 @@ void BulkTissue::NewTumorSim::writeOutput(double time)
     ld_group_tum = f.openGroup("field_ld");
     has_grp = true;
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     //in the first iteration, there is no group yet!
     ld_group_tum = f.createGroup("field_ld");

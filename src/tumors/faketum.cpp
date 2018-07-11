@@ -203,7 +203,7 @@ int FakeTum::FakeTumorSim::run()
     file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
     h5_vessels = file.openGroup(params.vessel_path);
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
@@ -238,7 +238,7 @@ int FakeTum::FakeTumorSim::run()
     readAttrFromH5(h5params, string("ENSEMBLE_INDEX"),index);
     params.vesselfile_ensemble_index = index;
   }
-  catch(H5::Exception e)
+  catch()
   {
     e.printErrorStack();
   
@@ -387,7 +387,7 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     }
     root = f_out.openGroup("/");
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
@@ -443,7 +443,7 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
     // could be done, but since it is a sphere, you can easily calculate the tc_density from the radius
     //WriteScalarField(h5_tum, string("tc_density"), tum_field, ld, field_ld_group);
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }

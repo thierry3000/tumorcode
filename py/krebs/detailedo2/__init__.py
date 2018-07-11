@@ -256,6 +256,8 @@ def computePO2(parameters):
   parameters['output_file_name'] = "%s-%s.h5" % (output_buffer_name, parameters['input_group_path'])  
   print("storing in file: %s at %s" % (parameters['output_file_name'], parameters['output_group_path']))
   tumorgroup = None
+  parameters['tumor_file_name'] = 'none'
+  parameters['tumor_group_path'] = 'none'
   
   #f_out = h5files.open(parameters['output_file_name'], 'a', search = False)
   
@@ -305,6 +307,7 @@ def computePO2(parameters):
 #        f_out.flush()
     #at this point all h5Files should be closed on python side
     detailedo2current.computePO2(parameters, parameters.get('calcflow')) 
+  return parameters['output_file_name']
 
 ##############################################################################
 

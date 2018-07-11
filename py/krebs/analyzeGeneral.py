@@ -453,7 +453,7 @@ class DataBasicVessel(object):
       #elif property_name == 'flags':
       #  flags,_    = dataman.obtain_data('vessel_graph_property', vesselgroup, 'edges', 'flags')
       else:
-        return np.asarray(vesselgroup[association][property_name]), association
+        return np.asarray(vesselgroup[association][property_name])[:,0], association
 
     def obtain_data(self, dataman, dataname, *args):
       if dataname == 'vessel_graph':

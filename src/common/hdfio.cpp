@@ -113,7 +113,7 @@ H5::DataType getH5TypeFromCpp()
 //     type = att_to_read.getDataType();
 //     att_to_read.read(type, &output_buffer);
 //   }
-//   catch(H5::Exception error)
+//   catch()
 //   {
 //     error.printErrorStack();
 //   }
@@ -131,9 +131,9 @@ void readAttrFromH5(H5::H5Object &g, const string &attr_name, T &output_buffer)
     type = att_to_read.getDataType();
     att_to_read.read(type, &output_buffer);
   }
-  catch(H5::Exception error)
+  catch(H5::Exception &e)
   {
-    error.printErrorStack();
+    e.printErrorStack();
   }
 }
 #else //#if H5_VERS_MINOR > 9
@@ -148,7 +148,7 @@ void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer
     type = att_to_read.getDataType();
     att_to_read.read(type, &output_buffer);
   }
-  catch(H5::Exception error)
+  catch()
   {
     error.printErrorStack();
   }
@@ -176,7 +176,7 @@ void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer
 //   {
 //     att_to_read.read(strdatatype, strreadbuf);
 //   }
-//   catch(H5::Exception error)
+//   catch()
 //   {
 //     error.printErrorStack();
 //   }
@@ -202,7 +202,7 @@ void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer
 //   {
 //     att_to_read.read(strdatatype, strreadbuf);
 //   }
-//   catch(H5::Exception error)
+//   catch()
 //   {
 //     error.printErrorStack();
 //   }
@@ -230,9 +230,9 @@ void readAttrFromH5<string>(H5::H5Object &g, const string &attr_name, string &ou
   {
     att_to_read.read(strdatatype, strreadbuf);
   }
-  catch(H5::Exception error)
+  catch(H5::Exception &e)
   {
-    error.printErrorStack();
+    e.printErrorStack();
   }
   output_buffer = strreadbuf;
 }
@@ -257,7 +257,7 @@ void readAttrFromH5<string>(H5::H5Location &g, const string &attr_name, string &
   {
     att_to_read.read(strdatatype, strreadbuf);
   }
-  catch(H5::Exception error)
+  catch()
   {
     error.printErrorStack();
   }
@@ -290,7 +290,7 @@ void writeAttrToH5(H5::H5Object &h, const string &attr_name,  const T &value)
   try{
     attr_out = h.createAttribute(attr_name, thisType, mspace);
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
@@ -321,7 +321,7 @@ void writeAttrToH5(H5::H5Location &h, const string &attr_name,  const T &value)
   try{
     attr_out = h.createAttribute(attr_name, thisType, mspace);
   }
-  catch(H5::Exception e)
+  catch()
   {
     e.printErrorStack();
   }
@@ -345,9 +345,9 @@ void writeAttrToH5<string>(H5::H5Object &h, const string &attr_name, const strin
     H5::Attribute myatt_in = h.createAttribute(attr_name, strdatatype, attr_dataspace);
     myatt_in.write(strdatatype, strwritebuf);
   }
-  catch(H5::Exception error)
+  catch(H5::Exception &e)
   {
-    error.printErrorStack();
+    e.printErrorStack();
   }
 };
 #else //#if H5_VERS_MINOR > 9
@@ -365,7 +365,7 @@ void writeAttrToH5<string>(H5::H5Location &h, const string &attr_name, const str
     H5::Attribute myatt_in = h.createAttribute(attr_name, strdatatype, attr_dataspace);
     myatt_in.write(strdatatype, strwritebuf);
   }
-  catch(H5::Exception error)
+  catch()
   {
     error.printErrorStack();
   }
@@ -386,7 +386,7 @@ void writeAttrToH5<string>(H5::H5Location &h, const string &attr_name, const str
 //       H5::Attribute myatt_in = h.createAttribute(attr_name, strdatatype, attr_dataspace);
 //       myatt_in.write(strdatatype, strwritebuf);
 //     }
-//     catch(H5::Exception error)
+//     catch()
 //     {
 //       error.printErrorStack();
 //     }
@@ -458,7 +458,7 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
   {
     h5_nodes = g.createGroup("nodes");
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     //e.printErrorStack();
     h5_nodes = g.openGroup("nodes");
@@ -484,7 +484,7 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
 //       string graph_type;
 //       readAttrFromH5(g,string("CLASS"),graph_type);
 //     }
-//     catch(H5::Exception e)
+//     catch()
 //     {
 //       //e.dontPrint();
 //       writeAttrToH5(g,string("CLASS"), string("GRAPH"));
@@ -1102,7 +1102,7 @@ H5::DataSet writeDataSetToGroup(H5::Group &g, const string &dataset_name, DynArr
     ds = g.createDataSet(dataset_name, thisWritingType, dataspace);
     ds.write(&continousMemoryArrary, thisWritingType, dataspace);
   }
-  catch( H5::Exception e)
+  catch( H5::Exception &e)
   {
     e.printErrorStack();
   }
@@ -1141,7 +1141,7 @@ void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> 
       readIn[i] = arr_data[i];
     }
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
@@ -1514,7 +1514,7 @@ H5::DataSet WriteArray3D(H5::Group &file, const std::string &DATASET_NAME, const
   try{
     dataset.write(arr_3d_data.data(), H5::PredType::NATIVE_FLOAT);
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
@@ -1548,7 +1548,7 @@ H5::DataSet WriteVectorArray3D(H5::Group  &file,const std::string &id, const Con
     //dataset.write(&tmp, H5::PredType::NATIVE_FLOAT);
     dataset.write(arr_3d_data.data(), H5::PredType::NATIVE_FLOAT);
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }

@@ -67,7 +67,7 @@ py::tuple read_vessel_positions_from_hdf_by_filename(const string fn, const stri
    g_vess = readInFile.openGroup(groupname); // groupname should end by vesselgroup
    vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }

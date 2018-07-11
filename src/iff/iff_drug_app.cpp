@@ -232,7 +232,7 @@ bool IffDrugApp3d::InitNewState()
       H5::DataSet necro = tum_grp.openDataSet("necro");
       ReadInto(grid.ld.Box(), necro, theta_necro);
     }
-    catch( H5::Exception error)
+    catch(H5::Exception &e)
     {
       //std::cout << error.printErrorStack();
     }
@@ -427,7 +427,7 @@ void IffDrugApp3d::WriteDrugOutput(double t, const IfDrug::Calculator::State &co
   {
     H5::Group ift = f.openGroup("parameters/ift");
   }
-  catch( H5::Exception error)
+  catch(H5::Exception &e)
   {
     H5::Group out =f.createGroup("parameters/ift");
     ift_params.WriteH5(out);

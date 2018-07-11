@@ -259,17 +259,17 @@ void exportVectorClassConverters()
 template<class T>
 void checkedExtractFromDict(const py::dict &d, const char *name, T &variableToFill)
 {
-  //try
-  //{
+  try
+  {
     T buffer = py::extract<T>(d[name]);
     variableToFill = buffer;
-  //}
-//   catch (const py::error_already_set &e) 
-//   {
-//     std::cerr << format("unable to extract parameter: '%s' from detailed O2 parameters --> USING default value\n") % name;
-//     variableToFill = static_cast<T>(string(0.0));
-//     //throw e; // don't every try to handle this!
-//   }
+  }
+  catch (const py::error_already_set &e) 
+  {
+    std::cerr << format("unable to extract parameter: '%s' from detailed O2 parameters --> USING default value\n") % name;
+    //variableToFill = static_cast<T>(string(0.0));
+    //throw e; // don't every try to handle this!
+  }
 }
 template void checkedExtractFromDict<double>(const py::dict &d, const char *name, double &variableToFill);
 template void checkedExtractFromDict<string>(const py::dict &d, const char *name, string &variableToFill);
