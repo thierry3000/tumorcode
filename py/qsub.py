@@ -52,6 +52,7 @@ def parse_args(argv):
   memory_option = parserQueue.add_argument('-m', '--memory', help= 'Memory assigned by the queueing system', type=str, default = None)
   days_option = parserQueue.add_argument('-d', '--days', help= 'runtime for job in days', type=float, default = None)
   threads_option = parserQueue.add_argument('-n', '--numThreads', help= 'num of threads for job', type=int, default = None)
+  exclude_option = parserQueue.add_argument('--exclude', help= 'nodes to exclude', type=str, default = None)
   cineca_debub_option = parserQueue.add_argument('-c', '--cinecaDebug', help= 'if true, we submit do debug queue', default=False, action='store_true')
   cineca_special_option = parserQueue.add_argument('-s', '--cinecaSpecial', help= 'if true, we submit to bdw_qos_special queue', default=False, action='store_true')
 #  global defaultMemory
@@ -157,6 +158,8 @@ def write_directives_qsub_(f,name=None, mem=None, num_cpus=None, days=None, hour
     
 def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, hours=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False):
   hpc_system = os.environ.get('HPC_SYSTEM', None)
+  if goodArgumentsQueue.exclude:
+    print >>f, '#SBATCH --exclude=%s' % goodArgumentsQueue.exclude
   if hpc_system == 'marconi':
     print >>f, '#SBATCH --account=uTS18_Milotti'
     if name:
