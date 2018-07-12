@@ -513,13 +513,13 @@ int FindDistanceToJunction( const Vessel* vstart, int posOnVess, const VesselNod
 }
 
 
-std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params)
+std::shared_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params)
 {
   float grid_scale = params.get<float>("scale subdivide", -1.);
   bool filter_uncirculated = params.get<bool>("filter", false);
   
   
-  std::unique_ptr<VesselList3d> vl;
+  std::shared_ptr<VesselList3d> vl;
   typedef polymorphic_latticedata::LatticeData LatticeData;
   string type_of_vessel_network;
   try

@@ -140,7 +140,12 @@ def run_faketum_mts(configstring_file):
 #      print("current slurm job id: %s" % slurm_id)
   with open(configstring_file, 'r') as f:
     configstring = f.read()
-  return tumor_cpp.run_faketum_mts_(configstring)
+  return tumor_cpp.run_faketum_mts_(configstring, False)
+
+def rerun_faketum_mts(filename_of_previous_run):
+  if qsub.is_client:
+    qsub.printClientInfo()
+  return tumor_cpp.run_faketum_mts_(filename_of_previous_run, True)
 
 def run_faketum(configstring_file):
   if qsub.is_client:

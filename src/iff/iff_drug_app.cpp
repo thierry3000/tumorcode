@@ -97,7 +97,7 @@ bool IffDrugApp3d::InitNewState()
   {
     tum_grp = root.openGroup(h5_path_tumor);
   }
-  catch( H5::Exception )
+  catch( H5::Exception &e)
   {
     tumorIsPresent=false;
   }

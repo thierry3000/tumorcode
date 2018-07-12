@@ -1175,9 +1175,8 @@ static void NumericallyIntegrateVesselPO2(const Parameters &params,
  * arterial root pressure
  * @note this function is not very parallel
  */
-void IntegrateVesselPO2(const Parameters &params, 
+void DetailedPO2Sim::IntegrateVesselPO2(const Parameters &params, 
 			VesselPO2Storage &vesselpo2,
-			const VesselList3d &vl, 
 			DynArray<const Vessel*> &sorted_vessels,
 			DynArray<const VesselNode*> &arterial_roots,
 			const ContinuumGrid &grid,
@@ -1198,9 +1197,9 @@ void IntegrateVesselPO2(const Parameters &params,
    */
   boost::unordered_map<int, bool> nodal_o2ready;
 
-  for(int i =0;i<vl.GetNCount();i++)
+  for(int i =0;i<vl->GetNCount();i++)
   {
-    const VesselNode *nd = vl.GetNode(i);
+    const VesselNode *nd = vl->GetNode(i);
     nodal_o2ready[nd->Index()] = false;
   }
 
@@ -1229,7 +1228,7 @@ void IntegrateVesselPO2(const Parameters &params,
     const VesselNode* upstream_node = GetUpstreamNode(v);
     if (!nodal_o2ready[upstream_node->Index()])
     {
-      ComputeVesselO2Conc(upstream_node, params, vesselpo2, vl);
+      ComputeVesselO2Conc(upstream_node, params, vesselpo2, *vl);
       nodal_o2ready[upstream_node->Index()] = true;
     }
     const int side_idx = (upstream_node == v->NodeA()) ? 0 : 1;
@@ -1242,7 +1241,7 @@ void IntegrateVesselPO2(const Parameters &params,
 
     OUTPUT_PO2MEASURECOMP(printf("sim %i, start = %lf\n",v->Index(),po2start);)
     
-    NumericallyIntegrateVesselPO2(params, phases, grid, extpo2, vascularPO2PropagationModel.get(), vl, v, upstream_node, po2start, sourceGenerationCallback, po2end, world);
+    NumericallyIntegrateVesselPO2(params, phases, grid, extpo2, vascularPO2PropagationModel.get(), *vl, v, upstream_node, po2start, sourceGenerationCallback, po2end, world);
     
     vesselpo2[v->Index()][side_idx  ] = po2start;
     vesselpo2[v->Index()][side_idx^1] = po2end;
@@ -1521,9 +1520,9 @@ void DetailedPO2Sim::ComputePo2Field(
 }
 
 
-void DetailedPO2Sim::init(Parameters &params_, 
+void DetailedPO2Sim::init( 
                           BloodFlowParameters &bfparams_,
-                          VesselList3d &vl, 
+                          //VesselList3d &vl, 
                           double grid_lattice_const, 
                           double safety_layer_size, 
                           boost::optional<Int3> grid_lattice_size,
@@ -1537,9 +1536,9 @@ void DetailedPO2Sim::init(Parameters &params_,
   bfparams = bfparams_;
   SetTissueParamsByDiffusionRadius();
   
-  CalcFlow(vl, bfparams);
-  params = params_;
-  world = !vl.HasLattice();
+  CalcFlow(*vl, bfparams);
+  //params = params_;
+  world = !vl->HasLattice();
   //multithreading
   //HACK2018
   //my::SetNumThreads(params.num_threads);
@@ -1553,14 +1552,14 @@ void DetailedPO2Sim::init(Parameters &params_,
   }
   else
   {
-    dim = (::Size(vl.Ld().Box())[2]<=1) ? 2 : 3;
+    dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
   }
     
   if (grid_lattice_size)
   {
     ld.Init(*grid_lattice_size, grid_lattice_const);
     ld.SetCellCentering(Bool3(1, 1, dim>2));
-    wbox = vl.Ld().GetWorldBox();
+    wbox = vl->Ld().GetWorldBox();
     worldCenter = 0.5*(wbox.max + wbox.min);
     gridCenter = 0.5*(ld.GetWorldBox().max + ld.GetWorldBox().min);
     ld.SetOriginPosition(ld.GetOriginPosition() + (worldCenter - gridCenter));
@@ -1570,11 +1569,11 @@ void DetailedPO2Sim::init(Parameters &params_,
     //added safety space to reduce boundary errors
     if (world)
     {
-      SetupFieldLattice(vl.GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
+      SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
     }
     else
     {
-      SetupFieldLattice(vl.Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
+      SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
     }
   }
   //grid.init(ld, dim);
@@ -1595,11 +1594,11 @@ void DetailedPO2Sim::init(Parameters &params_,
     cout << "vessel lattice" << endl;
     if (world)
     {
-      cout<<vl.GetWorldBoxFromVesselsOnly()<<endl;
+      cout<<vl->GetWorldBoxFromVesselsOnly()<<endl;
     }
     else
     {
-      vl.Ld().print(cout);
+      vl->Ld().print(cout);
     }
     cout << endl;
   }
@@ -1614,7 +1613,7 @@ void DetailedPO2Sim::init(Parameters &params_,
     * I do not yet know why, but this leads to trouble mit gcc-8
     */
   //po2vessels.resize(vl.GetECount());
-  po2vessels.resize(vl.GetECount(), Float2(std::numeric_limits<float>::max()));
+  po2vessels.resize(vl->GetECount(), Float2(std::numeric_limits<float>::max()));
   // I try this hardcoded before do it with variables: read in po2field from previous iteration
   if(previous_po2field and previous_po2vessels)
   {
@@ -1624,9 +1623,9 @@ void DetailedPO2Sim::init(Parameters &params_,
       * po2vessel has size of vl.GetECount  --> that is the max index range
       * 
       */
-    if(vl.GetECount() <= previous_po2vessels->size())
+    if(vl->GetECount() <= previous_po2vessels->size())
     {
-      for(int i = 0;i<vl.GetECount();++i)
+      for(int i = 0;i<vl->GetECount();++i)
       {
         po2vessels[i] = previous_po2vessels->operator[](i);
       }
@@ -1687,7 +1686,7 @@ void DetailedPO2Sim::init(Parameters &params_,
   sorted_vessels.clear();
   roots.clear();
   arterial_roots.clear();
-  PrepareNetworkInfo(vl, sorted_vessels, roots);
+  PrepareNetworkInfo(*vl, sorted_vessels, roots);
   BOOST_FOREACH(const VesselNode* nd, roots)
   {
     if(nd->Count()>0)// there needs to be a connected vessel to check for type
@@ -1703,7 +1702,7 @@ void DetailedPO2Sim::init(Parameters &params_,
 /**
  * @brief Head function called by python interface
  */
-int DetailedPO2Sim::run(VesselList3d &vl)
+int DetailedPO2Sim::run()
 {
 
 #if APPROXIMATE_FEM_TRANSVASCULAR_EXCHANGE_TERMS
@@ -1716,7 +1715,7 @@ int DetailedPO2Sim::run(VesselList3d &vl)
   //maybe 0 or prams.po2init_cutoff
   last_po2field.fill(po2field);
   // an other buffer
-  DynArray<Float2> last_vessel_po2(vl.GetECount(), Float2(0.));//begining and end 0.
+  DynArray<Float2> last_vessel_po2(vl->GetECount(), Float2(0.));//begining and end 0.
   //metadata.add_child("iterations", ptree());
   /* when doing iterative calls, we need to override this */
   metadata.put_child("iterations", ptree());
@@ -1757,7 +1756,7 @@ int DetailedPO2Sim::run(VesselList3d &vl)
      * 1) propagate the oxygen along the blood stream
      */
     //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
-    IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
+    IntegrateVesselPO2(params, po2vessels, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder,world);
 //     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
 //     {
 //       //h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
@@ -1839,7 +1838,7 @@ int DetailedPO2Sim::run(VesselList3d &vl)
     cout << "computing final results" << endl;
   
   tissue_diff_matrix_builder.ZeroOut();
-  IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
+  IntegrateVesselPO2(params, po2vessels, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
   //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
   
   ComputePo2Field(grid, mtboxes, phases, po2field, cell_based_o2_uptake, tissue_diff_matrix_builder, keep_preconditioner);
@@ -1944,9 +1943,9 @@ void Measurement::computeVesselSolution(int idx, DynArray< VesselPO2SolutionReco
 /*--------------------------------------------------------------------------
  * debug output
 ---------------------------------------------------------------------------- */
-void DetailedPO2Sim::WriteOutput_new(H5::H5File &o2File)
+void DetailedPO2Sim::WriteOutput_new(H5::Group &po2_out_group)
 {
-  H5::Group po2_out_group;
+  //H5::Group po2_out_group;
   H5::Group outputgroup;
   H5::Group h5_matrix_builder_info;
   H5::Group h5_ld_group;
@@ -1959,8 +1958,8 @@ void DetailedPO2Sim::WriteOutput_new(H5::H5File &o2File)
   
   try
   {
-    po2_out_group = o2File.createGroup(string("/po2"));
-    outputgroup = o2File.createGroup(string("/") + string("po2/") + params.input_group_path);
+    //po2_out_group = o2File.createGroup(string("/po2"));
+    outputgroup = po2_out_group.createGroup(params.input_group_path);
     h5_o2_lattice = outputgroup.createGroup("field_ld");
     h5_params = outputgroup.createGroup("parameters");
     h5_meta_data = h5_params.createGroup("metadata");
@@ -2042,7 +2041,7 @@ void DetailedPO2Sim::WriteOutput_new(H5::H5File &o2File)
   //WriteHdfPtree(h5_o2_params, s.params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
   WriteHdfPtree(h5_bf_params, bfparams.as_ptree());
     
-  po2_out_group.close();
+  //po2_out_group.close();
   outputgroup.close();
   h5_o2_lattice.close();
   h5_params.close();

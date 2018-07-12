@@ -307,75 +307,86 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   tumorcode_pointer_to_currentCellsSystem = new vbl::CellsSystem();
   // direct cout through log
   cout.rdbuf(my::log().rdbuf());
-  {
-    //read vessels from file
-    H5::H5File file;
-    H5::Group h5_vessels;
-    try{
-      file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
-      h5_vessels = file.openGroup("vessels");
-    }
-    catch(H5::Exception &e)
-    {
-      e.printErrorStack();
-    }
-    
-    ptree pt;
-    pt.put("scale subdivide", 10.);
-    vl = ReadVesselList3d(h5_vessels, pt);
-    
-    // adjust vessel list ld to have the center inside the
-    // simulation domain, an not at the edge of th cube
-    const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
-    vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
-
-    cout << "--------------------"<< endl;
-    cout << "Vessel Lattice is: " << endl;
-    vl->Ld().print(cout); cout  << endl;
-    cout << "--------------------"<< endl;
-
-    // I/O params
-    H5::Group h5params = file.openGroup("/parameters");
-    try{
-      string message;
-      readAttrFromH5(h5params, string("MESSAGE"),message);
-      params.vesselfile_message = message;
-      int index;
-      readAttrFromH5(h5params, string("ENSEMBLE_INDEX"),index);
-      params.vesselfile_ensemble_index = index;
-    }
-    catch(H5::Exception &e)
-    {
-      e.printErrorStack();
-    }
-    file.close();
-    
-    /* READ IN DONE */
-    
-    /* define callback providing information about the simulation */
-    VesselModel1::Callbacks callbacks;
-    callbacks.getGf = boost::bind(&FakeTumorSimMTS::getGf, boost::ref(*this), _1);
-    callbacks.getPress = boost::bind(&FakeTumorSimMTS::getPress, boost::ref(*this), _1);
-    callbacks.getTumorDens = boost::bind(&FakeTumorSimMTS::getTumorDens, boost::ref(*this), _1);
-    callbacks.getGfGrad = boost::bind(&FakeTumorSimMTS::getGfGrad, boost::ref(*this), _1);
-
-    /* need to compute flow because shearforce must be
-     * known and be consistent with current parameters.
-     * Shear force is used e.g. in model.Init to initialize
-     * f_initial. */
-    CalcFlow(*vl, bfparams);
-    // initialize vessel model
-    vessel_model.Init(vl.get(), this->vessel_model.params, callbacks);
+  
+  //read vessels from file
+  H5::H5File file;
+  H5::Group h5_vessels;
+  //H5::Group h5params;
+  try{
+    file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
+    h5_vessels = file.openGroup(params.vessel_path);
   }
+  catch(H5::Exception &e)
+  {
+    e.printErrorStack();
+  }
+  
+  ptree pt;
+  if( ! mySystemParameters.isRerun)
+  {
+    pt.put("scale subdivide", 10.);
+  }
+  vl = ReadVesselList3d(h5_vessels, pt);
+  
+  // adjust vessel list ld to have the center inside the
+  // simulation domain, an not at the edge of th cube
+  const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
+  vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
+
+  cout << "--------------------"<< endl;
+  cout << "Vessel Lattice is: " << endl;
+  vl->Ld().print(cout); cout  << endl;
+  cout << "--------------------"<< endl;
+  h5_vessels.close();
+  //h5params.close();
+  file.close();
+
+  // I/O params
+  //h5params = file.openGroup("/parameters");
+  /*
+  try{
+    string message;
+    readAttrFromH5(h5params, string("MESSAGE"),message);
+    params.vesselfile_message = message;
+    int index;
+    readAttrFromH5(h5params, string("ENSEMBLE_INDEX"),index);
+    params.vesselfile_ensemble_index = index;
+  }
+  catch(H5::Exception &e)
+  {
+    e.printErrorStack();
+  }
+  */
+  
+  /* READ IN DONE */
+  
+  /* define callback providing information about the simulation */
+  VesselModel1::Callbacks callbacks;
+  callbacks.getGf = boost::bind(&FakeTumorSimMTS::getGf, boost::ref(*this), _1);
+  callbacks.getPress = boost::bind(&FakeTumorSimMTS::getPress, boost::ref(*this), _1);
+  callbacks.getTumorDens = boost::bind(&FakeTumorSimMTS::getTumorDens, boost::ref(*this), _1);
+  callbacks.getGfGrad = boost::bind(&FakeTumorSimMTS::getGfGrad, boost::ref(*this), _1);
+
+  /* need to compute flow because shearforce must be
+    * known and be consistent with current parameters.
+    * Shear force is used e.g. in model.Init to initialize
+    * f_initial. */
+  CalcFlow(*vl, bfparams);
+  // initialize vessel model
+  vessel_model.Init(vl.get(), this->vessel_model.params, callbacks);
+  
   
   /* set initial conditions of the FakeTumMTS simulation */
   //tumor_radius = params.tumor_radius; not needed for cell based simulation
-  time = 0.;
-  num_iteration = 0.;
-  output_num = 0;
-  tumor_radius = 0.0;
-  double next_output_time = 0.;
-  double next_adaption_time = 0.;
+  tumor_radius = params.tumor_radius;
+  if( !mySystemParameters.isRerun)
+  {
+    time = 0.;
+    num_iteration = 0.;
+    output_num = 0;
+    next_output_time = 0;
+    next_adaption_time = 0;
+  }
   
   // this is needed to pass tumor information to the DetailedPO2 simulation
   boost::optional<H5::Group> lastTumorGroupWrittenByFakeTum;
@@ -431,7 +442,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
    *  4) run cells simulation
    *  5) remodel vessel tree
    */
-  while (true)
+  while (true and not PyCheckAbort())
   {
     // time =0, next_output_time = 0 at begining
     // 0>=-1 if dt=1 --> true
@@ -448,9 +459,10 @@ int FakeTumMTS::FakeTumorSimMTS::run()
        /* O2 stuff is initialized
         * NOTE: size of po2Store is set here
         */
-        o2_sim.init(o2_params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
+        o2_sim.vl = vl;
+        o2_sim.init(bfparams,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
         cout << "\nInit O2 completed" << endl;
-        o2_sim.run(*vl);
+        o2_sim.run();
         cout << "\n mts run finished" << endl;
         //we store the results, to achive quicker convergence in consecutive runs
         state.previous_po2field = o2_sim.getPo2field();
@@ -605,7 +617,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   try{
     if( !mySystemParameters.isRerun )
     {
-      f_out = H5::H5File(params.fn_out + ".h5", output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
+      f_out = H5::H5File(params.fn_out, output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
     }
     else
     {
@@ -637,7 +649,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       WriteHdfPtree(h5_vessel_parameters,vessel_model.params.as_ptree());
       WriteHdfPtree(h5_parameters, params.as_ptree());
       WriteHdfPtree(h5_system_parameters, mySystemParameters.as_ptree());
-      WriteHdfPtree(h5_o2_parameters, o2_params.as_ptree());
+      WriteHdfPtree(h5_o2_parameters, o2_sim.params.as_ptree());
       /* on first occasion, we write field_ld to the root folder */
       h5_field_ld_group = root.createGroup("field_ld");
       grid.ld.WriteHdfLd(h5_field_ld_group);
@@ -660,24 +672,18 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       WriteScalarField(gout, string("fieldGf"), state.gffield, grid.ld, root.openGroup("field_ld"));
       WriteScalarField(gout, string("fieldO2Consumption"), state.cell_O2_consumption, grid.ld, root.openGroup("field_ld"));
       /* write oxygen stuff */
-      try 
+      if(!params.useConstO2)
       {
-        if(!params.useConstO2)
-        {
-          // copied from python-oxygen2.cpp
-          // write the detailed o2 stuff necessary for the cells
-          h5_o2_last_state = gout.createGroup("po2");
-          h5_ld_last_state = h5_o2_last_state.createGroup("field_ld");
-          o2_sim.grid.ld.WriteHdfLd(h5_ld_last_state);
-          WriteScalarField<float>(h5_o2_last_state, string("po2field"), o2_sim.po2field, o2_sim.grid.ld, h5_ld_last_state);
-          writeDataSetToGroup(h5_o2_last_state, string("po2vessels"),o2_sim.po2vessels);
-          writeAttrToH5(h5_o2_last_state, string("simType"), string("MTS"));
-          WriteHdfPtree(h5_o2_last_state, o2_sim.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
-        }
-      }
-      catch(H5::Exception &e)
-      {
-        e.printErrorStack();
+        // copied from python-oxygen2.cpp
+        // write the detailed o2 stuff necessary for the cells
+        h5_o2_last_state = gout.createGroup("po2");
+        o2_sim.WriteOutput_new(h5_o2_last_state);
+//         h5_ld_last_state = h5_o2_last_state.createGroup("field_ld");
+//         o2_sim.grid.ld.WriteHdfLd(h5_ld_last_state);
+//         WriteScalarField<float>(h5_o2_last_state, string("po2field"), o2_sim.po2field, o2_sim.grid.ld, h5_ld_last_state);
+//         writeDataSetToGroup(h5_o2_last_state, string("po2vessels"),o2_sim.po2vessels);
+//         writeAttrToH5(h5_o2_last_state, string("simType"), string("MTS"));
+//         WriteHdfPtree(h5_o2_last_state, o2_sim.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
       }
     }
     else

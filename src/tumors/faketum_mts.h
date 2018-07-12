@@ -159,7 +159,7 @@ struct Timing
 struct FakeTumorSimMTS : public boost::noncopyable
 {
   Timing currentTiming;
-  std::unique_ptr<VesselList3d> vl;
+  std::shared_ptr<VesselList3d> vl;
   
   /** global ANN stuff
    */
@@ -205,7 +205,6 @@ const int ANN_dim = 3;            // space dimension
   CellBasedO2Uptake o2_uptake_model;
   
   BloodFlowParameters bfparams;
-  DetailedPO2::Parameters o2_params;
 
   ptree all_pt_params;
 

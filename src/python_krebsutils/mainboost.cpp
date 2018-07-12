@@ -60,7 +60,7 @@ py::tuple read_vessel_positions_from_hdf_by_filename(const string fn, const stri
   //h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
   H5::H5File readInFile;
   H5::Group g_vess;
-  std::unique_ptr<VesselList3d> vl;
+  std::shared_ptr<VesselList3d> vl;
   try{
    readInFile = H5::H5File(fn, H5F_ACC_RDONLY );
   //h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(groupname)); // groupname should end by vesselgroup

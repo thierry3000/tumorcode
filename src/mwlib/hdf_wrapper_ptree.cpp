@@ -40,17 +40,17 @@ void WriteHdfPtree(H5::Group &f, const ptree &pt, HdfWritePtreeAs storage_mode)
     {
       if (storage_mode == HDF_WRITE_PTREE_AS_ATTRIBUTE)
       {
-// 	std::cout << f.getFileName() << std::endl;
-// 	std::cout << "print k: "<< k << "v: " << v.data() << std::endl; 
-	writeAttrToH5(f, k, v.data());
+      // 	std::cout << f.getFileName() << std::endl;
+      // 	std::cout << "print k: "<< k << "v: " << v.data() << std::endl; 
+        writeAttrToH5(f, k, v.data());
       }
       else
       {
-	DynArray<string> this_data;
-	for( auto entry: v.data())
-	{
-	  this_data.push_back(&entry);
-	}
+        DynArray<string> this_data;
+        for( auto entry: v.data())
+        {
+          this_data.push_back(&entry);
+        }
 	writeDataSetToGroup(f,k, this_data);
       }
 //         f.attrs().set(k, v.data());

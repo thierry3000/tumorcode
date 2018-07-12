@@ -196,7 +196,7 @@ void TestSingleVesselPO2Integration();
 struct DetailedPO2Sim : public boost::noncopyable
 {
   bool world;
-  std::unique_ptr<VesselList3d> vl;
+  std::shared_ptr<VesselList3d> vl;
   Parameters params;
   BloodFlowParameters bfparams;
   
@@ -231,15 +231,15 @@ struct DetailedPO2Sim : public boost::noncopyable
   // after this call the 3D field phases is filled with
   // 3 vallues giving the portion of corresponding tissue type
   TissuePhases phases;//Declaration
-  void init(Parameters &params,
+  void init(
             BloodFlowParameters &bfparams, 
-            VesselList3d &vl, 
+            //VesselList3d &vl, 
             double grid_lattice_const, 
             double safety_layer_size, 
             boost::optional<Int3> grid_lattice_size, 
             boost::optional<H5::Group> tumorgroup,
             boost::optional<Array3df> previous_po2field, boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels, boost::optional<Array3d<float>> cell_based_o2_uptake);
-  int run(VesselList3d &vl);
+  int run();
   void PrepareNetworkInfo(const VesselList3d &vl, DynArray<const Vessel*> &sorted_vessels, DynArray<const VesselNode*> &roots);
   
   DynArray<const Vessel*> sorted_vessels;
@@ -256,7 +256,27 @@ struct DetailedPO2Sim : public boost::noncopyable
 //                  const boost::optional<ContinuumGrid&> grid,
 //                  const boost::optional<Array3df> po2field,
 //                  const boost::optional<const FiniteVolumeMatrixBuilder&> mbopt);
-  void WriteOutput_new(H5::H5File &outfile);
+  //void WriteOutput_new(H5::H5File &outfile);
+  void WriteOutput_new(H5::Group &out_grp);
+  
+  /**
+ * @brief integrates the po2 along a vessel
+ * 
+ * The hiarachial ordering of the vessel segments is provided, in the sorted_vessels array.
+ * As Starting point of the integration, an initial value dependent on the inlet hemoglobin and
+ * arterial root pressure
+ * @note this function is not very parallel
+ */
+void IntegrateVesselPO2(const Parameters &params, 
+			VesselPO2Storage &vesselpo2,
+			DynArray<const Vessel*> &sorted_vessels,
+			DynArray<const VesselNode*> &arterial_roots,
+			const ContinuumGrid &grid,
+			const Array3df extpo2,
+			const TissuePhases &phases,
+			FiniteVolumeMatrixBuilder &matrix_builder,
+			bool world
+ 		      );
 };
 // template<class T>
 // static T checkedExtractFromDict(const py::dict &d, const char* name);

@@ -198,8 +198,8 @@ int FakeTum::FakeTumorSim::run()
   
   H5::H5File file;
   H5::Group h5_vessels;
+  //H5::Group h5params;
   try{
-    //file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
     file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
     h5_vessels = file.openGroup(params.vessel_path);
   }
@@ -215,7 +215,8 @@ int FakeTum::FakeTumorSim::run()
   }
   vl = ReadVesselList3d(h5_vessels, pt);
   
-  // adjust vessel list ld
+  // adjust vessel list ld to have the center inside the
+  // simulation domain, an not at the edge of th cube
   const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
   vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
 
@@ -224,7 +225,11 @@ int FakeTum::FakeTumorSim::run()
   vl->Ld().print(cout); cout  << endl;
   cout << "--------------------"<< endl;
 
-  H5::Group h5params = file.openGroup("/parameters");
+  h5_vessels.close();
+  //h5params.close();
+  file.close();
+  
+  //h5params = file.openGroup("/parameters");
   
   /* this part is for multiple files
     * -> spared for later
@@ -243,9 +248,7 @@ int FakeTum::FakeTumorSim::run()
     e.printErrorStack();
   
   */
-  h5_vessels.close();
-  h5params.close();
-  file.close();
+  
   
   
   
@@ -396,21 +399,29 @@ void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
   {
     root.createGroup("last_state");
     
-    h5_parameters = root.createGroup("parameters");
-    h5_vessel_parameters = h5_parameters.createGroup("vessels");
-    h5_system_parameters = h5_parameters.createGroup("system");
-    writeAttrToH5(root, string("MESSAGE"), params.message);
-    writeAttrToH5(root, string("VESSELTREEFILE"), params.fn_vessel);
-    writeAttrToH5(root, string("VESSELTREEPATH"), params.vessel_path);
-    writeAttrToH5(root, string("OUTPUT_NAME"), params.fn_out);
-    writeAttrToH5(root, string("VESSELFILE_MESSAGE"), params.vesselfile_message);
-    writeAttrToH5(root, string("VESSELFILE_ENSEMBLE_INDEX"), params.vesselfile_ensemble_index);
-    WriteHdfPtree(h5_vessel_parameters,vessel_model.params.as_ptree());
-    WriteHdfPtree(h5_system_parameters, mySystemParameters.as_ptree());
-    WriteHdfPtree(h5_parameters, params.as_ptree());
+    try 
+    {
+      h5_parameters = root.createGroup("parameters");
+      h5_vessel_parameters = h5_parameters.createGroup("vessels");
+      h5_system_parameters = h5_parameters.createGroup("system");
+      writeAttrToH5(root, string("MESSAGE"), params.message);
+      writeAttrToH5(root, string("VESSELTREEFILE"), params.fn_vessel);
+      writeAttrToH5(root, string("VESSELTREEPATH"), params.vessel_path);
+      writeAttrToH5(root, string("OUTPUT_NAME"), params.fn_out);
+      writeAttrToH5(root, string("VESSELFILE_MESSAGE"), params.vesselfile_message);
+      writeAttrToH5(root, string("VESSELFILE_ENSEMBLE_INDEX"), params.vesselfile_ensemble_index);
+      WriteHdfPtree(h5_vessel_parameters,vessel_model.params.as_ptree());
+      WriteHdfPtree(h5_system_parameters, mySystemParameters.as_ptree());
+      WriteHdfPtree(h5_parameters, params.as_ptree());
+    }
+    catch(H5::Exception &e)
+    {
+      e.printErrorStack();
+    }
   }
   
-  try{
+  try
+  {
     if(!doPermanentSafe)
     {
       root.unlink("last_state");
