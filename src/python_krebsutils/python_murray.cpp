@@ -509,7 +509,7 @@ static py::object get_Murray2_p(const string fn, const string path)
 //{
   //double alpha = py::extract<double>(murrayalpha);
 //  h5::Group vesselgroup = PythonToCppGroup(vess_grp_obj);
-  std::unique_ptr<VesselList3d> vl;
+  std::shared_ptr<VesselList3d> vl;
   vl = ReadVesselList3d(vesselgroup, make_ptree("filter", true));
   int ncnt = vl.get()->GetNCount();
 

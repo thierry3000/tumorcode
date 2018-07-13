@@ -122,7 +122,7 @@ void add_all_attributes_to_ptree( H5::H5Location &g, const H5std_string attr_nam
 #endif
     pt->put(attr_name, output_buffer);
   }
-  catch()
+  catch(H5::Exception &e)
   {
     e.printError();
   }

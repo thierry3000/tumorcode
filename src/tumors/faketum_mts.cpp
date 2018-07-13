@@ -486,10 +486,17 @@ int FakeTumMTS::FakeTumorSimMTS::run()
        * of the tumorcode vessel list
        */
       findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
-      
-      lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
+      if (time >= next_output_time - params.dt * 0.1)
+      {
+	//this happens only for fixed instances of time
+	lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
+	next_output_time += params.out_intervall;
+      }
+      //for a rerun we need to access the latest instant of time
+      params.latest_executed_timepoint = time;
+      writeOutput(false);
       currentTiming.reset();
-      next_output_time += params.out_intervall;
+      
 
 #ifndef NDEBUG
       std::cout << " findNearestVessel finished " << std::endl;std::cout.flush();
@@ -554,6 +561,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     
       cout << boost::format("finished vessel remodel step! \n");
     }
+    ++output_num;
     ++num_iteration;
   }
 
@@ -611,7 +619,10 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   H5::H5File f_out;
-  H5::Group root, gout, h5_tum, h5_cells_out, h5_o2_last_state, h5_ld_last_state, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup;
+  H5::Group root,
+  gout, h5_tum, h5_cells_out, h5_o2_last_state, h5_ld_last_state,
+  h5_parameters, h5_vessel_parameters, h5_system_parameters,
+  h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup;
   
   std::string tumOutName = "nothing";
   try{
@@ -639,7 +650,6 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       h5_parameters = root.createGroup("parameters");
       h5_vessel_parameters = h5_parameters.createGroup("vessels");
       h5_system_parameters = h5_parameters.createGroup("system");
-      h5_o2_parameters = h5_parameters.createGroup("o2");
       
       writeAttrToH5(root, string("MESSAGE"), params.message);
       writeAttrToH5(root, string("VESSELTREEFILE"), params.fn_vessel);
@@ -649,7 +659,6 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       WriteHdfPtree(h5_vessel_parameters,vessel_model.params.as_ptree());
       WriteHdfPtree(h5_parameters, params.as_ptree());
       WriteHdfPtree(h5_system_parameters, mySystemParameters.as_ptree());
-      WriteHdfPtree(h5_o2_parameters, o2_sim.params.as_ptree());
       /* on first occasion, we write field_ld to the root folder */
       h5_field_ld_group = root.createGroup("field_ld");
       grid.ld.WriteHdfLd(h5_field_ld_group);
@@ -785,7 +794,6 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   h5_parameters.close();
   h5_vessel_parameters.close();
   h5_system_parameters.close();
-  h5_o2_parameters.close();
   h5_field_ld_group.close();
   h5_timing.close();
   h5_current_vessels.close();

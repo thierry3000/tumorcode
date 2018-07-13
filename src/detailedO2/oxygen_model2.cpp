@@ -1943,7 +1943,7 @@ void Measurement::computeVesselSolution(int idx, DynArray< VesselPO2SolutionReco
 /*--------------------------------------------------------------------------
  * debug output
 ---------------------------------------------------------------------------- */
-void DetailedPO2Sim::WriteOutput_new(H5::Group &po2_out_group)
+void DetailedPO2Sim::WriteOutput_new(H5::Group &po2_out_group, H5::Group &h5_params)
 {
   //H5::Group po2_out_group;
   H5::Group outputgroup;
@@ -1951,7 +1951,6 @@ void DetailedPO2Sim::WriteOutput_new(H5::Group &po2_out_group)
   H5::Group h5_ld_group;
   
   H5::Group h5_o2_lattice;
-  H5::Group h5_params;
   H5::Group h5_meta_data;
   H5::Group h5_o2_params;
   H5::Group h5_bf_params;
@@ -1961,7 +1960,6 @@ void DetailedPO2Sim::WriteOutput_new(H5::Group &po2_out_group)
     //po2_out_group = o2File.createGroup(string("/po2"));
     outputgroup = po2_out_group.createGroup(params.input_group_path);
     h5_o2_lattice = outputgroup.createGroup("field_ld");
-    h5_params = outputgroup.createGroup("parameters");
     h5_meta_data = h5_params.createGroup("metadata");
     h5_o2_params = h5_params.createGroup("o2");
     h5_bf_params = h5_params.createGroup("calcflow");
@@ -2044,7 +2042,6 @@ void DetailedPO2Sim::WriteOutput_new(H5::Group &po2_out_group)
   //po2_out_group.close();
   outputgroup.close();
   h5_o2_lattice.close();
-  h5_params.close();
   h5_meta_data.close();
   h5_o2_params.close();
   h5_bf_params.close();

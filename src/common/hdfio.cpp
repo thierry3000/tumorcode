@@ -148,9 +148,9 @@ void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer
     type = att_to_read.getDataType();
     att_to_read.read(type, &output_buffer);
   }
-  catch()
+  catch(H5::Exception &e)
   {
-    error.printErrorStack();
+    e.printErrorStack();
   }
 }
 #endif //#if H5_VERS_MINOR > 9
@@ -257,9 +257,9 @@ void readAttrFromH5<string>(H5::H5Location &g, const string &attr_name, string &
   {
     att_to_read.read(strdatatype, strreadbuf);
   }
-  catch()
+  catch(H5::Exception &e)
   {
-    error.printErrorStack();
+    e.printErrorStack();
   }
   output_buffer = strreadbuf;
 }
@@ -321,7 +321,7 @@ void writeAttrToH5(H5::H5Location &h, const string &attr_name,  const T &value)
   try{
     attr_out = h.createAttribute(attr_name, thisType, mspace);
   }
-  catch()
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
@@ -365,9 +365,9 @@ void writeAttrToH5<string>(H5::H5Location &h, const string &attr_name, const str
     H5::Attribute myatt_in = h.createAttribute(attr_name, strdatatype, attr_dataspace);
     myatt_in.write(strdatatype, strwritebuf);
   }
-  catch()
+  catch(H5::Exception &e)
   {
-    error.printErrorStack();
+    e.printErrorStack();
   }
 };
 #endif //#if H5_VERS_MINOR > 9

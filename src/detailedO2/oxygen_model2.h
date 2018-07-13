@@ -60,9 +60,9 @@ namespace DetailedPO2
   */
 struct OutputOptions
 {
-  bool writeTopoorder = true;
-  bool writeAvgPo2 = true;
-  bool writeMatrixBuilderInfo = true;
+  bool writeTopoorder = false;
+  bool writeAvgPo2 = false;
+  bool writeMatrixBuilderInfo = false;
 };
 /* todo:
  * turn parameters into variables and make it so that parameters can be given from the calling routine
@@ -257,8 +257,8 @@ struct DetailedPO2Sim : public boost::noncopyable
 //                  const boost::optional<Array3df> po2field,
 //                  const boost::optional<const FiniteVolumeMatrixBuilder&> mbopt);
   //void WriteOutput_new(H5::H5File &outfile);
-  void WriteOutput_new(H5::Group &out_grp);
-  
+  void WriteDataOutput(H5::Group &out_grp);
+  void writeParametersToHDF(H5::Group &out_params);  
   /**
  * @brief integrates the po2 along a vessel
  * 
