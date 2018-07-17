@@ -214,6 +214,7 @@ void writeAttrToH5(U &h, const string &attr_name,  const T &value)
   }
   catch(H5::Exception e)
   {
+    std::cout << "unable for write: " << attr_name << std::endl;
     e.printErrorStack();
   }
   attr_out.write(thisType, &value);
@@ -234,6 +235,7 @@ void writeAttrToH5<H5::Group,string>(H5::Group &h, const string &attr_name, cons
   }
   catch(H5::Exception error)
   {
+    std::cout << "unable for write: " << attr_name << std::endl;
     error.printErrorStack();
   }
 };
@@ -254,6 +256,7 @@ void writeAttrToH5<H5::DataSet,string>(H5::DataSet &h, const string &attr_name, 
     }
     catch(H5::Exception error)
     {
+      std::cout << "unable for write: " << attr_name << std::endl;
       error.printErrorStack();
     }
   }
@@ -322,12 +325,13 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
   H5::Group h5_nodes;
   try
   {
-    h5_nodes = g.createGroup("nodes");
+    h5_nodes = g.openGroup("nodes");
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     //e.printErrorStack();
-    h5_nodes = g.openGroup("nodes");
+    h5_nodes = g.createGroup("nodes");
+    e.dontPrint();
   }
   writeAttrToH5(h5_nodes, string("COUNT"), ncnt);
   //gg.attrs().set("COUNT",ncnt);
@@ -388,11 +392,11 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
       readAttrFromH5(g, string("CLASS"), theType);
       //myAssert(theType == "REALWORLD");
     }
-    catch( H5::Exception not_found_error )
+    catch( H5::Exception &e )
     {
-      not_found_error.dontPrint();
       cout << " CLASS type not found" << endl;
       writeAttrToH5(g,string("CLASS"), string("REALWORLD"));
+      e.dontPrint();
     }  
     // write the special world stuff
     //needs old school linearizing
