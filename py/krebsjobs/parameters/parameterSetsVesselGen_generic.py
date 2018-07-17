@@ -502,3 +502,29 @@ swine = dict(
   )
 )
 
+'''
+these parameters were used to create the vessel trees
+used in the publication:
+  http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0161267
+'''
+plos_one_oxygen = dict(
+  tip_radius_arterial = 2.5,
+  tip_radius_capi = 2.5,
+  tip_radius_vein = 3.8,
+  murray_alpha_vein = 3.,
+  murray_alpha_artery = 3.,
+  scale = 130.,
+  max_sprout_radius_artery = 8.,
+  max_sprout_radius_vein = 8.,
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6,
+    rheology = 'RheologyForHuman',
+    inletHematocrit = 0.37,
+    includePhaseSeparationEffect = 0,
+  ),
+  capillariesUntilLevel = 0,
+  full_debug_output = 0,
+  generate_more_capillaries=0,
+  
+)
+

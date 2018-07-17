@@ -486,17 +486,20 @@ int FakeTumMTS::FakeTumorSimMTS::run()
        * of the tumorcode vessel list
        */
       findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
+      
       if (time >= next_output_time - params.dt * 0.1)
       {
-	//this happens only for fixed instances of time
-	lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
-	next_output_time += params.out_intervall;
+        //this happens only for fixed instances of time
+        lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
+        next_output_time += params.out_intervall;
       }
       //for a rerun we need to access the latest instant of time
       params.latest_executed_timepoint = time;
       writeOutput(false);
+    
+      //lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
       currentTiming.reset();
-      
+      next_output_time += params.out_intervall;
 
 #ifndef NDEBUG
       std::cout << " findNearestVessel finished " << std::endl;std::cout.flush();
@@ -561,7 +564,6 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     
       cout << boost::format("finished vessel remodel step! \n");
     }
-    ++output_num;
     ++num_iteration;
   }
 
@@ -619,13 +621,11 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   H5::H5File f_out;
-  H5::Group root,
-  gout, h5_tum, h5_cells_out, h5_o2_last_state, h5_ld_last_state,
-  h5_parameters, h5_vessel_parameters, h5_system_parameters,
-  h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup;
+  H5::Group root, gout, h5_tum, h5_cells_out, h5_o2_last_state, h5_ld_last_state, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup;
   
   std::string tumOutName = "nothing";
-  try{
+  try
+  {
     if( !mySystemParameters.isRerun )
     {
       f_out = H5::H5File(params.fn_out, output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
@@ -650,6 +650,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       h5_parameters = root.createGroup("parameters");
       h5_vessel_parameters = h5_parameters.createGroup("vessels");
       h5_system_parameters = h5_parameters.createGroup("system");
+      h5_o2_parameters = h5_parameters.createGroup("o2");
       
       writeAttrToH5(root, string("MESSAGE"), params.message);
       writeAttrToH5(root, string("VESSELTREEFILE"), params.fn_vessel);
@@ -659,6 +660,8 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       WriteHdfPtree(h5_vessel_parameters,vessel_model.params.as_ptree());
       WriteHdfPtree(h5_parameters, params.as_ptree());
       WriteHdfPtree(h5_system_parameters, mySystemParameters.as_ptree());
+      o2_sim.WriteParametersToHDF(h5_o2_parameters);
+      //WriteHdfPtree(h5_o2_parameters, o2_sim.params.as_ptree());
       /* on first occasion, we write field_ld to the root folder */
       h5_field_ld_group = root.createGroup("field_ld");
       grid.ld.WriteHdfLd(h5_field_ld_group);
@@ -680,20 +683,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       //   lattice, detailed o2, fieldGf, fieldO2Consumption
       WriteScalarField(gout, string("fieldGf"), state.gffield, grid.ld, root.openGroup("field_ld"));
       WriteScalarField(gout, string("fieldO2Consumption"), state.cell_O2_consumption, grid.ld, root.openGroup("field_ld"));
-      /* write oxygen stuff */
-      if(!params.useConstO2)
-      {
-        // copied from python-oxygen2.cpp
-        // write the detailed o2 stuff necessary for the cells
-        h5_o2_last_state = gout.createGroup("po2");
-        o2_sim.WriteOutput_new(h5_o2_last_state);
-//         h5_ld_last_state = h5_o2_last_state.createGroup("field_ld");
-//         o2_sim.grid.ld.WriteHdfLd(h5_ld_last_state);
-//         WriteScalarField<float>(h5_o2_last_state, string("po2field"), o2_sim.po2field, o2_sim.grid.ld, h5_ld_last_state);
-//         writeDataSetToGroup(h5_o2_last_state, string("po2vessels"),o2_sim.po2vessels);
-//         writeAttrToH5(h5_o2_last_state, string("simType"), string("MTS"));
-//         WriteHdfPtree(h5_o2_last_state, o2_sim.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
-      }
+      
     }
     else
     {
@@ -702,6 +692,11 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
     }
     writeAttrToH5(gout, string("time"), time);
     writeAttrToH5(gout, string("OUTPUT_NUM"), output_num);
+    writeAttrToH5(gout, string("OUTPUT_NUM"), output_num);
+    writeAttrToH5(gout, string("NUM_ITERATION"), num_iteration);
+    writeAttrToH5(gout, string("NEXT_OUTPUT_TIME"), next_output_time);
+    writeAttrToH5(gout, string("NEXT_ADAPTION_TIME"), next_adaption_time);
+    
     
     /* write timing */
     h5_timing = gout.createGroup("timing");
@@ -753,32 +748,26 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       WriteScalarField(h5_tum, string("fieldO2Consumption"), state.cell_O2_consumption, grid.ld, root.openGroup("field_ld"));
     }
     /* needs to calculate, before output! */
-    UpdateVesselVolumeFraction();
+    //UpdateVesselVolumeFraction();
     //WriteScalarField(h5_tum, "vessel_volume_fraction", vessel_volume_fraction, grid.ld, root.openGroup("field_ld"));
     if (tumorcode_pointer_to_currentCellsSystem->Get_alive()>0)
     {
       h5_cells_out = gout.createGroup("cells");
       WriteCellsSystemHDF_with_nearest_vessel_index(h5_cells_out);
     }
-  }
-  catch(H5::Exception &e)
-  {
-    e.printErrorStack();
-  }
-  /* write oxygen stuff */
-  try 
-  {
+    /* write oxygen stuff */
     if(!params.useConstO2)
     {
       // copied from python-oxygen2.cpp
       // write the detailed o2 stuff necessary for the cells
       po2outputGroup = gout.createGroup("po2");
-      ldgroup = po2outputGroup.createGroup("field_ld");
-      o2_sim.grid.ld.WriteHdfLd(ldgroup);
-      WriteScalarField<float>(po2outputGroup, string("po2field"), o2_sim.po2field, o2_sim.grid.ld, ldgroup);
-      writeDataSetToGroup(po2outputGroup, string("po2vessels"),o2_sim.po2vessels);
+      o2_sim.WriteDataOutput(po2outputGroup);
+      //ldgroup = po2outputGroup.createGroup("field_ld");
+      //o2_sim.grid.ld.WriteHdfLd(ldgroup);
+      //WriteScalarField<float>(po2outputGroup, string("po2field"), o2_sim.po2field, o2_sim.grid.ld, ldgroup);
+      //writeDataSetToGroup(po2outputGroup, string("po2vessels"),o2_sim.po2vessels);
       writeAttrToH5(po2outputGroup, string("simType"), string("MTS"));
-      WriteHdfPtree(po2outputGroup, o2_sim.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+      //WriteHdfPtree(po2outputGroup, o2_sim.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
     }
   }
   catch(H5::Exception &e)
@@ -794,6 +783,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   h5_parameters.close();
   h5_vessel_parameters.close();
   h5_system_parameters.close();
+  h5_o2_parameters.close();
   h5_field_ld_group.close();
   h5_timing.close();
   h5_current_vessels.close();
@@ -810,92 +800,36 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
 
 void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
 {
+  /** needs to calculate, before output-> any field operation!
+   *  initializes cell_GFsrc and cell_O2src 
+   */
+  UpdateVesselVolumeFraction();
   //*********** gf ****************
+  
+  my::log().push("gf:");
+    
+    
+  #pragma omp parallel
   {
-    my::log().push("gf:");
-    
-    // create source field from cells
-    //Array3d<float> cell_source;
-    float n_cells = (float) tumorcode_pointer_to_currentCellsSystem->Get_ncells();
-    std::vector<double> x = tumorcode_pointer_to_currentCellsSystem->Get_x();
-    std::vector<double> y = tumorcode_pointer_to_currentCellsSystem->Get_y();
-    std::vector<double> z = tumorcode_pointer_to_currentCellsSystem->Get_z();
-    std::vector<double> cell_radius = tumorcode_pointer_to_currentCellsSystem->Get_r();
-    
-    std::vector<double> O2Rates = tumorcode_pointer_to_currentCellsSystem->Get_O2Rate();
-    
-    #pragma omp parallel
+    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
     {
-      BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
+      for(int i=0; i<tumorcode_pointer_to_currentCellsSystem->Get_ncells();++i)
       {
-        for(int i=0; i<x.size();++i)
-        {
-          Float3 pos(x[i],y[i],z[i]);
-          AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)(cell_radius[i]/n_cells));
-          
-          auto this_o2_rate = O2Rates[i];
-          AddSmoothDelta(cell_O2src, bbox, grid.ld, grid.dim, pos, (float) this_o2_rate );
-        }
+        Float3 pos(tumorcode_pointer_to_currentCellsSystem->Get_x()[i],tumorcode_pointer_to_currentCellsSystem->Get_y()[i],tumorcode_pointer_to_currentCellsSystem->Get_z()[i]);
+        AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)(tumorcode_pointer_to_currentCellsSystem->Get_r()[i]/tumorcode_pointer_to_currentCellsSystem->Get_ncells()));
+        
+        auto this_o2_rate = tumorcode_pointer_to_currentCellsSystem->Get_O2Rate()[i];
+        AddSmoothDelta(cell_O2src, bbox, grid.ld, grid.dim, pos, (float) this_o2_rate );
       }
     }
-    
-    gf_model.update(state.gffield, cell_GFsrc);
-    o2_uptake_model.update(state.cell_O2_consumption, cell_O2src);
-
-#ifdef DEBUG
-    cout << "stats: " << state.gffield.valueStatistics() << endl;
-#endif
-    my::log().pop();
   }
+  gf_model.update(state.gffield, cell_GFsrc);
+  o2_uptake_model.update(state.cell_O2_consumption, cell_O2src);
   
-#if 0
-  //**************** o2 *************
-  {
-    my::log().push("o2 consumption:");
-    
-    // create source field from cells
-    //Array3d<float> cell_source;
-    float n_cells = (float) tumorcode_pointer_to_currentCellsSystem->Get_ncells();
-    std::vector<double> x = tumorcode_pointer_to_currentCellsSystem->Get_x();
-    std::vector<double> y = tumorcode_pointer_to_currentCellsSystem->Get_y();
-    std::vector<double> z = tumorcode_pointer_to_currentCellsSystem->Get_z();
-    auto O2Rates = tumorcode_pointer_to_currentCellsSystem->Get_O2Rate();
-    #pragma omp parallel
-    {
-      BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
-      {
-        for(int i=0; i<x.size();++i)
-        {
-          float offset = 10*15;
-          offset = 0.0;
-          Float3 pos(x[i]+offset,y[i]+offset,z[i]+offset);
-          double this_o2_rate = O2Rates[i];
-          AddSmoothDelta(cell_O2src, bbox, grid.ld, grid.dim, pos, (float) 42.0);
-        }
-      }
-    }
-    
-    o2_uptake_model.update(state.cell_O2_consumption, cell_O2src);
-
-
 #ifdef DEBUG
-    cout << "stats: " << state.cell_O2_consumption.valueStatistics() << endl;
+  cout << "stats: " << state.gffield.valueStatistics() << endl;
 #endif
-    my::log().pop();
-  }
-#endif
-  
-// #if 1
-//   {
-//     my::log().push("gf:");
-//     cout << "update" << endl;
-// 
-// #ifdef DEBUG
-//     cout << "stats: " << state.gffield.valueStatistics() << endl;
-// #endif
-//     my::log().pop();
-//   }
-// #endif
+  my::log().pop();
   state.chem_checksum++;
 }
 

@@ -1943,7 +1943,8 @@ void Measurement::computeVesselSolution(int idx, DynArray< VesselPO2SolutionReco
 /*--------------------------------------------------------------------------
  * debug output
 ---------------------------------------------------------------------------- */
-void DetailedPO2Sim::WriteOutput_new(H5::Group &po2_out_group, H5::Group &h5_params)
+//void DetailedPO2Sim::WriteOutput_new(H5::Group &po2_out_group, H5::Group &h5_params)
+void DetailedPO2Sim::WriteDataOutput(H5::Group &po2_out_group)
 {
   //H5::Group po2_out_group;
   H5::Group outputgroup;
@@ -1951,18 +1952,18 @@ void DetailedPO2Sim::WriteOutput_new(H5::Group &po2_out_group, H5::Group &h5_par
   H5::Group h5_ld_group;
   
   H5::Group h5_o2_lattice;
-  H5::Group h5_meta_data;
-  H5::Group h5_o2_params;
-  H5::Group h5_bf_params;
+  //H5::Group h5_meta_data;
+  //H5::Group h5_o2_params;
+  //H5::Group h5_bf_params;
   
   try
   {
     //po2_out_group = o2File.createGroup(string("/po2"));
     outputgroup = po2_out_group.createGroup(params.input_group_path);
     h5_o2_lattice = outputgroup.createGroup("field_ld");
-    h5_meta_data = h5_params.createGroup("metadata");
-    h5_o2_params = h5_params.createGroup("o2");
-    h5_bf_params = h5_params.createGroup("calcflow");
+    //h5_meta_data = h5_params.createGroup("metadata");
+    //h5_o2_params = h5_params.createGroup("o2");
+    //h5_bf_params = h5_params.createGroup("calcflow");
     
     //additional output options
     if( params.currentOutputOptions.writeAvgPo2)
@@ -2032,7 +2033,51 @@ void DetailedPO2Sim::WriteOutput_new(H5::Group &po2_out_group, H5::Group &h5_par
   WriteScalarField(outputgroup, string("po2field"), po2field, grid.ld, h5_o2_lattice);
   writeDataSetToGroup(outputgroup, string("po2vessels"), po2vessels);
   //WriteHdfPtree(outputgroup, s.metadata, HDF_WRITE_PTREE_AS_DATASETS);
-  WriteHdfPtree(outputgroup, metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  //WriteHdfPtree(outputgroup, metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  //WriteHdfPtree(h5_meta_data, metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  //WriteHdfPtree(h5_o2_params, params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  //params.writeParametersToHDF(h5_o2_params);
+  //WriteHdfPtree(h5_o2_params, s.params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  //WriteHdfPtree(h5_bf_params, bfparams.as_ptree());
+    
+  //po2_out_group.close();
+  outputgroup.close();
+  h5_o2_lattice.close();
+  //h5_meta_data.close();
+  //h5_o2_params.close();
+  //h5_bf_params.close();
+  h5_matrix_builder_info.close();
+  h5_ld_group.close();
+}
+
+void DetailedPO2Sim::WriteParametersToHDF(H5::Group &out_params)
+{
+  //H5::Group po2_out_group;
+  //H5::Group outputgroup;
+  //H5::Group h5_matrix_builder_info;
+  //H5::Group h5_ld_group;
+  
+  //H5::Group h5_o2_lattice;
+  H5::Group h5_meta_data;
+  H5::Group h5_o2_params;
+  H5::Group h5_bf_params;
+  
+  try
+  {
+    //po2_out_group = o2File.createGroup(string("/po2"));
+    //outputgroup = po2_out_group.createGroup(params.input_group_path);
+    //h5_o2_lattice = out_params.createGroup("field_ld");
+    h5_meta_data = out_params.createGroup("metadata");
+    h5_o2_params = out_params.createGroup("o2");
+    h5_bf_params = out_params.createGroup("calcflow");
+  }
+  catch( H5::Exception &e)
+  {
+    e.printErrorStack();
+  }
+  
+  //grid.ld.WriteHdfLd(h5_o2_lattice);
+  
   WriteHdfPtree(h5_meta_data, metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
   WriteHdfPtree(h5_o2_params, params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
   //params.writeParametersToHDF(h5_o2_params);
@@ -2040,14 +2085,15 @@ void DetailedPO2Sim::WriteOutput_new(H5::Group &po2_out_group, H5::Group &h5_par
   WriteHdfPtree(h5_bf_params, bfparams.as_ptree());
     
   //po2_out_group.close();
-  outputgroup.close();
-  h5_o2_lattice.close();
+  //outputgroup.close();
+  //h5_o2_lattice.close();
   h5_meta_data.close();
   h5_o2_params.close();
   h5_bf_params.close();
-  h5_matrix_builder_info.close();
-  h5_ld_group.close();
+  //h5_matrix_builder_info.close();
+  //h5_ld_group.close();
 }
+
 // void DetailedPO2Sim::WriteOutput(H5::Group &basegroup,
 //                  const VesselList3d &vl,
 //                  const Parameters &params,

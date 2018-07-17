@@ -253,7 +253,9 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
     
   H5::Group po2_out_group = o2File.createGroup(string("/po2"));
   H5::Group h5_out_params = o2File.createGroup(string("/parameters"));
-  s.WriteOutput_new(po2_out_group, h5_out_params);
+  s.WriteDataOutput(po2_out_group);
+  s.WriteParametersToHDF(h5_out_params);
+  //s.WriteOutput_new(po2_out_group, h5_out_params);
     
 //     //H5::Group outputgroup = o2File.createGroup(out_grp_path);
 //     H5::Group po2_out_group = o2File.createGroup(string("/po2"));

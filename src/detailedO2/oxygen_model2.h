@@ -258,7 +258,7 @@ struct DetailedPO2Sim : public boost::noncopyable
 //                  const boost::optional<const FiniteVolumeMatrixBuilder&> mbopt);
   //void WriteOutput_new(H5::H5File &outfile);
   void WriteDataOutput(H5::Group &out_grp);
-  void writeParametersToHDF(H5::Group &out_params);  
+  void WriteParametersToHDF(H5::Group &out_params);  
   /**
  * @brief integrates the po2 along a vessel
  * 
