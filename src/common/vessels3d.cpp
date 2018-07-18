@@ -612,7 +612,7 @@ void HemodynamicBounds::Add(const VesselList3d *vl, bool bClear)
 // }
 
 
-void GetSubdivided( std::unique_ptr<VesselList3d> &vl, int multi, float newscale, int safety_boundary)
+void GetSubdivided( std::shared_ptr<VesselList3d> &vl, int multi, float newscale, int safety_boundary)
 {
   typedef VesselList3d::LatticeData LatticeData;
   const LatticeData &ld = vl.get()->Ld();
@@ -638,7 +638,7 @@ void GetSubdivided( std::unique_ptr<VesselList3d> &vl, int multi, float newscale
   //std::unique_ptr<LatticeData> newldp(ld.Clone());
   newldp.get()->Init(newbox,  newscale);
 
-  std::unique_ptr<VesselList3d> vlnew( new VesselList3d() );
+  std::shared_ptr<VesselList3d> vlnew( new VesselList3d() );
   //vlnew->Init(*newldp);
   vlnew->Init(newldp);
 
@@ -677,7 +677,7 @@ void GetSubdivided( std::unique_ptr<VesselList3d> &vl, int multi, float newscale
 }
 
 
-void GetSubdivided(std::unique_ptr<VesselList3d> &vl, float scale)
+void GetSubdivided(std::shared_ptr<VesselList3d> &vl, float scale)
 {
   const int multi = std::max(int( my::round( vl->Ld().Scale()/scale ) ),1);
   if( multi == 1)

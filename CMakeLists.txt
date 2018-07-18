@@ -201,15 +201,20 @@ if (MPI_NEEDED)
   find_package(MPI REQUIRED)
   add_definitions(-DMPI_NEEDED)
   message(STATUS "Including MPI")
-  message(STATUS "MPI libs         = ${MPI_CXX_LIBRARIES}")
+  message(STATUS "MPI cxx libs         = ${MPI_CXX_LIBRARIES}")
+  #message(STATUS "MPI libs         = ${MPI_LIBRARIES}") # depricated
   message(STATUS "MPI include dirs = ${MPI_CXX_INCLUDE_PATH}")
-  message(STATUS "MPI_LIBRARY = ${MPI_LIBRARY}")
+  #message(STATUS "MPI_LIBRARY = ${MPI_LIBRARY}") #depricated
   message(STATUS "MPI_CXX_COMPILER_FLAGS = ${MPI_CXX_COMPILER_FLAGS}")
   message(STATUS "MPI_CXX_LINK_FLAGS = ${MPI_CXX_LINK_FLAGS}")
-  
+  #message(STATUS "MPI_COMPILE_FLAGS = ${MPI_COMPILE_FLAGS}") #depricated
+  #message(STATUS "MPI_LINK_FLAGS = ${MPI_LINK_FLAGS}") #depricated
+  SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${MPI_CXX_COMPILER_FLAGS}" )
+  set( CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${MPI_CXX_LINK_FLAGS}")
   include_directories(${MPI_CXX_INCLUDE_PATH})
+  #include_directories(${MPI_INCLUDE_PATH})
   #set(myLibs ${MPI_CXX_LIBRARIES})
-  set(myLibs "${myLibs};${MPI_CXX_LIBRARY}")
+  set(myLibs "${myLibs};${MPI_LIBRARIES};${MPI_CXX_LIBRARY}")
   if (HDF5_IS_PARALLEL) #good here
   message(WARNING "good choice here")
   else()

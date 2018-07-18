@@ -181,7 +181,7 @@ struct Model : public boost::noncopyable
     {
       H5::Group gparams = f.openGroup("parameters");
     }
-    catch( H5::Exception error)
+    catch(H5::Exception &e)
     {
       H5::Group gparams = f.createGroup("parameters");
       WriteHdfPtree(gparams, pt_params);

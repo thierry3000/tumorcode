@@ -278,8 +278,12 @@ inline std::size_t estimateMemoryUsage(const VesselList3d &vl) { return vl.estim
 ------------------------------------------------------*/
 
 uint Optimize( VesselList3d *vl );
-void GetSubdivided(std::unique_ptr< VesselList3d > &vl, int multi, float newscale, int safety_boundary = 1);
-void GetSubdivided(std::unique_ptr<VesselList3d> &vl, float scale);
+// void GetSubdivided(std::unique_ptr< VesselList3d > &vl, int multi, float newscale, int safety_boundary = 1);
+// void GetSubdivided(std::unique_ptr<VesselList3d> &vl, float scale);
+
+void GetSubdivided(std::shared_ptr< VesselList3d > &vl, int multi, float newscale, int safety_boundary = 1);
+void GetSubdivided(std::shared_ptr<VesselList3d> &vl, float scale);
+
 //std::unique_ptr< VesselList3d >& GetSubdivided( VesselList3d  &vl, int multi, float newscale, int safety_boundary = 1);
 //std::unique_ptr<VesselList3d>& GetSubdivided( VesselList3d &vl, float scale);
 /* Make it so that one vessels covers one and only one lattice bonds. 

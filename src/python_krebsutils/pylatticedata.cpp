@@ -193,7 +193,7 @@ PyLd* read_lattice_data_from_hdf_by_filename(const string fn, const string path)
     //h5cpp::Group g_ld = h5cpp::Group(readInFile->root().open_group(path));
     g_ld = readInFile.openGroup(path);
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }

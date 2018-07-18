@@ -126,32 +126,34 @@ inline boost::optional<T> getOptional(const char* name, py::dict &d)
 //static void PyComputePO2(string fn, string vesselgroup_path, string tumorgroup_path, py::dict py_parameters, py::object py_bfparams, string h5_out_path)
 static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
 {
-  Parameters params;
-  InitParameters(params, py_parameters);
+  DetailedPO2::DetailedPO2Sim s;
+  //Parameters params;
+  InitParameters(s.params, py_parameters);
   cout << "parameters initialized" << std::endl;
   
   //h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
   // this was fn
-  const string input_file_name = py::extract<string>(py_parameters.get("input_file_name", "None"));
-  string input_group_path = py::extract<string>(py_parameters.get("input_group_path", "None"));
-  
-  const string output_file_name = py::extract<string>(py_parameters.get("output_file_name", "None"));
-  const string tumor_file_name = py::extract<string>(py_parameters.get("tumor_file_name", "None"));
-  const string tumor_group_path = py::extract<string>(py_parameters.get("tumor_group_path", "None"));
-  const string out_grp_path = py::extract<string>(py_parameters.get("output_group_path", "None"));
-  string vesselgroup_path = py::extract<string>(py_parameters.get("vessel_group_path", "None"));
-  vesselgroup_path = "/" + vesselgroup_path;
-  input_group_path = "/" + input_group_path;
+  s.params.input_file_name = py::extract<string>(py_parameters.get("input_file_name", "none"));
+  s.params.input_group_path = py::extract<string>(py_parameters.get("input_group_path", "none")); 
+  s.params.vessel_group_path = py::extract<string>(py_parameters.get("vessel_group_path", "none"));
+  const string output_file_name = py::extract<string>(py_parameters.get("output_file_name", "none"));
+  const string tumor_file_name = py::extract<string>(py_parameters.get("tumor_file_name", "none"));
+  const string tumor_group_path = py::extract<string>(py_parameters.get("tumor_group_path", "none"));
+  const string out_grp_path = py::extract<string>(py_parameters.get("output_group_path", "none"));
+  string vesselgroup_path = py::extract<string>(py_parameters.get("vessel_group_path", "none"));
+  //vesselgroup_path = "/" + vesselgroup_path;
+  //input_group_path = "/" + input_group_path;
   //h5cpp::File *o2File = new h5cpp::File(fn,"a");
-  std::unique_ptr<VesselList3d> vl;
+  //std::shared_ptr<VesselList3d> vl;
+  //s.params.input_group_path = input_group_path;
   H5::H5File o2File;
   H5::H5File vesselInputFile;
   try
   {
     
-    vesselInputFile = H5::H5File( input_file_name , H5F_ACC_RDONLY);
-    H5::Group vesselgroup = vesselInputFile.openGroup(input_group_path);
-    vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
+    vesselInputFile = H5::H5File( s.params.input_file_name , H5F_ACC_RDONLY);
+    H5::Group vesselgroup = vesselInputFile.openGroup(string("/") + s.params.input_group_path);
+    s.vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
       /*
        * Turn off the auto-printing when failure occurs so that we can
        * handle the errors appropriately
@@ -166,7 +168,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
 //       vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
    }  // end of try block
       // catch failure caused by the H5File operations
-   catch( H5::FileIException error )
+   catch( H5::FileIException &error )
    {
       error.printErrorStack();
    }
@@ -199,12 +201,12 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   
   //boost::optional<std::string> tumorgroup_path;
   //h5cpp::Group   *tumorgroup = new h5cpp::Group();
-  DetailedP02Sim s;
+  
 //   if (!py_tumorgroup.is_none())
 //   {
 //     tumorgroup = PythonToCppGroup(py_tumorgroup);
 //   }
-  if (tumor_group_path != "None")
+  if (tumor_group_path != "none")
   {
     h5_tumor_file = boost::optional<H5::H5File>(H5::H5File(tumor_file_name, H5F_ACC_RDONLY));
     tumorgroup = boost::optional<H5::Group>(h5_tumor_file->openGroup(tumor_group_path));
@@ -234,42 +236,59 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
       //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
       MPI_Init_thread(0, NULL, 1,&prov);
 #endif
-    DetailedP02Sim s;
-    s.init(params, bfparams,*vl,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels,cell_based_o2_uptake);
-    s.run(*vl);
-    
-    /* OUTPUT */
-    //H5::Group outputgroup = o2File.createGroup(out_grp_path);
-    H5::Group po2_out_group = o2File.createGroup(string("/po2"));
-    H5::Group outputgroup = o2File.createGroup(string("/") + string("po2/") + input_group_path);
-    
-    writeAttrToH5(outputgroup, string("SOURCE_VESSELS_FILE"), input_file_name);
-    writeAttrToH5(outputgroup, string("SOURCE_VESSELS_PATH"), input_group_path);
-    writeAttrToH5(outputgroup, string("SOURCE_TISSUE_FILE"), string("none"));
-    writeAttrToH5(outputgroup, string("SOURCE_TISSUE_PATH"), string("none"));
-    H5::Group h5_o2_lattice = outputgroup.createGroup("field_ld");
-    s.grid.ld.WriteHdfLd(h5_o2_lattice);
-    WriteScalarField(outputgroup, string("po2field"), s.po2field, s.grid.ld, h5_o2_lattice);
-    writeDataSetToGroup(outputgroup, string("po2vessels"), s.po2vessels);
-    //WriteHdfPtree(outputgroup, s.metadata, HDF_WRITE_PTREE_AS_DATASETS);
-    WriteHdfPtree(outputgroup, s.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
-    H5::Group h5_params = outputgroup.createGroup("parameters");
-    H5::Group h5_meta_data = h5_params.createGroup("metadata");
-    WriteHdfPtree(h5_meta_data, s.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
-    H5::Group h5_o2_params = h5_params.createGroup("o2");
-    s.params.writeParametersToHDF(h5_o2_params);
-    //WriteHdfPtree(h5_o2_params, s.params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
-    H5::Group h5_bf_params = h5_params.createGroup("calcflow");
-    WriteHdfPtree(h5_bf_params, s.bfparams.as_ptree());
+    //DetailedP02Sim s;
+    s.init(bfparams,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels,cell_based_o2_uptake);
+    s.run();
   }
   catch(std::exception &ex)
   {
     std::cout << ex.what();
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
+    
+    /* OUTPUT */
+    
+  H5::Group po2_out_group = o2File.createGroup(string("/po2"));
+  H5::Group h5_out_params = o2File.createGroup(string("/parameters"));
+  s.WriteDataOutput(po2_out_group);
+  s.WriteParametersToHDF(h5_out_params);
+  //s.WriteOutput_new(po2_out_group, h5_out_params);
+    
+//     //H5::Group outputgroup = o2File.createGroup(out_grp_path);
+//     H5::Group po2_out_group = o2File.createGroup(string("/po2"));
+//     H5::Group outputgroup = o2File.createGroup(string("/") + string("po2/") + input_group_path);
+//     
+//     writeAttrToH5(outputgroup, string("SOURCE_VESSELS_FILE"), input_file_name);
+//     writeAttrToH5(outputgroup, string("SOURCE_VESSELS_PATH"), input_group_path);
+//     writeAttrToH5(outputgroup, string("SOURCE_TISSUE_FILE"), string("none"));
+//     writeAttrToH5(outputgroup, string("SOURCE_TISSUE_PATH"), string("none"));
+//     H5::Group h5_o2_lattice = outputgroup.createGroup("field_ld");
+//     s.grid.ld.WriteHdfLd(h5_o2_lattice);
+//     WriteScalarField(outputgroup, string("po2field"), s.po2field, s.grid.ld, h5_o2_lattice);
+//     writeDataSetToGroup(outputgroup, string("po2vessels"), s.po2vessels);
+//     //WriteHdfPtree(outputgroup, s.metadata, HDF_WRITE_PTREE_AS_DATASETS);
+//     WriteHdfPtree(outputgroup, s.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+//     H5::Group h5_params = outputgroup.createGroup("parameters");
+//     H5::Group h5_meta_data = h5_params.createGroup("metadata");
+//     WriteHdfPtree(h5_meta_data, s.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+//     H5::Group h5_o2_params = h5_params.createGroup("o2");
+//     WriteHdfPtree(h5_o2_params, s.params.as_ptree());
+//     //s.params.writeParametersToHDF(h5_o2_params);
+//     //WriteHdfPtree(h5_o2_params, s.params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
+//     H5::Group h5_bf_params = h5_params.createGroup("calcflow");
+//     WriteHdfPtree(h5_bf_params, s.bfparams.as_ptree());
+//   }
+//   catch(std::exception &ex)
+//   {
+//     std::cout << ex.what();
+//   }
+//   catch(H5::Exception e)
+//   {
+//     e.printErrorStack();
+//   }
   
   //cout << "c++ part of detailedO2 finished" << std::endl;
   //DetailedPO2::ComputePO2(params, *vl, grid, mtboxes, po2field, po2vessels, phases, metadata, world);

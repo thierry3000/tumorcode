@@ -30,11 +30,19 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../lib'))
 '''overcomes some serious mpi issues!!!
 https://github.com/baidu-research/tensorflow-allreduce/issues/4
+http://users.open-mpi.narkive.com/BxD0j82y/ompi-users-problem-with-using-mpi-in-a-python-extension
 
 NOTE: this issues should not be present in a properly configured system
 '''
-#import ctypes
-#ctypes.CDLL("libmpi.so", mode=ctypes.RTLD_GLOBAL)
+import platform
+theUnameList = platform.uname()
+isUbuntu=False
+for entry in theUnameList:
+    if 'Ubuntu' in entry:
+        isUbuntu=True
+if isUbuntu:        
+    import ctypes
+    ctypes.CDLL("libmpi.so", mode=ctypes.RTLD_GLOBAL)
 
 # leaks a bit of memory each time it is imported!
 from scipy.ndimage.interpolation import geometric_transform
@@ -320,8 +328,11 @@ def filter_graph_byedge2( edges, edge_data, node_data, indices, return_indices=F
     invmap = -1*np.ones((n,),dtype=edges.dtype)
     np.put(invmap,map,np.arange(map.shape[0],dtype=edges.dtype))
     newedges = np.asarray(np.take(invmap,tmpedges), dtype=edges.dtype)
-    new_node_data = tuple( q[map,...] for q in node_data )
     new_edge_data = tuple( q[indices,...] for q in edge_data )
+    new_node_data = tuple( q[map,...] for q in node_data )
+    ''' difficult with position which is dict with 3 entries'''
+    #new_node_data = node_data
+    
     ret = (newedges, new_edge_data, new_node_data)
     if return_indices:
         ret = ret+(indices, map, invmap) # map  is array to obtain old node index from new index by: oldIndex=map[newIndex]

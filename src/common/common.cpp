@@ -188,3 +188,73 @@ static bool DefaultCheckAbort()
 AbortFunction checkAbort = DefaultCheckAbort;
 
 }//end namespace my
+
+SystemParameters::SystemParameters()
+{
+  num_threads = 1;
+  cluster = "local";
+  computing_node = "local";
+  num_threads_queuing = 1;
+  mem_in_GB = 1;
+  
+  isRerun = false;
+  reRunNumber = 0;
+}
+void SystemParameters::assign(const boost::property_tree::ptree& pt)
+{
+  #define DOPT(name) boost::property_tree::get(name, #name, pt)
+  DOPT(num_threads);
+  DOPT(cluster);
+  DOPT(computing_node);
+  DOPT(num_threads_queuing);
+  DOPT(mem_in_GB);
+  
+  DOPT(isRerun);
+  DOPT(reRunNumber);
+  #undef DOPT
+}
+boost::property_tree::ptree SystemParameters::as_ptree() const
+{
+  boost::property_tree::ptree pt;
+  #define DOPT(name) pt.put(#name, name)
+  DOPT(cluster);
+  DOPT(computing_node);
+  DOPT(num_threads);
+  DOPT(num_threads_queuing);
+  DOPT(mem_in_GB);
+  
+  DOPT(isRerun);
+  DOPT(reRunNumber);
+  #undef DOPT
+  return pt;
+}
+
+void readSystemParameters(SystemParameters &sysParamsToFill)
+{
+  // update cluster information, if we are on a cluster
+  if( std::getenv("SLURM_CLUSTER_NAME") )
+  {
+    //systemSettings.put("cluster", std::getenv("SLURM_CLUSTER_NAME"));
+    sysParamsToFill.cluster = std::getenv("SLURM_CLUSTER_NAME");
+  }
+  if( std::getenv("SLURMD_NODENAME") )
+  {
+    //systemSettings.put("computing_node", std::getenv("SLURMD_NODENAME"));
+    sysParamsToFill.computing_node = std::getenv("SLURMD_NODENAME");
+  }
+  else
+  {
+    sysParamsToFill.computing_node = boost::asio::ip::host_name();
+//     if( std::getenv("HOSTNAME") ) //HOSTNAME is not cross plattform an not supported under arch linux
+//     {
+//       sysParamsToFill.computing_node = std::getenv("HOSTNAME");
+//     }
+  }
+  if( std::getenv("SLURM_CPUS_ON_NODE") )
+  {
+    //systemSettings.put("num_threads_queuing", std::getenv("SLURM_CPUS_ON_NODE"));
+    sysParamsToFill.num_threads_queuing = atoi( std::getenv("SLURM_CPUS_ON_NODE"));
+  }
+  //systemSettings.put("num_threads", omp_get_max_threads());
+  sysParamsToFill.num_threads = omp_get_max_threads();
+}

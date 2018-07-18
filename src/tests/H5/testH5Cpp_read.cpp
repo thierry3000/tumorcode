@@ -153,7 +153,7 @@ T readAttrFromGroup(H5::Group g, string attr_name)
     att_to_read.read(type, &buffer);
     return buffer;
   }
-  catch(H5::Exception error)
+  catch()
   {
     cout << "attribute " << attr_name << " not found in file: " << g.getFileName() << endl;
   }

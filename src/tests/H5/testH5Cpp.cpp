@@ -132,7 +132,7 @@ void writeAttrToH5(H5::Group g, const string &attr_name, const  string &value)
       H5::Attribute myatt_in = g.createAttribute(attr_name, strdatatype, attr_dataspace);
       myatt_in.write(strdatatype, strwritebuf);
     }
-    catch(H5::Exception error)
+    catch()
     {
       error.printErrorStack();
     }
@@ -310,7 +310,7 @@ void readAttrFromH5(H5::Group g, const string &attr_name, T &output_buffer)
   {
     att_to_read.read(type, &output_buffer);
   }
-  catch(H5::Exception error)
+  catch()
   {
     error.printErrorStack();
   }

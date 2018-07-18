@@ -82,15 +82,29 @@ namespace Tumors{
  * here a growing sphere of tumor cells is assumed, no tumor model is used for
  * that. One needs a growing speed
  */
-void run_fakeTumor_mts(const py::str &param_info_str)
+void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isRerun)
 {
-  /* reading parameter string from info file */
-  ptree pt_params = convertInfoStr(param_info_str, ptree());
-  std::cout << "run_fakeTumor_mts on c++ called" << std::endl;
-#ifdef DEBUG
-  std::cout << "with params: " << std::endl;
-  printPtree(pt_params);
-#endif
+  ptree pt_params;
+  char const* fn_of_previous_sim_c_str;
+  if( !isRerun )
+  {
+    /* reading parameter string from info file */
+    pt_params = convertInfoStr(param_info_str_or_filename_of_pr, ptree());
+    std::cout << "run_fakeTumor_mts without rerun called on c++ side" << std::endl;
+    #ifdef DEBUG
+      std::cout << "with params: " << std::endl;
+      printPtree(pt_params);
+    #endif
+  }
+  else
+  {
+    std::cout << "run_fakeTumor_mts rerun called on c++ side" << std::endl;
+    fn_of_previous_sim_c_str = py::extract<char const*>(param_info_str_or_filename_of_pr);
+    #ifdef DEBUG
+      std::cout << "with filename: " << std::endl;
+      std::printf("%s\n", fn_of_previous_sim_c_str);
+    #endif
+  }
   // enable standard exception handling
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   
@@ -100,7 +114,7 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   /* 
    * create ptree with default settings!!!
    */
-  ptree detailedO2Settings = s.o2_params.as_ptree();
+  ptree detailedO2Settings = s.o2_sim.params.as_ptree();
   ptree bfSettings = s.o2_sim.bfparams.as_ptree();
   ptree fakeTumMTSSettings = s.params.as_ptree();
   ptree systemSettings = s.mySystemParameters.as_ptree();
@@ -112,52 +126,108 @@ void run_fakeTumor_mts(const py::str &param_info_str)
   std::cout << "with calcflow params: " << std::endl;
   printPtree(bfSettings);
   #endif
-  // update settings with the read in data
-  boost::property_tree::update(detailedO2Settings, pt_params.get_child("detailedo2"));
-  boost::property_tree::update(bfSettings, detailedO2Settings.get_child("calcflow"));
-  boost::property_tree::update(fakeTumMTSSettings, pt_params);
-  boost::property_tree::update(vesselSettings, pt_params.get_child("vessels"));
   
-  // update cluster information, if we are on a cluster
-  if( std::getenv("SLURM_CLUSTER_NAME") )
+  if( !isRerun )
   {
-    systemSettings.put("cluster", std::getenv("SLURM_CLUSTER_NAME"));
+    // update settings with the read in data
+    boost::property_tree::update(detailedO2Settings, pt_params.get_child("detailedo2"));
+    boost::property_tree::update(vesselSettings, pt_params.get_child("vessels"));
+    boost::property_tree::update(bfSettings, detailedO2Settings.get_child("calcflow"));
+    boost::property_tree::update(fakeTumMTSSettings, pt_params);
+    fakeTumMTSSettings.put("vessel_path", "vessels");
+    fakeTumMTSSettings.put("isRerun", 0);
+    s.mySystemParameters.reRunNumber = 0;
+    s.mySystemParameters.isRerun = false;
+    
+    readSystemParameters(s.mySystemParameters);
+    
+    boost::property_tree::update(systemSettings, s.mySystemParameters.as_ptree());
+    #ifdef DEBUG
+      std::cout << "detailed params after update: " << std::endl;
+      printPtree(detailedO2Settings);
+      std::cout << "calcflow params after update: " << std::endl;
+      printPtree(bfSettings);
+    #endif
   }
-  if( std::getenv("SLURMD_NODENAME") )
+  else
   {
-    systemSettings.put("computing_node", std::getenv("SLURMD_NODENAME"));
+    //update with params of previous run
+    H5::H5File file;
+    H5::Group h5_params_of_previous_run;
+    H5::Group h5_vessel_params_of_previous_run;
+    H5::Group h5_calcflow_of_previous_run;
+    H5::Group h5_o2_params_of_previous_run;
+    H5::Group h5_system_of_first_run;
+    H5::Group h5_system_of_current_run;
+    H5::Group last_state;
+    int reRunNumber;
+    try{
+      //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
+      //storing current system information needs write permissions
+      file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR);
+      h5_params_of_previous_run = file.openGroup("/parameters");
+      h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
+      h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
+      h5_system_of_first_run = h5_params_of_previous_run.openGroup("system");
+      h5_o2_params_of_previous_run = h5_params_of_previous_run.openGroup("o2");
+    }
+    catch(H5::Exception &e)
+    {
+      e.printErrorStack();
+    }
+    ReadHdfPtree(vesselSettings, h5_vessel_params_of_previous_run);
+    ReadHdfPtree(bfSettings, h5_calcflow_of_previous_run);
+    ReadHdfPtree(fakeTumMTSSettings, h5_params_of_previous_run);
+    ReadHdfPtree(systemSettings, h5_system_of_first_run);
+    ReadHdfPtree(detailedO2Settings, h5_o2_params_of_previous_run);
+ 
+    //override read in
+    fakeTumMTSSettings.put("vessel_path", "last_state/vessels");
+    fakeTumMTSSettings.put("fn_vessel", fn_of_previous_sim_c_str);
+    systemSettings.put("isRerun", true);
+    try
+    {
+      last_state = file.openGroup("/last_state");
+      readAttrFromH5(last_state, "CURRENT_RERUN_NUMBER", reRunNumber);
+      reRunNumber++;
+      systemSettings.put("reRunNumber", reRunNumber);
+      h5_system_of_current_run = h5_params_of_previous_run.createGroup(str(format("system_rerun_%02i") % reRunNumber));
+      WriteHdfPtree(h5_system_of_current_run, systemSettings);
+    }
+    catch(H5::Exception &e)
+    {
+      e.printErrorStack();
+    }
+    //run time variables NO parameters
+    readAttrFromH5(last_state, string("OUTPUT_NUM"), s.output_num);
+    readAttrFromH5(last_state, string("NUM_ITERATION"), s.num_iteration);
+    readAttrFromH5(last_state, string("time"), s.time);
+    readAttrFromH5(last_state, string("NEXT_OUTPUT_TIME"), s.next_output_time);
+    readAttrFromH5(last_state, string("NEXT_ADAPTION_TIME"), s.next_adaption_time);
+    
+    file.close();
+    h5_params_of_previous_run.close();
+    h5_vessel_params_of_previous_run.close();
+    h5_calcflow_of_previous_run.close();
+    h5_system_of_first_run.close();
+    h5_system_of_current_run.close();
+    last_state.close();
   }
-  if( std::getenv("SLURM_CPUS_ON_NODE") )
-  {
-    systemSettings.put("num_threads_queuing", std::getenv("SLURM_CPUS_ON_NODE"));
-  }
-  systemSettings.put("num_threads", omp_get_max_threads());
-  
-  #ifdef DEBUG
-  std::cout << "detailed params after update: " << std::endl;
-  printPtree(detailedO2Settings);
-  std::cout << "calcflow params after update: " << std::endl;
-  printPtree(bfSettings);
-  #endif
   
   // assign o2 parameters to the simulation
-  s.o2_params.assign(detailedO2Settings);
-  // assign bfparams parameters to the simulation
-  s.o2_sim.bfparams.assign(bfSettings);
-  s.bfparams.assign(bfSettings);
-  // assign vessel parameters to the simulation
   s.vessel_model.params.assign(vesselSettings);
+  s.bfparams.assign(bfSettings);
   s.params.assign(fakeTumMTSSettings);
-  s.mySystemParameters.assign(systemSettings);
+  
+  s.o2_sim.bfparams.assign(bfSettings);
+  s.o2_sim.params.assign(detailedO2Settings);
+  
   /* 
    * if we are on a cluster, we expect multiple runs
    * and create a directory for each run 
    */
   boost::filesystem::path P = boost::filesystem::path(s.params.fn_out);
-//   for(auto& part : boost::filesystem::path(s.params.fn_out))
-//         std::cout << part << "\n";
-  
-  if( std::getenv("SLURM_JOB_ID") )// environmental variable present, we are on a slurm cluster queue!
+  if( std::getenv("SLURM_JOB_ID") and !s.mySystemParameters.isRerun )// environmental variable present, we are on a slurm cluster queue!
   {
     boost::filesystem::path pathOfNewFolder = P.parent_path()/boost::filesystem::path(std::getenv("SLURM_JOB_ID"));
     boost::filesystem::create_directory(pathOfNewFolder);
@@ -166,11 +236,7 @@ void run_fakeTumor_mts(const py::str &param_info_str)
     std::cout << newPath << std::endl;
     s.params.fn_out = newPath.string();
   }
-  
-    //ReleaseGIL unlock(); // allow the python interpreter to do things while this is running
-    /*
-     * run major simulation, hopefully all parameters are set correct at this stage
-     */
+
 #ifdef EPETRA_MPI
   std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
   int mpi_is_initialized = 0;
@@ -180,14 +246,19 @@ void run_fakeTumor_mts(const py::str &param_info_str)
     //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
     MPI_Init_thread(0, NULL, 1,&prov);
 #endif
+  /**
+   * run major simulation, hopefully all parameters are set correct at this stage
+   */
   try
   {
-
+    /**
+     * output error stack on segfault and floating point error
+     */
 // #ifndef NDEBUG
   signal(SIGSEGV, handler);
   signal(SIGFPE, handler);
 // #endif
-  int returnCode = s.run();
+    int returnCode = s.run();
   }
   catch(std::exception &ex)
   {
@@ -206,20 +277,40 @@ void export_faketum_mts()
  * here a growing sphere of tumor cells is assumed, no tumor model is used for
  * that. One needs a growing speed
  */
-void run_fakeTumor(const py::str &param_info_str)
+void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun)
 {
-  ptree pt_params = convertInfoStr(param_info_str, ptree());
-  std::cout << "run_fakeTumor on c++ called" << std::endl;
-#ifdef DEBUG
-  std::cout << "with params: " << std::endl;
-  printPtree(pt_params);
-#endif
+  ptree pt_params;
+  char const* fn_of_previous_sim_c_str;
+  if( !isRerun )
+  {
+    /* reading parameter string from info file */
+    pt_params = convertInfoStr(param_info_str_or_filename_of_pr, ptree());
+    std::cout << "run_fakeTumor without rerun called on c++ side" << std::endl;
+    #ifdef DEBUG
+      std::cout << "with params: " << std::endl;
+      printPtree(pt_params);
+    #endif
+  }
+  else
+  {
+    std::cout << "run_fakeTumor rerun called on c++ side" << std::endl;
+    fn_of_previous_sim_c_str = py::extract<char const*>(param_info_str_or_filename_of_pr);
+    #ifdef DEBUG
+      std::cout << "with filename: " << std::endl;
+      std::printf("%s\n", fn_of_previous_sim_c_str);
+    #endif
+  }
+  // enable standard exception handling
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   
   FakeTum::FakeTumorSim s;
-  //construct default parameters
-  //get default params
+  
+  /* 
+   * create ptree with default settings!!!
+   */
   ptree bfSettings = s.params.bfparams.as_ptree();
+  ptree fakeTumSettings = s.params.as_ptree();
+  ptree systemSettings = s.mySystemParameters.as_ptree();
   ptree vesselSettings = s.vessel_model.params.as_ptree();
 #ifdef USE_ADAPTION
   ptree adaptionSettings = s.params.adap_params.as_ptree();
@@ -229,18 +320,109 @@ void run_fakeTumor(const py::str &param_info_str)
   }
   s.params.adap_params.assign(adaptionSettings);
 #endif
-  ptree fakeTumSettings = s.params.as_ptree();
-  //update with read in params
-  boost::property_tree::update(vesselSettings, pt_params.get_child("vessels"));
-  boost::property_tree::update(bfSettings, pt_params.get_child("calcflow"));
-  boost::property_tree::update(fakeTumSettings, pt_params);
   
+  if( !isRerun )
+  {
+    //update with read in params
+    boost::property_tree::update(vesselSettings, pt_params.get_child("vessels"));
+    boost::property_tree::update(bfSettings, pt_params.get_child("calcflow"));
+    boost::property_tree::update(fakeTumSettings, pt_params);
+    fakeTumSettings.put("vessel_path", "vessels");
+    fakeTumSettings.put("isRerun", 0);
+    #ifndef NDEBUG
+      std::cout << "with calcflow params: " << std::endl;
+      printPtree(bfSettings);
+    #endif
+    s.mySystemParameters.reRunNumber = 0;
+    s.mySystemParameters.isRerun = false;
+    
+    readSystemParameters(s.mySystemParameters);
+    
+    boost::property_tree::update(systemSettings, s.mySystemParameters.as_ptree());
+  }
+  else
+  {
+    //update with params of previous run
+    H5::H5File file;
+    H5::Group h5_params_of_previous_run;
+    H5::Group h5_vessel_params_of_previous_run;
+    H5::Group h5_calcflow_of_previous_run;
+    H5::Group h5_system_of_first_run;
+    H5::Group h5_system_of_current_run;
+    H5::Group last_state;
+    int reRunNumber;
+    try{
+      //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
+      //storing current system information needs write permissions
+      file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR);
+      h5_params_of_previous_run = file.openGroup("/parameters");
+      h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
+      h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
+      h5_system_of_first_run = h5_params_of_previous_run.openGroup("system");
+    }
+    catch(H5::Exception &e)
+    {
+      e.printErrorStack();
+    }
+    ReadHdfPtree(vesselSettings, h5_vessel_params_of_previous_run);
+    ReadHdfPtree(bfSettings, h5_calcflow_of_previous_run);
+    ReadHdfPtree(fakeTumSettings, h5_params_of_previous_run);
+    ReadHdfPtree(systemSettings, h5_system_of_first_run);
+ 
+    //override read in
+    fakeTumSettings.put("vessel_path", "last_state/vessels");
+    fakeTumSettings.put("fn_vessel", fn_of_previous_sim_c_str);
+    systemSettings.put("isRerun", true);
+    try
+    {
+      last_state = file.openGroup("/last_state");
+      readAttrFromH5(last_state, "CURRENT_RERUN_NUMBER", reRunNumber);
+      reRunNumber++;
+      systemSettings.put("reRunNumber", reRunNumber);
+      h5_system_of_current_run = h5_params_of_previous_run.createGroup(str(format("system_rerun_%02i") % reRunNumber));
+      WriteHdfPtree(h5_system_of_current_run, systemSettings);
+    }
+    catch(H5::Exception &e)
+    {
+      e.printErrorStack();
+    }
+    //run time variables NO parameters
+    readAttrFromH5(last_state, string("OUTPUT_NUM"), s.output_num);
+    readAttrFromH5(last_state, string("NUM_ITERATION"), s.num_iteration);
+    readAttrFromH5(last_state, string("time"), s.time);
+    readAttrFromH5(last_state, string("NEXT_OUTPUT_TIME"), s.next_output_time);
+    readAttrFromH5(last_state, string("NEXT_ADAPTION_TIME"), s.next_adaption_time);
+    
+    file.close();
+    h5_params_of_previous_run.close();
+    h5_vessel_params_of_previous_run.close();
+    h5_calcflow_of_previous_run.close();
+    h5_system_of_first_run.close();
+    h5_system_of_current_run.close();
+    last_state.close();
+  }
+  
+  // assign o2 parameters to the simulation
   s.vessel_model.params.assign(vesselSettings);
   s.params.bfparams.assign(bfSettings);
   s.params.assign(fakeTumSettings);
+  s.mySystemParameters.assign(systemSettings);
   
-  try
+  /* 
+   * if we are on a cluster, we expect multiple runs
+   * and create a directory for each run 
+   */
+  boost::filesystem::path P = boost::filesystem::path(s.params.fn_out);
+  if( std::getenv("SLURM_JOB_ID") and !s.mySystemParameters.isRerun )// environmental variable present, we are on a slurm cluster queue!
   {
+    boost::filesystem::path pathOfNewFolder = P.parent_path()/boost::filesystem::path(std::getenv("SLURM_JOB_ID"));
+    boost::filesystem::create_directory(pathOfNewFolder);
+    std::cout << pathOfNewFolder << std::endl;
+    boost::filesystem::path newPath = pathOfNewFolder / boost::filesystem::path(P.stem().string());
+    std::cout << newPath << std::endl;
+    s.params.fn_out = newPath.string();
+  }
+  
 #ifdef EPETRA_MPI
     std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
     int mpi_is_initialized = 0;
@@ -250,17 +432,51 @@ void run_fakeTumor(const py::str &param_info_str)
       //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
       MPI_Init_thread(0, NULL, 1,&prov);
 #endif
+  /**
+   * run major simulation, hopefully all parameters are set correct at this stage
+   */
+  try
+  {
+    /**
+     * output error stack on segfault and floating point error
+     */
+// #ifndef NDEBUG
+  signal(SIGSEGV, handler);
+  signal(SIGFPE, handler);
+// #endif
     int returnCode = s.run();
   }
   catch(std::exception &ex)
   {
     std::cout << ex.what();
   }
+  
+  if (PyErr_Occurred() != NULL) return; // don't save stuff
 }
+
 void export_faketum()
 {
   py::def("run_faketum_", run_fakeTumor);
 }
+// void printObjectName(H5::H5Location&, H5std_string, void*)
+// {
+//   
+// }
+//typedef void(* 	attr_operator_t )(H5Object &loc, const H5std_string attr_name, void *operator_data)
+
+//H5::attr_operator_t printObjectNameH5;
+// void printObjectName( H5::H5Location &g, const H5std_string attr_name, void* operator_data)
+// {
+//   try
+//   {
+//     std::cout << attr_name << std::endl;
+//   }
+//   catch()
+//   {
+//     e.printError();
+//   }
+// }
+
 
 /** @brief BulkTissue no vessels
  */
@@ -364,7 +580,7 @@ void run_bulktissue_with_vessels(const py::str &param_info_str)
   {
     std::cout << ex.what();
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }

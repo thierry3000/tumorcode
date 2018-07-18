@@ -183,7 +183,7 @@ bool VessGenApp::Callback(const Grower& grower) // returns if the iteration shou
       DoOutput(file, grower.get_vl(), grower, iter_data, input_pt);
       file.close();
     }
-    catch(H5::Exception e)
+    catch(H5::Exception &e)
     {
       e.printErrorStack();
     }

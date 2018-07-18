@@ -110,44 +110,28 @@ H5::DataType getH5TypeFromCpp();
  *H5::Group or H5::DataSet, maybe this could be merged in future! 
  *
  */
-// template<class T>
-// void readAttrFromH5(H5::Group g, const string &attr_name, T &output_buffer);
-// template<class T>
-// void readAttrFromH5(H5::DataSet g, const string &attr_name, T &output_buffer);
 
-template<class U, class T>
-void readAttrFromH5(U &g, const string &attr_name, T &output_buffer);
+//template<class U, class T>
+//void readAttrFromH5(U &g, const string &attr_name, T &output_buffer);
+
+#if H5_VERS_MINOR > 9
+template<class T>
+void readAttrFromH5(H5::H5Object &g, const string &attr_name, T &output_buffer);
+#else //#if H5_VERS_MINOR > 9
+template<class T>
+void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer);
+#endif //#if H5_VERS_MINOR > 9
 
 /** @brief
  * write attributes to Group or DataSet
  */
-template <class U, class T>
-void writeAttrToH5(U &h, const string &attr_name,  const T &value);
-
-// void writeAttrToH5(H5::Group h, const string &attr_name,  const Int6 &value);
-// void writeAttrToH5(H5::Group h, const string &attr_name,  const Int3 &value);
-// void writeAttrToH5(H5::Group h, const string &attr_name,  const int &value);
-// void writeAttrToH5(H5::Group h, const string &attr_name,  const Float3 &value);
-// void writeAttrToH5(H5::Group h, const string &attr_name,  const float &value);
-// void writeAttrToH5(H5::Group h, const string &attr_name,  const Double3 &value);
-// void writeAttrToH5(H5::Group h, const string &attr_name,  const double &value);
-// void writeAttrToH5(H5::Group h, const string &attr_name,  const string &value);
-// void writeAttrToH5(H5::Group h, const string &attr_name,  const Bool3 &value);
-// void writeAttrToH5(H5::Group h, const string &attr_name,  const bool &value);
-// /** @brief
-//  * write attributes to DataSet 
-//  */
-// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Int6 &value);
-// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Int3 &value);
-// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const int &value);
-// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Float3 &value);
-// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const float &value);
-// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Double3 &value);
-// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const double &value);
-// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const string &value);
-// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const Bool3 &value);
-// void writeAttrToH5(H5::DataSet h, const string &attr_name,  const bool &value);
-
+#if H5_VERS_MINOR > 9
+template <class T>
+void writeAttrToH5(H5::H5Object &h, const string &attr_name,  const T &value);
+#else //#if H5_VERS_MINOR > 9
+template <class T>
+void writeAttrToH5(H5::H5Location &h, const string &attr_name,  const T &value);
+#endif //#if H5_VERS_MINOR > 9
 
 
 template<class T>

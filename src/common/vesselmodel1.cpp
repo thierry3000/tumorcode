@@ -714,62 +714,65 @@ void Model::CollapseVessels()
       }
 #endif
       //else{// the stuff mw implemented 
-	if ((bool)params.bShearStressControlledDilatationAndRadiusDependentCollapse)
+      if ((bool)params.bShearStressControlledDilatationAndRadiusDependentCollapse)
+      {
+	//do not consider sprouts here, v->timeSprout initialized by -1
+	if( v->timeSprout>=0 ) continue;
+  //printf("params.bShearStressControlledDilatationAndRadiusDependentCollapse activated\n");
+	//if to small or not circulated --> kill
+	if (v->reference_r<params.radMin || !v->IsCirculated())
 	{
-	  //do not consider sprouts here, v->timeSprout initialized by -1
-	  if( v->timeSprout>=0 ) continue;
-    //printf("params.bShearStressControlledDilatationAndRadiusDependentCollapse activated\n");
-	  //if to small or not circulated --> kill
-	  if (v->reference_r<params.radMin || !v->IsCirculated())
+	  //walk along the vessel until its length is reached
+	  for(int i=0; i<v->len-1 && !bKill; ++i)
 	  {
-	    //walk along the vessel until its length is reached
-	    for(int i=0; i<v->len-1 && !bKill; ++i)
-	    {
-	      //get random between 0 and 1
-	      double r = rnd.Get01();
-        //printf("r: %f, params.probCollapse: %f, v->reference_r: %f, params.radMin: %f\n", r, params.probCollapse, v->reference_r, params.radMin);
-	      // sometimes we kill
-	      bKill |= r<params.probCollapse;//bKill = bKill | r<params.probCollapse
-	    }
+	    //get random between 0 and 1
+	    double r = rnd.Get01();
+      //printf("r: %f, params.probCollapse: %f, v->reference_r: %f, params.radMin: %f\n", r, params.probCollapse, v->reference_r, params.radMin);
+	    // sometimes we kill
+	    bKill |= r<params.probCollapse;//bKill = bKill | r<params.probCollapse
 	  }
 	}
-	else
-	{
-	  //do not kill sprouts
-	  if( v->timeSprout>=0 ) continue;
-	  //do not kill well established vessels
-	  if( v->maturation>params.maturation_crit ) continue;
+      }
+      else
+      {
+	//do not kill sprouts
+	if( v->timeSprout>=0 ) 
+	  continue;
+	//do not kill well established vessels
+	if( v->maturation>params.maturation_crit ) 
+	  continue;
 // 	  std::printf("v->timeSprout: %f \n",v->timeSprout);
 // 	  std::printf("v->maturation: %f \n",v->maturation);
 // 	  std::printf("params.maturation_crit: %f \n",params.maturation_crit);
-	  // get pos of node A
-	  Int3 pos = v->LPosA();
-	  // while the vessel has a length; pos = pos of neigbor in direction
-	  for( int i=0; i<v->len-1 && !bKill; ++i, pos=Ld().NbLattice(pos,v->dir) )
+	// get pos of node A
+	Int3 pos = v->LPosA();
+	// while the vessel has a length; pos = pos of neigbor in direction
+	for( int i=0; i<v->len-1 && !bKill; ++i, pos=Ld().NbLattice(pos,v->dir) )
+	{
+	  //role the dice
+	  double r = rnd.Get01();
+	  if(!v->IsCirculated())
 	  {
-	    //role the dice
-	    double r = rnd.Get01();
-	    if(!v->IsCirculated())
-	    {
-	      //role the dice, sometimes this vessel will be killed here
-	      bKill |= r<params.probCollapse;
-	    }
-	    else
-	    {
-	      //even if it is circulated it may be killed here
-	      double factor_fc = StabilityAmountDueToShearStress(v);  //returns 1. if shearforce is above threshold or zero else
-        // inline T Lerp( U x, const T &a, const T &b ) {  return T((1.0-x)*a + x*b); }
-        // b=0, 
-        // if factor_fc = 1 --> pcoll = 0
-        // if factor_fc = 0 --> pcoll = params.probCollapse
-	      double pcoll = Lerp<double>( factor_fc, params.probCollapse, 0 );
-	      //std::printf("pcoll: %f\n",pcoll);
-	      bKill |= r<pcoll;
-	    }
+	    //role the dice, sometimes this vessel will be killed here
+	    bKill |= r<params.probCollapse;
+	  }
+	  else
+	  {
+	    //even if it is circulated it may be killed here
+	    double factor_fc = StabilityAmountDueToShearStress(v);  //returns 1. if shearforce is above threshold or zero else
+      // inline T Lerp( U x, const T &a, const T &b ) {  return T((1.0-x)*a + x*b); }
+      // b=0, 
+      // if factor_fc = 1 --> pcoll = 0
+      // if factor_fc = 0 --> pcoll = params.probCollapse
+	    double pcoll = Lerp<double>( factor_fc, params.probCollapse, 0 );
+	    //std::printf("pcoll: %f\n",pcoll);
+	    bKill |= r<pcoll;
 	  }
 	}
+      }
      // }
-      if(bKill) th_toKill.push_back(v);
+      if(bKill) 
+	th_toKill.push_back(v);
     }
     //parallel kill ;-)
     mutex.lock();

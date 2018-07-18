@@ -42,13 +42,19 @@ void run_vesselgen(const py::str &param_info_str)
   ptree pt_params = convertInfoStr(param_info_str, ptree());
   boost::mutex vesselgen_lock;
 #ifdef EPETRA_MPI
-    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    std::cout << "EPETRA_MPI flag is set in run_vesselgen!\n" << std::endl;
     int mpi_is_initialized = 0;
     int prov;
     MPI_Initialized(&mpi_is_initialized);
     if (!mpi_is_initialized)
+    {
       //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
       MPI_Init_thread(0, NULL, 1,&prov);
+#ifndef NDEBUG
+      std::cout << "MPI_Init_thread successfull" << std::endl;
+#endif
+    }
+    
 #endif
   try{
     boost::mutex::scoped_lock lock(vesselgen_lock);

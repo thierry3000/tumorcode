@@ -43,8 +43,10 @@ dstdir = os.getcwd()
 
 #note: according to doeme et al. the tumor radius growth should be around 0.7 mu m / h
 
+import krebsjobs
 import krebsjobs.parameters.parameterSetsMTS as parameterSets
 from krebsjobs.parameters import parameterSetsO2
+
 #from submitAdaption import create_auto_dicts
 
 from krebsutils import typelist
@@ -75,45 +77,9 @@ def MakeVesselFilenamePart(fn):
   return name
 
 
-def PrepareConfigurationForSubmission(vessel_fn, name, prepend, config_):
-  if vessel_fn is not None: 
-    dstdir = os.getcwd()  
-    c = deepcopy(config_)
-    vessel_fn_part = MakeVesselFilenamePart(vessel_fn)
-    out_fn = join(dstdir, '%s-%s-%s' % (prepend,vessel_fn_part, name))
-    print 'generating tumor run with'
-    print '  vessel:', vessel_fn
-    print '  output:', out_fn
-    print ' paramset:', name
-    c['fn_out'] = out_fn
-    c['fn_vessel'] = vessel_fn
-    c['paramset_name'] = name
-    name = splitext(basename(out_fn))[0]
-  else:
-    dstdir = os.getcwd()  
-    c = deepcopy(config_)
-    #vessel_fn_part = MakeVesselFilenamePart(vessel_fn)
-    out_fn = join(dstdir, '%s-%s.h5' % (prepend,name))
-    print 'generating tumor run no vessels'
-    print '  output:', out_fn
-    print ' paramset:', name
-    c['fn_out'] = out_fn
-    c['paramset_name'] = name
-    name = splitext(basename(out_fn))[0]
-  return name, c
-  
-#def worker_on_client(fn, grp_pattern, tumParams, num_threads):
-#  print('Fake tum on %s / %s / param: %s' % (fn, grp_pattern, tumParams['name']))
-#  h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
-#  krebsutils.set_num_threads(num_threads)
-#  
-#  fake_tum_mts_refs = krebs.tumors.run_faketum_mts(fn, grp_pattern, tumParams, o2params)
-#  
-#  h5files.closeall() # just to be sure
-
 def run(vessel_fn, name, paramSet, mem, days):
   
-  name, paramSet = PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTumMTS', paramSet)
+  name, paramSet = krebsjobs.PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTumMTS', paramSet)
   configstr = dicttoinfo(paramSet)
   config_file_name = '%s.info' % paramSet['fn_out']
   with open(config_file_name, 'w') as f:

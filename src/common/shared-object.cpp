@@ -84,7 +84,7 @@ TumorTypes determineTumorType(boost::optional<H5::Group> tumorgroup)
         tumortype = TumorTypes::BULKTISSUE;
       }
     }
-    catch( H5::AttributeIException not_found_error)
+    catch( H5::AttributeIException &not_found_error)
     {
       cout << " Attribute TYPE not found" << endl;
     }
@@ -513,20 +513,20 @@ int FindDistanceToJunction( const Vessel* vstart, int posOnVess, const VesselNod
 }
 
 
-std::unique_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params)
+std::shared_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params)
 {
   float grid_scale = params.get<float>("scale subdivide", -1.);
   bool filter_uncirculated = params.get<bool>("filter", false);
   
   
-  std::unique_ptr<VesselList3d> vl;
+  std::shared_ptr<VesselList3d> vl;
   typedef polymorphic_latticedata::LatticeData LatticeData;
   string type_of_vessel_network;
   try
   {
     readAttrFromH5(vesselgroup, string("CLASS"), type_of_vessel_network);
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
@@ -815,7 +815,7 @@ void WriteVesselList3d(const VesselList3d &vl, H5::Group &vesselgroup, const ptr
       press = vesselgroup.openDataSet(string("nodes/pressure"));
       writeAttrToH5(press,string("MODE"), string("linear"));
     }
-    catch(H5::Exception e)
+    catch(H5::Exception &e)
     {
       cout<< "bad error" <<endl;
       e.printErrorStack();
@@ -1529,7 +1529,7 @@ void isVesselListGood(VesselList3d &vl)
 #ifndef NDEBUG
       cout<<format("borders of vessellist not so nice!\n");
 #endif
-      exit;
+      exit(EXIT_FAILURE);
     }
   }
 }

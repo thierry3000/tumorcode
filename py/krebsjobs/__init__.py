@@ -41,6 +41,10 @@ def MakeVesselFilenamePart(fn):
   return name
 
 def PrepareConfigurationForSubmission(vessel_fn, name, prepend, config_):
+  ''' this is not properly tested!!! '''
+  config_['input_file_name'] = vessel_fn
+  config_['input_group_path'] = 'vessels'
+  #parameters['output_file_name']='o2_' + fnbase+'_'+parameters_name+'.h5'
   if vessel_fn is not None: 
     dstdir = os.getcwd()  
     c = deepcopy(config_)

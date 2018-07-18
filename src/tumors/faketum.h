@@ -38,15 +38,16 @@ struct Parameters
 {
   double out_intervall, tend;
   double dt;
+  double latest_executed_timepoint;
   
+  double apply_adaption_intervall;
   string message;
-  string fn_out, fn_vessel, vesselfile_message;
+  string fn_out, fn_vessel, vessel_path, vesselfile_message;
   string paramset_name;
   int vesselfile_ensemble_index;
   double rGf;
   double tumor_radius, tumor_speed;
   double stopping_radius_fraction; // actual-stopping-radius = 0.5*system-length-along-the-longest-dimension * stopping_radius_fraction
-  int num_threads;
   int tissuePressureDistribution;
   double tissuePressureWidth;
   double tissuePressureCenterFraction;
@@ -63,14 +64,17 @@ struct Parameters
 };
 struct FakeTumorSim : public boost::noncopyable
 {
-  std::unique_ptr<VesselList3d> vl;
+  std::shared_ptr<VesselList3d> vl;
   VesselModel1::Model vessel_model;
 
   Parameters params;
+  SystemParameters mySystemParameters;
   ptree all_pt_params;
 
   double tumor_radius;
   double time;
+  double next_output_time;
+  double next_adaption_time;
   int num_iteration;
   int output_num;
 
@@ -85,7 +89,7 @@ struct FakeTumorSim : public boost::noncopyable
 //   int run(const ptree &params);
   int run();
   void doStep(double dt);
-  void writeOutput();
+  void writeOutput(bool doPermanentSafe);
 };
 }//end FakeTum
 #endif //_FAKETUM_H_

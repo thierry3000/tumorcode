@@ -164,7 +164,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     pt.put("scale override", params.override_scale);
     //pt.put("filter", true); // does not help, is also filtered in oxygen model
     H5::Group h5_vessels = readInfile.openGroup("/vessels");
-    std::unique_ptr<VesselList3d> vl = ReadVesselList3d(h5_vessels,pt);
+    std::shared_ptr<VesselList3d> vl = ReadVesselList3d(h5_vessels,pt);
     // adjust vessel list ld
     const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
     vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
@@ -182,7 +182,8 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     //params.vesselfile_message = file.openGroup("/parameters").attrs().get<string>("MESSAGE");
     //params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
     
-    state.vessels.reset(vl.release());
+    //state.vessels.reset(vl.release());
+    //state.vessels.reset(vl.reset());
     last_vessels_checksum = -1;
   }
 
@@ -651,7 +652,7 @@ void BulkTissue::NewTumorSim::writeOutput(double time)
     ld_group_tum = f.openGroup("field_ld");
     has_grp = true;
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     //in the first iteration, there is no group yet!
     ld_group_tum = f.createGroup("field_ld");

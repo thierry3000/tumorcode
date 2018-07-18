@@ -797,7 +797,7 @@ void runSimpleSteppersTest(const std::string &fn_out)
   {
     root = f.openGroup("/");
   }
-  catch(H5::Exception e)
+  catch(H5::Exception &e)
   {
     e.printErrorStack();
   }

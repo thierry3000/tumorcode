@@ -40,17 +40,17 @@ void WriteHdfPtree(H5::Group &f, const ptree &pt, HdfWritePtreeAs storage_mode)
     {
       if (storage_mode == HDF_WRITE_PTREE_AS_ATTRIBUTE)
       {
-// 	std::cout << f.getFileName() << std::endl;
-// 	std::cout << "print k: "<< k << "v: " << v.data() << std::endl; 
-	writeAttrToH5(f, k, v.data());
+      // 	std::cout << f.getFileName() << std::endl;
+      // 	std::cout << "print k: "<< k << "v: " << v.data() << std::endl; 
+        writeAttrToH5(f, k, v.data());
       }
       else
       {
-	DynArray<string> this_data;
-	for( auto entry: v.data())
-	{
-	  this_data.push_back(&entry);
-	}
+        DynArray<string> this_data;
+        for( auto entry: v.data())
+        {
+          this_data.push_back(&entry);
+        }
 	writeDataSetToGroup(f,k, this_data);
       }
 //         f.attrs().set(k, v.data());
@@ -65,4 +65,95 @@ void WriteHdfPtree(H5::Group &f, const ptree &pt, HdfWritePtreeAs storage_mode)
       WriteHdfPtree(h5_group, v, storage_mode);
     }
   }
+}
+
+void printObjectName(const H5::Group &g)
+{
+  try
+  {
+    std::cout << g.getObjName() << std::endl;
+  }
+  catch(H5::Exception &e)
+  {
+    e.printError();
+  }
+}
+
+void printObjectName( H5::H5Location &g, const H5std_string attr_name, void* operator_data)
+{
+  try
+  {
+    std::cout << attr_name << std::endl;
+  }
+  catch(H5::Exception &e)
+  {
+    e.printError();
+  }
+}
+
+#if H5_VERS_MINOR > 9
+void add_all_attributes_to_ptree( H5::H5Object &g, const H5std_string attr_name, void* p_to_user_data)
+{
+  boost::property_tree::ptree *pt = static_cast<boost::property_tree::ptree *>(p_to_user_data);
+  try
+  {
+    std::string output_buffer; // I hope all ptree values are also strings
+    readAttrFromH5(g, attr_name, output_buffer);
+#ifndef NDEBUG
+    std::cout << "adding " << attr_name << " : " << output_buffer << " to ptree." << std::endl;
+#endif
+    pt->put(attr_name, output_buffer);
+  }
+  catch(H5::Exception &e)
+  {
+    e.printError();
+  }
+}
+#else // H5_VERS_MINOR > 9
+void add_all_attributes_to_ptree( H5::H5Location &g, const H5std_string attr_name, void* p_to_user_data)
+{
+  boost::property_tree::ptree *pt = static_cast<boost::property_tree::ptree *>(p_to_user_data);
+  try
+  {
+    std::string output_buffer; // I hope all ptree values are also strings
+    readAttrFromH5(g, attr_name, output_buffer);
+#ifndef NDEBUG
+    std::cout << "adding " << attr_name << " : " << output_buffer << " to ptree." << std::endl;
+#endif
+    pt->put(attr_name, output_buffer);
+  }
+  catch(H5::Exception &e)
+  {
+    e.printError();
+  }
+}
+#endif // H5_VERS_MINOR > 9
+
+
+void ReadHdfPtree(boost::property_tree::ptree &pt, H5::Group &f, HdfWritePtreeAs storage_mode)
+{
+#ifndef NDEBUG
+  try
+  {
+    std::cout << "read: " << f.getFileName() << std::endl;
+    std::cout << "at:   " << f.getObjName() << std::endl;
+  }
+  catch(H5::Exception &e)
+  {
+    e.printError();
+  }
+#endif
+
+  f.iterateAttrs(&add_all_attributes_to_ptree, NULL, &pt);
+  
+#ifndef NDEBUG
+  std::cout << "content of ptree: " << std::endl;
+  for( ptree::const_iterator it = pt.begin(); it !=pt.end(); ++it)
+  {
+    // get all values as string. There is no other way, because there is no type information stored in ptree
+    const string k = it->first;
+    const ptree &v = it->second;
+    std::cout << "key: content " << k << " : " << v.data() << std::endl; 
+  }
+#endif
 }
