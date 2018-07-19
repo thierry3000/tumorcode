@@ -184,12 +184,14 @@ void DoOutput(H5::Group &root,
 //   {
 //     e.printErrorStack();
 //   }
-    
-  DynArray<uchar> tmp2(vl.GetNCount());
+  //07.19.2018 maybe stack allocation is not enought --> I switch to heap
+  //DynArray<uchar> tmp2(vl.GetNCount());
+  DynArray<uchar> *tmp2 = new DynArray<uchar>(vl.GetNCount());
+  //cout<<"allowcated tmp2" << endl;
   //fill tmp with flags
   for (int i=0; i<vl.GetNCount(); ++i)
   {
-    tmp2[i] = vl.GetNode(i)->flags;
+    (*tmp2)[i] = vl.GetNode(i)->flags;
   }
 
   H5::Group h5_nodes;
@@ -212,14 +214,19 @@ void DoOutput(H5::Group &root,
   catch( H5::Exception &e)
   {
     //only write, if it is not there!
-    writeDataSetToGroup(h5_nodes, "nodeflags", tmp2);
+    writeDataSetToGroup(h5_nodes, "nodeflags", *tmp2);
     e.dontPrint();
   }
+  delete tmp2;
+  //cout<<"deleted tmp2" << endl;
   
-  DynArray<int> tmp3(vl.GetECount());
+  //DynArray<int> tmp3(vl.GetECount());
+  DynArray<int> *tmp3 = new DynArray<int>(vl.GetECount());
+  //cout<<"allowcated tmp3" << endl;
+  
   for (int i=0; i<vl.GetECount(); ++i)
   {
-    tmp3[i] = vl.GetEdge(i)->timeSprout;
+    (*tmp3)[i] = vl.GetEdge(i)->timeSprout;
   }
   H5::Group h5_edges;
   try
@@ -232,9 +239,10 @@ void DoOutput(H5::Group &root,
     e.dontPrint();
   }
     
-  writeDataSetToGroup(h5_edges, string("level"), tmp3);
-    
-    
+  writeDataSetToGroup(h5_edges, string("level"), *tmp3);
+  delete tmp3;
+  //cout<<"deleted tmp3" << endl;
+  
   MemUsage memusage = GetMemoryUsage();
   writeAttrToH5(root, string("mem_vsize"),(int)memusage.vmem_peak );
   writeAttrToH5(root, string("mem_rss"),(int)memusage.rss_peak );
@@ -258,28 +266,36 @@ void DoOutput(H5::Group &root,
   writeAttrToH5(g, string("ROOT_V_FLOW"), vflow);
   writeAttrToH5(g, string("ROOT_V_COUNT"), vrootcnt);
   
-  //cout<< "Error 5 DoOutput" << std::endl;
-  
   // roots
   int N = tree_roots.size();
-  DynArray<int64> pos(N);
-  DynArray<int> len(N);
-  DynArray<char> dir(N);
-  DynArray<uchar> flags(N);
+//   DynArray<int64> pos(N);
+//   DynArray<int> len(N);
+//   DynArray<char> dir(N);
+//   DynArray<uchar> flags(N);
+  
+  DynArray<int64> *pos = new DynArray<int64>(N);
+  DynArray<int> *len = new DynArray<int>(N);
+  DynArray<char> *dir = new DynArray<char>(N);
+  DynArray<uchar> *flags = new DynArray<uchar>(N);
   auto it = tree_roots.begin();
   for (int i=0; i<N; ++i, ++it)
   {
     const TreeRoot &e = it->second;
-    pos[i] = ld.LatticeToSite(e.p);
-    len[i] = e.len;
-    dir[i] = e.dir;
-    flags[i] = e.flags;
+    (*pos)[i] = ld.LatticeToSite(e.p);
+    (*len)[i] = e.len;
+    (*dir)[i] = e.dir;
+    (*flags)[i] = e.flags;
   }
   H5::Group gg = g.createGroup("roots");
-  writeDataSetToGroup(gg, string("lattice_pos"), pos);
-  writeDataSetToGroup(gg, string("flags"), flags);
-  writeDataSetToGroup(gg, string("len"), len);
-  writeDataSetToGroup(gg, string("dir"), dir);
+  writeDataSetToGroup(gg, string("lattice_pos"), *pos);
+  writeDataSetToGroup(gg, string("flags"), *flags);
+  writeDataSetToGroup(gg, string("len"), *len);
+  writeDataSetToGroup(gg, string("dir"), *dir);
+  delete pos;
+  delete len;
+  delete dir;
+  delete flags;
+  cout<< "Error 5 DoOutput" << std::endl;
 }
 
 
@@ -302,13 +318,15 @@ void DoOutput(H5::H5File &file,
         
 #if GFFIELD_ENABLE
   {
-    DynArray<float> tmp;
-    grower.GetGfAtNodes(tmp);
+    //DynArray<float> tmp;
+    DynArray<float> *tmp = new DynArray<float>(vl.GetNCount());
+    grower.GetGfAtNodes(*tmp);
     //h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
     //h5::create_dataset(root.open_group("vessels/nodes"), "gf", tmp);
     H5::Group h5_nodes= root.openGroup("vessels/nodes");
-    writeDataSetToGroup(h5_nodes, string("gf"), tmp);
-    tmp.clear();
+    writeDataSetToGroup(h5_nodes, string("gf"), *tmp);
+    //tmp.clear();
+    delete tmp;
   }
 #endif
   
