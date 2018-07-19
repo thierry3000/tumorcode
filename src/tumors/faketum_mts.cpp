@@ -449,121 +449,120 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     // first one is negative in time, so we are preparing
     //maybe we need the output intervalls later again?
     //if (time >= next_output_time - params.dt )
+    
+    if( ! params.useConstO2)
     {
-      if( ! params.useConstO2)
-      {
-        /* right now, the o2 simulation is called at every output time */
+      /* right now, the o2 simulation is called at every output time */
 #ifdef W_timing
-        currentTiming.begin_o2 = std::chrono::steady_clock::now();
+      currentTiming.begin_o2 = std::chrono::steady_clock::now();
 #endif
-       /* O2 stuff is initialized
-        * NOTE: size of po2Store is set here
-        */
-        o2_sim.vl = vl;
-        o2_sim.init(bfparams,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
-        cout << "\nInit O2 completed" << endl;
-        o2_sim.run();
-        cout << "\n mts run finished" << endl;
-        //we store the results, to achive quicker convergence in consecutive runs
-        state.previous_po2field = o2_sim.getPo2field();
-        cout << "\nAccquired po2Field  completed" << endl;
-        state.previous_po2vessels = o2_sim.getVesselPO2Storrage();
-        cout << "\nDetailed O2 completed" << endl;
-#ifdef W_timing
-        currentTiming.end_o2 = std::chrono::steady_clock::now();
-        currentTiming.time_diff = currentTiming.end_o2 - currentTiming.begin_o2;
-        currentTiming.run_o2 = currentTiming.run_o2 + currentTiming.time_diff.count();
-#endif
-      }
-
-#ifdef W_timing
-      currentTiming.begin_ann = std::chrono::steady_clock::now();
-#endif
-      /** 
-       * vessel o2 data is feed back to the cell,
-       * ALSO
-       * the milotti vessel structure is initialize with the current configuration 
-       * of the tumorcode vessel list
-       */
-      findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
-      
-      if (time >= next_output_time - params.dt * 0.1)
-      {
-        //this happens only for fixed instances of time
-        lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
-        next_output_time += params.out_intervall;
-      }
-      //for a rerun we need to access the latest instant of time
-      params.latest_executed_timepoint = time;
-      writeOutput(false);
-    
-      //lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
-      currentTiming.reset();
-      next_output_time += params.out_intervall;
-
-#ifndef NDEBUG
-      std::cout << " findNearestVessel finished " << std::endl;std::cout.flush();
-#endif
-#ifdef W_timing
-      currentTiming.end_ann = std::chrono::steady_clock::now();
-      currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
-      currentTiming.run_ann = currentTiming.run_ann + currentTiming.time_diff.count();
-#endif
-      /**
-       * milotti vessel structure is initialized with tumorcodes vessels
-       */
-      /* increment tumor time */
-      time += params.dt;
-      
-      /* propergate cells in time until current fake tumor time */
-      cout << boost::format("advance milotti until: %f\n") % time;
-      cout.flush();
-#ifdef W_timing
-      currentTiming.begin_doMilottiStep = std::chrono::steady_clock::now();
-#endif
-      doMilottiStep();
-#ifdef W_timing
-      currentTiming.end_doMilottiStep = std::chrono::steady_clock::now();
-      currentTiming.time_diff = currentTiming.end_doMilottiStep-currentTiming.begin_doMilottiStep;
-      currentTiming.run_doMilottiStep = currentTiming.run_doMilottiStep + currentTiming.time_diff.count();
-#endif
-
-      
-    
-      if (time > params.tend) 
-      {
-        std::cout << "stopped because time limit" << std::endl;
-        break;
-      }
-    
-      /* stop if tumor reaches certain fraction of volume */
-      double size_limit = 0.5*maxCoeff(Size(vl->Ld().GetWorldBox())) * params.stopping_radius_fraction; 
-      //cout << format("size_limit = %f vs tumor_radius = %f\n") % size_limit % tumor_radius;
-      if (tumor_radius >  size_limit) 
-      {
-        std::cout << "stopped because of size limit" << std::endl;
-        break;
-      }
-
-      /**
-      * do a vessel model remodeling step 
+      /* O2 stuff is initialized
+      * NOTE: size of po2Store is set here
       */
+      o2_sim.vl = vl;
+      o2_sim.init(bfparams,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
+      cout << "\nInit O2 completed" << endl;
+      o2_sim.run();
+      cout << "\n mts run finished" << endl;
+      //we store the results, to achive quicker convergence in consecutive runs
+      state.previous_po2field = o2_sim.getPo2field();
+      cout << "\nAccquired po2Field  completed" << endl;
+      state.previous_po2vessels = o2_sim.getVesselPO2Storrage();
+      cout << "\nDetailed O2 completed" << endl;
+#ifdef W_timing
+      currentTiming.end_o2 = std::chrono::steady_clock::now();
+      currentTiming.time_diff = currentTiming.end_o2 - currentTiming.begin_o2;
+      currentTiming.run_o2 = currentTiming.run_o2 + currentTiming.time_diff.count();
+#endif
+    }
+
+#ifdef W_timing
+    currentTiming.begin_ann = std::chrono::steady_clock::now();
+#endif
+    /** 
+      * vessel o2 data is feed back to the cell,
+      * ALSO
+      * the milotti vessel structure is initialize with the current configuration 
+      * of the tumorcode vessel list
+      */
+    findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
+    
+    if (time >= next_output_time - params.dt*0.1)
+    {
+      //this happens only for fixed instances of time
+      lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
+      next_output_time += params.out_intervall;
+    }
+    //for a rerun we need to access the latest instant of time
+    params.latest_executed_timepoint = time;
+    writeOutput(false);
+  
+    //lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
+    currentTiming.reset();
+
 #ifndef NDEBUG
-      cout << boost::format("start vessel remodel step! \n");
+    std::cout << " findNearestVessel finished " << std::endl;std::cout.flush();
+#endif
+#ifdef W_timing
+    currentTiming.end_ann = std::chrono::steady_clock::now();
+    currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
+    currentTiming.run_ann = currentTiming.run_ann + currentTiming.time_diff.count();
+#endif
+    /**
+      * milotti vessel structure is initialized with tumorcodes vessels
+      */
+    /* increment tumor time */
+    time += params.dt;
+    
+    /* propergate cells in time until current fake tumor time */
+    cout << boost::format("advance milotti until: %f\n") % time;
+    cout.flush();
+#ifdef W_timing
+    currentTiming.begin_doMilottiStep = std::chrono::steady_clock::now();
+#endif
+    doMilottiStep();
+#ifdef W_timing
+    currentTiming.end_doMilottiStep = std::chrono::steady_clock::now();
+    currentTiming.time_diff = currentTiming.end_doMilottiStep-currentTiming.begin_doMilottiStep;
+    currentTiming.run_doMilottiStep = currentTiming.run_doMilottiStep + currentTiming.time_diff.count();
+#endif
+
+    
+  
+    if (time > params.tend) 
+    {
+      std::cout << "stopped because time limit" << std::endl;
+      break;
+    }
+  
+    /* stop if tumor reaches certain fraction of volume */
+    double size_limit = 0.5*maxCoeff(Size(vl->Ld().GetWorldBox())) * params.stopping_radius_fraction; 
+    //cout << format("size_limit = %f vs tumor_radius = %f\n") % size_limit % tumor_radius;
+    if (tumor_radius >  size_limit) 
+    {
+      std::cout << "stopped because of size limit" << std::endl;
+      break;
+    }
+
+    /**
+    * do a vessel model remodeling step 
+    */
+#ifndef NDEBUG
+    cout << boost::format("start vessel remodel step! \n");
 #endif
 
 #ifdef W_timing
-      currentTiming.begin_doStep = std::chrono::steady_clock::now();
+    currentTiming.begin_doStep = std::chrono::steady_clock::now();
 #endif
-      doStep(params.dt);
+    doStep(params.dt);
 #ifdef W_timing
-      currentTiming.end_doStep = std::chrono::steady_clock::now();
-      currentTiming.time_diff = currentTiming.end_doStep-currentTiming.begin_doStep;
-      currentTiming.run_doStep = currentTiming.run_doStep + currentTiming.time_diff.count();
+    currentTiming.end_doStep = std::chrono::steady_clock::now();
+    currentTiming.time_diff = currentTiming.end_doStep-currentTiming.begin_doStep;
+    currentTiming.run_doStep = currentTiming.run_doStep + currentTiming.time_diff.count();
 #endif
-    
-      cout << boost::format("finished vessel remodel step! \n");
-    }
+  
+    cout << boost::format("finished vessel remodel step! \n");
+    ++output_num;
     ++num_iteration;
   }
 
@@ -621,7 +620,8 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   H5::H5File f_out;
-  H5::Group root, gout, h5_tum, h5_cells_out, h5_o2_last_state, h5_ld_last_state, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup;
+  H5::Group root, gout, h5_tum, h5_cells_out, h5_o2_last_state, h5_ld_last_state, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup,
+  h5_vbl,h5_memory;
   
   std::string tumOutName = "nothing";
   try
@@ -677,12 +677,12 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
     if( !doPermanentSafe)
     {
       root.unlink("last_state");
+      //the flush deletes the unlinked object immediatelly
+      root.flush(H5F_SCOPE_LOCAL);
       gout = root.createGroup("last_state");
       writeAttrToH5(gout, "CURRENT_RERUN_NUMBER", mySystemParameters.reRunNumber);
       //data needed for rerun:
       //   lattice, detailed o2, fieldGf, fieldO2Consumption
-      WriteScalarField(gout, string("fieldGf"), state.gffield, grid.ld, root.openGroup("field_ld"));
-      WriteScalarField(gout, string("fieldO2Consumption"), state.cell_O2_consumption, grid.ld, root.openGroup("field_ld"));
       
     }
     else
@@ -690,52 +690,57 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       tumOutName = str(format("out%04i") % output_num);
       gout = root.createGroup(tumOutName);
     }
+    
+    h5_vbl = gout.createGroup("vbl");
+    h5_current_vessels = gout.createGroup("vessels");
+    h5_tum = gout.createGroup("tumor");
+    
+    if( doPermanentSafe)
+    {
+      /* write timing */
+      h5_timing = gout.createGroup("timing");
+      ///// tumorcode
+      writeAttrToH5(h5_timing, string("run_init_o2"), currentTiming.run_init_o2);
+      writeAttrToH5(h5_timing, string("run_o2"), currentTiming.run_o2);
+      writeAttrToH5(h5_timing, string("run_ann"), currentTiming.run_ann);
+      writeAttrToH5(h5_timing, string("run_doStep"), currentTiming.run_doStep);
+      writeAttrToH5(h5_timing, string("run_doMilottiStep"), currentTiming.run_doMilottiStep);
+      ///// vbl
+      writeAttrToH5(h5_timing, string("run_vbl_diff"), tumorcode_pointer_to_currentCellsSystem->myTiming.diff);
+      writeAttrToH5(h5_timing, string("run_vbl_diff_loop_1"), tumorcode_pointer_to_currentCellsSystem->myTiming.diff_loop_1);
+      writeAttrToH5(h5_timing, string("run_vbl_diff_loop_2"), tumorcode_pointer_to_currentCellsSystem->myTiming.diff_loop_2);
+      writeAttrToH5(h5_timing, string("run_vbl_diff_loop_3"), tumorcode_pointer_to_currentCellsSystem->myTiming.diff_loop_3);
+      writeAttrToH5(h5_timing, string("run_vbl_dynamics"), tumorcode_pointer_to_currentCellsSystem->myTiming.dynamics);
+      writeAttrToH5(h5_timing, string("run_vbl_geometry"), tumorcode_pointer_to_currentCellsSystem->myTiming.geometry);
+      writeAttrToH5(h5_timing, string("run_vbl_cellEvents"), tumorcode_pointer_to_currentCellsSystem->myTiming.cellEvents);
+      writeAttrToH5(h5_timing, string("run_vbl_writeToFile"), tumorcode_pointer_to_currentCellsSystem->myTiming.writeToFile);
+      writeAttrToH5(h5_timing, string("run_vbl_bico_call"), tumorcode_pointer_to_currentCellsSystem->myTiming.bico_call);
+      writeAttrToH5(h5_timing, string("geometry_neighborhood"), tumorcode_pointer_to_currentCellsSystem->myTiming.geometry_neighborhood);
+      ///// global timing
+      const auto now = std::chrono::system_clock::now();
+      const auto epoch   = now.time_since_epoch();
+      const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+      writeAttrToH5(h5_timing, string("secondsSinceEpoch"), (int)seconds.count());
+      /* write memory */
+      h5_memory = gout.createGroup("memory");
+      MemUsage m = GetMemoryUsage_();
+      writeAttrToH5(h5_memory, string("vmem"), m.vmem);
+      writeAttrToH5(h5_memory, string("vmem_peak"), m.vmem_peak);
+      writeAttrToH5(h5_memory, string("rss"), m.rss);
+      writeAttrToH5(h5_memory, string("rss_peak"), m.rss_peak);
+      WriteHdfPtree(h5_vbl, tumorcode_pointer_to_currentCellsSystem->get_params().as_ptree());
+    }
+    
     writeAttrToH5(gout, string("time"), time);
-    writeAttrToH5(gout, string("OUTPUT_NUM"), output_num);
     writeAttrToH5(gout, string("OUTPUT_NUM"), output_num);
     writeAttrToH5(gout, string("NUM_ITERATION"), num_iteration);
     writeAttrToH5(gout, string("NEXT_OUTPUT_TIME"), next_output_time);
     writeAttrToH5(gout, string("NEXT_ADAPTION_TIME"), next_adaption_time);
     
-    
-    /* write timing */
-    h5_timing = gout.createGroup("timing");
-    ///// tumorcode
-    writeAttrToH5(h5_timing, string("run_init_o2"), currentTiming.run_init_o2);
-    writeAttrToH5(h5_timing, string("run_o2"), currentTiming.run_o2);
-    writeAttrToH5(h5_timing, string("run_ann"), currentTiming.run_ann);
-    writeAttrToH5(h5_timing, string("run_doStep"), currentTiming.run_doStep);
-    writeAttrToH5(h5_timing, string("run_doMilottiStep"), currentTiming.run_doMilottiStep);
-    ///// vbl
-    writeAttrToH5(h5_timing, string("run_vbl_diff"), tumorcode_pointer_to_currentCellsSystem->myTiming.diff);
-    writeAttrToH5(h5_timing, string("run_vbl_diff_loop_1"), tumorcode_pointer_to_currentCellsSystem->myTiming.diff_loop_1);
-    writeAttrToH5(h5_timing, string("run_vbl_diff_loop_2"), tumorcode_pointer_to_currentCellsSystem->myTiming.diff_loop_2);
-    writeAttrToH5(h5_timing, string("run_vbl_diff_loop_3"), tumorcode_pointer_to_currentCellsSystem->myTiming.diff_loop_3);
-    writeAttrToH5(h5_timing, string("run_vbl_dynamics"), tumorcode_pointer_to_currentCellsSystem->myTiming.dynamics);
-    writeAttrToH5(h5_timing, string("run_vbl_geometry"), tumorcode_pointer_to_currentCellsSystem->myTiming.geometry);
-    writeAttrToH5(h5_timing, string("run_vbl_cellEvents"), tumorcode_pointer_to_currentCellsSystem->myTiming.cellEvents);
-    writeAttrToH5(h5_timing, string("run_vbl_writeToFile"), tumorcode_pointer_to_currentCellsSystem->myTiming.writeToFile);
-    writeAttrToH5(h5_timing, string("run_vbl_bico_call"), tumorcode_pointer_to_currentCellsSystem->myTiming.bico_call);
-    writeAttrToH5(h5_timing, string("geometry_neighborhood"), tumorcode_pointer_to_currentCellsSystem->myTiming.geometry_neighborhood);
-    ///// global timing
-    const auto now = std::chrono::system_clock::now();
-    const auto epoch   = now.time_since_epoch();
-    const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(epoch);
-    writeAttrToH5(h5_timing, string("secondsSinceEpoch"), (int)seconds.count());
-    
-    H5::Group h5_memory = gout.createGroup("memory");
-    MemUsage m = GetMemoryUsage_();
-    writeAttrToH5(h5_memory, string("vmem"), m.vmem);
-    writeAttrToH5(h5_memory, string("vmem_peak"), m.vmem_peak);
-    writeAttrToH5(h5_memory, string("rss"), m.rss);
-    writeAttrToH5(h5_memory, string("rss_peak"), m.rss_peak);
-    
     /* writes the vessel list */
-    h5_current_vessels = gout.createGroup("vessels");
     WriteVesselList3d(*vl, h5_current_vessels);
-    /* write continuous fields */
-    h5_tum = gout.createGroup("tumor");
     
+    /* tumor information, might change in future? */
     writeAttrToH5(h5_tum, string("TYPE"), string("faketumor"));
     writeAttrToH5(h5_tum, string("TUMOR_RADIUS"), tumor_radius);
     // could be done, but since it is a sphere, you can easily calculate the tc_density from the radius
@@ -774,12 +779,14 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   {
     e.printErrorStack();
   }
-  
+  f_out.flush(H5F_SCOPE_LOCAL);
+  f_out.close();
   root.close();
   gout.close();
   h5_tum.close();
-  h5_o2_last_state.close();
   h5_cells_out.close();
+  h5_o2_last_state.close();
+  h5_ld_last_state.close();
   h5_parameters.close();
   h5_vessel_parameters.close();
   h5_system_parameters.close();
@@ -789,9 +796,8 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   h5_current_vessels.close();
   po2outputGroup.close();
   ldgroup.close();
-  h5_ld_last_state.close();
-  
-  f_out.close();
+  h5_vbl.close();
+  h5_memory.close();
   //++output_num;
   
   cout << format("files %s flushed and closed")  % params.fn_out << endl;

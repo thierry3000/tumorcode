@@ -133,6 +133,7 @@ void readAttrFromH5(H5::H5Object &g, const string &attr_name, T &output_buffer)
   }
   catch(H5::Exception &e)
   {
+    std::cout << "unable for read: " << attr_name << std::endl;
     e.printErrorStack();
   }
 }
@@ -150,6 +151,7 @@ void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer
   }
   catch(H5::Exception &e)
   {
+    std::cout << "unable for read: " << attr_name << std::endl;
     e.printErrorStack();
   }
 }
@@ -232,6 +234,7 @@ void readAttrFromH5<string>(H5::H5Object &g, const string &attr_name, string &ou
   }
   catch(H5::Exception &e)
   {
+    std::cout << "unable for read: " << attr_name << std::endl;
     e.printErrorStack();
   }
   output_buffer = strreadbuf;
@@ -259,6 +262,7 @@ void readAttrFromH5<string>(H5::H5Location &g, const string &attr_name, string &
   }
   catch(H5::Exception &e)
   {
+    std::cout << "unable for read: " << attr_name << std::endl;
     e.printErrorStack();
   }
   output_buffer = strreadbuf;
@@ -292,6 +296,7 @@ void writeAttrToH5(H5::H5Object &h, const string &attr_name,  const T &value)
   }
   catch(H5::Exception &e)
   {
+    std::cout << "unable for write: " << attr_name << std::endl;
     e.printErrorStack();
   }
   attr_out.write(thisType, &value);
@@ -323,6 +328,7 @@ void writeAttrToH5(H5::H5Location &h, const string &attr_name,  const T &value)
   }
   catch(H5::Exception &e)
   {
+    std::cout << "unable for write: " << attr_name << std::endl;
     e.printErrorStack();
   }
   attr_out.write(thisType, &value);
@@ -347,6 +353,7 @@ void writeAttrToH5<string>(H5::H5Object &h, const string &attr_name, const strin
   }
   catch(H5::Exception &e)
   {
+    std::cout << "unable for write: " << attr_name << std::endl;
     e.printErrorStack();
   }
 };

@@ -78,7 +78,7 @@ if(USE_MILOTTI_MTS)
   #target_link_libraries(tumors_ ANN)
 endif()
 
-set_target_properties(tumors_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+#set_target_properties(tumors_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 install(TARGETS tumors_ 
 	LIBRARY DESTINATION ${PYTHON_LIB_COMMON_INSTALL_DIR})

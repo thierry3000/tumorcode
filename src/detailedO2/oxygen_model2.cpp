@@ -1617,7 +1617,7 @@ void DetailedPO2Sim::init(
   // I try this hardcoded before do it with variables: read in po2field from previous iteration
   if(previous_po2field and previous_po2vessels)
   {
-    cout<<"works"<<endl;
+    cout<<"previous po2 computation found"<<endl;
     po2field.fill(*previous_po2field);
     /* 
       * po2vessel has size of vl.GetECount  --> that is the max index range

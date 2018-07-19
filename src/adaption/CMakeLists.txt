@@ -42,7 +42,7 @@ else()
   add_library(adaption_ SHARED python-adaption.cpp adaption_model2.cpp)
   target_link_libraries(adaption_ krebs_)
 endif()
-set_target_properties(adaption_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+#set_target_properties(adaption_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 install(TARGETS adaption_
 	LIBRARY DESTINATION ${PYTHON_LIB_COMMON_INSTALL_DIR})
