@@ -314,10 +314,10 @@ void DoOutput(H5::Group &root,
     e.printErrorStack();
     cout << "catch roots" << endl;
   }
-  writeDataSetToGroup(gg, string("lattice_pos"), *pos);
-  writeDataSetToGroup(gg, string("flags"), *flags);
-  writeDataSetToGroup(gg, string("len"), *len);
-  writeDataSetToGroup(gg, string("dir"), *dir);
+  writeDataSetToGroup(gg, string("lattice_pos"), pos);
+  writeDataSetToGroup(gg, string("flags"), flags);
+  writeDataSetToGroup(gg, string("len"), len);
+  writeDataSetToGroup(gg, string("dir"), dir);
   
   vesselgrp.close();
   h5_nodes.close();
