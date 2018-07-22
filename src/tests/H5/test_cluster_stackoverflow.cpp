@@ -1,5 +1,7 @@
 # include <iostream>
 //# include <H5Cpp.h> //independent of tumorcode
+#include <chrono>
+#include <thread>
 
 #define with_tumorcode_support
 
@@ -10,19 +12,29 @@
 
 int main()
 {
+  std::cout << "Size of char: " << sizeof(char) << " byte" << std::endl;
+  std::cout << "Size of int: " << sizeof(int) << " bytes" << std::endl;
+  std::cout << "Size of float: " << sizeof(float) << " bytes" << std::endl;
+  std::cout << "Size of double: " << sizeof(double) << " bytes" << std::endl;
   H5::H5File f;
   f = H5::H5File("dbg_stack.h5", H5F_ACC_TRUNC);
   
-  DynArray<double> a(1100001);
+  //DynArray<double> a(1100001);
   //DynArray<double> c(1e10);
-  DynArray<double> *c = new DynArray<double>(1e10);
+  //DynArray<char> *c = new DynArray<char>(1e11); //should be 100 GB
+  DynArray<char> d(1e11);
   //1100001 was not working on the stack, when not using boost multi array
-  DynArray<double> *b = new DynArray<double>(1100001);
+  //DynArray<double> *b = new DynArray<double>(1100001);
   double foo[20];
   H5::Group root;
+  H5::DataSet ds;
   root = f.openGroup("/");
-  writeDataSetToGroup(root, string("test_set"), a);
+  //ds = writeDataSetToGroup(root, string("test_set"), *c);
+  ds = writeDataSetToGroup(root, string("test_set"), d);
+  ds.close();
   std::cout << "created file" << std::endl;
+  
+  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 }
 //   //h5::File f("dbgvessels.h5", number==0 ? "w" : "a");
 //   H5::Group grp = f.createGroup(str(format("%s") % name));
