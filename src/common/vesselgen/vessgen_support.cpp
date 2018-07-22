@@ -157,6 +157,12 @@ void DoOutput(H5::Group &root,
   // vessels and stuff
    
   H5::Group vesselgrp;
+  H5::Group h5_nodes;
+  H5::Group h5_edges;
+  H5::Group g;
+  H5::Group gg;
+  H5::DataSet h5_node_flags;
+  
   try
   {
     //if this is created for the first time!
@@ -170,10 +176,11 @@ void DoOutput(H5::Group &root,
   {
     e.dontPrint();
     vesselgrp = root.createGroup("vessels");
-    
+    cout<<"catched vesselgroup" << endl;
     //if I put it like this, it happens only once.
     //writeAttrToH5(vesselgrp, string("CLASS"), string("GRAPH"));
   }
+  cout<<"created vesselgroup" << endl;
   
   WriteVesselList3d(vl, vesselgrp, make_ptree("w_all",false)("w_pressure",true)("w_flow",true));
 //   try
@@ -187,14 +194,14 @@ void DoOutput(H5::Group &root,
   //07.19.2018 maybe stack allocation is not enought --> I switch to heap
   //DynArray<uchar> tmp2(vl.GetNCount());
   DynArray<uchar> *tmp2 = new DynArray<uchar>(vl.GetNCount());
-  //cout<<"allowcated tmp2" << endl;
+  cout<<"allowcated tmp2" << endl;
   //fill tmp with flags
   for (int i=0; i<vl.GetNCount(); ++i)
   {
     (*tmp2)[i] = vl.GetNode(i)->flags;
   }
 
-  H5::Group h5_nodes;
+  
   try
   {
     h5_nodes = vesselgrp.openGroup("nodes");
@@ -203,10 +210,10 @@ void DoOutput(H5::Group &root,
   {
     //e.printErrorStack();
     h5_nodes = vesselgrp.createGroup("nodes");
+    cout << "catched nodes" << endl;
     e.dontPrint();
   }
     
-  H5::DataSet h5_node_flags;
   try
   {
     h5_node_flags = h5_nodes.openDataSet("nodeflags");
@@ -216,19 +223,21 @@ void DoOutput(H5::Group &root,
     //only write, if it is not there!
     writeDataSetToGroup(h5_nodes, "nodeflags", *tmp2);
     e.dontPrint();
+    cout << "catched flags" << endl;
   }
   delete tmp2;
-  //cout<<"deleted tmp2" << endl;
+  cout<<"deleted tmp2" << endl;
   
   //DynArray<int> tmp3(vl.GetECount());
   DynArray<int> *tmp3 = new DynArray<int>(vl.GetECount());
-  //cout<<"allowcated tmp3" << endl;
+  cout<<"allowcated tmp3" << endl;
   
   for (int i=0; i<vl.GetECount(); ++i)
   {
     (*tmp3)[i] = vl.GetEdge(i)->timeSprout;
   }
-  H5::Group h5_edges;
+  
+  
   try
   {
     h5_edges = root.openGroup("vessels/edges");
@@ -237,11 +246,12 @@ void DoOutput(H5::Group &root,
   {
     h5_edges = root.createGroup("vessels/edges");
     e.dontPrint();
+    cout << "catched edges" << endl;
   }
     
   writeDataSetToGroup(h5_edges, string("level"), *tmp3);
   delete tmp3;
-  //cout<<"deleted tmp3" << endl;
+  cout<<"deleted tmp3" << endl;
   
   MemUsage memusage = GetMemoryUsage();
   writeAttrToH5(root, string("mem_vsize"),(int)memusage.vmem_peak );
@@ -249,7 +259,19 @@ void DoOutput(H5::Group &root,
 
     
   // measurement
-  H5::Group g = root.createGroup("data");
+  cout <<" data" << endl;
+  try
+  {
+    g = root.openGroup("data");
+  }
+  catch( H5::Exception &e)
+  {
+    cout << "catch data" << endl;
+    g = root.createGroup("data");
+    e.printErrorStack();
+  }
+  
+  cout <<" after data" << endl;
   WriteHdfHistogram(g,"lengths_prob",plen);
   WriteHdfHistogram(g,"lengths_by_rad",hlenbyrad);
   WriteHdfHistogram(g,"radii_prob",hrad);
@@ -267,6 +289,7 @@ void DoOutput(H5::Group &root,
   writeAttrToH5(g, string("ROOT_V_COUNT"), vrootcnt);
   
   // roots
+  cout << " roots " << endl;
   int N = tree_roots.size();
 //   DynArray<int64> pos(N);
 //   DynArray<int> len(N);
@@ -286,7 +309,17 @@ void DoOutput(H5::Group &root,
     (*dir)[i] = e.dir;
     (*flags)[i] = e.flags;
   }
-  H5::Group gg = g.createGroup("roots");
+  
+  try
+  {
+    gg = g.openGroup("roots");
+  }
+  catch(H5::Exception &e)
+  {
+    gg = g.createGroup("roots");
+    e.printErrorStack();
+    cout << "catch roots" << endl;
+  }
   writeDataSetToGroup(gg, string("lattice_pos"), *pos);
   writeDataSetToGroup(gg, string("flags"), *flags);
   writeDataSetToGroup(gg, string("len"), *len);
@@ -295,6 +328,13 @@ void DoOutput(H5::Group &root,
   delete len;
   delete dir;
   delete flags;
+  
+  vesselgrp.close();
+  h5_nodes.close();
+  h5_edges.close();
+  g.close();
+  gg.close();
+  h5_node_flags.close();
   cout<< "Error 5 DoOutput" << std::endl;
 }
 
