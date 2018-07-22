@@ -128,13 +128,14 @@ void writeAttrToH5(H5::Group g, const string &attr_name, const  string &value)
     
     const H5std_string strwritebuf (value);
     
-    try{
+    try
+    {
       H5::Attribute myatt_in = g.createAttribute(attr_name, strdatatype, attr_dataspace);
       myatt_in.write(strdatatype, strwritebuf);
     }
-    catch()
+    catch(H5::Exception &e)
     {
-      error.printErrorStack();
+      e.printErrorStack();
     }
    
   }
@@ -310,9 +311,9 @@ void readAttrFromH5(H5::Group g, const string &attr_name, T &output_buffer)
   {
     att_to_read.read(type, &output_buffer);
   }
-  catch()
+  catch(H5::Exception &e)
   {
-    error.printErrorStack();
+    e.printErrorStack();
   }
 }
 template<>

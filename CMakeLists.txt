@@ -111,6 +111,7 @@ message("TrilinosDIR: ${TrilinosDIR}")
 
 
 include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)
+option(BUILD_TESTS "build test directory" ON)
 
 option(USE_MILOTTI_MTS "decide to use libvbl.so" OFF)
 if(USE_MILOTTI_MTS)
