@@ -620,7 +620,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
 {
   cout << format("output %i -> %s") % output_num % params.fn_out << endl;
   H5::H5File f_out;
-  H5::Group root, gout, h5_tum, h5_cells_out, h5_o2_last_state, h5_ld_last_state, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup,
+  H5::Group root, gout, h5_tum, h5_cells_out, h5_ld_last_state, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup,
   h5_vbl,h5_memory;
   
   std::string tumOutName = "nothing";
@@ -728,8 +728,8 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       writeAttrToH5(h5_memory, string("vmem_peak"), m.vmem_peak);
       writeAttrToH5(h5_memory, string("rss"), m.rss);
       writeAttrToH5(h5_memory, string("rss_peak"), m.rss_peak);
-      WriteHdfPtree(h5_vbl, tumorcode_pointer_to_currentCellsSystem->get_params().as_ptree());
     }
+    WriteHdfPtree(h5_vbl, tumorcode_pointer_to_currentCellsSystem->get_params().as_ptree());
     
     writeAttrToH5(gout, string("time"), time);
     writeAttrToH5(gout, string("OUTPUT_NUM"), output_num);
@@ -759,6 +759,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
     {
       h5_cells_out = gout.createGroup("cells");
       WriteCellsSystemHDF_with_nearest_vessel_index(h5_cells_out);
+      h5_cells_out.close();
     }
     /* write oxygen stuff */
     if(!params.useConstO2)
@@ -773,19 +774,18 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       //writeDataSetToGroup(po2outputGroup, string("po2vessels"),o2_sim.po2vessels);
       writeAttrToH5(po2outputGroup, string("simType"), string("MTS"));
       //WriteHdfPtree(po2outputGroup, o2_sim.metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
+      po2outputGroup.close();
     }
   }
   catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
-  f_out.flush(H5F_SCOPE_LOCAL);
-  f_out.close();
+  
   root.close();
   gout.close();
   h5_tum.close();
-  h5_cells_out.close();
-  h5_o2_last_state.close();
+  
   h5_ld_last_state.close();
   h5_parameters.close();
   h5_vessel_parameters.close();
@@ -794,10 +794,13 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   h5_field_ld_group.close();
   h5_timing.close();
   h5_current_vessels.close();
-  po2outputGroup.close();
+  
   ldgroup.close();
   h5_vbl.close();
   h5_memory.close();
+  
+  f_out.flush(H5F_SCOPE_LOCAL);
+  f_out.close();
   //++output_num;
   
   cout << format("files %s flushed and closed")  % params.fn_out << endl;
