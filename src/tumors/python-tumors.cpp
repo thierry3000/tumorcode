@@ -418,7 +418,7 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
     boost::filesystem::path pathOfNewFolder = P.parent_path()/boost::filesystem::path(std::getenv("SLURM_JOB_ID"));
     boost::filesystem::create_directory(pathOfNewFolder);
     std::cout << pathOfNewFolder << std::endl;
-    boost::filesystem::path newPath = pathOfNewFolder / boost::filesystem::path(P.stem().string());
+    boost::filesystem::path newPath = pathOfNewFolder / boost::filesystem::path(P.stem().string()+".h5");
     std::cout << newPath << std::endl;
     s.params.fn_out = newPath.string();
   }

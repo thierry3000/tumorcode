@@ -375,7 +375,14 @@ void FakeTum::FakeTumorSim::doStep(double dt)
 
 void FakeTum::FakeTumorSim::writeOutput(bool doPermanentSafe)
 {
-  cout << format("output %i -> %s") % output_num % params.fn_out << endl;
+  if( doPermanentSafe )
+  {
+    cout << format("permanent output %i -> %s") % output_num % params.fn_out << endl;
+  }
+  else
+  {
+    cout << format("buffer output %i -> %s") % output_num % params.fn_out << endl;
+  }
   H5::H5File f_out;
   H5::Group root, gout, h5_tum, h5_parameters, h5_vessel_parameters,h5_system_parameters;
   

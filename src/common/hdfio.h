@@ -138,7 +138,12 @@ template<class T>
 H5::DataSet writeDataSetToGroup(H5::Group &g, const string &attr_name, DynArray<T> &value);
 
 template<class T>
+void writeDataSetToGroup(H5::Group &g, const string &attr_name, const std::vector<T> &value);
+
+template<class T>
 void readDataSetFromGroup(H5::Group &g, const string &attr_name, DynArray<T> &placeToStore);
+template<class T>
+void readDataSetFromGroup(H5::Group &g, const string &attr_name, std::vector<T> &placeToStore);
 
 /** @brief
  * returns the location of a hdf object within the file

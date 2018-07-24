@@ -616,9 +616,53 @@ void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
   //end milotti
 }
 
+void FakeTumMTS::FakeTumorSimMTS::writeVBLDataToHDF(H5::Group &h5_vbl)
+{
+  writeDataSetToGroup(h5_vbl, string("name"), tumorcode_pointer_to_currentCellsSystem->Get_name());
+  writeDataSetToGroup(h5_vbl, string("mark"), tumorcode_pointer_to_currentCellsSystem->Get_mark());
+  
+  writeDataSetToGroup(h5_vbl, string("cell_type"), tumorcode_pointer_to_currentCellsSystem->get_CellTypeIndexVector());
+  
+  writeDataSetToGroup(h5_vbl, string("phase"), tumorcode_pointer_to_currentCellsSystem->Get_phase_int());
+  writeDataSetToGroup(h5_vbl, string("death_condition"), tumorcode_pointer_to_currentCellsSystem->Get_death_condition());
+  writeDataSetToGroup(h5_vbl, string("age"), tumorcode_pointer_to_currentCellsSystem->Get_age());
+  writeDataSetToGroup(h5_vbl, string("phase_age"), tumorcode_pointer_to_currentCellsSystem->Get_phase_age());
+  writeDataSetToGroup(h5_vbl, string("age_mother"), tumorcode_pointer_to_currentCellsSystem->Get_age_mother());
+  writeDataSetToGroup(h5_vbl, string("n_mitosis"), tumorcode_pointer_to_currentCellsSystem->Get_n_mitosis());
+  
+  writeDataSetToGroup(h5_vbl, string("Temperature"), tumorcode_pointer_to_currentCellsSystem->Get_Temperature());
+  writeDataSetToGroup(h5_vbl, string("x"), tumorcode_pointer_to_currentCellsSystem->Get_x());
+  writeDataSetToGroup(h5_vbl, string("y"), tumorcode_pointer_to_currentCellsSystem->Get_y());
+  writeDataSetToGroup(h5_vbl, string("z"), tumorcode_pointer_to_currentCellsSystem->Get_z());
+  writeDataSetToGroup(h5_vbl, string("vx"), tumorcode_pointer_to_currentCellsSystem->Get_vx());
+  writeDataSetToGroup(h5_vbl, string("vy"), tumorcode_pointer_to_currentCellsSystem->Get_vy());
+  writeDataSetToGroup(h5_vbl, string("vz"), tumorcode_pointer_to_currentCellsSystem->Get_vz());
+  writeDataSetToGroup(h5_vbl, string("r"), tumorcode_pointer_to_currentCellsSystem->Get_r());
+  writeDataSetToGroup(h5_vbl, string("surface"), tumorcode_pointer_to_currentCellsSystem->Get_surface());
+  writeDataSetToGroup(h5_vbl, string("volume"), tumorcode_pointer_to_currentCellsSystem->Get_volume());
+  writeDataSetToGroup(h5_vbl, string("mass"), tumorcode_pointer_to_currentCellsSystem->Get_mass());
+  
+  writeDataSetToGroup(h5_vbl, string("volume_extra"), tumorcode_pointer_to_currentCellsSystem->Get_volume_extra());
+  
+  writeDataSetToGroup(h5_vbl, string("M"), tumorcode_pointer_to_currentCellsSystem->Get_M());
+  
+  writeDataSetToGroup(h5_vbl, string("G"), tumorcode_pointer_to_currentCellsSystem->Get_G());
+  writeDataSetToGroup(h5_vbl, string("G6P"), tumorcode_pointer_to_currentCellsSystem->Get_G6P());
+  
+  writeDataSetToGroup(h5_vbl, string("NpRbk"), tumorcode_pointer_to_currentCellsSystem->Get_NpRbk());
+  writeDataSetToGroup(h5_vbl, string("DNA_spread"), tumorcode_pointer_to_currentCellsSystem->Get_DNA_spread());
+  std::cout << "finished writeVBLDataToHDF" << std::endl;
+}
 std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
 {
-  cout << format("output %i -> %s") % output_num % params.fn_out << endl;
+  if( doPermanentSafe )
+  {
+    cout << format("permanent output %i -> %s") % output_num % params.fn_out << endl;
+  }
+  else
+  {
+    cout << format("buffer output %i -> %s") % output_num % params.fn_out << endl;
+  }
   H5::H5File f_out;
   H5::Group root, gout, h5_tum, h5_cells_out, h5_ld_last_state, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup,
   h5_vbl,h5_memory;
@@ -729,8 +773,24 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       writeAttrToH5(h5_memory, string("rss"), m.rss);
       writeAttrToH5(h5_memory, string("rss_peak"), m.rss_peak);
     }
+    
+    /** VBL 
+     */
     WriteHdfPtree(h5_vbl, tumorcode_pointer_to_currentCellsSystem->get_params().as_ptree());
     
+    boost::property_tree::ptree return_from_vbl = tumorcode_pointer_to_currentCellsSystem->as_ptree();
+    for( auto it:return_from_vbl)
+    {
+#ifndef NDEBUG
+      cout << it.first << endl;
+#endif
+      H5::Group h5_vbl_type = h5_vbl.createGroup(it.first);
+      WriteHdfPtree(h5_vbl_type, return_from_vbl.get_child(it.first));
+    }
+    writeVBLDataToHDF(h5_vbl);
+    
+    /** runtime data
+     */
     writeAttrToH5(gout, string("time"), time);
     writeAttrToH5(gout, string("OUTPUT_NUM"), output_num);
     writeAttrToH5(gout, string("NUM_ITERATION"), num_iteration);

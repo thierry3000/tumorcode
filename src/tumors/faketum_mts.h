@@ -244,6 +244,7 @@ const int ANN_dim = 3;            // space dimension
  * returns the H5 Group name 
  */
   std::string writeOutput(bool doPermanentSafe);
+  void writeVBLDataToHDF(H5::Group &g);
   void WriteCellsSystemHDF_with_nearest_vessel_index(H5::Group &out_cell_group);
   
   vbl::CellsSystem *tumorcode_pointer_to_currentCellsSystem;

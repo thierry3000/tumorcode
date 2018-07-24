@@ -421,9 +421,9 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
       readAttrFromH5(g, string("CLASS"), theType);
       //myAssert(theType == "REALWORLD");
     }
-    catch( H5::Exception not_found_error )
+    catch( H5::Exception &e )
     {
-      not_found_error.dontPrint();
+      e.dontPrint();
       cout << " CLASS type not found" << endl;
       writeAttrToH5(g,string("CLASS"), string("REALWORLD"));
     }  
@@ -1009,6 +1009,65 @@ H5::DataSet writeDataSetToGroup(H5::Group &g, const string &dataset_name, DynArr
   return ds;
 }
 
+/** bool s work differently
+ * 
+ * untested!!!
+ * 
+ */
+template<>
+void writeDataSetToGroup(H5::Group &g, const string &dataset_name, const std::vector<bool> &value)
+{
+  int sizeOfvector = value.size();
+  int rank = 2;
+  hsize_t dims[rank];
+  dims[0]=sizeOfvector;
+  H5::DataType thisWritingType = getH5TypeFromCpp<bool>();
+  dims[1] = 1;
+  cout << "value[0]: " << value[0] << endl;
+#ifndef NDEBUG
+  cout<< "writing std::vector: " << dataset_name << " to hdf5" << endl;
+  cout << "we are writting data of size (" << dims[0] << ", " << dims[1] << "!" <<endl;
+#endif
+  H5::DataSet ds;
+  try 
+  {
+    H5::DataSpace dataspace( rank, dims);
+    ds = g.createDataSet(dataset_name, thisWritingType, dataspace);
+    ds.write(&value, thisWritingType, dataspace);
+  }
+  catch( H5::Exception &e)
+  {
+    e.printErrorStack();
+  }
+}
+
+template<class T>
+void writeDataSetToGroup(H5::Group &g, const string &dataset_name, const std::vector<T> &value)
+{
+  int sizeOfvector = value.size();
+  int rank = 2;
+  hsize_t dims[rank];
+  dims[0]=sizeOfvector;
+  H5::DataType thisWritingType = getH5TypeFromCpp<T>();
+  dims[1] = 1;
+  cout << "value[0]: " << value[0] << endl;
+#ifndef NDEBUG
+  cout<< "writing std::vector: " << dataset_name << " to hdf5" << endl;
+  cout << "we are writting data of size (" << dims[0] << ", " << dims[1] << "!" <<endl;
+#endif
+  H5::DataSet ds;
+  try 
+  {
+    H5::DataSpace dataspace( rank, dims);
+    ds = g.createDataSet(dataset_name, thisWritingType, dataspace);
+    ds.write(value.data(), thisWritingType, dataspace);
+  }
+  catch( H5::Exception &e)
+  {
+    e.printErrorStack();
+  }
+}
+
 template <class T>
 void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> &readIn)
 {
@@ -1135,7 +1194,8 @@ INSTANTIATE(char)
 #undef INSTANTIATE
 
 #define INSTANTIATE2(T)\
-  template H5::DataSet writeDataSetToGroup<T>(H5::Group &g, const string &name, DynArray<T> &value);
+  template H5::DataSet writeDataSetToGroup<T>(H5::Group &g, const string &name, DynArray<T> &value);\
+  template void writeDataSetToGroup<T>(H5::Group &g, const string &name, const std::vector<T> &value);
 INSTANTIATE2(float)
 INSTANTIATE2(double)
 INSTANTIATE2(int)
@@ -1147,6 +1207,7 @@ INSTANTIATE2(Bool3)
 INSTANTIATE2(char)
 INSTANTIATE2(uchar)
 INSTANTIATE2(long)
+INSTANTIATE2(unsigned long)
 INSTANTIATE2(string)
 
 #undef INSTANTIATE2
