@@ -235,68 +235,68 @@ def make_any_color_arrays(vesselgraph, data_name):
 
 
 
-def addVesselTree(epv, vesselgraph, trafo, options):
-    edges = vesselgraph.edgelist
-    pos = vesselgraph['position']
-    rad = vesselgraph.edges['radius']
-    #print 'positions = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
-    pos = transform_position(trafo, pos)
-    rad = transform_scalar(trafo, rad)
-    #print 'positions after trafo = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
-    
-    if 'vessel_clip' in options:
-      clip = clipFactory(options.vessel_clip)
-    else:
-      clip = clipFactory(None)
-    #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
-
-    edgecolors = vesselgraph.edges['colors']
-    nodecolors = vesselgraph.nodes['colors']
-
-    class Styler(object):
-      @staticmethod
-      def edge_style(i, a, b):
-        c = edgecolors[i]
-        return "MkStyle(<%0.2f,%0.2f,%0.2f>)" % tuple(c)
-      @staticmethod
-      def node_style(i):
-        c = nodecolors[i]
-        return "MkStyle(<%0.2f,%0.2f,%0.2f>)" % tuple(c)
-
-    if 'colored_slice' in options:
-      ClipStyler = Styler
-    else:
-      class ClipStyler(object):
-        styleString = "pigment { color rgb<%0.2f,%0.2f,%0.2f> }" % defaultCrossSectionColor
-        @staticmethod
-        def edge_style(i, a, b):
-          return ClipStyler.styleString
-        @staticmethod
-        def node_style(i):
-          return ClipStyler.styleString
-#	  ambient 0.05 * c
-    epv.pvfile.write("""
-    #macro MkStyle(c)
-    texture {
-	pigment {
-	  color rgb c
-	}
-	finish {
-	  specular 0.1
-      ambient 1.
-	}
-    }
-    #end
-    """)
-
-    #print pos.shape, rad.shape, edges.shape, clip_vessels
-#    for clip in clip_vessels:
-    epv.addVesselTree(np.asarray(edges, dtype=np.int32),
-                      np.asarray(pos, dtype=np.float32),
-                      np.asarray(rad, dtype=np.float32),
-                      Styler, clip, ClipStyler)
-    #del Styler; del ClipStyler
-    #print 'write time: ', time.time(
+#def addVesselTree(epv, vesselgraph, trafo, options):
+#    edges = vesselgraph.edgelist
+#    pos = vesselgraph['position']
+#    rad = vesselgraph.edges['radius']
+#    #print 'positions = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
+#    pos = transform_position(trafo, pos)
+#    rad = transform_scalar(trafo, rad)
+#    #print 'positions after trafo = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
+#    
+#    if 'vessel_clip' in options:
+#      clip = clipFactory(options.vessel_clip)
+#    else:
+#      clip = clipFactory(None)
+#    #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
+#
+#    edgecolors = vesselgraph.edges['colors']
+#    nodecolors = vesselgraph.nodes['colors']
+#
+#    class Styler(object):
+#      @staticmethod
+#      def edge_style(i, a, b):
+#        c = edgecolors[i]
+#        return "MkStyle(<%0.2f,%0.2f,%0.2f>)" % tuple(c)
+#      @staticmethod
+#      def node_style(i):
+#        c = nodecolors[i]
+#        return "MkStyle(<%0.2f,%0.2f,%0.2f>)" % tuple(c)
+#
+#    if 'colored_slice' in options:
+#      ClipStyler = Styler
+#    else:
+#      class ClipStyler(object):
+#        styleString = "pigment { color rgb<%0.2f,%0.2f,%0.2f> }" % defaultCrossSectionColor
+#        @staticmethod
+#        def edge_style(i, a, b):
+#          return ClipStyler.styleString
+#        @staticmethod
+#        def node_style(i):
+#          return ClipStyler.styleString
+##	  ambient 0.05 * c
+#    epv.pvfile.write("""
+#    #macro MkStyle(c)
+#    texture {
+#	pigment {
+#	  color rgb c
+#	}
+#	finish {
+#	  specular 0.1
+#      ambient 1.
+#	}
+#    }
+#    #end
+#    """)
+#
+#    #print pos.shape, rad.shape, edges.shape, clip_vessels
+##    for clip in clip_vessels:
+#    epv.addVesselTree(np.asarray(edges, dtype=np.int32),
+#                      np.asarray(pos, dtype=np.float32),
+#                      np.asarray(rad, dtype=np.float32),
+#                      Styler, clip, ClipStyler)
+#    #del Styler; del ClipStyler
+#    #print 'write time: ', time.time(
 
 
 def ComputeBoundingBox(vesselgroup, vesselgraph):
@@ -327,72 +327,45 @@ def ComputeBoundingBox(vesselgroup, vesselgraph):
 #  return wbbox
 
 
-def renderScene(vesselgroup, imagefn, **kwargs):
-    vess_ldgroup = vesselgroup['lattice']
-    graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'pressure'], return_graph=True)
-    colorfactory = kwargs.pop('colorfactory', make_pressure_color_arrays)
-    colorfactory(graph)
+#def renderScene(vesselgroup, imagefn, **kwargs):
+#    vess_ldgroup = vesselgroup['lattice']
+#    graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'pressure'], return_graph=True)
+#    colorfactory = kwargs.pop('colorfactory', make_pressure_color_arrays)
+#    colorfactory(graph)
+#
+#    wbbox = ComputeBoundingBox(vesselgroup, graph)
+#    trafo = calc_centering_normalization_trafo(wbbox)
+#    zsize = (wbbox[5]-wbbox[4])
+#
+#    with EasyPovRayRender(**kwargs) as epv:
+#      epv.setBackground(kwargs.pop('background',0.0))
+#      cam = kwargs.pop('cam','topdown') # this stuff is copy pasted everywhere, should be refactored in a extra function
+#      if cam in ('topdown', 'topdown_slice'):
+#        cam_fov = 60.
+#        cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, kwargs['res'], wbbox)
+#        epv.addLight(10*Vec3(1.7,1.2,2), 1., area=(4, 4, 3, 3), jitter=True)
+#        if cam == 'topdown_slice':
+#          kwargs.update(vessel_clip =('zslice', -201*trafo.w, 201*trafo.w),
+#                        tumor_clip =('zslice', -100*trafo.w, 100*trafo.w))
+#          epv.setCamera((0,0,cam_distance_factor*0.5*(200.*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
+#        else:
+#          epv.setCamera((0,0,cam_distance_factor*0.5*(zsize*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
+#      else:
+#        basepos = np.asarray((0.6,0.7,0.7))*(1./1.4)
+#        epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
+#        num_samples_large_light = 10
+#        num_samples_small_light = 3
+#        epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
+#        epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
+#        kwargs.update(vessel_clip = ('pie', 0.),
+#                      tumor_clip = ('pie', -20*trafo.w))
+#
+#
+#      addVesselTree(epv, graph, trafo = trafo, **kwargs)
+#      epv.render(imagefn)
 
-    wbbox = ComputeBoundingBox(vesselgroup, graph)
-    trafo = calc_centering_normalization_trafo(wbbox)
-    zsize = (wbbox[5]-wbbox[4])
-
-    with EasyPovRayRender(**kwargs) as epv:
-      epv.setBackground(kwargs.pop('background',0.0))
-      cam = kwargs.pop('cam','topdown') # this stuff is copy pasted everywhere, should be refactored in a extra function
-      if cam in ('topdown', 'topdown_slice'):
-        cam_fov = 60.
-        cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, kwargs['res'], wbbox)
-        epv.addLight(10*Vec3(1.7,1.2,2), 1., area=(4, 4, 3, 3), jitter=True)
-        if cam == 'topdown_slice':
-          kwargs.update(vessel_clip =('zslice', -201*trafo.w, 201*trafo.w),
-                        tumor_clip =('zslice', -100*trafo.w, 100*trafo.w))
-          epv.setCamera((0,0,cam_distance_factor*0.5*(200.*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
-        else:
-          epv.setCamera((0,0,cam_distance_factor*0.5*(zsize*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
-      else:
-        basepos = np.asarray((0.6,0.7,0.7))*(1./1.4)
-        epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
-        num_samples_large_light = 10
-        num_samples_small_light = 3
-        epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
-        epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
-        kwargs.update(vessel_clip = ('pie', 0.),
-                      tumor_clip = ('pie', -20*trafo.w))
 
 
-      addVesselTree(epv, graph, trafo = trafo, **kwargs)
-      epv.render(imagefn)
-
-
-def CreateScene2(vesselgroup, epv, graph, imagefn, options):
-  #wbbox = ComputeBoundingBox(vesselgroup, graph)
-  wbbox = options.wbbox
-  trafo = calc_centering_normalization_trafo(wbbox)
-  zsize = (wbbox[5]-wbbox[4])
-  epv.setBackground(options.background)
-  cam = options.cam
-  if cam in ('topdown', 'topdown_slice'):
-    cam_fov = 60.
-    cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
-    #epv.addLight(10*Vec3(1.7,1.2,2), 1., area=(4, 4, 3, 3), jitter=True)
-    epv.addLight(10.*Vec3(1,0.5,2), 1.2)
-    if cam == 'topdown_slice':
-      options.vessel_clip=('zslice', -301*trafo.w, 301*trafo.w)
-      options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
-      epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
-    else:
-      epv.setCamera((0,0,cam_distance_factor*0.5*(zsize*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
-  else:
-    basepos = np.asarray((0.6,0.7,0.7))*(1./1.4)
-    epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
-    num_samples_large_light = 10
-    num_samples_small_light = 3
-    epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
-    epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
-    kwargs.update(vessel_clip = ('pie', 0.),
-                  tumor_clip = ('pie', -20*trafo.w))
-  addVesselTree(epv, graph, trafo = trafo, options=options )
 
 def render_different_data_types( vesselgroup, options):
   filenamepostfix = ''

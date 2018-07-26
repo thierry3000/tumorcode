@@ -27,7 +27,9 @@ if __name__ == '__main__':
 import os,sys
 from os.path import basename, splitext
 
-from povrayRenderVessels import *
+import krebsutils
+import povrayRenderVessels
+#from povrayRenderVessels import *
 import povrayEasy
 import myutils
 import math
@@ -127,7 +129,7 @@ def renderScene(vesselgroup, tumorgroup, imagefn, options):
           colorfactory = make_pressure_color_arrays
         colorfactory(graph)
         #addVesselTree(epv, graph, trafo, vesselgroup = vesselgroup, options)
-        addVesselTree(epv, graph, trafo, options)
+        epv.addVesselTree2(epv, graph, trafo, options)
         
       if tumorgroup is not None and 'conc' in tumorgroup:
         addBulkTissueTumor(epv, tumorgroup, trafo, options)
@@ -140,7 +142,43 @@ def renderScene(vesselgroup, tumorgroup, imagefn, options):
       else:
         povrayEasy.RenderImageWithOverlay(epv, imagefn+'.png', None, 'tumor', options)
       
-
+def render_different_data_types( vesselgroup, tumorgroup, imagefn, options):
+  filenamepostfix = ''
+  labels = {
+    'flow' : '$log_{10}$ Flow Rate',
+    'shearforce': '$log_{10}$ Shear Force',
+    'hematocrit' : 'Hematocrit',
+    'pressure' : 'Blood Pressure $kPa$',
+    'S_tot' : 'Adaption Signal',
+    'conductivitySignal' : 'Conductivity Signal',
+    'metabolicSignal' : 'Metabolic Signal',
+  }
+  graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'nodeflags'] + options.datalist, return_graph=True)
+  
+  options.wbbox = povrayRenderVessels.ComputeBoundingBox(vesselgroup, graph)
+  if options.filteruncirculated:
+    graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
+  if options.filterradiushighpass>0:
+    graph = graph.get_filtered(edge_indices = graph['radius']> filterradiushighpass)
+    filenamepostfix = '_rhp'
+  if options.filterradiuslowpass>0:
+    print("lowpass filter activated:")
+    graph = graph.get_filtered(edge_indices = graph['radius']< filterradiuslowpass)
+    filenamepostfix = '_rlp'
+  for data_name in options.datalist:
+    if 'colorfactory' in options:
+      colors_factory = options.colorfactory
+      colors_factory(graph)
+    
+    cm, (datamin, datamax) = povrayRenderVessels.make_any_color_arrays(graph, data_name)
+    fn = vesselgroup.file.filename
+    imagefn = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix+'.'+ options.format
+    with povrayEasy.EasyPovRayRender(options) as epv:
+      povrayEasy.CreateScene2(vesselgroup,epv, graph, imagefn, options)
+      if options.noOverlay:
+        epv.render(imagefn)
+      else:
+        povrayEasy.RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options)
 
 
 #if __name__ == '__main__':

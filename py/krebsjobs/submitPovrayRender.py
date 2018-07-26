@@ -102,9 +102,9 @@ class RenderJob(object):
                     self.params)
 
       elif 'tumor' in f[self.group_name]:
-        from krebs.povrayRenderTumor import renderScene
+        from krebs.povrayRenderTumor import render_different_data_types
         self.params.timepoint = f[self.group_name].attrs.get('time')
-        renderScene(f[self.group_name]['vessels'],
+        render_different_data_types(f[self.group_name]['vessels'],
                     f[self.group_name]['tumor'],
                     self.imageFilename,
                     self.params)
