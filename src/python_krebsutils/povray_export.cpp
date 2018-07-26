@@ -184,6 +184,18 @@ void export_network_for_povray(const np::ndarray edges,
                                const py::tuple &py_clip_data,
                                const std::string filename)
 {
+#ifndef NDEBUG
+  cout << "edges.get_nd(): " << edges.get_nd() << endl;
+  for(int i=0; i< edges.get_nd(); i++)
+  {
+    cout << "dim: " << i << "edges.get_shape()[i]: " << edges.get_shape()[i] << endl;
+  }
+  cout << "rad.get_nd(): " << rad.get_nd() << endl;
+  for(int i=0; i< rad.get_nd(); i++)
+  {
+    cout << "dim: " << i << "rad.get_shape()[i]: " << rad.get_shape()[i] << endl;
+  }
+#endif
   int num_edges = edges.get_shape()[0];
   int num_nodes = pos.get_shape()[0];
 
@@ -197,7 +209,7 @@ void export_network_for_povray(const np::ndarray edges,
 //     noderad[edges[i]] = std::max(noderad[edges[i]], rad[i]);
     int a = py::extract<int>(edges[i][0]);
     int b = py::extract<int>(edges[i][1]);
-    double radius = py::extract<float>(rad[i]);
+    double radius = py::extract<float>(rad[i][0]);
     noderad[a] = std::fmax(noderad[a], radius);
     noderad[b] = std::fmax(noderad[b], radius);
   }
@@ -219,7 +231,7 @@ void export_network_for_povray(const np::ndarray edges,
     float pos_b_2 = py::extract<float>(pos[b][2]);
     Float3 pb(pos_b_0,pos_b_1,pos_b_2);
 
-    double radius = py::extract<float>(rad[i]);
+    double radius = py::extract<float>(rad[i][0]);
     int intersect = cp ? cp->clipCylinder(pa, pb, radius) : CLIP_NONE;
     if (intersect == CLIP_FULL) continue;
 
