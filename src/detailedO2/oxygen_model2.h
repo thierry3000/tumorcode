@@ -236,7 +236,7 @@ struct DetailedPO2Sim : public boost::noncopyable
             //VesselList3d &vl, 
             double grid_lattice_const, 
             double safety_layer_size, 
-            boost::optional<Int3> grid_lattice_size, 
+            //boost::optional<Int3> grid_lattice_size, 
             boost::optional<H5::Group> tumorgroup,
             boost::optional<Array3df> previous_po2field, boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels, boost::optional<Array3d<float>> cell_based_o2_uptake);
   int run();

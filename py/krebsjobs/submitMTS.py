@@ -93,36 +93,57 @@ def run(vessel_fn, name, paramSet, mem, days):
                             num_cpus = paramSet['num_threads'],
                             change_cwd = True)
 
+def rerun(fn_of_previous_run, job_name, mem, days):
+  #name, c = krebsjobs.PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTum', paramSet)
+  #configstr = dicttoinfo(c)
+  #config_file_name = '%s.info' % c['fn_out']
+  #with open(config_file_name, 'w') as f:
+  #  f.write(configstr)
+  qsub.submit(qsub.func(krebs.tumors.rerun_faketum_mts, fn_of_previous_run),
+                            name = 'job_'+ job_name,
+                            mem = mem,
+                            days = days,
+                            #num_cpus = c['num_threads'],
+                            change_cwd = True)
 
 if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Compute Fake tumor. Vessels are needed for that')  
   parser.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/fparameterSetsFakeTumor.py')
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
-
+  parser.add_argument('--rerun', help='allows to rerun a simulation', default=False, action='store_true')
+  
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
   
-  tumorParameterName = goodArguments.tumParamSet
-  #create filename due to former standards
-  filenames=[]
-  for fn in goodArguments.vesselFileNames:
-    filenames.append(fn.name)
-    
-  try:
-    if not (tumorParameterName in dir(parameterSets)) and (not 'auto' in tumorParameterName):
-        raise AssertionError('Unknown parameter set %s!' % tumorParameterName)
-    for fn in filenames:
-        if not os.path.isfile(fn):
-            raise AssertionError('The file %s is not present!'%fn)
-  except Exception, e:
-    print e.message
-    sys.exit(-1)
-
+  if(not goodArguments.rerun):
+    tumorParameterName = goodArguments.tumParamSet
+    #create filename due to former standards
+    filenames=[]
+    for fn in goodArguments.vesselFileNames:
+      filenames.append(fn.name)
+      
+    try:
+      if not (tumorParameterName in dir(parameterSets)) and (not 'auto' in tumorParameterName):
+          raise AssertionError('Unknown parameter set %s!' % tumorParameterName)
+      for fn in filenames:
+          if not os.path.isfile(fn):
+              raise AssertionError('The file %s is not present!'%fn)
+    except Exception, e:
+      print e.message
+      sys.exit(-1)
   
-  factory = getattr(parameterSets, tumorParameterName)
-  for fn in filenames:
-    #run(fn, tumorParameterName, factory, '4GB', 2.)
-    run(fn, tumorParameterName, factory, '2GB', 5.)
+    
+    factory = getattr(parameterSets, tumorParameterName)
+    for fn in filenames:
+      #run(fn, tumorParameterName, factory, '4GB', 2.)
+      run(fn, tumorParameterName, factory, '2GB', 5.)
+  else:
+    print('starting rerun with file: %s' % goodArguments.vesselFileNames[0].name)
+    if not os.path.isfile(goodArguments.vesselFileNames[0].name):
+      raise AssertionError('The file %s is not present!'%goodArguments.vesselFileNames[0].name)
+    string_to_provide = str(goodArguments.vesselFileNames[0].name)
+    goodArguments.vesselFileNames[0].close()
+    rerun(string_to_provide, 'rerun_of_', '2GB', 5.)
   
         

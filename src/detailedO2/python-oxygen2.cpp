@@ -177,7 +177,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
   
   double grid_lattice_const               = py::extract<double>(py_parameters.get("grid_lattice_const", 30.));
   double safety_layer_size                = py::extract<double>(py_parameters.get("safety_layer_size", grid_lattice_const*3.));
-  boost::optional<Int3> grid_lattice_size = getOptional<Int3>("grid_lattice_size", py_parameters);
+  //boost::optional<Int3> grid_lattice_size = getOptional<Int3>("grid_lattice_size", py_parameters);
   
 
   //if (!py_bfparams.is_none())
@@ -237,7 +237,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
       MPI_Init_thread(0, NULL, 1,&prov);
 #endif
     //DetailedP02Sim s;
-    s.init(bfparams,grid_lattice_const, safety_layer_size, grid_lattice_size, tumorgroup, previous_po2field, previous_po2vessels,cell_based_o2_uptake);
+    s.init(bfparams,grid_lattice_const, safety_layer_size, tumorgroup, previous_po2field, previous_po2vessels,cell_based_o2_uptake);
     s.run();
   }
   catch(std::exception &ex)

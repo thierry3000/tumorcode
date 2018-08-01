@@ -1525,7 +1525,7 @@ void DetailedPO2Sim::init(
                           //VesselList3d &vl, 
                           double grid_lattice_const, 
                           double safety_layer_size, 
-                          boost::optional<Int3> grid_lattice_size,
+                          //boost::optional<Int3> grid_lattice_size,
                           boost::optional<H5::Group> tumorgroup,
                           boost::optional<Array3df> previous_po2field,
                           boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels,
@@ -1555,27 +1555,27 @@ void DetailedPO2Sim::init(
     dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
   }
     
-  if (grid_lattice_size)
+//   if (grid_lattice_size)
+//   {
+//     ld.Init(*grid_lattice_size, grid_lattice_const);
+//     ld.SetCellCentering(Bool3(1, 1, dim>2));
+//     wbox = vl->Ld().GetWorldBox();
+//     worldCenter = 0.5*(wbox.max + wbox.min);
+//     gridCenter = 0.5*(ld.GetWorldBox().max + ld.GetWorldBox().min);
+//     ld.SetOriginPosition(ld.GetOriginPosition() + (worldCenter - gridCenter));
+//   }
+//   else
+//   {
+  //added safety space to reduce boundary errors
+  if (world)
   {
-    ld.Init(*grid_lattice_size, grid_lattice_const);
-    ld.SetCellCentering(Bool3(1, 1, dim>2));
-    wbox = vl->Ld().GetWorldBox();
-    worldCenter = 0.5*(wbox.max + wbox.min);
-    gridCenter = 0.5*(ld.GetWorldBox().max + ld.GetWorldBox().min);
-    ld.SetOriginPosition(ld.GetOriginPosition() + (worldCenter - gridCenter));
+    SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
   }
   else
   {
-    //added safety space to reduce boundary errors
-    if (world)
-    {
-      SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
-    }
-    else
-    {
-      SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
-    }
+    SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
   }
+  //}
   //grid.init(ld, dim);
   grid = ContinuumGrid(ld, dim);
   mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));

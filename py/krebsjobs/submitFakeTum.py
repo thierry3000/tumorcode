@@ -144,7 +144,7 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Compute Fake tumor. Vessels are needed for that')  
   parser.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/fparameterSetsFakeTumor.py')
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
-  parser.add_argument("--rerun", help=" ", default=False, action="store_true")
+  parser.add_argument('--rerun', help='allows to rerun a simulation', default=False, action='store_true')
   
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)

@@ -1023,8 +1023,8 @@ void writeDataSetToGroup(H5::Group &g, const string &dataset_name, const std::ve
   dims[0]=sizeOfvector;
   H5::DataType thisWritingType = getH5TypeFromCpp<bool>();
   dims[1] = 1;
-  cout << "value[0]: " << value[0] << endl;
 #ifndef NDEBUG
+  cout << "value[0]: " << value[0] << endl;
   cout<< "writing std::vector: " << dataset_name << " to hdf5" << endl;
   cout << "we are writting data of size (" << dims[0] << ", " << dims[1] << "!" <<endl;
 #endif
@@ -1050,8 +1050,9 @@ void writeDataSetToGroup(H5::Group &g, const string &dataset_name, const std::ve
   dims[0]=sizeOfvector;
   H5::DataType thisWritingType = getH5TypeFromCpp<T>();
   dims[1] = 1;
-  cout << "value[0]: " << value[0] << endl;
+  
 #ifndef NDEBUG
+  cout << "value[0]: " << value[0] << endl;
   cout<< "writing std::vector: " << dataset_name << " to hdf5" << endl;
   cout << "we are writting data of size (" << dims[0] << ", " << dims[1] << "!" <<endl;
 #endif
@@ -1102,6 +1103,46 @@ void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> 
   }
   catch(H5::Exception &e)
   {
+    cout << "Error in : void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> &readIn)" << endl;
+    e.printErrorStack();
+  }
+}
+
+template <class T>
+void readDataSetFromGroup(H5::Group &g, const string &dataset_name, std::vector<T> &readIn)
+{
+  H5::DataSet dset;
+  H5::DataSpace dataspace;
+  
+  try{
+    dset = g.openDataSet(dataset_name);
+    dataspace = dset.getSpace();
+    hsize_t rank = dataspace.getSimpleExtentNdims();
+    hsize_t dims[rank];
+    hsize_t max_dims[rank];
+    hsize_t again = dataspace.getSimpleExtentDims(dims,max_dims);
+#ifndef NDEBUG
+    cout << "rank: " << rank << endl;
+    for(int i=0; i<rank; i++)
+    {
+      cout << "dims[" << i << "]" << " = " << dims[i] << endl;
+    }
+#endif
+  
+    boost::multi_array<T,1> arr_data(boost::extents[dims[0]]);
+    H5::DataType thisWritingType = getH5TypeFromCpp<T>();
+
+    dset.read(arr_data.data(), thisWritingType);
+    readIn.resize(dims[0]);
+    
+    for( int i=0;i<dims[0];++i)
+    {
+      readIn[i] = arr_data[i];
+    }
+  }
+  catch(H5::Exception &e)
+  {
+    cout << "Error in : void readDataSetFromGroup(H5::Group &g, const string &dataset_name, std::vector<T> &readIn)" << endl;
     e.printErrorStack();
   }
 }
@@ -1184,7 +1225,15 @@ void ReadHdfLd( H5::Group &g, LatticeDataFCC &ld )
   if(type!="FCC") throw std::runtime_error("LatticeDataFCC from hdf5 mismatch");
   ReadHdfLdGenericPart_(g, ld);
 }
-////// end hdf_wrapper 
+////// end hdf_wrapper
+
+/** NOTE explicite instantiate
+ * 
+ * since we build a shared library, we need to explicitly 
+ * for all required data types.
+ * Usually the compiler knows which data type are used as 
+ * template, but here not all code is compiled at once!!!
+ */
 #define INSTANTIATE(T)\
   template H5::DataSet WriteScalarField<T>(H5::Group &g, const string &name, ConstArray3d<T> arr, const LatticeDataQuad3d &ld, const H5::Group &ldgroup);
 INSTANTIATE(float)
@@ -1195,7 +1244,9 @@ INSTANTIATE(char)
 
 #define INSTANTIATE2(T)\
   template H5::DataSet writeDataSetToGroup<T>(H5::Group &g, const string &name, DynArray<T> &value);\
-  template void writeDataSetToGroup<T>(H5::Group &g, const string &name, const std::vector<T> &value);
+  template void writeDataSetToGroup<T>(H5::Group &g, const string &name, const std::vector<T> &value);\
+  template void readDataSetFromGroup<T>(H5::Group &g, const string &name, std::vector<T> &value);\
+  template void readDataSetFromGroup<T>(H5::Group &g, const string &name, DynArray<T> &value);
 INSTANTIATE2(float)
 INSTANTIATE2(double)
 INSTANTIATE2(int)

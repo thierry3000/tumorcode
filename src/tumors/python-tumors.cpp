@@ -108,9 +108,16 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
   // enable standard exception handling
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   
-  /* construct default simulation */
+  /**
+   * construct default simulation 
+   */
   FakeTumMTS::FakeTumorSimMTS s;
-  
+  /**
+   * initialize cell system 
+   * use memory on heap to not mess up allocation
+   */
+  s.tumorcode_pointer_to_currentCellsSystem = new vbl::CellsSystem();
+
   /* 
    * create ptree with default settings!!!
    */
@@ -119,12 +126,15 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
   ptree fakeTumMTSSettings = s.params.as_ptree();
   ptree systemSettings = s.mySystemParameters.as_ptree();
   ptree vesselSettings = s.vessel_model.params.as_ptree();
+  ptree vblSettings;
 
   #ifndef NDEBUG
   std::cout << "with detailed params: " << std::endl;
   printPtree(detailedO2Settings);
   std::cout << "with calcflow params: " << std::endl;
   printPtree(bfSettings);
+  std::cout << "with fakeTumMTS params: " << std::endl;
+  printPtree(fakeTumMTSSettings);
   #endif
   
   if( !isRerun )
@@ -138,10 +148,9 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     fakeTumMTSSettings.put("isRerun", 0);
     s.mySystemParameters.reRunNumber = 0;
     s.mySystemParameters.isRerun = false;
-    
     readSystemParameters(s.mySystemParameters);
-    
     boost::property_tree::update(systemSettings, s.mySystemParameters.as_ptree());
+   
     #ifdef DEBUG
       std::cout << "detailed params after update: " << std::endl;
       printPtree(detailedO2Settings);
@@ -160,19 +169,31 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     H5::Group h5_system_of_first_run;
     H5::Group h5_system_of_current_run;
     H5::Group last_state;
+    H5::Group h5_vbl_param;
+    H5::Group h5_vbl_Environment;
+    H5::Group h5_vbl_Environment_0;
+    H5::Group h5_vbl_dose_rateSignal;
+    H5::Group h5_vbl_flowSignal;
     int reRunNumber;
     try{
       //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
       //storing current system information needs write permissions
       file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR);
+      last_state = file.openGroup("/last_state");
       h5_params_of_previous_run = file.openGroup("/parameters");
       h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
       h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
       h5_system_of_first_run = h5_params_of_previous_run.openGroup("system");
       h5_o2_params_of_previous_run = h5_params_of_previous_run.openGroup("o2");
+      h5_vbl_param = last_state.openGroup("vbl");
+      h5_vbl_Environment =h5_vbl_param.openGroup("Environment");
+      h5_vbl_Environment_0=h5_vbl_param.openGroup("Environment_0");
+      h5_vbl_dose_rateSignal=h5_vbl_param.openGroup("dose_rateSignal");
+      h5_vbl_flowSignal=h5_vbl_param.openGroup("flowSignal");
     }
     catch(H5::Exception &e)
     {
+      cout << "Error opening the parameters" << endl;
       e.printErrorStack();
     }
     ReadHdfPtree(vesselSettings, h5_vessel_params_of_previous_run);
@@ -180,6 +201,40 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     ReadHdfPtree(fakeTumMTSSettings, h5_params_of_previous_run);
     ReadHdfPtree(systemSettings, h5_system_of_first_run);
     ReadHdfPtree(detailedO2Settings, h5_o2_params_of_previous_run);
+    
+    ReadHdfPtree(vblSettings, h5_vbl_param);
+    ptree vblSettings_Environment;
+    ReadHdfPtree(vblSettings_Environment, h5_vbl_Environment);
+    vblSettings.put_child("Environment", vblSettings_Environment);
+    ptree vblSettings_Environment_0;
+    ReadHdfPtree(vblSettings_Environment_0, h5_vbl_Environment_0);
+    vblSettings.put_child("Environment_0", vblSettings_Environment_0);
+    ptree vblSettings_dose_rateSignal;
+    ReadHdfPtree(vblSettings_dose_rateSignal, h5_vbl_dose_rateSignal);
+    vblSettings.put_child("dose_rateSignal", vblSettings_dose_rateSignal);
+    ptree vblSettings_flowSignal;
+    ReadHdfPtree(vblSettings_flowSignal, h5_vbl_flowSignal);
+    vblSettings.put_child("flowSignal", vblSettings_flowSignal);
+    
+    //ready types
+    int ntypes = vblSettings.get<int>("ntypes");
+    for(int i=0;i<ntypes; i++)
+    {
+      boost::format my_string_template("type_%i");
+      ptree readOutType;
+      H5::Group h5_vbl_type;
+      string current_type_name = boost::str(my_string_template %  i);
+      h5_vbl_type = h5_vbl_param.openGroup(current_type_name);
+      ReadHdfPtree(readOutType, h5_vbl_type);
+      h5_vbl_type.close();
+      vblSettings.put_child(current_type_name, readOutType);
+    }
+    s.all_pt_params.put_child("vbl", vblSettings);
+    
+#ifndef NDEBUG
+      std::cout << "found vbl Settings: " << std::endl;
+      printPtree(vblSettings);
+#endif
  
     //override read in
     fakeTumMTSSettings.put("vessel_path", "last_state/vessels");
@@ -187,7 +242,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     systemSettings.put("isRerun", true);
     try
     {
-      last_state = file.openGroup("/last_state");
+      //last_state = file.openGroup("/last_state");
       readAttrFromH5(last_state, "CURRENT_RERUN_NUMBER", reRunNumber);
       reRunNumber++;
       systemSettings.put("reRunNumber", reRunNumber);
@@ -196,6 +251,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     }
     catch(H5::Exception &e)
     {
+      cout << "error: creating system_rerun parameters group" << endl;
       e.printErrorStack();
     }
     //run time variables NO parameters
@@ -205,19 +261,53 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     readAttrFromH5(last_state, string("NEXT_OUTPUT_TIME"), s.next_output_time);
     readAttrFromH5(last_state, string("NEXT_ADAPTION_TIME"), s.next_adaption_time);
     
+    
+    //read data
+    try 
+    {
+      s.tumorcode_pointer_to_currentCellsSystem->assign(vblSettings);
+      unsigned long old_ncells = vblSettings.get<int>("ncells");
+      s.tumorcode_pointer_to_currentCellsSystem->AddCells(old_ncells);
+      cout << "Initializing Cell system with " << old_ncells << " cells " << endl;
+      s.readVBLDataFromHDF(h5_vbl_param);
+    }
+    catch(H5::Exception &e)
+    {
+      cout<<"Error while  s.readVBLDataFromHDF(last_state);" << endl;
+      e.printErrorStack();
+    }
+    catch(std::runtime_error &e)
+    {
+      cout << e.what() << endl;
+    }
+    
     file.close();
+    last_state.close();
     h5_params_of_previous_run.close();
     h5_vessel_params_of_previous_run.close();
     h5_calcflow_of_previous_run.close();
     h5_system_of_first_run.close();
     h5_system_of_current_run.close();
-    last_state.close();
+    h5_vbl_param.close();
+    h5_vbl_Environment.close();
+    h5_vbl_Environment_0.close();
+    h5_vbl_dose_rateSignal.close();
+    h5_vbl_flowSignal.close();
   }
   
   // assign o2 parameters to the simulation
   s.vessel_model.params.assign(vesselSettings);
   s.bfparams.assign(bfSettings);
-  s.params.assign(fakeTumMTSSettings);
+  try 
+  {
+    s.params.assign(fakeTumMTSSettings);
+    s.mySystemParameters.assign(systemSettings);
+  }
+  catch(std::runtime_error &e)
+  {
+    cout << "error assigning fakeTumMTSSettings" << endl;
+    cout << e.what() << endl;
+  }
   
   s.o2_sim.bfparams.assign(bfSettings);
   s.o2_sim.params.assign(detailedO2Settings);
@@ -259,6 +349,8 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
   signal(SIGFPE, handler);
 // #endif
     int returnCode = s.run();
+    delete s.tumorcode_pointer_to_currentCellsSystem;
+    std::cout << "Cell System deleted" << endl;
   }
   catch(std::exception &ex)
   {
@@ -362,12 +454,13 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
     }
     catch(H5::Exception &e)
     {
+      cout << "Error opening the parameters" << endl;
       e.printErrorStack();
     }
     ReadHdfPtree(vesselSettings, h5_vessel_params_of_previous_run);
     ReadHdfPtree(bfSettings, h5_calcflow_of_previous_run);
     ReadHdfPtree(fakeTumSettings, h5_params_of_previous_run);
-    ReadHdfPtree(systemSettings, h5_system_of_first_run);
+    //ReadHdfPtree(systemSettings, h5_system_of_first_run);
  
     //override read in
     fakeTumSettings.put("vessel_path", "last_state/vessels");
@@ -384,6 +477,7 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
     }
     catch(H5::Exception &e)
     {
+      cout << "error: creating system_rerun parameters group" << endl;
       e.printErrorStack();
     }
     //run time variables NO parameters

@@ -278,6 +278,13 @@ int FakeTum::FakeTumorSim::run()
     next_output_time = 0;
     next_adaption_time = 0;
   }
+  else
+  {
+    //this is store before the increment in the last run
+    num_iteration++;
+    output_num++;
+    time = time+params.dt;
+  }
   
   //for the adaption it could be usefull to have the
   //vessel network after the adaption in the beginning   ---> done automatically since adaption is in tum-only-vessels
@@ -287,10 +294,24 @@ int FakeTum::FakeTumorSim::run()
 //     writeVesselsafter_initial_adaption = true;
 //   }
 
+  int iteration_in_this_rerun=0;
   
-  
-  while (true and not PyCheckAbort())
+  while (iteration_in_this_rerun <= max_iteration_per_rerun and not PyCheckAbort() )
   {
+    if (time > params.tend)
+    {
+      cout << "stopped because of time" << endl;
+      break;
+    }
+    
+    double size_limit = 0.5*maxCoeff(Size(vl->Ld().GetWorldBox())) * params.stopping_radius_fraction; 
+    //cout << format("size_limit = %f vs tumor_radius = %f\n") % size_limit % tumor_radius;
+    
+    if (tumor_radius >  size_limit)
+    {
+      cout << "stopped because of size" << endl;
+      break;
+    }
 #ifdef USE_ADAPTION
 #if 1
     if (time >= next_adaption_time - params.dt * 0.1)
@@ -326,7 +347,7 @@ int FakeTum::FakeTumorSim::run()
 #endif
 #endif
     
-    if (time >= next_output_time - params.dt * 0.1)
+    if (time >= next_output_time - params.dt * 1.0)
     {
       //this happens only for fixed instances of time
       writeOutput(true);
@@ -335,13 +356,6 @@ int FakeTum::FakeTumorSim::run()
     //for a rerun we need to access the latest instant of time
     params.latest_executed_timepoint = time;
     writeOutput(false);
-    
-    if (time > params.tend) break;
-    
-    double size_limit = 0.5*maxCoeff(Size(vl->Ld().GetWorldBox())) * params.stopping_radius_fraction; 
-    //cout << format("size_limit = %f vs tumor_radius = %f\n") % size_limit % tumor_radius;
-    
-    if (tumor_radius >  size_limit) break;
 
     doStep(params.dt);
     
@@ -354,6 +368,7 @@ int FakeTum::FakeTumorSim::run()
     time += params.dt;
     ++output_num;
     ++num_iteration;
+    ++iteration_in_this_rerun;
   }
 
   return 0;

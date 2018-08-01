@@ -214,6 +214,7 @@ const int ANN_dim = 3;            // space dimension
   double next_adaption_time;
   int num_iteration;
   int output_num;
+  int max_iteration_per_rerun = 5;
 
   /**
    * interface functions for VBL
@@ -245,6 +246,7 @@ const int ANN_dim = 3;            // space dimension
  */
   std::string writeOutput(bool doPermanentSafe);
   void writeVBLDataToHDF(H5::Group &g);
+  void readVBLDataFromHDF(H5::Group &h5_vbl);
   void WriteCellsSystemHDF_with_nearest_vessel_index(H5::Group &out_cell_group);
   
   vbl::CellsSystem *tumorcode_pointer_to_currentCellsSystem;
