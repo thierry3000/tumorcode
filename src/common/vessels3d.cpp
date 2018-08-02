@@ -359,6 +359,13 @@ VesselNode* VesselList3d::FindNode( const Int3 &a )
     return lookup_site.FindAtSite(Ld().LatticeToSite(a));
 }
 
+
+/** 
+ * for an element on the lattice a,
+ * findAny VesselList3d elemets linked to it -> either vessel or node
+ * 
+ * return true if either a vessel or a node is found
+ */
 bool VesselList3d::FindAny( const Int3 &a, Vessel* &v, VesselNode* &vc )
 {
     SiteType site = Ld().LatticeToSite(a);

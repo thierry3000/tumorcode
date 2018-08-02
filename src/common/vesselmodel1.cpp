@@ -523,7 +523,7 @@ void Model::GenerateSprouts()
 {
   FUNC_TIMING_START
   typedef LatticeData::SiteType SiteType;
-  tbb::spin_mutex mutex;
+  //tbb::spin_mutex mutex;
   DynArray<SiteType> sitesSprout;
   DynArray<VesselNode*> vcExtendSprout;
   
@@ -550,7 +550,8 @@ void Model::GenerateSprouts()
     }
     #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for(int i=0; i<vl->GetNCount(); ++i)
-    {//node stuff
+    {
+      //node stuff
       VesselNode* nd = vl->GetNode(i);
       //ignore unconnected stuff
       if (nd->Count() <= 0) continue;
@@ -575,7 +576,8 @@ void Model::GenerateSprouts()
 
     #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for( int i=0; i<vl->GetECount(); ++i )
-    {//edge loop
+    {
+      //edge loop
       Vessel* v = vl->GetEdge(i);
       //inital lpos
       Int3 lpos = v->NodeA()->lpos;
@@ -589,16 +591,38 @@ void Model::GenerateSprouts()
       }
     }//end edge loop
 
-    {
-      mutex.lock();
-      sitesSprout.insert(sitesSprout.end(), th_sitesSprout.begin(), th_sitesSprout.end());
-      vcExtendSprout.insert(vcExtendSprout.end(), th_vcExtendSprout.begin(), th_vcExtendSprout.end());
-      mutex.unlock();
-      th_sitesSprout.remove_all();
-      th_vcExtendSprout.remove_all();
-    }
+    
+    //mutex.lock();
+    main_mutex.lock();
+    sitesSprout.insert(sitesSprout.end(), th_sitesSprout.begin(), th_sitesSprout.end());
+    vcExtendSprout.insert(vcExtendSprout.end(), th_vcExtendSprout.begin(), th_vcExtendSprout.end());
+    //mutex.unlock();
+    main_mutex.unlock();
+    //th_sitesSprout.remove_all();
+    //th_vcExtendSprout.remove_all();
+    
   }// end #pragma omp parallel
-
+  
+  /** 
+     * what happens if an extenting sprout was found by 2 treads?
+     */
+  std::vector<uint> found_indices;
+  for(int i = 0;i<vcExtendSprout.size(); i++)
+  {
+    found_indices.push_back(vcExtendSprout[i]->Index());
+  }
+  std::map<uint,uint> CountMap;
+  for(auto it = found_indices.begin(); it!= found_indices.end();++it)
+    CountMap[*it]++;
+  for(auto it = CountMap.begin(); it!=CountMap.end(); ++it)
+    if(it->second>1)
+      cout << "Duplicate " << it->first << endl;
+  
+#ifndef TOTAL_SILENCE
+  cout << "finished can sprout " << endl;
+  cout.flush();
+#endif
+  
   Random rnd(GetThreadRandomSeed());
   //create new sproutings
   //const int numIterations = sitesSprout.size()/params.timeProlEc;
@@ -683,7 +707,7 @@ void Model::CollapseVessels()
   FUNC_TIMING_START
 
   DynArray<Vessel*> toKill;
-  tbb::spin_mutex mutex;
+  //tbb::spin_mutex mutex;
 
   #pragma omp parallel
   {
@@ -775,11 +799,12 @@ void Model::CollapseVessels()
 	th_toKill.push_back(v);
     }
     //parallel kill ;-)
-    mutex.lock();
+    main_mutex.lock();
     toKill.insert(toKill.end(), th_toKill.begin(), th_toKill.end());
-    mutex.unlock();
+    main_mutex.unlock();
     th_toKill.remove_all();
-  }
+  }//#pragma omp parallel
+  
   #pragma omp barrier
  
   for( int i=0; i<toKill.size(); ++i )

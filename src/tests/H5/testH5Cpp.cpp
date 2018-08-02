@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 # include <boost/random.hpp>
 # include <boost/random/random_device.hpp>  // creates real random number from system functions
+# include <boost/multi_array.hpp>
 using namespace std;
 
 #include <H5Cpp.h>
@@ -78,141 +79,200 @@ typedef Vec<int,2> Int2;
 typedef Vec<int,2> Int3;
 typedef Vec<int,6> Int6;
 typedef Vec<double,6> Double6;
+typedef Vec<double,3> Double3;
 typedef Vec<double,2> Double2;
 typedef Vec<bool,3> Bool3;
+typedef u_char uchar;
+typedef int64_t int64;
 
-
-void writeAttrToH5(H5::Group g, const string &attr_name,  const int &value)
-{ 
-  { 
-    // Create new dataspace for attribute
-    H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
-    H5::Attribute attr_out = g.createAttribute(attr_name, H5::PredType::NATIVE_INT, attr_dataspace);
-    attr_out.write(H5::PredType::NATIVE_INT, &value);
-  }
-};
-void writeAttrToH5(H5::Group g, const string &attr_name,  const double &value)
-{ 
-  { 
-    // Create new dataspace for attribute
-    H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
-    H5::Attribute attr_out = g.createAttribute(attr_name, H5::PredType::NATIVE_DOUBLE, attr_dataspace);
-    attr_out.write(H5::PredType::NATIVE_DOUBLE, &value);
-  }
-};
-void writeAttrToH5(H5::Group g, const string &attr_name,  const float &value)
-{ 
-  { 
-    // Create new dataspace for attribute
-    H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
-    H5::Attribute attr_out = g.createAttribute(attr_name, H5::PredType::NATIVE_FLOAT, attr_dataspace);
-    attr_out.write(H5::PredType::NATIVE_FLOAT, &value);
-  }
-};
-void writeAttrToH5(H5::Group g, const string &attr_name, const  bool &value)
-{ 
-  { 
-    // Create new dataspace for attribute
-    H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
-    H5::Attribute attr_out = g.createAttribute(attr_name, H5::PredType::NATIVE_UCHAR, attr_dataspace);
-    attr_out.write(H5::PredType::NATIVE_UCHAR, &value);
-  }
-};
-void writeAttrToH5(H5::Group g, const string &attr_name, const  string &value)
-{ 
-  { 
-    // Create new dataspace for attribute
-    H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
-    
-    H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
-    
-    const H5std_string strwritebuf (value);
-    
-    try
-    {
-      H5::Attribute myatt_in = g.createAttribute(attr_name, strdatatype, attr_dataspace);
-      myatt_in.write(strdatatype, strwritebuf);
-    }
-    catch(H5::Exception &e)
-    {
-      e.printErrorStack();
-    }
-   
-  }
-};
-
-void writeAttrToH5(H5::Group h, const string &attr_name,  const Float3 &value)
-{ 
+template<class T>
+H5::DataType getH5TypeFromCpp()
+{
+  H5::DataType thisWritingType;
+  if(typeid(T) == typeid(float))
   {
-    const int rank = 2;
-    hsize_t dims[rank] = {1,3};
-    H5::DataSpace mspace( rank, dims);
-    H5::Attribute attr_out = h.createAttribute(attr_name, H5::PredType::NATIVE_FLOAT, mspace);
-    
-    attr_out.write(H5::PredType::NATIVE_FLOAT, &value);
+    thisWritingType = H5::PredType::NATIVE_FLOAT;
   }
-};
+  else if(typeid(T) == typeid(Float3))
+  {
+    thisWritingType = H5::PredType::NATIVE_FLOAT;
+  }
+  else if(typeid(T) == typeid(Float2))
+  {
+    thisWritingType = H5::PredType::NATIVE_FLOAT;
+  }
+  else if(typeid(T) == typeid(double))
+  {
+    thisWritingType = H5::PredType::NATIVE_DOUBLE;
+  }
+  else if(typeid(T) == typeid(Double3))
+  {
+    thisWritingType = H5::PredType::NATIVE_DOUBLE;
+  }
+  else if(typeid(T) == typeid(Bool3))
+  {
+    thisWritingType = H5::PredType::NATIVE_CHAR;
+  }
+  else if(typeid(T) == typeid(int))
+  {
+    thisWritingType = H5::PredType::NATIVE_INT;
+  }
+  else if(typeid(T) == typeid(Int3))
+  {
+    thisWritingType = H5::PredType::NATIVE_INT;
+  }
+  else if(typeid(T) == typeid(Int6))
+  {
+    thisWritingType = H5::PredType::NATIVE_INT;
+  }
+  else if(typeid(T) == typeid(bool))
+  {
+    thisWritingType = H5::PredType::NATIVE_CHAR;
+  }
+  else if(typeid(T) == typeid(char))
+  {
+    thisWritingType = H5::PredType::NATIVE_CHAR;
+  }
+  else if(typeid(T) == typeid(uchar))
+  {
+    thisWritingType = H5::PredType::NATIVE_UCHAR;
+  }
+  else if(typeid(T) == typeid(long))
+  {
+    thisWritingType = H5::PredType::NATIVE_LONG;
+  }
+  else if(typeid(T) == typeid(int64))
+  {
+    thisWritingType = H5::PredType::NATIVE_INT64;
+  }
+  else if(typeid(T) == typeid(unsigned long))
+  {
+    thisWritingType = H5::PredType::NATIVE_UINT64;
+  }
+  else
+  {
+    cout << "unsupported Template type in writeDataSetToGroup!" << endl;
+    exit(1);
+  }
+  return thisWritingType;
+}
 
-void writeAttrToH5(H5::Group h, const string &attr_name,  const Float2 &value)
-{ 
-  {
-    const int rank = 2;
-    hsize_t dims[rank] = {1,2};
-    H5::DataSpace mspace( rank, dims);
-    H5::Attribute attr_out = h.createAttribute(attr_name, H5::PredType::NATIVE_FLOAT, mspace);
-    
-    attr_out.write(H5::PredType::NATIVE_FLOAT, &value);
-  }
-};
-void writeAttrToH5(H5::Group h, const string &attr_name,  const Double2 &value)
-{ 
-  {
-    const int rank = 2;
-    hsize_t dims[rank] = {1,2};
-    H5::DataSpace mspace( rank, dims);
-    H5::Attribute attr_out = h.createAttribute(attr_name, H5::PredType::NATIVE_DOUBLE, mspace);
-    
-    attr_out.write(H5::PredType::NATIVE_DOUBLE, &value);
-  }
-};
 
-void writeAttrToH5(H5::Group h, string attr_name,  Int6 &value)
+/**
+ * one attribute could be an int3 or a point in 3D space
+ */
+#if H5_VERS_MINOR > 9
+template <class T>
+void writeAttrToH5(H5::H5Object &h, const string &attr_name,  const T &value)
 { 
+  H5::DataType thisType = getH5TypeFromCpp<T>();
+  const int rank = 2;
+  hsize_t dims[rank];
+  dims[0] = 1;
+  if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
   {
-    const int rank = 2;
-    hsize_t dims[rank] = {1,6};
-    
-    H5::DataSpace mspace( rank, dims);
-    H5::Attribute attr_out = h.createAttribute(attr_name, H5::PredType::NATIVE_INT, mspace);
-    
-    attr_out.write(H5::PredType::NATIVE_INT, &value);
+    dims[1] = 3;
   }
+  else
+  {
+    dims[1] = 1;
+  }
+  if(typeid(T) == typeid(Int6))
+  {
+    dims[1] = 6;
+  }
+  H5::DataSpace mspace = H5::DataSpace( rank, dims);
+  H5::Attribute attr_out;
+  try{
+    attr_out = h.createAttribute(attr_name, thisType, mspace);
+  }
+  catch(H5::Exception &e)
+  {
+    std::cout << "unable for write: " << attr_name << std::endl;
+    e.printErrorStack();
+  }
+  attr_out.write(thisType, &value);
 };
+#else //#if H5_VERS_MINOR > 9
+template <class T>
+void writeAttrToH5(H5::H5Location &h, const string &attr_name,  const T &value)
+{ 
+  H5::DataType thisType = getH5TypeFromCpp<T>();
+  const int rank = 2;
+  hsize_t dims[rank];
+  dims[0] = 1;
+  if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
+  {
+    dims[1] = 3;
+  }
+  else
+  {
+    dims[1] = 1;
+  }
+  if(typeid(T) == typeid(Int6))
+  {
+    dims[1] = 6;
+  }
+  
+  H5::DataSpace mspace = H5::DataSpace( rank, dims);
+  H5::Attribute attr_out;
+  try
+  {
+    attr_out = h.createAttribute(attr_name, thisType, mspace);
+  }
+  catch(H5::Exception &e)
+  {
+    std::cout << "unable for write: " << attr_name << std::endl;
+    e.printErrorStack();
+  }
+  attr_out.write(thisType, &value);
+};
+#endif //#if H5_VERS_MINOR > 9
 
-void writeAttrToH5(H5::Group h, string attr_name,  Int2 &value)
+#if H5_VERS_MINOR > 9
+template<>
+void writeAttrToH5<string>(H5::H5Object &h, const string &attr_name, const string &value)
 { 
+  // Create new dataspace for attribute
+  H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
+  // Create new string datatype for attribute
+  H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
+  // Set up write buffer for attribute
+  const H5std_string strwritebuf (value);
+  try
   {
-    const int rank = 2;
-    hsize_t dims[rank] = {1,2};
-    
-    H5::DataSpace mspace( rank, dims);
-    H5::Attribute attr_out = h.createAttribute(attr_name, H5::PredType::NATIVE_INT, mspace);
-    
-    attr_out.write(H5::PredType::NATIVE_INT, &value);
+    H5::Attribute myatt_in = h.createAttribute(attr_name, strdatatype, attr_dataspace);
+    myatt_in.write(strdatatype, strwritebuf);
+  }
+  catch(H5::Exception &e)
+  {
+    std::cout << "unable for write: " << attr_name << std::endl;
+    e.printErrorStack();
   }
 };
-
-void writeAttrToH5(H5::Group h, string attr_name,  Bool3 &value)
+#else //#if H5_VERS_MINOR > 9
+template<>
+void writeAttrToH5<string>(H5::H5Location &h, const string &attr_name, const string &value)
 { 
+  // Create new dataspace for attribute
+  H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
+  // Create new string datatype for attribute
+  H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
+  // Set up write buffer for attribute
+  const H5std_string strwritebuf (value);
+  
+  try
   {
-    const int rank = 2;
-    hsize_t dims[rank] = {1,3};
-    H5::DataSpace mspace( rank, dims);
-    H5::Attribute attr_out = h.createAttribute(attr_name, H5::PredType::NATIVE_CHAR, mspace);
-    
-    attr_out.write(H5::PredType::NATIVE_CHAR, &value);
+    H5::Attribute myatt_in = h.createAttribute(attr_name, strdatatype, attr_dataspace);
+    myatt_in.write(strdatatype, strwritebuf);
+  }
+  catch(H5::Exception &e)
+  {
+    std::cout << "unable for write: " << attr_name << std::endl;
+    e.printErrorStack();
   }
 };
+#endif //#if H5_VERS_MINOR > 9
 
 
 
@@ -302,76 +362,112 @@ void writeAttrToH5(H5::Group h, string attr_name,  Bool3 &value)
 //   
 // }
 
+#if H5_VERS_MINOR > 9
 template<class T>
-void readAttrFromH5(H5::Group g, const string &attr_name, T &output_buffer)
+void readAttrFromH5(H5::H5Object &g, const string &attr_name, T &output_buffer)
 {
-  H5::Attribute att_to_read = g.openAttribute(attr_name);
-  H5::DataType type = att_to_read.getDataType();
+  H5::Attribute att_to_read;
+  H5::DataType type; 
   try
   {
+    att_to_read = g.openAttribute(attr_name);
+    type = att_to_read.getDataType();
     att_to_read.read(type, &output_buffer);
   }
   catch(H5::Exception &e)
   {
+    std::cout << "unable for read: " << attr_name << std::endl;
     e.printErrorStack();
   }
 }
+#else //#if H5_VERS_MINOR > 9
+template<class T>
+void readAttrFromH5(H5::H5Location &g, const string &attr_name, T &output_buffer)
+{
+  H5::Attribute att_to_read;
+  H5::DataType type; 
+  try
+  {
+    att_to_read = g.openAttribute(attr_name);
+    type = att_to_read.getDataType();
+    att_to_read.read(type, &output_buffer);
+  }
+  catch(H5::Exception &e)
+  {
+    std::cout << "unable for read: " << attr_name << std::endl;
+    e.printErrorStack();
+  }
+}
+#endif //#if H5_VERS_MINOR > 9
+
+
+
+#if H5_VERS_MINOR > 9
 template<>
-void readAttrFromH5<string>(H5::Group g, const string &attr_name, string &output_buffer)
+void readAttrFromH5<string>(H5::H5Object &g, const string &attr_name, string &output_buffer)
 { 
   H5::Attribute att_to_read = g.openAttribute(attr_name);
-  //H5::DataType type = att_to_read.getDataType();
   
   // Create new dataspace for attribute
   H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
 
-  // Create new string datatype for attributeH5T_VARIABLE
+  // Create new string datatype for attribute
   H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
 
   // Set up read buffer for attribute
   H5std_string strreadbuf ("");
 
   // Create attribute and write to it
-  att_to_read.read(strdatatype, strreadbuf); 
+  try
+  {
+    att_to_read.read(strdatatype, strreadbuf);
+  }
+  catch(H5::Exception &e)
+  {
+    std::cout << "unable for read: " << attr_name << std::endl;
+    e.printErrorStack();
+  }
   output_buffer = strreadbuf;
-  cout << "read string works" << endl;
 }
-template<class T>
-H5::DataType getH5TypeFromCpp()
-{
-  H5::DataType thisWritingType;
-  if(typeid(T) == typeid(float))
+#else //#if H5_VERS_MINOR > 9
+template<>
+void readAttrFromH5<string>(H5::H5Location &g, const string &attr_name, string &output_buffer)
+{ 
+  H5::Attribute att_to_read = g.openAttribute(attr_name);
+  
+  // Create new dataspace for attribute
+  H5::DataSpace attr_dataspace = H5::DataSpace(H5S_SCALAR);
+
+  // Create new string datatype for attribute
+  H5::StrType strdatatype(H5::PredType::C_S1, H5T_VARIABLE); // of length 256 characters
+
+  // Set up read buffer for attribute
+  H5std_string strreadbuf ("");
+
+  // Create attribute and write to it
+  try
   {
-    thisWritingType = H5::PredType::NATIVE_FLOAT;
+    att_to_read.read(strdatatype, strreadbuf);
   }
-  else if(typeid(T) == typeid(Float3))
+  catch(H5::Exception &e)
   {
-    thisWritingType = H5::PredType::NATIVE_FLOAT;
+    std::cout << "unable for read: " << attr_name << std::endl;
+    e.printErrorStack();
   }
-  else if(typeid(T) == typeid(int))
-  {
-    thisWritingType = H5::PredType::NATIVE_INT;
-  }
-  else if(typeid(T) == typeid(Int3))
-  {
-    thisWritingType = H5::PredType::NATIVE_INT;
-  }
-  else if(typeid(T) == typeid(bool))
-  {
-    thisWritingType = H5::PredType::NATIVE_CHAR;
-  }
-  else
-  {
-    cout << "unsupported Template type in writeDataSetToGroup!" << endl;
-    exit(1);
-  }
-  return thisWritingType;
+  output_buffer = strreadbuf;
 }
+#endif //#if H5_VERS_MINOR > 9
+
+
+
+
+
 template<class T>
-H5::DataSet writeDataSetToGroup(H5::Group g, const string &dataset_name, DynArray<T> &value)
+H5::DataSet writeDataSetToGroup(H5::Group &g, const string &dataset_name, DynArray<T> &value)
 {
   int sizeOfDynArray = value.size();
-  T continousMemoryArrary[sizeOfDynArray];
+  boost::multi_array<T,1> continousMemoryArrary(boost::extents[sizeOfDynArray]);
+  //T *continousMemoryArrary = new T[sizeOfDynArray];
   for( int i=0; i<sizeOfDynArray;++i)
   {
     continousMemoryArrary[i] = T(value[i]);
@@ -384,35 +480,131 @@ H5::DataSet writeDataSetToGroup(H5::Group g, const string &dataset_name, DynArra
   {
     dims[1] = 3;
   }
+  else if( typeid(T) == typeid(Float2))
+  {
+    dims[1] = 2;
+  }
   else
   {
     dims[1] = 1;
   }
-#ifdef DEBUG
+#ifndef NDEBUG
   cout << "we are writting data of size (" << dims[0] << ", " << dims[1] << "!" <<endl;
 #endif
-  H5::DataSpace dataspace( rank, dims);
-  H5::DataSet ds = g.createDataSet(dataset_name, thisWritingType, dataspace);
-  ds.write(&continousMemoryArrary, thisWritingType, dataspace);
+  H5::DataSet ds;
+  try 
+  {
+    H5::DataSpace dataspace( rank, dims);
+    ds = g.createDataSet(dataset_name, thisWritingType, dataspace);
+    ds.write(continousMemoryArrary.data(), thisWritingType, dataspace);
+  }
+  catch( H5::Exception &e)
+  {
+    cout<< "failed to write " << dataset_name << endl;
+    e.printErrorStack();
+  }
   return ds;
 }
 
-template <class T>
-void readDataSetFromGroup(H5::Group g, const string &dataset_name, DynArray<T> &readIn)
+
+
+template<class T>
+void writeDataSetToGroup(H5::Group &g, const string &dataset_name, const std::vector<T> &value)
 {
-  H5::DataSet dset = g.openDataSet(dataset_name);
-  H5::DataSpace dataspace = dset.getSpace();
-  hsize_t dims[dataspace.getSimpleExtentNdims()];
-  cout << dataspace.getSimpleExtentDims(dims) << endl;
-  cout << dims[0] << endl;
-  cout << dims[1] << endl;
-  T arr[dims[0]];
+  int sizeOfvector = value.size();
+  int rank = 2;
+  hsize_t dims[rank];
+  dims[0]=sizeOfvector;
   H5::DataType thisWritingType = getH5TypeFromCpp<T>();
-  dset.read(&arr, thisWritingType);
-  readIn.resize(dims[0]);
-  for( int i=0;i<dims[0];++i)
+  dims[1] = 1;
+#ifndef NDEBUG
+  cout << "value[0]: " << value[0] << endl;
+  cout<< "writing std::vector: " << dataset_name << " to hdf5" << endl;
+  cout << "we are writting data of size (" << dims[0] << ", " << dims[1] << "!" <<endl;
+#endif
+  H5::DataSet ds;
+  try 
   {
-    readIn[i] = arr[i];
+    H5::DataSpace dataspace( rank, dims);
+    ds = g.createDataSet(dataset_name, thisWritingType, dataspace);
+    ds.write(value.data(), thisWritingType, dataspace);
+  }
+  catch( H5::Exception &e)
+  {
+    cout<< "failed to write " << dataset_name << endl;
+    e.printErrorStack();
+  }
+}
+
+/** bool s work differently
+ * 
+ * untested!!!
+ * 
+ */
+template<>
+void writeDataSetToGroup(H5::Group &g, const string &dataset_name, const std::vector<bool> &value)
+{
+  int sizeOfvector = value.size();
+  int rank = 2;
+  hsize_t dims[rank];
+  dims[0]=sizeOfvector;
+  H5::DataType thisWritingType = getH5TypeFromCpp<bool>();
+  dims[1] = 1;
+#ifndef NDEBUG
+  cout<< "writing std::vector: " << dataset_name << " to hdf5" << endl;
+  cout << "we are writting data of size (" << dims[0] << ", " << dims[1] << "!" <<endl;
+  cout << "value[0]: " << value[0] << endl;
+#endif
+  H5::DataSet ds;
+  try 
+  {
+    H5::DataSpace dataspace( rank, dims);
+    ds = g.createDataSet(dataset_name, thisWritingType, dataspace);
+    ds.write(&value, thisWritingType, dataspace);
+  }
+  catch( H5::Exception &e)
+  {
+    cout<< "failed to write " << dataset_name << endl;
+    e.printErrorStack();
+  }
+}
+
+template <class T>
+void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> &readIn)
+{
+  H5::DataSet dset;
+  H5::DataSpace dataspace;
+  
+  try{
+    dset = g.openDataSet(dataset_name);
+    dataspace = dset.getSpace();
+    hsize_t rank = dataspace.getSimpleExtentNdims();
+    hsize_t dims[rank];
+    hsize_t max_dims[rank];
+    hsize_t again = dataspace.getSimpleExtentDims(dims,max_dims);
+#ifndef NDEBUG
+    cout << "rank: " << rank << endl;
+    for(int i=0; i<rank; i++)
+    {
+      cout << "dims[" << i << "]" << " = " << dims[i] << endl;
+    }
+#endif
+  
+    boost::multi_array<T,1> arr_data(boost::extents[dims[0]]);
+    H5::DataType thisWritingType = getH5TypeFromCpp<T>();
+
+    dset.read(arr_data.data(), thisWritingType);
+    readIn.resize(dims[0]);
+    
+    for( int i=0;i<dims[0];++i)
+    {
+      readIn[i] = arr_data[i];
+    }
+  }
+  catch(H5::Exception &e)
+  {
+    cout << "failed to read: " << dataset_name << endl;
+    e.printErrorStack();
   }
 }
 

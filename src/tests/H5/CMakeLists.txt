@@ -3,7 +3,7 @@
 
 add_executable(testH5Cpp testH5Cpp.cpp)
 find_package(Boost REQUIRED COMPONENTS "random")
-target_link_libraries(testH5Cpp "common;${myLibs};${Boost_RANDOM_LIBRARY}")
+target_link_libraries(testH5Cpp "common;${myLibs};${Boost_RANDOM_LIBRARY};${HDF5_CXX_LIBRARIES}")
 #install(TARGETS testH5Cpp RUNTIME DESTINATION bin)
 
 # 

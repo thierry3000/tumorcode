@@ -456,6 +456,10 @@ int FindPositionOnVessel(const VesselList3d::LatticeData &ld, const Vessel* v, c
   return x.len;
 }
 
+/** 
+ * last == NULL
+ */
+
 static int DistanceToJunctionDirected( const VesselNode* vc, const VesselNode* last, int maxdist )
 {
   myAssert( vc && last );
@@ -478,7 +482,17 @@ static int DistanceToJunctionDirected( const VesselNode* vc, const VesselNode* l
   return 10000;
 }
 
-
+/**
+ *                   vstart
+ *        (A-------------------------B)
+ *              ^
+ *              |
+ *            posOnVess
+ *            vcstart
+ * 
+ *  the vessel "vstart" is devided in further subparts, see pt.put("scale subdivide", 10.) and ReadVesselList3d
+ *  "vcstart" points to the node where the sprouting will take place.
+ */
 int FindDistanceToJunction( const Vessel* vstart, int posOnVess, const VesselNode* vcstart, int maxdist )
 {
   myAssert( (vstart==NULL)^(vcstart==NULL) );
