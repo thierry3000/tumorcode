@@ -77,7 +77,7 @@ struct FakeTumorSim : public boost::noncopyable
   double next_adaption_time;
   int num_iteration;
   int output_num;
-  int max_iteration_per_rerun= 5;
+  int max_iteration_per_rerun= 20;
 
   // interface functions
   float getGf(const Float3 &pos) const;

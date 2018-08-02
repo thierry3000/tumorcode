@@ -687,13 +687,29 @@ void FakeTumMTS::FakeTumorSimMTS::readVBLDataFromHDF(H5::Group &h5_vbl)
 {
   std::vector<unsigned long> ul_buffer;
   std::vector<int> int_buffer;
+  std::vector<double> double_buffer;
+  std::vector<float> float_buffer;
   readDataSetFromGroup(h5_vbl, string("cell_type"), ul_buffer);
   tumorcode_pointer_to_currentCellsSystem->set_CellTypeFromIndexVector(ul_buffer);
   readDataSetFromGroup(h5_vbl, string("name"), ul_buffer);
   tumorcode_pointer_to_currentCellsSystem->Set_name(ul_buffer);
   readDataSetFromGroup(h5_vbl, string("mark"), int_buffer);
   tumorcode_pointer_to_currentCellsSystem->Set_mark(int_buffer);
+  readDataSetFromGroup(h5_vbl, string("Temperature"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_Temperature(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("phase"), int_buffer);
+  tumorcode_pointer_to_currentCellsSystem->set_CellPhaseFromIntVector(int_buffer);
+  readDataSetFromGroup(h5_vbl, string("death_condition"), int_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_death_condition(int_buffer);
+  readDataSetFromGroup(h5_vbl, string("age"), float_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_age(float_buffer);
+  readDataSetFromGroup(h5_vbl, string("phase_age"), float_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_phase_age(float_buffer);
+  readDataSetFromGroup(h5_vbl, string("n_mitosis"), int_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_n_mitosis(int_buffer);
   
+  readDataSetFromGroup(h5_vbl, string("x_mitosis"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_x(double_buffer);
   
 
   
