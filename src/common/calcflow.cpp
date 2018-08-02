@@ -216,26 +216,26 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
   clear_and_free_memory(flownet.len);
   clear_and_free_memory(flownet.rad);
   
-  {
-    Linsys flowsys;
-    flowsys.scaling_const = CalcFlowCoeff(bloodFlowParameters.viscosityPlasma, 4., 100.); //Median(cond);
-    flowsys.initialize_pattern(flownet.num_vertices(), flownet.edges);
-    flowsys.fill_values(flownet.edges, cond, flownet.bcs);
-
-    //sparse_matrix_print(*flowsys.sys);
-
-    flowsys.solve();
-    
-    //vector_print(*flowsys.lhs);
   
-    flownet.press.resize(flownet.num_vertices());
-    //flownet.len.resize(flownet.num_edges());
-    //flownet.rad.resize(flownet.num_edges());
-    //flownet.hema.resize(flownet.num_edges());
-    //flownet.flow.resize(flownet.num_edges());
-    
-    for (int i=0; i<flownet.num_vertices(); ++i) flownet.press[i] = flowsys.lhs_get(i);
-    SetFlowValues(vl, flownet, cond, flownet.press, flownet.hema);
+  Linsys flowsys;
+  flowsys.scaling_const = CalcFlowCoeff(bloodFlowParameters.viscosityPlasma, 4., 100.); //Median(cond);
+  flowsys.initialize_pattern(flownet.num_vertices(), flownet.edges);
+  flowsys.fill_values(flownet.edges, cond, flownet.bcs);
+
+  //sparse_matrix_print(*flowsys.sys);
+
+  flowsys.solve();
+  
+  //vector_print(*flowsys.lhs);
+
+  flownet.press.resize(flownet.num_vertices());
+  //flownet.len.resize(flownet.num_edges());
+  //flownet.rad.resize(flownet.num_edges());
+  //flownet.hema.resize(flownet.num_edges());
+  //flownet.flow.resize(flownet.num_edges());
+  
+  for (int i=0; i<flownet.num_vertices(); ++i) flownet.press[i] = flowsys.lhs_get(i);
+  SetFlowValues(vl, flownet, cond, flownet.press, flownet.hema);
     
     
 #if 0
@@ -264,7 +264,6 @@ void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &bloodFlowParame
       std::exit(0);
     }
 #endif
-  }
 
 #ifdef DEBUG
   for (auto iter = flownet.bcs.begin(); iter != flownet.bcs.end(); ++iter)
