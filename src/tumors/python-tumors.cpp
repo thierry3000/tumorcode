@@ -108,16 +108,12 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
   // enable standard exception handling
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
   
-  /**
-   * construct default simulation 
-   */
+  /* construct default simulation */
   FakeTumMTS::FakeTumorSimMTS s;
-  /**
-   * initialize cell system 
-   * use memory on heap to not mess up allocation
-   */
+  //initialize cell system 
+  //use memory on heap to not mess up allocation
   s.tumorcode_pointer_to_currentCellsSystem = new vbl::CellsSystem();
-
+  
   /* 
    * create ptree with default settings!!!
    */
@@ -148,9 +144,10 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     fakeTumMTSSettings.put("isRerun", 0);
     s.mySystemParameters.reRunNumber = 0;
     s.mySystemParameters.isRerun = false;
+    
     readSystemParameters(s.mySystemParameters);
+    
     boost::property_tree::update(systemSettings, s.mySystemParameters.as_ptree());
-   
     #ifdef DEBUG
       std::cout << "detailed params after update: " << std::endl;
       printPtree(detailedO2Settings);
@@ -242,7 +239,6 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     systemSettings.put("isRerun", true);
     try
     {
-      //last_state = file.openGroup("/last_state");
       readAttrFromH5(last_state, "CURRENT_RERUN_NUMBER", reRunNumber);
       reRunNumber++;
       systemSettings.put("reRunNumber", reRunNumber);
@@ -261,33 +257,13 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     readAttrFromH5(last_state, string("NEXT_OUTPUT_TIME"), s.next_output_time);
     readAttrFromH5(last_state, string("NEXT_ADAPTION_TIME"), s.next_adaption_time);
     
-    
-    //read data
-    try 
-    {
-      s.tumorcode_pointer_to_currentCellsSystem->assign(vblSettings);
-      unsigned long old_ncells = vblSettings.get<int>("ncells");
-      s.tumorcode_pointer_to_currentCellsSystem->AddCells(old_ncells);
-      cout << "Initializing Cell system with " << old_ncells << " cells " << endl;
-      s.readVBLDataFromHDF(h5_vbl_param);
-    }
-    catch(H5::Exception &e)
-    {
-      cout<<"Error while  s.readVBLDataFromHDF(last_state);" << endl;
-      e.printErrorStack();
-    }
-    catch(std::runtime_error &e)
-    {
-      cout << e.what() << endl;
-    }
-    
     file.close();
-    last_state.close();
     h5_params_of_previous_run.close();
     h5_vessel_params_of_previous_run.close();
     h5_calcflow_of_previous_run.close();
     h5_system_of_first_run.close();
     h5_system_of_current_run.close();
+    last_state.close();
     h5_vbl_param.close();
     h5_vbl_Environment.close();
     h5_vbl_Environment_0.close();
@@ -296,12 +272,13 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
   }
   
   // assign o2 parameters to the simulation
-  s.vessel_model.params.assign(vesselSettings);
-  s.bfparams.assign(bfSettings);
+  
   try 
   {
-    s.params.assign(fakeTumMTSSettings);
+    s.vessel_model.params.assign(vesselSettings);
+    s.bfparams.assign(bfSettings);
     s.mySystemParameters.assign(systemSettings);
+    s.params.assign(fakeTumMTSSettings);
   }
   catch(std::runtime_error &e)
   {
@@ -312,19 +289,22 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
   s.o2_sim.bfparams.assign(bfSettings);
   s.o2_sim.params.assign(detailedO2Settings);
   
-  /* 
-   * if we are on a cluster, we expect multiple runs
-   * and create a directory for each run 
-   */
-  boost::filesystem::path P = boost::filesystem::path(s.params.fn_out);
-  if( std::getenv("SLURM_JOB_ID") and !s.mySystemParameters.isRerun )// environmental variable present, we are on a slurm cluster queue!
+  if( !isRerun )
   {
-    boost::filesystem::path pathOfNewFolder = P.parent_path()/boost::filesystem::path(std::getenv("SLURM_JOB_ID"));
-    boost::filesystem::create_directory(pathOfNewFolder);
-    std::cout << pathOfNewFolder << std::endl;
-    boost::filesystem::path newPath = pathOfNewFolder / boost::filesystem::path(P.stem().string()+".h5");
-    std::cout << newPath << std::endl;
-    s.params.fn_out = newPath.string();
+    /* 
+    * if we are on a cluster, we expect multiple runs
+    * and create a directory for each run 
+    */
+    boost::filesystem::path P = boost::filesystem::path(s.params.fn_out);
+    if( std::getenv("SLURM_JOB_ID") and !s.mySystemParameters.isRerun )// environmental variable present, we are on a slurm cluster queue!
+    {
+      boost::filesystem::path pathOfNewFolder = P.parent_path()/boost::filesystem::path(std::getenv("SLURM_JOB_ID"));
+      boost::filesystem::create_directory(pathOfNewFolder);
+      std::cout << pathOfNewFolder << std::endl;
+      boost::filesystem::path newPath = pathOfNewFolder / boost::filesystem::path(P.stem().string()+".h5");
+      std::cout << newPath << std::endl;
+      s.params.fn_out = newPath.string();
+    }
   }
 
 #ifdef EPETRA_MPI
@@ -350,7 +330,6 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
 // #endif
     int returnCode = s.run();
     delete s.tumorcode_pointer_to_currentCellsSystem;
-    std::cout << "Cell System deleted" << endl;
   }
   catch(std::exception &ex)
   {
@@ -454,13 +433,12 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
     }
     catch(H5::Exception &e)
     {
-      cout << "Error opening the parameters" << endl;
       e.printErrorStack();
     }
     ReadHdfPtree(vesselSettings, h5_vessel_params_of_previous_run);
     ReadHdfPtree(bfSettings, h5_calcflow_of_previous_run);
     ReadHdfPtree(fakeTumSettings, h5_params_of_previous_run);
-    //ReadHdfPtree(systemSettings, h5_system_of_first_run);
+    ReadHdfPtree(systemSettings, h5_system_of_first_run);
  
     //override read in
     fakeTumSettings.put("vessel_path", "last_state/vessels");
@@ -477,7 +455,6 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
     }
     catch(H5::Exception &e)
     {
-      cout << "error: creating system_rerun parameters group" << endl;
       e.printErrorStack();
     }
     //run time variables NO parameters
@@ -502,19 +479,22 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
   s.params.assign(fakeTumSettings);
   s.mySystemParameters.assign(systemSettings);
   
-  /* 
-   * if we are on a cluster, we expect multiple runs
-   * and create a directory for each run 
-   */
-  boost::filesystem::path P = boost::filesystem::path(s.params.fn_out);
-  if( std::getenv("SLURM_JOB_ID") and !s.mySystemParameters.isRerun )// environmental variable present, we are on a slurm cluster queue!
+  if( !isRerun )
   {
-    boost::filesystem::path pathOfNewFolder = P.parent_path()/boost::filesystem::path(std::getenv("SLURM_JOB_ID"));
-    boost::filesystem::create_directory(pathOfNewFolder);
-    std::cout << pathOfNewFolder << std::endl;
-    boost::filesystem::path newPath = pathOfNewFolder / boost::filesystem::path(P.stem().string()+".h5");
-    std::cout << newPath << std::endl;
-    s.params.fn_out = newPath.string();
+    /* 
+    * if we are on a cluster, we expect multiple runs
+    * and create a directory for each run 
+    */
+    boost::filesystem::path P = boost::filesystem::path(s.params.fn_out);
+    if( std::getenv("SLURM_JOB_ID") and !s.mySystemParameters.isRerun )// environmental variable present, we are on a slurm cluster queue!
+    {
+      boost::filesystem::path pathOfNewFolder = P.parent_path()/boost::filesystem::path(std::getenv("SLURM_JOB_ID"));
+      boost::filesystem::create_directory(pathOfNewFolder);
+      std::cout << pathOfNewFolder << std::endl;
+      boost::filesystem::path newPath = pathOfNewFolder / boost::filesystem::path(P.stem().string()+".h5");
+      std::cout << newPath << std::endl;
+      s.params.fn_out = newPath.string();
+    }
   }
   
 #ifdef EPETRA_MPI

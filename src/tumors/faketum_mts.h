@@ -108,6 +108,7 @@ struct Parameters
   bool useConstO2;
   bool useTumorcodeVessels;
   int output_num;
+  int max_iteration_per_rerun;
   double time;
   
   Parameters();
@@ -214,7 +215,6 @@ const int ANN_dim = 3;            // space dimension
   double next_adaption_time;
   int num_iteration;
   int output_num;
-  int max_iteration_per_rerun = 5;
 
   /**
    * interface functions for VBL

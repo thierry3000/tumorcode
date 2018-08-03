@@ -122,6 +122,7 @@ FakeTumMTS::Parameters::Parameters()
   
   apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
   message = "";
+  max_iteration_per_rerun = -1;
   fn_out = "";
   fn_vessel = "";
   vessel_path = "vessels";
@@ -149,6 +150,7 @@ FakeTumMTS::Parameters::Parameters()
 void FakeTumMTS::Parameters::assign(const ptree &pt)
 {
   #define DOPT(name) boost::property_tree::get(name, #name, pt)
+  DOPT(max_iteration_per_rerun);
   //int lattice_size_per_single_dim;
   DOPT(time);
   DOPT(useConstO2);
@@ -204,6 +206,7 @@ ptree FakeTumMTS::Parameters::as_ptree() const
   DOPT(lattice_scale);
   DOPT(dt);
   DOPT(message);
+  DOPT(max_iteration_per_rerun);
   DOPT(fn_out);
   DOPT(fn_vessel);
   DOPT(vessel_path);
@@ -466,7 +469,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   int iteration_in_this_rerun=0;
   while (not PyCheckAbort())
   {
-    if (iteration_in_this_rerun >= max_iteration_per_rerun)
+    if (iteration_in_this_rerun >= params.max_iteration_per_rerun)
     {
       std::cout << ">>>>>>> max_iteration_per_rerun reached" << std::endl;
       break;
@@ -677,9 +680,54 @@ void FakeTumMTS::FakeTumorSimMTS::writeVBLDataToHDF(H5::Group &h5_vbl)
   
   writeDataSetToGroup(h5_vbl, string("G"), tumorcode_pointer_to_currentCellsSystem->Get_G());
   writeDataSetToGroup(h5_vbl, string("G6P"), tumorcode_pointer_to_currentCellsSystem->Get_G6P());
+  writeDataSetToGroup(h5_vbl, string("O2"), tumorcode_pointer_to_currentCellsSystem->Get_O2());
+  writeDataSetToGroup(h5_vbl, string("store"), tumorcode_pointer_to_currentCellsSystem->Get_store());
+  writeDataSetToGroup(h5_vbl, string("A"), tumorcode_pointer_to_currentCellsSystem->Get_A());
+  writeDataSetToGroup(h5_vbl, string("AcL"), tumorcode_pointer_to_currentCellsSystem->Get_AcL());
+  writeDataSetToGroup(h5_vbl, string("h"), tumorcode_pointer_to_currentCellsSystem->Get_h());
+  writeDataSetToGroup(h5_vbl, string("pHi"), tumorcode_pointer_to_currentCellsSystem->Get_pHi());
+  writeDataSetToGroup(h5_vbl, string("protein"), tumorcode_pointer_to_currentCellsSystem->Get_protein());
+  writeDataSetToGroup(h5_vbl, string("prot_rate"), tumorcode_pointer_to_currentCellsSystem->Get_prot_rate());
+  writeDataSetToGroup(h5_vbl, string("DNA"), tumorcode_pointer_to_currentCellsSystem->Get_DNA());
+  writeDataSetToGroup(h5_vbl, string("DNA_rate"), tumorcode_pointer_to_currentCellsSystem->Get_DNA_rate());
   
-  writeDataSetToGroup(h5_vbl, string("NpRbk"), tumorcode_pointer_to_currentCellsSystem->Get_NpRbk());
+  writeDataSetToGroup(h5_vbl, string("ATP_St"), tumorcode_pointer_to_currentCellsSystem->Get_ATP_St());
+  writeDataSetToGroup(h5_vbl, string("ATP_Ox"), tumorcode_pointer_to_currentCellsSystem->Get_ATP_Ox());
+  writeDataSetToGroup(h5_vbl, string("ATP_NOx"), tumorcode_pointer_to_currentCellsSystem->Get_ATP_NOx());
+  writeDataSetToGroup(h5_vbl, string("ATP2"), tumorcode_pointer_to_currentCellsSystem->Get_ATP2());
+  writeDataSetToGroup(h5_vbl, string("ATP3"), tumorcode_pointer_to_currentCellsSystem->Get_ATP3());
+  writeDataSetToGroup(h5_vbl, string("ConsATP"), tumorcode_pointer_to_currentCellsSystem->Get_ConsATP());
+  writeDataSetToGroup(h5_vbl, string("ConsATP_1"), tumorcode_pointer_to_currentCellsSystem->Get_ConsATP_1());
+  writeDataSetToGroup(h5_vbl, string("ConsATP_2"), tumorcode_pointer_to_currentCellsSystem->Get_ConsATP_2());
+  writeDataSetToGroup(h5_vbl, string("ConsATP_3"), tumorcode_pointer_to_currentCellsSystem->Get_ConsATP_3());
+  writeDataSetToGroup(h5_vbl, string("ConsATP_4"), tumorcode_pointer_to_currentCellsSystem->Get_ConsATP_4());
+  writeDataSetToGroup(h5_vbl, string("ConsATP_5"), tumorcode_pointer_to_currentCellsSystem->Get_ConsATP_5());
+  writeDataSetToGroup(h5_vbl, string("ATPtot"), tumorcode_pointer_to_currentCellsSystem->Get_ATPtot());
+  writeDataSetToGroup(h5_vbl, string("ATPp"), tumorcode_pointer_to_currentCellsSystem->Get_ATPp());
+  writeDataSetToGroup(h5_vbl, string("ATPmin"), tumorcode_pointer_to_currentCellsSystem->Get_ATPmin());
+  writeDataSetToGroup(h5_vbl, string("ATPstart"), tumorcode_pointer_to_currentCellsSystem->Get_ATPstart());
+  writeDataSetToGroup(h5_vbl, string("ATPprod"), tumorcode_pointer_to_currentCellsSystem->Get_ATPprod());
+  writeDataSetToGroup(h5_vbl, string("ATPcons"), tumorcode_pointer_to_currentCellsSystem->Get_ATPcons());
+  
+  writeDataSetToGroup(h5_vbl, string("G_extra"), tumorcode_pointer_to_currentCellsSystem->Get_G_extra());
+  writeDataSetToGroup(h5_vbl, string("A_extra"), tumorcode_pointer_to_currentCellsSystem->Get_A_extra());
+  writeDataSetToGroup(h5_vbl, string("AcL_extra"), tumorcode_pointer_to_currentCellsSystem->Get_AcL_extra());
+  
+  writeDataSetToGroup(h5_vbl, string("SensO2"), tumorcode_pointer_to_currentCellsSystem->Get_SensO2());
+  writeDataSetToGroup(h5_vbl, string("ConsO"), tumorcode_pointer_to_currentCellsSystem->Get_ConsO());
+  
   writeDataSetToGroup(h5_vbl, string("DNA_spread"), tumorcode_pointer_to_currentCellsSystem->Get_DNA_spread());
+  writeDataSetToGroup(h5_vbl, string("M_T"), tumorcode_pointer_to_currentCellsSystem->Get_M_T());
+  writeDataSetToGroup(h5_vbl, string("pRb"), tumorcode_pointer_to_currentCellsSystem->Get_pRb());
+  
+  writeDataSetToGroup(h5_vbl, string("ConcS"), tumorcode_pointer_to_currentCellsSystem->Get_ConcS());
+  
+  writeDataSetToGroup(h5_vbl, string("cyclinD"), tumorcode_pointer_to_currentCellsSystem->Get_cyclinD());
+  writeDataSetToGroup(h5_vbl, string("cyclinE"), tumorcode_pointer_to_currentCellsSystem->Get_cyclinE());
+  writeDataSetToGroup(h5_vbl, string("cyclinX"), tumorcode_pointer_to_currentCellsSystem->Get_cyclinX());
+  writeDataSetToGroup(h5_vbl, string("NpRbk"), tumorcode_pointer_to_currentCellsSystem->Get_NpRbk());
+  
+  //writeDataSetToGroup(h5_vbl, string("DNA_spread"), tumorcode_pointer_to_currentCellsSystem->Get_DNA_spread());
   std::cout << "finished writeVBLDataToHDF" << std::endl;
 }
 
@@ -708,10 +756,140 @@ void FakeTumMTS::FakeTumorSimMTS::readVBLDataFromHDF(H5::Group &h5_vbl)
   readDataSetFromGroup(h5_vbl, string("n_mitosis"), int_buffer);
   tumorcode_pointer_to_currentCellsSystem->Set_n_mitosis(int_buffer);
   
-  readDataSetFromGroup(h5_vbl, string("x_mitosis"), double_buffer);
+  readDataSetFromGroup(h5_vbl, string("x"), double_buffer);
   tumorcode_pointer_to_currentCellsSystem->Set_x(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("y"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_y(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("z"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_z(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("vx"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_vx(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("vy"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_vy(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("vz"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_vz(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("r"), double_buffer);
+  for(int i=0;i<double_buffer.size();i++)
+  {
+    tumorcode_pointer_to_currentCellsSystem->Set_r(i, double_buffer[i]);
+  }
+  readDataSetFromGroup(h5_vbl, string("surface"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_surface(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("volume"), double_buffer);
+  for(int i=0;i<double_buffer.size();i++)
+  {
+    tumorcode_pointer_to_currentCellsSystem->Set_volume(i, double_buffer[i]);
+  }
+  readDataSetFromGroup(h5_vbl, string("mass"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_mass(double_buffer);
   
-
+  readDataSetFromGroup(h5_vbl, string("volume_extra"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_volume_extra(double_buffer);
+  
+  readDataSetFromGroup(h5_vbl, string("M"), double_buffer);
+  for(int i=0;i<double_buffer.size();i++)
+  {
+    tumorcode_pointer_to_currentCellsSystem->Set_M(i, double_buffer[i]);
+  }
+  readDataSetFromGroup(h5_vbl, string("G"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_G(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("G6P"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_G6P(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("O2"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_O2(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("store"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_store(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("A"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_A(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("AcL"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_AcL(double_buffer);
+  
+  readDataSetFromGroup(h5_vbl, string("h"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_h(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("pHi"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_pHi(double_buffer);
+  
+  readDataSetFromGroup(h5_vbl, string("protein"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_protein(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("prot_rate"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_prot_rate(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("DNA"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_DNA(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("DNA_rate"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_DNA_rate(double_buffer);
+  
+  readDataSetFromGroup(h5_vbl, string("ATP_St"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ATP_St(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ATP_Ox"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ATP_Ox(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ATP_NOx"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ATP_NOx(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ATP2"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ATP2(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ATP3"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ATP3(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ConsATP"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ConsATP(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ConsATP_1"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ConsATP_1(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ConsATP_2"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ConsATP_2(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ConsATP_3"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ConsATP_3(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ConsATP_4"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ConsATP_4(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ConsATP_5"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ConsATP_5(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ATPtot"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ATPtot(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ATPp"), double_buffer);
+  for(int i=0;i<double_buffer.size();i++)
+  {
+    tumorcode_pointer_to_currentCellsSystem->Set_ATPp(i, double_buffer[i]);
+  }
+  //tumorcode_pointer_to_currentCellsSystem->Set_ATPp(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ATPmin"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ATPmin(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ATPstart"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ATPstart(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ATPprod"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ATPprod(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ATPcons"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ATPcons(double_buffer);
+  
+  readDataSetFromGroup(h5_vbl, string("G_extra"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_G_extra(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("A_extra"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_A_extra(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("AcL_extra"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_AcL_extra(double_buffer);
+  
+  readDataSetFromGroup(h5_vbl, string("SensO2"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_SensO2(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ConsO"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ConsO(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("DNA_spread"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_DNA_spread(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("M_T"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_M_T(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("pRb"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_pRb(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("ConcS"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_ConcS(double_buffer);
+  
+  readDataSetFromGroup(h5_vbl, string("cyclinD"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_cyclinD(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("cyclinE"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_cyclinE(double_buffer);
+  readDataSetFromGroup(h5_vbl, string("cyclinX"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_cyclinX(double_buffer);
+  
+  readDataSetFromGroup(h5_vbl, string("NpRbk"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_NpRbk(double_buffer);
+  
+  readDataSetFromGroup(h5_vbl, string("DNA_spread"), double_buffer);
+  tumorcode_pointer_to_currentCellsSystem->Set_DNA_spread(double_buffer);
+  
   
   
 #if 0

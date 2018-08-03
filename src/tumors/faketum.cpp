@@ -40,6 +40,7 @@ FakeTum::Parameters::Parameters()
   stopping_radius_fraction = 0.6;
   paramset_name = "aname";
   message = "";
+  max_iteration_per_rerun = -1;
   //isRerun = false;
   vessel_path = "vesesls";
 #ifdef USE_ADAPTION
@@ -50,6 +51,7 @@ FakeTum::Parameters::Parameters()
 void FakeTum::Parameters::assign(const ptree &pt)
 {
   #define DOPT(name) boost::property_tree::get(name, #name, pt);
+  DOPT(max_iteration_per_rerun);
   DOPT(message);
   //DOPT(num_threads);
   DOPT(out_intervall);
@@ -110,6 +112,7 @@ ptree FakeTum::Parameters::as_ptree() const
   #define DOPT(name) pt.put(#name, name)
   DOPT(paramset_name);
   DOPT(message);
+  DOPT(max_iteration_per_rerun);
   //DOPT(num_threads);
   DOPT(out_intervall);
   DOPT(tend);
@@ -296,8 +299,16 @@ int FakeTum::FakeTumorSim::run()
 
   int iteration_in_this_rerun=0;
   
-  while (iteration_in_this_rerun <= max_iteration_per_rerun and not PyCheckAbort() )
+  while ( not PyCheckAbort() )
   {
+    if (params.max_iteration_per_rerun >0)
+    {
+      if(iteration_in_this_rerun >= params.max_iteration_per_rerun)
+      {
+        cout << "max_iteration_per_rerun reached" << endl;
+        break;
+      }
+    }
     if (time > params.tend)
     {
       cout << "stopped because of time" << endl;
