@@ -64,7 +64,7 @@ def parse_args(argv):
   parserQueue.add_argument('--q-local', help= ' Do not submit to queue, even if queuing system is pressent', default=False, action='store_true')
   parserQueue.add_argument('--q-dry', help= 'Do not run but print configuration to be submitted', default=False, action='store_true')
   parserQueue.add_argument('--q-verbose', help= 'more output', default=False, action='store_true')
-  parserQueue.add_argument('--mpi', help='submits to mpi partition', default=False, action='store_true')  
+  parserQueue.add_argument('--mpi', help='submits to mpi partition and allocates requested number of nodes', default=None, type=int)  
   localgoodArgumentsQueue, otherArgumentsQueue = parserQueue.parse_known_args()  
   global goodArgumentsQueue
   goodArgumentsQueue = localgoodArgumentsQueue
@@ -160,6 +160,7 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
   hpc_system = os.environ.get('HPC_SYSTEM', None)
   if goodArgumentsQueue.exclude:
     print >>f, '#SBATCH --exclude=%s' % goodArgumentsQueue.exclude
+  
   if hpc_system == 'marconi':
     print >>f, '#SBATCH --account=uTS18_Milotti'
     if name:
@@ -197,7 +198,7 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
 #    print >>f, 'export OMP_NUM_THREADS=%i' % num_cpus
       
     
-  if not hpc_system:
+  if not hpc_system:#### SNOWDEN
     if name:
       print >>f, '#SBATCH --job-name=%s' % name
     if num_cpus == 1:
@@ -221,7 +222,7 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
       print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
   #    print >>f, '#SBATCH --ntasks=50'
       print >>f, '#SBATCH --ntasks-per-node=1'
-      print >>f, '#SBATCH --nodes=3'
+      print >>f, '#SBATCH --nodes=%i' % goodArgumentsQueue.mpi
       print >>f, '#SBATCH --partition=mpi'
   #    print >>f, '#SBATCH --resv-ports'
   #    print >>f, '#SBATCH --ntasks-per-node=8'
