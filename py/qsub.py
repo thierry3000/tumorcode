@@ -48,10 +48,13 @@ is_client = False
 
 def parse_args(argv):
   import argparse
-  parserQueue = argparse.ArgumentParser(prog='qsub',description='Queing system parser.')
-  memory_option = parserQueue.add_argument('-m', '--memory', help= 'Memory assigned by the queing system', type=str, default = None)
+  parserQueue = argparse.ArgumentParser(prog='qsub',description='Queueing system parser.')
+  memory_option = parserQueue.add_argument('-m', '--memory', help= 'Memory assigned by the queueing system', type=str, default = None)
   days_option = parserQueue.add_argument('-d', '--days', help= 'runtime for job in days', type=float, default = None)
   threads_option = parserQueue.add_argument('-n', '--numThreads', help= 'num of threads for job', type=int, default = None)
+  exclude_option = parserQueue.add_argument('--exclude', help= 'nodes to exclude', type=str, default = None)
+  cineca_debub_option = parserQueue.add_argument('-c', '--cinecaDebug', help= 'if true, we submit do debug queue', default=False, action='store_true')
+  cineca_special_option = parserQueue.add_argument('-s', '--cinecaSpecial', help= 'if true, we submit to bdw_qos_special queue', default=False, action='store_true')
 #  global defaultMemory
 #  defaultMemory = memory_option.default
 #  global defaultDays
@@ -154,52 +157,92 @@ def write_directives_qsub_(f,name=None, mem=None, num_cpus=None, days=None, hour
     
     
 def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, hours=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False):
-  #print >>f, '#PBS -j oe'
-  #if jobfiledir and not outdir: #DEPRECATED
-  #  outdir = jobfiledir
-  #if outdir is not None:
-  #  print >>f, '#PBS -o %s' % (outdir)
-  #print >>f, 'cd $SLURM_SUBMIT_DIR'
-#  mem = goodArgumentsQueue.memory
-#  num_cpus = goodArgumentsQueue.numThreads
-#  days = goodArgumentsQueue.days
-  if name:
-    print >>f, '#SBATCH --job-name=%s' % name
-  if num_cpus == 1:
-    print >>f, '#SBATCH --cpus-per-task=1'
-    print >>f, '#SBATCH --ntasks=1'
-    print >>f, '#SBATCH --partition=onenode'
-  if num_cpus > 1 and not goodArgumentsQueue.mpi:
-    print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
-    print >>f, '#SBATCH --ntasks=1'
-    print >>f, '#SBATCH --nodes=1'
-    print >>f, '#SBATCH --partition=onenode'
-    print >>f, '#SBATCH --ntasks-per-node=1'
-    #print >>f, 'export OMP_NUM_THREADS=$SLURM_JOB_CPUS_PER_NODE'
-    #print >>f, '#SBATCH --resv-ports'
-  #MPI
-  if num_cpus > 1 and goodArgumentsQueue.mpi:
-    print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
-#    print >>f, '#SBATCH --ntasks=50'
-    print >>f, '#SBATCH --ntasks-per-node=1'
-    print >>f, '#SBATCH --nodes=3'
-    print >>f, '#SBATCH --partition=mpi'
-#    print >>f, '#SBATCH --resv-ports'
-#    print >>f, '#SBATCH --ntasks-per-node=8'
-  if days or hours:
-    days, hours = fmtDate_(days, hours)
-    print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)
-  if mem:
-    if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
-      raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
-    print >>f, '#SBATCH --mem=%s' % mem
-  #if export_env:
-  #  print >>f, '#PBS -V'
+  hpc_system = os.environ.get('HPC_SYSTEM', None)
+  if goodArgumentsQueue.exclude:
+    print >>f, '#SBATCH --exclude=%s' % goodArgumentsQueue.exclude
+  if hpc_system == 'marconi':
+    print >>f, '#SBATCH --account=uTS18_Milotti'
+    if name:
+      print >>f, '#SBATCH --job-name=%s' % name
+      
+    if num_cpus == 1:
+      print >>f, '#SBATCH --cpus-per-task=1'
+      print >>f, '#SBATCH --ntasks=1'
+      
+    if num_cpus > 1 and not goodArgumentsQueue.mpi:
+      print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
+      print >>f, '#SBATCH --ntasks=1'
+      print >>f, '#SBATCH --nodes=1'
+      print >>f, '#SBATCH --ntasks-per-node=1'
+      
+    if goodArgumentsQueue.cinecaDebug:
+      print >>f, '#SBATCH --partition=bdw_usr_dbg'
+      print >>f, '#SBATCH --time=0-00:10:00'
+    else:
+      if goodArgumentsQueue.cinecaSpecial:
+	print >>f, '#SBATCH -p bdw_usr_prod'  
+	print >>f, '#SBATCH --qos=bdw_qos_special'
+      else:
+        print >>f, '#SBATCH --partition=bdw_usr_prod'
+      if days or hours:
+        days, hours = fmtDate_(days, hours)
+        days = 0
+        hours = 23
+        print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)
+      
+    if mem:
+      if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
+        raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
+      print >>f, '#SBATCH --mem=%s' % mem
+#    print >>f, 'export OMP_NUM_THREADS=%i' % num_cpus
+      
+    
+  if not hpc_system:
+    if name:
+      print >>f, '#SBATCH --job-name=%s' % name
+    if num_cpus == 1:
+      print >>f, '#SBATCH --cpus-per-task=1'
+      print >>f, '#SBATCH --ntasks=1'
+      print >>f, '#SBATCH --partition=onenode'
+    if num_cpus > 1 and not goodArgumentsQueue.mpi:
+      print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
+      print >>f, '#SBATCH --ntasks=1'
+      print >>f, '#SBATCH --nodes=1'
+      print >>f, '#SBATCH --partition=onenode'
+      print >>f, '#SBATCH --ntasks-per-node=1'
+      # this is for sparing the nodes with lots of cores
+      #print >>f, '#SBATCH --exclude=leak[57-64]'
+      #print >>f, '#SBATCH --nodelist=leak62'
+      
+      
+      #print >>f, '#SBATCH --resv-ports'
+    #MPI
+    if num_cpus > 1 and goodArgumentsQueue.mpi:
+      print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
+  #    print >>f, '#SBATCH --ntasks=50'
+      print >>f, '#SBATCH --ntasks-per-node=1'
+      print >>f, '#SBATCH --nodes=3'
+      print >>f, '#SBATCH --partition=mpi'
+  #    print >>f, '#SBATCH --resv-ports'
+  #    print >>f, '#SBATCH --ntasks-per-node=8'
+    if days or hours:
+      days, hours = fmtDate_(days, hours)
+      print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)
+    if mem:
+      if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
+        raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
+      print >>f, '#SBATCH --mem=%s' % mem
+      if num_cpus > 1:
+        mem_per_cpu='8500MB'
+        print >>f, '#SBATCH --mem-per-cpu=%s' % mem_per_cpu
+    #if export_env:
+    #  print >>f, '#PBS -V'
 
 
 def submit_(interpreter, submission_program, script):
   #global opts_
   # determine how to run
+  print("interpreter: %s, submission_program: %s" %(interpreter, submission_program))
   if submission_program == 'run_locally':
     submission_program = interpreter
   # verbose output
@@ -210,9 +253,11 @@ def submit_(interpreter, submission_program, script):
   # run stuff
   if not goodArgumentsQueue.q_dry:
     time.sleep(0.2)
-    if submission_program == 'python': # running python script with python locally?!! We can do it like so
+    if submission_program == 'python' or submission_program == 'python_debug': # running python script with python locally?!! We can do it like so
+      print("calling python:")
       exec script in dict(), dict()
     else: # all the other cases go like so!
+      print("calling subprocess:")
       subprocess.call("%s <<EOFQSUB\n%s\nEOFQSUB" % (submission_program, script), shell=True)
       #subprocess.check_output("%s <<EOFQSUB\n%s\nEOFQSUB" % (submission_program, script), shell=True)
 
@@ -249,7 +294,10 @@ class Func(object):
 
     You give an object of this kind to the submit function in order to run it.
   '''
-  interpreter = 'python'
+  if sys.flags.debug:
+    interpreter = 'python_debug'
+  else:
+    interpreter = 'python'
   def __init__(self, func, *args, **kwargs):
     self.func = func
     self.args = (args, kwargs)
@@ -283,30 +331,30 @@ func = Func
 
 
 
-#class Exe(object):
-#  '''
-#    A wrapper around a system call to execute a program.
-#
-#    You give an object of this kind to the submit function in order to run it.
-#
-#    cmd - string or sequence of objects which can be converted to strings
-#  '''
-#  interpreter = 'sh'
-#  def __init__(self, *cmds):
-#    for i, cmd in enumerate(cmds):
-#      if isinstance(cmd, str) or not hasattr(cmd, '__iter__'):
-#        cmds[i] = [cmd]
-#    self.cmds = cmds
-#    self.name_hint = None
-#  def generate_script(self, qsubopts):
-#    lines = [
-#      ' '.join(list(str(q) for q in cmd)) for cmd in self.cmds
-#      ]
-#    if qsubopts.get('change_cwd', False):
-#      lines = [ 'cd %s' % os.getcwd() ] + lines
-#    return '\n'.join(lines)
-#
-#exe = Exe
+class Exe(object):
+  '''
+    A wrapper around a system call to execute a program.
+
+    You give an object of this kind to the submit function in order to run it.
+
+    cmd - string or sequence of objects which can be converted to strings
+  '''
+  interpreter = 'sh'
+  def __init__(self, *cmds):
+    for i, cmd in enumerate(cmds):
+      if isinstance(cmd, str) or not hasattr(cmd, '__iter__'):
+        cmds[i] = [cmd]
+    self.cmds = cmds
+    self.name_hint = None
+  def generate_script(self, qsubopts):
+    lines = [
+      ' '.join(list(str(q) for q in cmd)) for cmd in self.cmds
+      ]
+    if qsubopts.get('change_cwd', False):
+      lines = [ 'cd %s' % os.getcwd() ] + lines
+    return '\n'.join(lines)
+
+exe = Exe
 #
 #class SrunExe(object):
 #  '''
@@ -356,7 +404,8 @@ def submit_qsub(obj, submission_program, **qsubopts):
   # interpreter string
   cases = {
     'sh' : '#!/bin/sh',
-    'python' : ('#!/usr/bin/env python%i'  % sys.version_info.major)
+    'python' : ('#!/usr/bin/env python%i'  % sys.version_info.major),
+    'python_debug' : ('#!/usr/bin/python%i -d'  % sys.version_info.major)
   }
   first_line = cases[obj.interpreter]
   # add qsub stuff + python script
@@ -382,7 +431,9 @@ def submit_slurm(obj, submission_program, **slurmopts):
   # interpreter string
   cases = {
     'sh' : '#!/bin/sh',
-    'python' : ('#!/usr/bin/env python%i'  % sys.version_info.major)
+    'python' : ('#!/usr/bin/env python%i'  % sys.version_info.major),
+    'python_debug' : ('#!/usr/bin/python%i -d'  % sys.version_info.major),
+    'debug_hardcore' : '#!/bin/sh',                  
     #'python' : '#!/bin/sh'
   }
   first_line = cases[obj.interpreter]
@@ -391,6 +442,9 @@ def submit_slurm(obj, submission_program, **slurmopts):
   f = cStringIO.StringIO()
   print >>f, first_line
   write_directives_slurm_(f, **slurmopts)
+  print >>f, 'import os'
+  print >>f, 'os.environ["OMP_NUM_THREADS"]=os.environ["SLURM_JOB_CPUS_PER_NODE"]'
+  print >>f, 'print(os.environ["OMP_NUM_THREADS"])'
   old=True
   if old:
     print >>f,obj.generate_script(slurmopts)
@@ -464,12 +518,14 @@ def submit(obj, **qsubopts):
       print('override time from %f to %f' % (qsubopts['days'],goodArgumentsQueue.days))
       qsubopts['days'] = goodArgumentsQueue.days
     
-    if __debug__:
+    if sys.flags.debug:
       print(qsubopts)
     
     print("goodArgumentsQueue")
     print(goodArgumentsQueue)
     prog = determine_submission_program_()
+    print("determined program: %s" %prog)
+    
     if prog == 'sbatch':
       submit_slurm(obj, prog, **qsubopts)
     elif prog == 'qsub':
