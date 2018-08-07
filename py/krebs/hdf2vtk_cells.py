@@ -241,6 +241,7 @@ def writeFields_(graph, options):
 def writeVessels_(graph, options):  
   polydata = ConvertMyHdfVesselsToVTKPolydata(graph, False, goodArguments);
   writer = vtkPolyDataWriter()
+  print("begin writeVessels_")
   print("use vtkVersion: %s" % vtkVersion.GetVTKVersion())
   if(int(vtkVersion.GetVTKVersion()[0])>5):
     writer.SetInputData(polydata)
@@ -251,6 +252,7 @@ def writeVessels_(graph, options):
   writer.Write()
 
 def writeCells_(graph, options):
+  print("begin writeCells_")
   fn = str(graph.from_fn)
   f = h5py.File(fn, 'r')
   #fn, _ = myutils.splitH5PathsFromFilename(fn)
@@ -285,6 +287,7 @@ def writeCells_(graph, options):
   writer.Write()
 
 def hdftumor2vtk(graph, options ):
+  print("begin hdftumor2vtk")
   if True:# could be like write cells
     writeCells_(graph, options)
   if options.writeFields:

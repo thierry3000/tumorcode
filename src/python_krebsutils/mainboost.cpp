@@ -57,6 +57,8 @@ enum Mode {
 
 py::tuple read_vessel_positions_from_hdf_by_filename(const string fn, const string groupname)
 {
+  cout << "read vessel from file: " << fn << endl;
+  cout << "at: " << groupname << endl;
   //h5cpp::Group g_vess = PythonToCppGroup(vess_grp_obj);
   H5::H5File readInFile;
   H5::Group g_vess;
@@ -76,6 +78,8 @@ py::tuple read_vessel_positions_from_hdf_by_filename(const string fn, const stri
   std::vector<float> x; x.resize(vl->GetNCount());
   std::vector<float> y; y.resize(vl->GetNCount());
   std::vector<float> z; z.resize(vl->GetNCount());
+  float max_x = std::numeric_limits<float>::min();
+  float min_x = std::numeric_limits<float>::max();
   py::list py_x;
   py::list py_y;
   py::list py_z;
@@ -99,6 +103,11 @@ py::tuple read_vessel_positions_from_hdf_by_filename(const string fn, const stri
       myAssert(vl->Ld().IsInsideLattice(nd->lpos));
       p = vl->Ld().LatticeToWorld(nd->lpos);
     }
+    if(p[0]<min_x)
+      min_x=p[0];
+    if(p[0]>max_x)
+      max_x=p[0];
+    
     py_x.append(p[0]);
     py_y.append(p[1]);
     py_z.append(p[2]);
@@ -110,6 +119,9 @@ py::tuple read_vessel_positions_from_hdf_by_filename(const string fn, const stri
     
   }
   readInFile.close();
+  std::cout << " min    " << "   max   " << endl;
+  std::cout << min_x << "    " << max_x << endl;
+  
   //return wp.getObject();
   return py::make_tuple(py_x, py_y, py_z);
 }

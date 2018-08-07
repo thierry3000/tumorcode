@@ -379,7 +379,8 @@ Vessel* Model::AddSproutVessel(VesselNode* vc, VesselNode* dst_vc)
     vBridge->timeInTumor = timeInTumor;
   }
   // the following conditions is true if the sprout starts from a non sprouting vessel
-  if( vBridge->timeSprout<0 ) vBridge->timeSprout=params.timeProlEcSproutLifetime;
+  if( vBridge->timeSprout<0 ) 
+    vBridge->timeSprout=params.timeProlEcSproutLifetime;
   return vBridge;
 }
 
@@ -470,18 +471,24 @@ Vessel* Model::GenerateSprout(Random &rnd, const Int3 &pos, const Float3 &forwar
   //than we need to split the vessl into two
   if (!src_vc && src_v)
   {
+    cout<<"!src_vc && src_v happend" << endl;
     vl->SplitVessel(src_v, FindPositionOnVessel(Ld(), src_v, pos), src_v2, src_vc);
   }
   //find vessel or node in the vicinity of the lattice position
   vl->FindAny(nbpos, dst_v, dst_vc);
   //again, if we found a vessel but no node, we need to split it
-  if (dst_v && !dst_vc) {
+  if (dst_v && !dst_vc) 
+  {
+    cout<<"dst_v && !dst_vc happend" << endl;
     vl->SplitVessel(dst_v, FindPositionOnVessel(Ld(), dst_v, nbpos), dst_v2, dst_vc);
   }
   //if the destination node dst_vc in not yet end point of a vessel
   //we can use it for the end point of the new sprout
   if (!dst_vc)
+  {
+    cout<<"!dst_vc happend" << endl;
     dst_vc = vl->InsertNode(nbpos);
+  }
 
   Vessel* sprout_v = AddSproutVessel(src_vc, dst_vc); // boom??!!
   return sprout_v;
@@ -527,28 +534,28 @@ void Model::GenerateSprouts()
   DynArray<SiteType> sitesSprout;
   DynArray<VesselNode*> vcExtendSprout;
   
-  #pragma omp parallel
+  //#pragma omp parallel
   {
     Random rnd(GetThreadRandomSeed());
-    DynArray<SiteType> th_sitesSprout(1024, ConsTags::RESERVE);
-    DynArray<VesselNode*> th_vcExtendSprout(1024, ConsTags::RESERVE);
+//     DynArray<SiteType> th_sitesSprout(1024, ConsTags::RESERVE);
+//     DynArray<VesselNode*> th_vcExtendSprout(1024, ConsTags::RESERVE);
 
     //edge stuff
-    #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
+    //#pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for( int i=0; i<vl->GetECount(); ++i )
     {
       Vessel* v = vl->GetEdge(i);
       //for all which are sprouts
       if( v->timeSprout>=0 )
       {
-	//if all this we decrease the max sprout time!
+        //if all this we decrease the max sprout time!
         if(!v->IsCirculated() && v->flags.GetBits(CONNECTED) && v->timeSprout>=0)
           --v->timeSprout; // NOTE: decrease by dt instead???!!!!!
         else
           v->timeSprout = -1; 
       }
     }
-    #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
+    //#pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for(int i=0; i<vl->GetNCount(); ++i)
     {
       //node stuff
@@ -561,20 +568,24 @@ void Model::GenerateSprouts()
       if( nd->Count()==2 )
       {
         if (CheckCanSprout(rnd, lpos, nd, NULL))
-          th_sitesSprout.push_back(Ld().LatticeToSite(lpos)); 
+          //th_sitesSprout.push_back(Ld().LatticeToSite(lpos));
+          sitesSprout.push_back(Ld().LatticeToSite(lpos)); 
       }
       //if it has no link
       else if( nd->Count()==1 )
       {
-	//if vessel is no sprout, maybe at boundary or so
-        if (nd->GetEdge(0)->timeSprout <= 0 ) continue;
-	//throw the dice on wether this sprout will grow
-        if (rnd.Get01()>1.0/params.timeProlEcSprout ) continue;
-        th_vcExtendSprout.push_back(nd);
+        //if vessel is no sprout, maybe at boundary or so
+        if (nd->GetEdge(0)->timeSprout <= 0 ) 
+          continue;
+        //throw the dice on whether this sprout will grow
+        if (rnd.Get01()>1.0/params.timeProlEcSprout ) 
+          continue;
+        //th_vcExtendSprout.push_back(nd);
+        vcExtendSprout.push_back(nd);
       }
     }//end node stuff
 
-    #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
+    //#pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for( int i=0; i<vl->GetECount(); ++i )
     {
       //edge loop
@@ -584,27 +595,26 @@ void Model::GenerateSprouts()
       //walk along the vessel
       for( int i=1; i<v->len-1; ++i )
       {
-	//next lpos for walk
+        //next lpos for walk
         lpos = Ld().NbLattice(lpos,v->dir);
         if (CheckCanSprout(rnd, lpos, NULL, v))
-          th_sitesSprout.push_back( Ld().LatticeToSite(lpos) );
+          //th_sitesSprout.push_back( Ld().LatticeToSite(lpos) );
+          sitesSprout.push_back( Ld().LatticeToSite(lpos) );
       }
     }//end edge loop
 
     
-    //mutex.lock();
-    main_mutex.lock();
-    sitesSprout.insert(sitesSprout.end(), th_sitesSprout.begin(), th_sitesSprout.end());
-    vcExtendSprout.insert(vcExtendSprout.end(), th_vcExtendSprout.begin(), th_vcExtendSprout.end());
-    //mutex.unlock();
-    main_mutex.unlock();
-    //th_sitesSprout.remove_all();
-    //th_vcExtendSprout.remove_all();
+//     main_mutex.lock();
+//     sitesSprout.insert(sitesSprout.end(), th_sitesSprout.begin(), th_sitesSprout.end());
+//     vcExtendSprout.insert(vcExtendSprout.end(), th_vcExtendSprout.begin(), th_vcExtendSprout.end());
+//     main_mutex.unlock();
+//     th_sitesSprout.remove_all();
+//     th_vcExtendSprout.remove_all();
     
   }// end #pragma omp parallel
   
   /** 
-     * what happens if an extenting sprout was found by 2 treads?
+     * what happens if an extenting sprout was found by 2 threads?
      */
   std::vector<uint> found_indices;
   for(int i = 0;i<vcExtendSprout.size(); i++)
@@ -740,63 +750,63 @@ void Model::CollapseVessels()
       //else{// the stuff mw implemented 
       if ((bool)params.bShearStressControlledDilatationAndRadiusDependentCollapse)
       {
-	//do not consider sprouts here, v->timeSprout initialized by -1
-	if( v->timeSprout>=0 ) continue;
-  //printf("params.bShearStressControlledDilatationAndRadiusDependentCollapse activated\n");
-	//if to small or not circulated --> kill
-	if (v->reference_r<params.radMin || !v->IsCirculated())
-	{
-	  //walk along the vessel until its length is reached
-	  for(int i=0; i<v->len-1 && !bKill; ++i)
-	  {
-	    //get random between 0 and 1
-	    double r = rnd.Get01();
-      //printf("r: %f, params.probCollapse: %f, v->reference_r: %f, params.radMin: %f\n", r, params.probCollapse, v->reference_r, params.radMin);
-	    // sometimes we kill
-	    bKill |= r<params.probCollapse;//bKill = bKill | r<params.probCollapse
-	  }
-	}
+        //do not consider sprouts here, v->timeSprout initialized by -1
+        if( v->timeSprout>=0 ) continue;
+        //printf("params.bShearStressControlledDilatationAndRadiusDependentCollapse activated\n");
+        //if to small or not circulated --> kill
+        if (v->reference_r<params.radMin || !v->IsCirculated())
+        {
+          //walk along the vessel until its length is reached
+          for(int i=0; i<v->len-1 && !bKill; ++i)
+          {
+            //get random between 0 and 1
+            double r = rnd.Get01();
+            //printf("r: %f, params.probCollapse: %f, v->reference_r: %f, params.radMin: %f\n", r, params.probCollapse, v->reference_r, params.radMin);
+            // sometimes we kill
+            bKill |= r<params.probCollapse;//bKill = bKill | r<params.probCollapse
+          }
+        }
       }
       else
       {
-	//do not kill sprouts
-	if( v->timeSprout>=0 ) 
-	  continue;
-	//do not kill well established vessels
-	if( v->maturation>params.maturation_crit ) 
-	  continue;
-// 	  std::printf("v->timeSprout: %f \n",v->timeSprout);
-// 	  std::printf("v->maturation: %f \n",v->maturation);
-// 	  std::printf("params.maturation_crit: %f \n",params.maturation_crit);
-	// get pos of node A
-	Int3 pos = v->LPosA();
-	// while the vessel has a length; pos = pos of neigbor in direction
-	for( int i=0; i<v->len-1 && !bKill; ++i, pos=Ld().NbLattice(pos,v->dir) )
-	{
-	  //role the dice
-	  double r = rnd.Get01();
-	  if(!v->IsCirculated())
-	  {
-	    //role the dice, sometimes this vessel will be killed here
-	    bKill |= r<params.probCollapse;
-	  }
-	  else
-	  {
-	    //even if it is circulated it may be killed here
-	    double factor_fc = StabilityAmountDueToShearStress(v);  //returns 1. if shearforce is above threshold or zero else
-      // inline T Lerp( U x, const T &a, const T &b ) {  return T((1.0-x)*a + x*b); }
-      // b=0, 
-      // if factor_fc = 1 --> pcoll = 0
-      // if factor_fc = 0 --> pcoll = params.probCollapse
-	    double pcoll = Lerp<double>( factor_fc, params.probCollapse, 0 );
-	    //std::printf("pcoll: %f\n",pcoll);
-	    bKill |= r<pcoll;
-	  }
-	}
+        //do not kill sprouts
+        if( v->timeSprout>=0 ) 
+          continue;
+        //do not kill well established vessels
+        if( v->maturation>params.maturation_crit ) 
+          continue;
+      // 	  std::printf("v->timeSprout: %f \n",v->timeSprout);
+      // 	  std::printf("v->maturation: %f \n",v->maturation);
+      // 	  std::printf("params.maturation_crit: %f \n",params.maturation_crit);
+        // get pos of node A
+        Int3 pos = v->LPosA();
+        // while the vessel has a length; pos = pos of neigbor in direction
+        for( int i=0; i<v->len-1 && !bKill; ++i, pos=Ld().NbLattice(pos,v->dir) )
+        {
+          //role the dice
+          double r = rnd.Get01();
+          if(!v->IsCirculated())
+          {
+            //role the dice, sometimes this vessel will be killed here
+            bKill |= r<params.probCollapse;
+          }
+          else
+          {
+            //even if it is circulated it may be killed here
+            double factor_fc = StabilityAmountDueToShearStress(v);  //returns 1. if shearforce is above threshold or zero else
+            // inline T Lerp( U x, const T &a, const T &b ) {  return T((1.0-x)*a + x*b); }
+            // b=0, 
+            // if factor_fc = 1 --> pcoll = 0
+            // if factor_fc = 0 --> pcoll = params.probCollapse
+            double pcoll = Lerp<double>( factor_fc, params.probCollapse, 0 );
+            //std::printf("pcoll: %f\n",pcoll);
+            bKill |= r<pcoll;
+          }
+        }
       }
      // }
       if(bKill) 
-	th_toKill.push_back(v);
+        th_toKill.push_back(v);
     }
     //parallel kill ;-)
     main_mutex.lock();

@@ -214,6 +214,7 @@ int FakeTum::FakeTumorSim::run()
   ptree pt;
   if( ! mySystemParameters.isRerun)
   {
+    cout << "scale is subdivided" << endl;
     pt.put("scale subdivide", 10.);
   }
   vl = ReadVesselList3d(h5_vessels, pt);
@@ -305,7 +306,7 @@ int FakeTum::FakeTumorSim::run()
     {
       if(iteration_in_this_rerun >= params.max_iteration_per_rerun)
       {
-        cout << "max_iteration_per_rerun reached" << endl;
+        std::cout << ">>>>>>> max_iteration_per_rerun reached" << std::endl;
         break;
       }
     }

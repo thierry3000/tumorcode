@@ -250,6 +250,10 @@ void CalcConductivities(const FlArray &rad, const FlArray &len, const FlArray &v
   #pragma omp parallel for
   for(int i=0; i<ecnt; ++i)
   {
+    if(len[i] == 0)
+    {
+      cout << " len[" << i << "] = 0" << endl;
+    }
     FlReal coeff = CalcFlowCoeff(visc[i],rad[i],len[i]);
     myAssert(coeff > 0.);
     myAssert(isFinite(coeff));

@@ -479,12 +479,25 @@ def vessels_require_(vesselgroup, g, name):
       pos_x, pos_y, pos_z = read_vessel_positions_from_hdf_by_filename(fn, path)
       pos = np.asarray([pos_x, pos_y, pos_z])
       print("before:")
+      print("max x: %f" % np.max(pos_x))
+      print("min x: %f" % np.min(pos_x))
+      print("max y: %f" % np.max(pos_y))
+      print("min y: %f" % np.min(pos_y))
+      print("max z: %f" % np.max(pos_z))
+      print("min z: %f" % np.min(pos_z))
       print(pos.shape)
       print(pos)
       pos = pos.transpose()
       print("after:")
       print(pos.shape)
       print(pos)
+      
+      print("max x: %f" % np.max(pos[:,0]))
+      print("min x: %f" % np.min(pos[:,0]))
+      print("max y: %f" % np.max(pos[:,1]))
+      print("min y: %f" % np.min(pos[:,1]))
+      print("max z: %f" % np.max(pos[:,2]))
+      print("min z: %f" % np.min(pos[:,2]))
       
       g.nodes['position'] = pos  
     else:
