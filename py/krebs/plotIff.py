@@ -67,6 +67,7 @@ def mk_CM_():
   grey = matplotlib.cm.gray_r
   grey_r = matplotlib.cm.gray
   spectral = matplotlib.cm.spectral
+  rainbow = matplotlib.cm.rainbow
   return Struct(locals())
 ColorMaps = mk_CM_()
 CM = ColorMaps
@@ -852,7 +853,8 @@ def plot_radial(files, dataman, pdfpages):
   pdfpages.savefig(fig)
 
   if 1:
-    yscale = 'log'
+    #yscale = 'log'
+    yscale = 'linear'
     samplegetter = lambda f,name: dataman('iff_samples', f, name, 0.05)
     samples = defaultdict(list)
     for f in files:
@@ -985,7 +987,7 @@ def plot_single_images2(f, dataman, pdfpages):
 
     def contour_(a):
       a = imgs[a]
-      return contour(ax, a, ld, levels = [0])
+      return contour(ax, a, ld, levels = [0], linewidth=.75)
 
     def textright(ax, txt):
       ax.text(0.5, 1.03, txt, ha = "center", transform = ax.transAxes)
@@ -995,8 +997,9 @@ def plot_single_images2(f, dataman, pdfpages):
 
     def plt_phi_vessels(ax):
       ax.set(title = '$\phi_v$')
-      p1 = imshow(ax, imslice(tc['phi_vessels']), ld, vmin = 0., vmax = 1., cmap=CM.grey)
-      contour(ax, imslice(tc['dist_viabletumor']), ld, levels=[0], colors='w')
+      p1 = imshow(ax, imslice(tc['phi_vessels']), ld, vmin = 0., vmax = 1., cmap=CM.rainbow)
+      #contour(ax, imslice(tc['dist_viabletumor']), ld, levels=[0], colors='w')
+      contour_('dist_viabletumor')
       colorbar(fig, ax, p1)
       mpl_utils.add_sizebar(ax)
       textleft(ax, fig_numbering[0])
@@ -1005,7 +1008,7 @@ def plot_single_images2(f, dataman, pdfpages):
 
     def plt_ifp(ax):
       ax.set(title=ur'$p_i$')
-      p = imshow_('iff_pressure', matplotlib.cm.jet, None, 1.)
+      p = imshow_('iff_pressure', matplotlib.cm.jet, None, .5)
       _, cax = colorbar(fig, ax, p)
       contour_('dist_viabletumor')
       textright(cax, ur'[kPa]')
@@ -1016,7 +1019,7 @@ def plot_single_images2(f, dataman, pdfpages):
       p = imshow_('iff_velocity', matplotlib.cm.seismic, 'zero-centered', 1.)
       contour_('dist_viabletumor')
       _, cax = colorbar(fig, ax, p)
-      textright(cax, ur'[\u03BCm/s]')
+      textright(cax, r'[$\mu m/s$]')
       textleft(ax, fig_numbering[3])
 
     def plt_ifsrc(ax):
@@ -1024,7 +1027,7 @@ def plot_single_images2(f, dataman, pdfpages):
       p = imshow_('iff_sources', matplotlib.cm.seismic, 'zero-centered', 1.e3)
       contour_('dist_viabletumor')
       _, cax = colorbar(fig, ax, p)
-      textright(cax, ur'[$10^3$ \u03BCm$^3$/\u03BCm$^3$s]')
+      textright(cax, r'[$10^3 s^{-1}$]')
       textleft(ax, fig_numbering[2])
 
     def plt_ifvmag(ax):
@@ -1032,7 +1035,7 @@ def plot_single_images2(f, dataman, pdfpages):
       p = imshow_('iff_velocity_mag', matplotlib.cm.gray, None, 1.)
       contour_('dist_viabletumor')
       _, cax = colorbar(fig, ax, p)
-      textright(cax, ur'[\u03BCm/s]')
+      textright(cax, r'[ $\mu / s$]')
       textleft(ax, fig_numbering[4])
 
     def plt_ifvout(ax):
@@ -1040,7 +1043,7 @@ def plot_single_images2(f, dataman, pdfpages):
       p = imshow_('iff_velocity_out', matplotlib.cm.gray, None, 1.)
       contour_('dist_viabletumor')
       _, cax = colorbar(fig, ax, p)
-      textright(cax, ur'[\u03BCm/s]')
+      textright(cax, r'[ $\mu m/s$]')
       textleft(ax, fig_numbering[5])
 
     fig, axes = mkfig(2,3)
