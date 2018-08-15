@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 2.8)
 
 include_directories(../common)
 
-file(GLOB DetailedO2Files "oxygen_model2.cpp;python-oxygen2.cpp")
+file(GLOB DetailedO2Files oxygen_model2.cpp python-oxygen2.cpp)
+#oxygen_model2.cpp;python-oxygen2.cpp
 # set(DetailedO2Files "${DetailedO2Files};../common/trilinos_linsys_construction.cpp")
 
 add_library(detailedo2_ SHARED

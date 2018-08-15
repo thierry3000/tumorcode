@@ -345,6 +345,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
 #if BOOST_VERSION>106300
 static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters)
 {
+  cout << "PyComputeSaturation called" << endl;
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
   
@@ -368,6 +369,7 @@ static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters
 #else
 static py::object PyComputeSaturation(nm::array &py_po2, py::dict &py_parameters)
 {
+  cout << "PyComputeSaturation called" << endl;
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
   
@@ -389,6 +391,7 @@ static py::object PyComputeSaturation(nm::array &py_po2, py::dict &py_parameters
 #else
 static py::object PyComputeMassTransferCoefficient(nm::array py_radius, py::dict py_parameters)
 {
+  cout << "PyComputeMassTransferCoefficient called" << endl;
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
   
@@ -414,6 +417,7 @@ static py::object PyComputeMassTransferCoefficient(nm::array py_radius, py::dict
 #if BOOST_VERSION>106300
 static py::object PyComputeConcentration(np::ndarray py_po2, np::ndarray py_hematocrit, py::dict py_parameters)
 {
+  cout << "PyComputeConcentration called" << endl;
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
   
@@ -437,6 +441,7 @@ static py::object PyComputeConcentration(np::ndarray py_po2, np::ndarray py_hema
 #else
 static py::object PyComputeConcentration(nm::array py_po2, nm::array py_hematocrit, py::dict py_parameters)
 {
+  cout << "PyComputeConcentration called" << endl;
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
   
@@ -461,6 +466,7 @@ static py::object PyComputeConcentration(nm::array py_po2, nm::array py_hematocr
 #else
 static py::object PyComputePO2FromConc(nm::array py_conc, nm::array py_hematocrit, py::dict py_parameters)
 {
+  cout << "PyComputePO2FromConc called" << endl;
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
   

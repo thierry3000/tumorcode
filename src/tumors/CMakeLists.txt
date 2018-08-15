@@ -46,7 +46,7 @@ endif()
 
 add_library(tumors_ SHARED ${Tumor_Files})
 
-set(myLibs "${myLibs};krebs_;common")
+#set(myLibs "${myLibs};krebs_;detailedo2_")
 if(USE_ADAPTION)
   set(myLibs "${myLibs};adaption_")
 endif()
@@ -67,9 +67,11 @@ endif()
 #   )
 # endif()
 message("link_tumor_to_this: ${myLibs} ")
+
 target_link_libraries(tumors_ ${myLibs})
 target_link_libraries(tumors_ krebs_)
 target_link_libraries(tumors_ detailedo2_)
+
 if(USE_MILOTTI_MTS)
   target_link_libraries(tumors_ vbl)
   #target_link_libraries(tumors_ CGAL)
