@@ -162,8 +162,15 @@ double Parameters::Permeability(double r, double w) const
  **/
 double Parameters::Saturation( double p )  const //calculates saturation dependent on the partial pressure,
 {
-  if (p<=0.) 
+  if (p<0.)
+  {
+    cout << "Warning: cannot compute saturation of negative pressure!" << endl;
     return 0.;
+  }
+  if (p==0.)
+  {
+    return 0.;
+  }
   const double n = sat_curve_exponent;
   const double mu = p/sat_curve_p50;
 #ifdef DEBUG

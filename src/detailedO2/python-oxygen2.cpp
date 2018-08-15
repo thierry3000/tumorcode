@@ -60,11 +60,14 @@ void InitParameters(DetailedPO2::Parameters &params, py::dict py_parameters)
   params.po2init_r0 = GET_PO2_PARAM_FROM_DICT(double, "po2init_r0");
   params.po2init_dr = GET_PO2_PARAM_FROM_DICT(double, "po2init_dr");
   params.po2init_cutoff = GET_PO2_PARAM_FROM_DICT(double, "po2init_cutoff");
-  params.num_threads = GET_PO2_PARAM_FROM_DICT(int, "num_threads");
+  // this is done compl
+  //params.num_threads = GET_PO2_PARAM_FROM_DICT(int, "num_threads");
   
   params.tissue_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_tissue");
   params.plasma_solubility = GET_PO2_PARAM_FROM_DICT(double, "solubility_plasma");
   params.max_iter = GET_PO2_PARAM_FROM_DICT(int, "max_iter");
+  
+  // on old data it might be s_n and S_p50
   params.sat_curve_exponent = GET_PO2_PARAM_FROM_DICT(double, "sat_curve_exponent");
   params.sat_curve_p50 = GET_PO2_PARAM_FROM_DICT(double, "sat_curve_p50");
   params.conductivity_coeff1 = GET_PO2_PARAM_FROM_DICT(double, "conductivity_coeff1"); 
@@ -259,6 +262,7 @@ static void PyComputePO2(string fn, string vesselgroup_path, string tumorgroup_p
 #if BOOST_VERSION>106300
 static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters)
 {
+  cout << "PyComputeSaturation called on c++ site" << endl;
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
   
@@ -282,6 +286,7 @@ static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters
 #else
 static py::object PyComputeSaturation(nm::array py_po2, py::dict py_parameters)
 {
+  cout << "PyComputeSaturation called on c++ site" << endl;
   DetailedPO2::Parameters params;
   InitParameters(params, py_parameters);
   
