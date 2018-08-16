@@ -194,7 +194,7 @@ void DoOutput(H5::Group &root,
   //07.19.2018 maybe stack allocation is not enought --> I switch to heap
   //07.22.2018 transfered issue to the writeDataSet routine
   DynArray<uchar> tmp2(vl.GetNCount());
-  cout<<"allowcated tmp2" << endl;
+  //cout<<"allowcated tmp2" << endl;
   //fill tmp with flags
   for (int i=0; i<vl.GetNCount(); ++i)
   {
@@ -225,11 +225,11 @@ void DoOutput(H5::Group &root,
     e.dontPrint();
     cout << "catched flags" << endl;
   }
-  cout<<"deleted tmp2" << endl;
+  //cout<<"deleted tmp2" << endl;
   
   DynArray<int> tmp3(vl.GetECount());
   
-  cout<<"allowcated tmp3" << endl;
+  //cout<<"allowcated tmp3" << endl;
   
   for (int i=0; i<vl.GetECount(); ++i)
   {
@@ -249,7 +249,7 @@ void DoOutput(H5::Group &root,
   }
     
   writeDataSetToGroup(h5_edges, string("level"), tmp3);
-  cout<<"deleted tmp3" << endl;
+  //cout<<"deleted tmp3" << endl;
   
   MemUsage memusage = GetMemoryUsage();
   writeAttrToH5(root, string("mem_vsize"),(int)memusage.vmem_peak );
@@ -257,7 +257,7 @@ void DoOutput(H5::Group &root,
 
     
   // measurement
-  cout <<" data" << endl;
+  //cout <<" data" << endl;
   try
   {
     g = root.openGroup("data");
@@ -269,7 +269,7 @@ void DoOutput(H5::Group &root,
     e.printErrorStack();
   }
   
-  cout <<" after data" << endl;
+  //cout <<" after data" << endl;
   WriteHdfHistogram(g,"lengths_prob",plen);
   WriteHdfHistogram(g,"lengths_by_rad",hlenbyrad);
   WriteHdfHistogram(g,"radii_prob",hrad);
@@ -287,7 +287,7 @@ void DoOutput(H5::Group &root,
   writeAttrToH5(g, string("ROOT_V_COUNT"), vrootcnt);
   
   // roots
-  cout << " roots " << endl;
+  //cout << " roots " << endl;
   int N = tree_roots.size();
   DynArray<int64> pos(N);
   DynArray<int> len(N);
@@ -325,7 +325,7 @@ void DoOutput(H5::Group &root,
   g.close();
   gg.close();
   h5_node_flags.close();
-  cout<< "Error 5 DoOutput" << std::endl;
+  //cout<< "Error 5 DoOutput" << std::endl;
 }
 
 

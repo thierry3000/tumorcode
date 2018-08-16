@@ -148,7 +148,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     readSystemParameters(s.mySystemParameters);
     
     boost::property_tree::update(systemSettings, s.mySystemParameters.as_ptree());
-    #ifdef DEBUG
+    #ifndef NDEBUG
       std::cout << "detailed params after update: " << std::endl;
       printPtree(detailedO2Settings);
       std::cout << "calcflow params after update: " << std::endl;
@@ -172,7 +172,8 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     H5::Group h5_vbl_dose_rateSignal;
     H5::Group h5_vbl_flowSignal;
     int reRunNumber;
-    try{
+    try
+    {
       //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
       //storing current system information needs write permissions
       file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR);
@@ -181,7 +182,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
       h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
       h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
       h5_system_of_first_run = h5_params_of_previous_run.openGroup("system");
-      h5_o2_params_of_previous_run = h5_params_of_previous_run.openGroup("o2");
+      h5_o2_params_of_previous_run = h5_params_of_previous_run.openGroup("o2_sim/o2");
       h5_vbl_param = last_state.openGroup("vbl");
       h5_vbl_Environment =h5_vbl_param.openGroup("Environment");
       h5_vbl_Environment_0=h5_vbl_param.openGroup("Environment_0");
@@ -203,6 +204,9 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     ptree vblSettings_Environment;
     ReadHdfPtree(vblSettings_Environment, h5_vbl_Environment);
     vblSettings.put_child("Environment", vblSettings_Environment);
+#ifndef NDEBUG
+    printPtree(vblSettings);
+#endif
     ptree vblSettings_Environment_0;
     ReadHdfPtree(vblSettings_Environment_0, h5_vbl_Environment_0);
     vblSettings.put_child("Environment_0", vblSettings_Environment_0);
@@ -227,7 +231,25 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
       vblSettings.put_child(current_type_name, readOutType);
     }
     s.all_pt_params.put_child("vbl", vblSettings);
+    try 
+    {
+      #ifndef NDEBUG
+      cout << "**************** VBL Settings ***************"<< endl;
+    printPtree(vblSettings);
+#endif
+      //s.tumorcode_pointer_to_currentCellsSystem->get_params_pointer()->assign(vblSettings);
+      s.tumorcode_pointer_to_currentCellsSystem->assign(vblSettings);
+    }
+    catch(std::runtime_error &e)
+    {
+      cout << "error assigning vblSettings" << endl;
+      cout << e.what() << endl;
+    }
+    //s.tumorcode_pointer_to_currentCellsSystem->assign(vblSettings);
+    //s.set_CellTypeFromIndexVector();
+    //s.get_CellTypeIndexVector();
     
+    s.readVBLDataFromHDF(h5_vbl_param);
 #ifndef NDEBUG
       std::cout << "found vbl Settings: " << std::endl;
       printPtree(vblSettings);
@@ -288,6 +310,8 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
   
   s.o2_sim.bfparams.assign(bfSettings);
   s.o2_sim.params.assign(detailedO2Settings);
+  
+
   
   if( !isRerun )
   {

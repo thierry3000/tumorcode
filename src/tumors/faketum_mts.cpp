@@ -49,36 +49,74 @@ void FakeTumMTS::FakeTumorSimMTS::initMilotti()
   tumorcode_pointer_to_currentCellsSystem->Set_CellTypeFile( "CellType.txt" );
   tumorcode_pointer_to_currentCellsSystem->Set_CellTypeFileAlt( "CellType.txt" );
   tumorcode_pointer_to_currentCellsSystem->Set_EnvironmentFile( "Environment.txt" );
-  tumorcode_pointer_to_currentCellsSystem->InitializeCellsSystem( terminal );
-  cout << "Initialization milotti completed" << endl;
-  tumorcode_pointer_to_currentCellsSystem->RunDefinition( );// Run number and output directory output directory & output file opening for metabolism
-  tumorcode_pointer_to_currentCellsSystem->Set_nconfiguration( 0 ); // The configuration number is initialized to 0
-  if(tumorcode_pointer_to_currentCellsSystem->Get_ncells() > 1)
+  
+  if( !mySystemParameters.isRerun )
   {
-    tumorcode_pointer_to_currentCellsSystem->CleanCellsSystem();
-    tumorcode_pointer_to_currentCellsSystem->Geometry();
+    tumorcode_pointer_to_currentCellsSystem->InitializeCellsSystem( terminal );
+    cout << "Initialization milotti completed" << endl;
+    tumorcode_pointer_to_currentCellsSystem->RunDefinition( );// Run number and output directory output directory & output file opening for metabolism
+    tumorcode_pointer_to_currentCellsSystem->Set_nconfiguration( 0 ); // The configuration number is initialized to 0
+    if(tumorcode_pointer_to_currentCellsSystem->Get_ncells() > 1)
+    {
+      tumorcode_pointer_to_currentCellsSystem->CleanCellsSystem();
+      tumorcode_pointer_to_currentCellsSystem->Geometry();
+      
+      tumorcode_pointer_to_currentCellsSystem->Set_time_from_CGAL(0.);		// Timer reset from last call to CGAL
+    }
+    else 
+    {
+      tumorcode_pointer_to_currentCellsSystem->NoGeometry( );
+    }
     
-    tumorcode_pointer_to_currentCellsSystem->Set_time_from_CGAL(0.);		// Timer reset from last call to CGAL
-  }
-  else 
-  {
-    tumorcode_pointer_to_currentCellsSystem->NoGeometry( );
-  }
-  
-  tumorcode_pointer_to_currentCellsSystem->Set_time_from_CGAL(0.);	// Timer reset from last call to CGAL
-  if(run_type == 0 || run_type == 1)
-    tumorcode_pointer_to_currentCellsSystem->Print2logfile(std::string("Cell status at the end of initialization"));
-  else if (run_type == 2)
-    tumorcode_pointer_to_currentCellsSystem->Print2logfile(std::string("Cell status at restart of simulation"));
-  
+    tumorcode_pointer_to_currentCellsSystem->Set_time_from_CGAL(0.);	// Timer reset from last call to CGAL
+    if(run_type == 0 || run_type == 1)
+      tumorcode_pointer_to_currentCellsSystem->Print2logfile(std::string("Cell status at the end of initialization"));
+    else if (run_type == 2)
+      tumorcode_pointer_to_currentCellsSystem->Print2logfile(std::string("Cell status at restart of simulation"));
+    
 
-  tumorcode_pointer_to_currentCellsSystem->CPU_timer(vbl::timer_button::Start_timer);		// start del CPU timer (e reset del timer degli intertempi)
-  tumorcode_pointer_to_currentCellsSystem->Timing( true );				// reset del timer
-  tumorcode_pointer_to_currentCellsSystem->StepStat( true );			// reset delle statistiche (azzera anche il vettore convergence_fail)
-  if (tumorcode_pointer_to_currentCellsSystem->Get_alive()==0)
-  {
-    throw std::runtime_error(" no alive cell present");
+    tumorcode_pointer_to_currentCellsSystem->CPU_timer(vbl::timer_button::Start_timer);		// start del CPU timer (e reset del timer degli intertempi)
+    tumorcode_pointer_to_currentCellsSystem->Timing( true );				// reset del timer
+    tumorcode_pointer_to_currentCellsSystem->StepStat( true );			// reset delle statistiche (azzera anche il vettore convergence_fail)
+    if (tumorcode_pointer_to_currentCellsSystem->Get_alive()==0)
+    {
+      throw std::runtime_error(" no alive cell present");
+    }
   }
+  else
+  {
+    //tumorcode_pointer_to_currentCellsSystem->InitializeCellsSystem( terminal );
+    cout << "Initialization milotti completed" << endl;
+    //tumorcode_pointer_to_currentCellsSystem->RunDefinition( );// Run number and output directory output directory & output file opening for metabolism
+    //tumorcode_pointer_to_currentCellsSystem->Set_nconfiguration( 0 ); // The configuration number is initialized to 0
+//     if(tumorcode_pointer_to_currentCellsSystem->Get_ncells() > 1)
+//     {
+//       tumorcode_pointer_to_currentCellsSystem->CleanCellsSystem();
+//       tumorcode_pointer_to_currentCellsSystem->Geometry();
+//       
+//       tumorcode_pointer_to_currentCellsSystem->Set_time_from_CGAL(0.);		// Timer reset from last call to CGAL
+//     }
+//     else 
+//     {
+//       tumorcode_pointer_to_currentCellsSystem->NoGeometry( );
+//     }
+    
+    tumorcode_pointer_to_currentCellsSystem->Set_time_from_CGAL(0.);	// Timer reset from last call to CGAL
+//     if(run_type == 0 || run_type == 1)
+//       tumorcode_pointer_to_currentCellsSystem->Print2logfile(std::string("Cell status at the end of initialization"));
+//     else if (run_type == 2)
+//       tumorcode_pointer_to_currentCellsSystem->Print2logfile(std::string("Cell status at restart of simulation"));
+    
+
+    tumorcode_pointer_to_currentCellsSystem->CPU_timer(vbl::timer_button::Start_timer);		// start del CPU timer (e reset del timer degli intertempi)
+    tumorcode_pointer_to_currentCellsSystem->Timing( false );				// reset del timer
+    tumorcode_pointer_to_currentCellsSystem->StepStat( false );			// reset delle statistiche (azzera anche il vettore convergence_fail)
+    if (tumorcode_pointer_to_currentCellsSystem->Get_alive()==0)
+    {
+      throw std::runtime_error(" no alive cell present");
+    }
+  }
+  
   cout << "\nStartup milotti completed" << endl; 
 }
 
@@ -392,28 +430,8 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   vessel_model.Init(vl.get(), this->vessel_model.params, callbacks);
   
   
-  /* set initial conditions of the FakeTumMTS simulation */
-  //tumor_radius = params.tumor_radius; not needed for cell based simulation
-  tumor_radius = params.tumor_radius;
-  if( !mySystemParameters.isRerun)
-  {
-    time = 0.;
-    num_iteration = 0.;
-    output_num = 0;
-    next_output_time = 0;
-    next_adaption_time = 0;
-  }
-  else
-  {
-    //this is store before the increment in the last run
-    num_iteration++;
-    output_num++;
-    time = time+params.dt;
-  }
   
-  // this is needed to pass tumor information to the DetailedPO2 simulation
-  boost::optional<H5::Group> lastTumorGroupWrittenByFakeTum;
-  std::string lastTumorGroupWrittenByFakeTumName;
+  
 
   
   double grid_lattice_const = 15;
@@ -447,6 +465,68 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   
   last_chem_update = -1;
   last_vessels_checksum = -1;
+  
+  
+  // this is needed to pass tumor information to the DetailedPO2 simulation
+  boost::optional<H5::Group> lastTumorGroupWrittenByFakeTum;
+  std::string lastTumorGroupWrittenByFakeTumName;
+  /* set initial conditions of the FakeTumMTS simulation */
+  //tumor_radius = params.tumor_radius; not needed for cell based simulation
+  tumor_radius = params.tumor_radius;
+  if( !mySystemParameters.isRerun)
+  {
+    time = 0.;
+    num_iteration = 0.;
+    output_num = 0;
+    next_output_time = 0;
+    next_adaption_time = 0;
+  }
+  else
+  {
+    //this is store before the increment in the last run
+    num_iteration++;
+    output_num++;
+    time = time+params.dt;
+    //read vessels from file
+    //H5::H5File file;
+    H5::Group h5_previous_po2vessels;
+    H5::Group h5_previous_tumor;
+    H5::DataSet h5_po2field;
+    H5::DataSet h5_fieldGf;
+    H5::DataSet h5_fieldO2Consumption;
+    try{
+      //file.reOpen();
+      file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
+      h5_previous_po2vessels = file.openGroup("last_state/po2/vessels");
+      h5_previous_tumor = file.openGroup("last_state/tumor");
+      h5_po2field = file.openDataSet("last_state/po2/vessels/po2field");
+      h5_fieldGf = h5_previous_tumor.openDataSet("fieldGf");
+      h5_fieldO2Consumption = h5_previous_tumor.openDataSet("fieldO2Consumption");
+    }
+    catch(H5::Exception &e)
+    {
+      cout << "Error reading o2 data from previous simulation" << endl;
+      e.printErrorStack();
+    }
+    //o2_sim.init(bfparams,grid_lattice_const, safety_layer_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
+    //boost::optional<Array3df> buffer;
+    ReadArray3D<float>(h5_fieldGf, state.gffield);
+    ReadArray3D<float>(h5_fieldO2Consumption, state.cell_O2_consumption);
+    ReadArray3D<float>(h5_po2field, state.previous_po2field);
+    //state.previous_po2field = buffer;
+    //DynArray<Float2> bla;
+    readDataSetFromGroup<Float2>(h5_previous_po2vessels,string("po2vessels"), state.previous_po2vessels);
+    cout<<(*state.previous_po2field)(42,42,42) << endl;
+    cout<<(*state.previous_po2vessels)[42] << endl;
+    
+    h5_previous_po2vessels.close();
+    h5_previous_tumor.close();
+    h5_po2field.close();
+    h5_fieldGf.close();
+    h5_fieldO2Consumption.close();
+    file.close();
+    cout<<"reloaded o2 from previous simulation" << endl;
+  }
   
   /* init the cell system */
   try{
@@ -773,6 +853,7 @@ void FakeTumMTS::FakeTumorSimMTS::readVBLDataFromHDF(H5::Group &h5_vbl)
   {
     tumorcode_pointer_to_currentCellsSystem->Set_r(i, double_buffer[i]);
   }
+  //tumorcode_pointer_to_currentCellsSystem->Set_r(double_buffer);
   readDataSetFromGroup(h5_vbl, string("surface"), double_buffer);
   tumorcode_pointer_to_currentCellsSystem->Set_surface(double_buffer);
   readDataSetFromGroup(h5_vbl, string("volume"), double_buffer);
@@ -970,7 +1051,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       h5_parameters = root.createGroup("parameters");
       h5_vessel_parameters = h5_parameters.createGroup("vessels");
       h5_system_parameters = h5_parameters.createGroup("system");
-      h5_o2_parameters = h5_parameters.createGroup("o2");
+      h5_o2_parameters = h5_parameters.createGroup("o2_sim");
       h5_calcflow_parameters = h5_parameters.createGroup("calcflow");
       
       writeAttrToH5(root, string("MESSAGE"), params.message);
@@ -1053,20 +1134,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       writeAttrToH5(h5_memory, string("rss_peak"), m.rss_peak);
     }
     
-    /** VBL 
-     */
-    WriteHdfPtree(h5_vbl, tumorcode_pointer_to_currentCellsSystem->get_params().as_ptree());
     
-    boost::property_tree::ptree return_from_vbl = tumorcode_pointer_to_currentCellsSystem->as_ptree();
-    for( auto it:return_from_vbl)
-    {
-#ifndef NDEBUG
-      cout << it.first << endl;
-#endif
-      H5::Group h5_vbl_type = h5_vbl.createGroup(it.first);
-      WriteHdfPtree(h5_vbl_type, return_from_vbl.get_child(it.first));
-    }
-    writeVBLDataToHDF(h5_vbl);
     
     /** runtime data
      */
@@ -1088,6 +1156,22 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
      */
     if( ( output_num > 0 and (output_num % 5 == 0) ) or !doPermanentSafe)
     {
+      /** VBL 
+      */
+      WriteHdfPtree(h5_vbl, tumorcode_pointer_to_currentCellsSystem->get_params().as_ptree());
+      
+      boost::property_tree::ptree return_from_vbl = tumorcode_pointer_to_currentCellsSystem->as_ptree();
+      for( auto it:return_from_vbl)
+      {
+  #ifndef NDEBUG
+	cout << it.first << endl;
+  #endif
+	H5::Group h5_vbl_type = h5_vbl.createGroup(it.first);
+	WriteHdfPtree(h5_vbl_type, return_from_vbl.get_child(it.first));
+      }
+      writeVBLDataToHDF(h5_vbl);
+      /** END VBL 
+      */
       WriteScalarField(h5_tum, string("fieldGf"), state.gffield, grid.ld, root.openGroup("field_ld"));
       WriteScalarField(h5_tum, string("fieldO2Consumption"), state.cell_O2_consumption, grid.ld, root.openGroup("field_ld"));
     }
