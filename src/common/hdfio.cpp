@@ -194,8 +194,28 @@ void readAttrFromH5<string>(H5::H5Location &g, const string &attr_name, string &
   output_buffer = strreadbuf;
 }
 #endif //#if H5_VERS_MINOR > 9
-
-
+template <class T>
+int getSecondDimForRank2()
+{
+  int intToReturn=0;
+  if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
+  {
+    intToReturn = 3;
+  }
+  else
+  {
+    intToReturn = 1;
+  }
+  if(typeid(T) == typeid(Int6))
+  {
+    intToReturn = 6;
+  }
+  if(typeid(T) == typeid(Float2))
+  {
+    intToReturn = 2;
+  }
+  return intToReturn;
+}
 /**
  * one attribute could be an int3 or a point in 3D space
  */
@@ -207,18 +227,19 @@ void writeAttrToH5(H5::H5Object &h, const string &attr_name,  const T &value)
   const int rank = 2;
   hsize_t dims[rank];
   dims[0] = 1;
-  if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
-  {
-    dims[1] = 3;
-  }
-  else
-  {
-    dims[1] = 1;
-  }
-  if(typeid(T) == typeid(Int6))
-  {
-    dims[1] = 6;
-  }
+//   if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
+//   {
+//     dims[1] = 3;
+//   }
+//   else
+//   {
+//     dims[1] = 1;
+//   }
+//   if(typeid(T) == typeid(Int6))
+//   {
+//     dims[1] = 6;
+//   }
+  dims[1] = getSecondDimForRank2<T>();
   H5::DataSpace mspace = H5::DataSpace( rank, dims);
   H5::Attribute attr_out;
   try{
@@ -239,18 +260,19 @@ void writeAttrToH5(H5::H5Location &h, const string &attr_name,  const T &value)
   const int rank = 2;
   hsize_t dims[rank];
   dims[0] = 1;
-  if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
-  {
-    dims[1] = 3;
-  }
-  else
-  {
-    dims[1] = 1;
-  }
-  if(typeid(T) == typeid(Int6))
-  {
-    dims[1] = 6;
-  }
+//   if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
+//   {
+//     dims[1] = 3;
+//   }
+//   else
+//   {
+//     dims[1] = 1;
+//   }
+//   if(typeid(T) == typeid(Int6))
+//   {
+//     dims[1] = 6;
+//   }
+  dims[1] = getSecondDimForRank2<T>();
   
   H5::DataSpace mspace = H5::DataSpace( rank, dims);
   H5::Attribute attr_out;
@@ -945,23 +967,23 @@ template string getH5GroupName<H5::DataSet>(H5::DataSet g);
 //   } 
 // }
 
-template <class T>
-void readDataSetFromGroup(H5::Group &g, string ds_name, T *placeToStore)
-{
-  H5::DataSet dset = g.openDataSet(ds_name);
-  H5::DataSpace dspace = dset.getSpace();
-  /*
-  * Get the dimensions sizes of the file dataspace
-  */
-  auto sizearray = placeToStore.size();
-  int rank_of_cpp = sizearray.size();
-  hsize_t dims[rank_of_cpp];
-  
-  int rank = dspace.getSimpleExtentDims(dims);
-  myAssert( rank_of_cpp == rank );
-  //void read( void* buf, const DataType& mem_type, const DataSpace& mem_space = DataSpace::ALL, const DataSpace& file_space = DataSpace::ALL, const DSetMemXferPropList& xfer_plist = DSetMemXferPropList::DEFAULT ) const;
-  dset.read(placeToStore, H5::PredType::NATIVE_FLOAT);
-}
+// template <class T>
+// void readDataSetFromGroup(H5::Group &g, string ds_name, T *placeToStore)
+// {
+//   H5::DataSet dset = g.openDataSet(ds_name);
+//   H5::DataSpace dspace = dset.getSpace();
+//   /*
+//   * Get the dimensions sizes of the file dataspace
+//   */
+//   auto sizearray = placeToStore.size();
+//   int rank_of_cpp = sizearray.size();
+//   hsize_t dims[rank_of_cpp];
+//   
+//   int rank = dspace.getSimpleExtentDims(dims);
+//   myAssert( rank_of_cpp == rank );
+//   //void read( void* buf, const DataType& mem_type, const DataSpace& mem_space = DataSpace::ALL, const DataSpace& file_space = DataSpace::ALL, const DSetMemXferPropList& xfer_plist = DSetMemXferPropList::DEFAULT ) const;
+//   dset.read(placeToStore, H5::PredType::NATIVE_FLOAT);
+// }
 
 
 
@@ -980,18 +1002,19 @@ H5::DataSet writeDataSetToGroup(H5::Group &g, const string &dataset_name, DynArr
   hsize_t dims[rank];
   dims[0]=sizeOfDynArray;
   H5::DataType thisWritingType = getH5TypeFromCpp<T>();
-  if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
-  {
-    dims[1] = 3;
-  }
-  else if( typeid(T) == typeid(Float2))
-  {
-    dims[1] = 2;
-  }
-  else
-  {
-    dims[1] = 1;
-  }
+  dims[1] = getSecondDimForRank2<T>();
+//   if(typeid(T) == typeid(Float3) or typeid(T) == typeid(Int3) or typeid(T) == typeid(Bool3))
+//   {
+//     dims[1] = 3;
+//   }
+//   else if( typeid(T) == typeid(Float2))
+//   {
+//     dims[1] = 2;
+//   }
+//   else
+//   {
+//     dims[1] = 1;
+//   }
 #ifndef NDEBUG
   cout << "we are writting data of size (" << dims[0] << ", " << dims[1] << "!" <<endl;
 #endif
@@ -1107,6 +1130,57 @@ void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> 
     e.printErrorStack();
   }
 }
+
+template <class T>
+void readDataSetFromGroup(H5::Group &g, const string &dataset_name, boost::optional<DynArray<T>> &readIn)
+{
+  H5::DataSet dset;
+  H5::DataSpace dataspace;
+  
+  try
+  {
+    dset = g.openDataSet(dataset_name);
+    dataspace = dset.getSpace();
+    hsize_t rank = dataspace.getSimpleExtentNdims();
+    hsize_t dims[rank];
+    hsize_t max_dims[rank];
+    hsize_t again = dataspace.getSimpleExtentDims(dims,max_dims);
+#ifndef NDEBUG
+    cout << "rank: " << rank << endl;
+    for(int i=0; i<rank; i++)
+    {
+      cout << "dims[" << i << "]" << " = " << dims[i] << endl;
+    }
+#endif
+    
+    /* here is some black boost magic going on:
+     * it regognizes the Eigen matrices (Float2, Float3 etc)
+     * and reads them correctly into the array_data, wow
+     */ 
+    
+    boost::multi_array<T,1> arr_data(boost::extents[dims[0]]);
+    H5::DataType thisWritingType = getH5TypeFromCpp<T>();
+
+    dset.read(arr_data.data(), thisWritingType);
+    DynArray<T> tmp;
+    tmp.resize(dims[0]);
+    
+    for( int i=0;i<dims[0];++i)
+    {
+      (tmp)[i] = arr_data[i];
+    }
+    readIn =tmp;
+  }
+  catch(H5::Exception &e)
+  {
+    cout << "Error in : H5::Group &g, const string &dataset_name, boost::optional<DynArray<T>> &readIn" << endl;
+    e.printErrorStack();
+  }
+}
+// template <>
+// void readDataSetFromGroup(H5::Group &g, const string &dataset_name, boost::optional<DynArray<Float2>> &readIn)
+// {
+
 
 template <class T>
 void readDataSetFromGroup(H5::Group &g, const string &dataset_name, std::vector<T> &readIn)
@@ -1246,7 +1320,8 @@ INSTANTIATE(char)
   template H5::DataSet writeDataSetToGroup<T>(H5::Group &g, const string &name, DynArray<T> &value);\
   template void writeDataSetToGroup<T>(H5::Group &g, const string &name, const std::vector<T> &value);\
   template void readDataSetFromGroup<T>(H5::Group &g, const string &name, std::vector<T> &value);\
-  template void readDataSetFromGroup<T>(H5::Group &g, const string &name, DynArray<T> &value);
+  template void readDataSetFromGroup<T>(H5::Group &g, const string &name, DynArray<T> &value);\
+  template void readDataSetFromGroup<T>(H5::Group &g, const string &name, boost::optional<DynArray<T>> &value);
 INSTANTIATE2(float)
 INSTANTIATE2(double)
 INSTANTIATE2(int)
@@ -1444,11 +1519,71 @@ H5::DataSet WriteVectorArray3D(H5::Group  &file,const std::string &id, const Con
 }
 
 
-
+template<class T>
+void ReadArray3D(H5::DataSet &ds, boost::optional<Array3d<T>> &a)
+{
+  const int rank = 3;
+  hsize_t dims[rank];
+  H5::DataSpace dspace = ds.getSpace();
+  //read extension into dims
+  dspace.getSimpleExtentDims(dims);
+#ifndef NDEBUG
+  cout << "dims " << dims[0]<< endl;
+  cout << "dims " << dims[1]<< endl;
+  cout << "dims " << dims[2]<< endl;
+#endif
+  boost::multi_array<T, 3>  arr_3d_data(boost::extents[dims[0]][dims[1]][dims[2]]);
+  try
+  {
+    ds.read(arr_3d_data.data(), H5::PredType::NATIVE_FLOAT);
+  }
+  catch(H5::Exception &e)
+  {
+    e.printErrorStack();
+  }
+  Array3d<T> tmp(Int3(dims[0],dims[1], dims[2]));
+  //(*a)(Int3(dims[0],dims[1], dims[2]));
+  //a.fill(tmp);
+  for(int i = 0; i< dims[0];i++)
+    for(int ii=0; ii< dims[1]; ii++)
+      for(int iii=0; iii<dims[2]; iii++)
+        tmp(Int3(i,ii,iii)) = arr_3d_data[i][ii][iii];
+        //(*a)(i,ii,iii) = arr_3d_data[i][ii][iii];
+  a=tmp;
+  cout << "finshed reading with boost optional" << endl;
+  
+}
 template<class T>
 void ReadArray3D(H5::DataSet &ds, Array3d<T> &a)
 {
-//   h5cpp::Dataspace sp = ds.get_dataspace();
+  const int rank = 3;
+  hsize_t dims[rank];
+  H5::DataSpace dspace = ds.getSpace();
+  //read extension into dims
+  dspace.getSimpleExtentDims(dims);
+#ifndef NDEBUG
+  cout << "dims " << dims[0]<< endl;
+  cout << "dims " << dims[1]<< endl;
+  cout << "dims " << dims[2]<< endl;
+#endif
+  boost::multi_array<T, 3>  arr_3d_data(boost::extents[dims[0]][dims[1]][dims[2]]);
+  try
+  {
+    ds.read(arr_3d_data.data(), H5::PredType::NATIVE_FLOAT);
+  }
+  catch(H5::Exception &e)
+  {
+    e.printErrorStack();
+  }
+  Array3d<T> tmp(Int3(dims[0],dims[1], dims[2]));
+  //a.fill(tmp);
+  for(int i = 0; i< dims[0];i++)
+    for(int ii=0; ii< dims[1]; ii++)
+      for(int iii=0; iii<dims[2]; iii++)
+        tmp(i,ii,iii) = arr_3d_data[i][ii][iii];
+  a=tmp;
+  cout << "finshed reading " << endl;
+  //   h5cpp::Dataspace sp = ds.get_dataspace();
 //   hsize_t dims[H5S_MAX_RANK];
 //   int r = sp.get_dims(dims);
 //   if (r != 3) throw h5cpp::Exception("ReadArray3d expected Dataset of Rank 3!");
@@ -1493,10 +1628,12 @@ INSTANTIATE(char)
 INSTANTIATE_VEC(float)
 INSTANTIATE_VEC(double)
 */
+//template void ReadArray3D<float>(H5::DataSet &ds, boost::optional<Array3d<float>> &a);
 
 #define INSTANTIATE(T)\
   template H5::DataSet WriteArray3D<T>(H5::Group &file, const std::string &id, const ConstArray3d<T> &a);\
-  template void ReadArray3D<T>(H5::DataSet &ds, Array3d<T> &a);
+  template void ReadArray3D<T>(H5::DataSet &ds, Array3d<T> &a);\
+  template void ReadArray3D<T>(H5::DataSet &ds, boost::optional<Array3d<T>> &a);
 
 #define INSTANTIATE_VEC(T)\
   template H5::DataSet WriteVectorArray3D<Vec<T,3> >(H5::Group  &file,const std::string &id, const ConstArray3d<Vec<T,3> > &a);\

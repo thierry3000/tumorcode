@@ -73,6 +73,9 @@ H5::DataSet WriteVectorArray3D(H5::Group  &file,const std::string &id, const Con
 template<class T>
 void ReadArray3D(H5::DataSet &ds, Array3d<T> &a);
 
+template<class T>
+void ReadArray3D(H5::DataSet &ds, boost::optional<Array3d<T>> &a);
+
 template<class Vector>
 void ReadVectorArray3D(H5::DataSet &ds, Array3d<Vector> &a);
 
@@ -103,6 +106,8 @@ H5::Group RequireLatticeDataGroup(H5::Group &g, const LatticeDataQuad3d &ld);
  */
 template<class T>
 H5::DataType getH5TypeFromCpp();
+template <class T>
+int getSecondDimForRank2();
 
 /** @brief
  * reading attributes from 
@@ -142,6 +147,8 @@ void writeDataSetToGroup(H5::Group &g, const string &attr_name, const std::vecto
 
 template<class T>
 void readDataSetFromGroup(H5::Group &g, const string &attr_name, DynArray<T> &placeToStore);
+template<class T>
+void readDataSetFromGroup(H5::Group &g, const string &attr_name, boost::optional<DynArray<T>> &placeToStore);
 template<class T>
 void readDataSetFromGroup(H5::Group &g, const string &attr_name, std::vector<T> &placeToStore);
 
