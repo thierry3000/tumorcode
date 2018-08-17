@@ -110,7 +110,7 @@ void FakeTumMTS::FakeTumorSimMTS::initMilotti()
 
     tumorcode_pointer_to_currentCellsSystem->CPU_timer(vbl::timer_button::Start_timer);		// start del CPU timer (e reset del timer degli intertempi)
     tumorcode_pointer_to_currentCellsSystem->Timing( false );				// reset del timer
-    tumorcode_pointer_to_currentCellsSystem->StepStat( false );			// reset delle statistiche (azzera anche il vettore convergence_fail)
+    tumorcode_pointer_to_currentCellsSystem->StepStat( true );			// reset delle statistiche (azzera anche il vettore convergence_fail)
     if (tumorcode_pointer_to_currentCellsSystem->Get_alive()==0)
     {
       throw std::runtime_error(" no alive cell present");
@@ -849,18 +849,19 @@ void FakeTumMTS::FakeTumorSimMTS::readVBLDataFromHDF(H5::Group &h5_vbl)
   readDataSetFromGroup(h5_vbl, string("vz"), double_buffer);
   tumorcode_pointer_to_currentCellsSystem->Set_vz(double_buffer);
   readDataSetFromGroup(h5_vbl, string("r"), double_buffer);
-  for(int i=0;i<double_buffer.size();i++)
-  {
-    tumorcode_pointer_to_currentCellsSystem->Set_r(i, double_buffer[i]);
-  }
-  //tumorcode_pointer_to_currentCellsSystem->Set_r(double_buffer);
+//   for(int i=0;i<double_buffer.size();i++)
+//   {
+//     tumorcode_pointer_to_currentCellsSystem->Set_r(i, double_buffer[i]);
+//   }
+  tumorcode_pointer_to_currentCellsSystem->Set_r(double_buffer);
   readDataSetFromGroup(h5_vbl, string("surface"), double_buffer);
   tumorcode_pointer_to_currentCellsSystem->Set_surface(double_buffer);
   readDataSetFromGroup(h5_vbl, string("volume"), double_buffer);
-  for(int i=0;i<double_buffer.size();i++)
-  {
-    tumorcode_pointer_to_currentCellsSystem->Set_volume(i, double_buffer[i]);
-  }
+  tumorcode_pointer_to_currentCellsSystem->Set_volume(double_buffer);
+//   for(int i=0;i<double_buffer.size();i++)
+//   {
+//     tumorcode_pointer_to_currentCellsSystem->Set_volume(i, double_buffer[i]);
+//   }
   readDataSetFromGroup(h5_vbl, string("mass"), double_buffer);
   tumorcode_pointer_to_currentCellsSystem->Set_mass(double_buffer);
   
@@ -868,10 +869,11 @@ void FakeTumMTS::FakeTumorSimMTS::readVBLDataFromHDF(H5::Group &h5_vbl)
   tumorcode_pointer_to_currentCellsSystem->Set_volume_extra(double_buffer);
   
   readDataSetFromGroup(h5_vbl, string("M"), double_buffer);
-  for(int i=0;i<double_buffer.size();i++)
-  {
-    tumorcode_pointer_to_currentCellsSystem->Set_M(i, double_buffer[i]);
-  }
+  tumorcode_pointer_to_currentCellsSystem->Set_M(double_buffer);
+//   for(int i=0;i<double_buffer.size();i++)
+//   {
+//     tumorcode_pointer_to_currentCellsSystem->Set_M(i, double_buffer[i]);
+//   }
   readDataSetFromGroup(h5_vbl, string("G"), double_buffer);
   tumorcode_pointer_to_currentCellsSystem->Set_G(double_buffer);
   readDataSetFromGroup(h5_vbl, string("G6P"), double_buffer);
@@ -924,11 +926,11 @@ void FakeTumMTS::FakeTumorSimMTS::readVBLDataFromHDF(H5::Group &h5_vbl)
   readDataSetFromGroup(h5_vbl, string("ATPtot"), double_buffer);
   tumorcode_pointer_to_currentCellsSystem->Set_ATPtot(double_buffer);
   readDataSetFromGroup(h5_vbl, string("ATPp"), double_buffer);
-  for(int i=0;i<double_buffer.size();i++)
-  {
-    tumorcode_pointer_to_currentCellsSystem->Set_ATPp(i, double_buffer[i]);
-  }
-  //tumorcode_pointer_to_currentCellsSystem->Set_ATPp(double_buffer);
+//   for(int i=0;i<double_buffer.size();i++)
+//   {
+//     tumorcode_pointer_to_currentCellsSystem->Set_ATPp(i, double_buffer[i]);
+//   }
+  tumorcode_pointer_to_currentCellsSystem->Set_ATPp(double_buffer);
   readDataSetFromGroup(h5_vbl, string("ATPmin"), double_buffer);
   tumorcode_pointer_to_currentCellsSystem->Set_ATPmin(double_buffer);
   readDataSetFromGroup(h5_vbl, string("ATPstart"), double_buffer);
@@ -1158,7 +1160,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
     {
       /** VBL 
       */
-      WriteHdfPtree(h5_vbl, tumorcode_pointer_to_currentCellsSystem->get_params().as_ptree());
+      WriteHdfPtree(h5_vbl, tumorcode_pointer_to_currentCellsSystem->get_params_pointer()->as_ptree());
       
       boost::property_tree::ptree return_from_vbl = tumorcode_pointer_to_currentCellsSystem->as_ptree();
       for( auto it:return_from_vbl)
