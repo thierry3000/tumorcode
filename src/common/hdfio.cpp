@@ -1128,6 +1128,8 @@ void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> 
   {
     cout << "Error in : void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> &readIn)" << endl;
     e.printErrorStack();
+    cout << "closed group" << endl;
+    g.close();
   }
 }
 
@@ -1175,6 +1177,8 @@ void readDataSetFromGroup(H5::Group &g, const string &dataset_name, boost::optio
   {
     cout << "Error in : H5::Group &g, const string &dataset_name, boost::optional<DynArray<T>> &readIn" << endl;
     e.printErrorStack();
+    cout << "closed group" << endl;
+    g.close();
   }
 }
 // template <>
@@ -1218,6 +1222,8 @@ void readDataSetFromGroup(H5::Group &g, const string &dataset_name, std::vector<
   {
     cout << "Error in : void readDataSetFromGroup(H5::Group &g, const string &dataset_name, std::vector<T> &readIn)" << endl;
     e.printErrorStack();
+    cout << "closed group" << endl;
+    g.close();
   }
 }
 
@@ -1479,6 +1485,8 @@ H5::DataSet WriteArray3D(H5::Group &file, const std::string &DATASET_NAME, const
   catch(H5::Exception &e)
   {
     e.printErrorStack();
+    cout << "closed file" << endl;
+    file.close();
   }
   return dataset;
 }
@@ -1513,6 +1521,8 @@ H5::DataSet WriteVectorArray3D(H5::Group  &file,const std::string &id, const Con
   catch(H5::Exception &e)
   {
     e.printErrorStack();
+    cout << "closed file" << endl;
+    file.close();
   }
   
   return dataset;
@@ -1540,6 +1550,8 @@ void ReadArray3D(H5::DataSet &ds, boost::optional<Array3d<T>> &a)
   catch(H5::Exception &e)
   {
     e.printErrorStack();
+    cout << "closed dataset" << endl;
+    ds.close();
   }
   Array3d<T> tmp(Int3(dims[0],dims[1], dims[2]));
   //(*a)(Int3(dims[0],dims[1], dims[2]));
@@ -1574,6 +1586,8 @@ void ReadArray3D(H5::DataSet &ds, Array3d<T> &a)
   catch(H5::Exception &e)
   {
     e.printErrorStack();
+    cout << "closed dataset" << endl;
+    ds.close();
   }
   Array3d<T> tmp(Int3(dims[0],dims[1], dims[2]));
   //a.fill(tmp);
