@@ -103,7 +103,7 @@ def rerun(fn_of_previous_run, job_name, mem, days):
                             name = 'job_'+ job_name,
                             mem = mem,
                             days = days,
-                            #num_cpus = c['num_threads'],
+                            num_cpus = 2,
                             change_cwd = True)
 
 if __name__ == '__main__':
@@ -113,14 +113,14 @@ if __name__ == '__main__':
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
   parser.add_argument('--rerun', help='allows to rerun a simulation', default=False, action='store_true')
   
-  goodArguments, otherArguments = parser.parse_known_args()
-  qsub.parse_args(otherArguments)
+  goodArgumentsMTS, otherArgumentsMTS = parser.parse_known_args()
+  qsub.parse_args(otherArgumentsMTS)
   
-  if(not goodArguments.rerun):
-    tumorParameterName = goodArguments.tumParamSet
+  if(not goodArgumentsMTS.rerun):
+    tumorParameterName = goodArgumentsMTS.tumParamSet
     #create filename due to former standards
     filenames=[]
-    for fn in goodArguments.vesselFileNames:
+    for fn in goodArgumentsMTS.vesselFileNames:
       filenames.append(fn.name)
       
     try:
@@ -139,11 +139,11 @@ if __name__ == '__main__':
       #run(fn, tumorParameterName, factory, '4GB', 2.)
       run(fn, tumorParameterName, factory, '2GB', 5.)
   else:
-    print('starting rerun with file: %s' % goodArguments.vesselFileNames[0].name)
-    if not os.path.isfile(goodArguments.vesselFileNames[0].name):
-      raise AssertionError('The file %s is not present!'%goodArguments.vesselFileNames[0].name)
-    string_to_provide = str(goodArguments.vesselFileNames[0].name)
-    goodArguments.vesselFileNames[0].close()
+    print('starting rerun with file: %s' % goodArgumentsMTS.vesselFileNames[0].name)
+    if not os.path.isfile(goodArgumentsMTS.vesselFileNames[0].name):
+      raise AssertionError('The file %s is not present!'%goodArgumentsMTS.vesselFileNames[0].name)
+    string_to_provide = str(goodArgumentsMTS.vesselFileNames[0].name)
+    goodArgumentsMTS.vesselFileNames[0].close()
     rerun(string_to_provide, 'rerun_of_', '2GB', 5.)
   
         
