@@ -487,45 +487,48 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     num_iteration++;
     output_num++;
     time = time+params.dt;
-    //read vessels from file
-    //H5::H5File file;
-    H5::Group h5_previous_po2vessels;
-    H5::Group h5_previous_tumor;
-    H5::DataSet h5_po2field;
-    H5::DataSet h5_fieldGf;
-    H5::DataSet h5_fieldO2Consumption;
-    try{
-      //file.reOpen();
-      file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
-      h5_previous_po2vessels = file.openGroup("last_state/po2/vessels");
-      h5_previous_tumor = file.openGroup("last_state/tumor");
-      h5_po2field = file.openDataSet("last_state/po2/vessels/po2field");
-      h5_fieldGf = h5_previous_tumor.openDataSet("fieldGf");
-      h5_fieldO2Consumption = h5_previous_tumor.openDataSet("fieldO2Consumption");
-    }
-    catch(H5::Exception &e)
-    {
-      cout << "Error reading o2 data from previous simulation" << endl;
-      e.printErrorStack();
-    }
-    //o2_sim.init(bfparams,grid_lattice_const, safety_layer_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
-    //boost::optional<Array3df> buffer;
-    ReadArray3D<float>(h5_fieldGf, state.gffield);
-    ReadArray3D<float>(h5_fieldO2Consumption, state.cell_O2_consumption);
-    ReadArray3D<float>(h5_po2field, state.previous_po2field);
-    //state.previous_po2field = buffer;
-    //DynArray<Float2> bla;
-    readDataSetFromGroup<Float2>(h5_previous_po2vessels,string("po2vessels"), state.previous_po2vessels);
-    cout<<(*state.previous_po2field)(42,42,42) << endl;
-    cout<<(*state.previous_po2vessels)[42] << endl;
     
-    h5_previous_po2vessels.close();
-    h5_previous_tumor.close();
-    h5_po2field.close();
-    h5_fieldGf.close();
-    h5_fieldO2Consumption.close();
-    file.close();
-    cout<<"reloaded o2 from previous simulation" << endl;
+    if( !params.useConstO2 )
+    {
+      //read detailed o2 from previous run
+      H5::Group h5_previous_po2vessels;
+      H5::Group h5_previous_tumor;
+      H5::DataSet h5_po2field;
+      H5::DataSet h5_fieldGf;
+      H5::DataSet h5_fieldO2Consumption;
+      try
+      {
+        //file.reOpen();
+        file = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
+        h5_previous_po2vessels = file.openGroup("last_state/po2/vessels");
+        h5_previous_tumor = file.openGroup("last_state/tumor");
+        h5_po2field = file.openDataSet("last_state/po2/vessels/po2field");
+        h5_fieldGf = h5_previous_tumor.openDataSet("fieldGf");
+        h5_fieldO2Consumption = h5_previous_tumor.openDataSet("fieldO2Consumption");
+      }
+      catch(H5::Exception &e)
+      {
+        cout << "Error reading o2 data from previous simulation" << endl;
+        e.printErrorStack();
+      }
+      
+      ReadArray3D<float>(h5_fieldGf, state.gffield);
+      ReadArray3D<float>(h5_fieldO2Consumption, state.cell_O2_consumption);
+      ReadArray3D<float>(h5_po2field, state.previous_po2field);
+      readDataSetFromGroup<Float2>(h5_previous_po2vessels,string("po2vessels"), state.previous_po2vessels);
+  #ifndef NDEBUG
+      cout<<(*state.previous_po2field)(42,42,42) << endl;
+      cout<<(*state.previous_po2vessels)[42] << endl;
+  #endif
+      
+      h5_previous_po2vessels.close();
+      h5_previous_tumor.close();
+      h5_po2field.close();
+      h5_fieldGf.close();
+      h5_fieldO2Consumption.close();
+      file.close();
+      cout<<"reloaded o2 from previous simulation" << endl;
+    }
   }
   
   /* init the cell system */

@@ -52,8 +52,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#ifdef MILOTTI_MTS
+H5::H5File file;
+#endif
 //https://stackoverflow.com/questions/77005/how-to-automatically-generate-a-stacktrace-when-my-gcc-c-program-crashes
-void handler(int sig) {
+void handler(int sig) 
+{
+  //printf("%s", file.getFileName());
+  std::cout << "handler close of file: " << std::endl;
+  file.flush(H5F_SCOPE_GLOBAL);
+  file.close();
   void *array[42];
   size_t size;
 
@@ -82,8 +90,10 @@ namespace Tumors{
  * here a growing sphere of tumor cells is assumed, no tumor model is used for
  * that. One needs a growing speed
  */
+H5::H5File file;
 void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isRerun)
 {
+  //******GLOBALS
   ptree pt_params;
   char const* fn_of_previous_sim_c_str;
   if( !isRerun )
@@ -158,7 +168,6 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
   else
   {
     //update with params of previous run
-    H5::H5File file;
     H5::Group h5_params_of_previous_run;
     H5::Group h5_vessel_params_of_previous_run;
     H5::Group h5_calcflow_of_previous_run;
@@ -193,6 +202,13 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     {
       cout << "Error opening the parameters" << endl;
       e.printErrorStack();
+      cout << "emergency close called 1" << endl;
+      file.close();
+    }
+    catch(std::exception &ex)
+    {
+      cout << "emergency close called 2" << endl;
+      file.close();
     }
     ReadHdfPtree(vesselSettings, h5_vessel_params_of_previous_run);
     ReadHdfPtree(bfSettings, h5_calcflow_of_previous_run);
@@ -244,12 +260,22 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     {
       cout << "error assigning vblSettings" << endl;
       cout << e.what() << endl;
+      cout << "emergency close called 3" << endl;
+      file.close();
     }
     //s.tumorcode_pointer_to_currentCellsSystem->assign(vblSettings);
     //s.set_CellTypeFromIndexVector();
     //s.get_CellTypeIndexVector();
     
-    s.readVBLDataFromHDF(h5_vbl_param);
+    try 
+    {
+      s.readVBLDataFromHDF(h5_vbl_param);
+    }
+    catch(std::runtime_error &e)
+    {
+      cout << "emergency close called 4" << endl;
+      file.close();
+    }
 #ifndef NDEBUG
       std::cout << "found vbl Settings: " << std::endl;
       printPtree(vblSettings);
@@ -349,15 +375,20 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
      * output error stack on segfault and floating point error
      */
 // #ifndef NDEBUG
-  signal(SIGSEGV, handler);
-  signal(SIGFPE, handler);
+    signal(SIGSEGV, handler);
+    signal(SIGFPE, handler);
+    signal(SIGTERM, handler);
+    signal(SIGKILL, handler);
 // #endif
     int returnCode = s.run();
     delete s.tumorcode_pointer_to_currentCellsSystem;
   }
   catch(std::exception &ex)
   {
+    std::cout << "either SIGFPE or SIGFPE occured" << std::endl;
     std::cout << ex.what();
+    std::cout << "emergency close of hdf5 file!!!!" << std::endl;
+    file.close();
   }
 
   if (PyErr_Occurred() != NULL) return; // don't save stuff
@@ -438,7 +469,7 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
   else
   {
     //update with params of previous run
-    H5::H5File file;
+    //H5::H5File file;
     H5::Group h5_params_of_previous_run;
     H5::Group h5_vessel_params_of_previous_run;
     H5::Group h5_calcflow_of_previous_run;
@@ -539,8 +570,10 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
      * output error stack on segfault and floating point error
      */
 // #ifndef NDEBUG
-  signal(SIGSEGV, handler);
-  signal(SIGFPE, handler);
+    signal(SIGSEGV, handler);
+    signal(SIGFPE, handler);
+    signal(SIGKILL, handler);
+    signal(SIGTERM, handler);
 // #endif
     int returnCode = s.run();
   }
