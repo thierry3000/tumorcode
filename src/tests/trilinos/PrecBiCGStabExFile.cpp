@@ -63,6 +63,7 @@
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_ParameterList.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
+#include <fstream>
 
 void vector_print(Epetra_MultiVector v)
 {
