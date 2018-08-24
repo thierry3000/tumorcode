@@ -108,12 +108,12 @@ def plot_runtime_from_h5(goodArguments, pp):
               #'run_doStep',
               'run_o2',
               #'run_vbl_cellEvents',
-              'run_vbl_diff',
-              'run_vbl_diff_loop_1',
-              'run_vbl_diff_loop_2',
-              'run_vbl_diff_loop_3',
-              'run_vbl_dynamics',
-              'run_vbl_geometry',
+              #'run_vbl_diff',
+              #'run_vbl_diff_loop_1',
+              #'run_vbl_diff_loop_2',
+              #'run_vbl_diff_loop_3',
+              #'run_vbl_dynamics',
+              #'run_vbl_geometry',
               #'run_vbl_bico_call',
               #'run_vbl_writeToFile',
               'total_time', # NOTE: this is the integrated time, all others are runtimes!
@@ -126,9 +126,9 @@ def plot_runtime_from_h5(goodArguments, pp):
   no_of_threads = 42
   print("filename: %s" % str(goodArguments.vbl_simulation_output_filename))
   with h5py.File(str(goodArguments.vbl_simulation_output_filename), 'r') as f:
-    initialTime = f['out0000/timing'].attrs.get('secondsSinceEpoch')
+    #initialTime = f['out0001/timing'].attrs.get('secondsSinceEpoch')
     no_of_threads=f.attrs.get('detectedNumberOfThreads')
-    lastKey = 'out0000'
+    #lastKey = 'out0001'
 #    def isKeyGood(key):
 #      if 'out' in key:
 #        return str(key)
@@ -157,7 +157,7 @@ def plot_runtime_from_h5(goodArguments, pp):
     if b_sytem_parameters_exist:
       no_of_threads = f['/parameters/system'].attrs.get('num_threads')
   
-  plotVsCells = True;
+  plotVsCells = False;
   fig, ax = plt.subplots()
   for mykey in myH5Keys:
     print("mykey: %s" % mykey)
@@ -219,9 +219,9 @@ def plot_memory_from_h5(goodArguments, pp):
   no_of_threads=0
   print("filename: %s" % str(goodArguments.vbl_simulation_output_filename))
   with h5py.File(str(goodArguments.vbl_simulation_output_filename), 'r') as f:
-    initialTime = f['out0000/timing'].attrs.get('secondsSinceEpoch')
+    #initialTime = f['out0000/timing'].attrs.get('secondsSinceEpoch')
     no_of_threads=f.attrs.get('detectedNumberOfThreads')
-    lastKey = 'out0000'
+    #lastKey = 'out0000'
 #    def isKeyGood(key):
 #      if 'out' in key:
 #        return str(key)
@@ -306,4 +306,4 @@ if __name__ == '__main__':
   if 1:
     with PdfPages('runtime_analysis_file_%s.pdf' % str(goodArguments.vbl_simulation_output_filename)) as pp:
       plot_runtime_from_h5(goodArguments,pp)
-      plot_memory_from_h5(goodArguments,pp)
+      #plot_memory_from_h5(goodArguments,pp)

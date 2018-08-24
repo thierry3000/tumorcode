@@ -33,11 +33,12 @@ import h5py
 import myutils
 import multiprocessing
 import scoop
-
+import matplotlib
+matplotlib.use('agg')
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 
-eps_tube = 16
+eps_tube = 5
 
 
 ''' ARTERY
@@ -52,6 +53,8 @@ edge:492  *      * edge: 1215
 '''
 artery_p1 = np.asarray([216,459,-324])
 artery_p2 = np.asarray([223,383,-370])
+artery_p1 = np.asarray([169,477,-306])
+artery_p2 = np.asarray([189,352,-372])
 
 ''' VEIN
 initial seed at: 360,180,-310
@@ -66,6 +69,8 @@ edge:553  *      * edge: 552
 
 vein_parallel_p1 = np.asarray([350,150,-370])
 vein_parallel_p2 = np.asarray([344,191,-262])
+vein_parallel_p1 = np.asarray([349,157,-350])
+vein_parallel_p2 = np.asarray([344,185,-281])
 
 vein_ortho_p1 = np.asarray([350,248,-327])
 vein_ortho_p2 = np.asarray([327,78,-283])
@@ -73,7 +78,7 @@ vein_ortho_p2 = np.asarray([327,78,-283])
 metadata_dict = dict()
 metadata_dict['norm'] = 'maximum norm'
 metadata_dict['eps_tube'] = eps_tube
-metadata_dict['number_of_sampling_points'] = 20
+metadata_dict['number_of_sampling_points'] = 40
 '''
       this creates sample points along the line
       from starting_pos to end_pos
@@ -173,7 +178,8 @@ def sample_line_artery(**keywords):
   for (aList, aSamplePos) in zip(lists,sample_pos):
     this_avg = np.average(quantity_to_average[aList])
     average_value.append(this_avg)
-    errors.append(np.sqrt(1/float(len(aList)))*this_avg)
+    #errors.append(np.sqrt(1/float(len(aList)))*this_avg)
+    errors.append(np.std(quantity_to_average[aList]))
       
   print('finished sample line artery')
   return (np.asarray(average_value), np.asarray(errors), np.asarray(distances))
@@ -287,52 +293,66 @@ if __name__ == '__main__':
   meta_data_fig = plt.figure(figsize=(11.69,8.27))
   meta_data_fig.clf()
   result_string = ''
+
+  infos = False  
   
   if goodArguments.type == 'a':
     avg_values, errors_avg, distances = sample_line_artery()
     fig1, ax1 = plt.subplots(1)
     ax1.errorbar(distances,avg_values, yerr=errors_avg)
-    ax1.set(title = 'Cell based oxygen along parallel line \n at arterial bifurcation')
+    if infos:
+      ax1.set(title = 'Cell based oxygen along parallel line \n at arterial bifurcation')
     ax1.set_xlabel(r'distance along line/ $\mu m$')
     ax1.set_ylabel('pO2/mmHg')
+    ax1.grid(color='k', linestyle=':', linewidth=0.5)
+    ax1.set_xlim([-10, 150])    
+    with PdfPages('arterial.pdf') as pp:
+      for entry in metadata_dict:
+        #print(entry)
+        result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
+      meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
+      pp.savefig(fig1)
+      if infos:
+        pp.savefig(meta_data_fig)
     
-    pp = PdfPages('arterial.pdf')
-    for entry in metadata_dict:
-      #print(entry)
-      result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
-    meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
-    pp.savefig(fig1)
-    pp.savefig(meta_data_fig)
-    pp.close()
   if goodArguments.type == 'v':
-    pp = PdfPages('venous.pdf')
-    avg_values, errors_avg, distances = sample_line_vein_parallel_bifurcation()
-    fig1, ax1 = plt.subplots(1)
-    ax1.errorbar(distances,avg_values, yerr=errors_avg)
-    ax1.set(title = 'Cell based oxygen along parallel line \n at venous bifurcation')
-    ax1.set_xlabel(r'distance along line/ $\mu m$')
-    ax1.set_ylabel('pO2/mmHg')
-    for entry in metadata_dict:
-      #print(entry)
-      result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
-    meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
-    pp.savefig(fig1)
-    pp.savefig(meta_data_fig)
-    meta_data_fig.clf()
+    with PdfPages('venous_parallel.pdf') as pp:
+      avg_values, errors_avg, distances = sample_line_vein_parallel_bifurcation()
+      fig1, ax1 = plt.subplots(1)
+      ax1.errorbar(distances,avg_values, yerr=errors_avg)
+      if infos:
+        ax1.set(title = 'Cell based oxygen along parallel line \n at venous bifurcation')
+      ax1.set_xlabel(r'distance along line/ $\mu m$')
+      ax1.set_ylabel('pO2/mmHg')
+      ax1.grid(color='k', linestyle=':', linewidth=0.5)
+      
+      for entry in metadata_dict:
+        #print(entry)
+        result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
+      meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
+      pp.savefig(fig1)
+      if infos:
+        pp.savefig(meta_data_fig)
+      meta_data_fig.clf()
     
-    avg_values, errors_avg, distances = sample_line_vein_orthogonal_bifurcation()
-    fig2, ax2 = plt.subplots(1)
-    ax2.errorbar(distances,avg_values, yerr=errors_avg)
-    ax2.set(title = 'Cell based oxygen along orthogonal line \n at venous bifurcation')
-    ax2.set_xlabel(r'distance along line/ $\mu m$')
-    ax2.set_ylabel('pO2/mmHg')
-    for entry in metadata_dict:
-      #print(entry)
-      result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
-    meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
-    pp.savefig(fig2)
-    pp.savefig(meta_data_fig)
-    pp.close()
+    
+    with PdfPages('venous_ortho.pdf') as pp:
+      avg_values, errors_avg, distances = sample_line_vein_orthogonal_bifurcation()
+      fig2, ax2 = plt.subplots(1)
+      ax2.errorbar(distances,avg_values, yerr=errors_avg)
+      if infos:
+        ax2.set(title = 'Cell based oxygen along orthogonal line \n at venous bifurcation')
+      ax2.set_xlabel(r'distance along line/ $\mu m$')
+      ax2.set_ylabel('pO2/mmHg')
+      ax2.grid(color='k', linestyle=':', linewidth=0.5)
+      for entry in metadata_dict:
+        #print(entry)
+        result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
+      meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
+      pp.savefig(fig2)
+      if infos:
+        pp.savefig(meta_data_fig)
+    
   #print(errors_avg)
   #plt.scatter(sample_factor, avg_values)
   
