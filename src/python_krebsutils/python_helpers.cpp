@@ -213,10 +213,10 @@ void exportVectorClassConverters()
   mw_py_impl::VecFromPy<float, 3>::Register();
   mw_py_impl::VecFromPy<double, 3>::Register();
   mw_py_impl::VecFromPy<bool, 3>::Register();
-  mw_py_impl::VecToPy<int, 3>::Register();
-  mw_py_impl::VecToPy<float, 3>::Register();
-  mw_py_impl::VecToPy<double, 3>::Register();
-  mw_py_impl::VecToPy<bool, 3>::Register();
+//   mw_py_impl::VecToPy<int, 3>::Register();
+//   mw_py_impl::VecToPy<float, 3>::Register();
+//   mw_py_impl::VecToPy<double, 3>::Register();
+//   mw_py_impl::VecToPy<bool, 3>::Register();
 }
 
 //template<class T>
