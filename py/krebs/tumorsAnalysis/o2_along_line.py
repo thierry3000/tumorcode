@@ -184,6 +184,85 @@ def sample_line_artery(**keywords):
   print('finished sample line artery')
   return (np.asarray(average_value), np.asarray(errors), np.asarray(distances))
 
+def sample_in_orthogonal_plane(index_of_vessel_to_sample):
+  print('shape of index_of_nearest_vessel')
+  print(index_of_nearest_vessel.shape)
+  cell_indeces_at_vessel = np.where(index_of_nearest_vessel == index_of_vessel_to_sample)
+  print("found %i indeces" % len(cell_indeces_at_vessel[0]))
+  ''' rescale '''
+  distances_to_single_vessel = distance_to_nearest_vessel[cell_indeces_at_vessel]
+#  for aIndex in cell_indeces_at_vessel[0]:
+#    print(aIndex)
+  min_distance_to_nearest_vessel = np.min(distances_to_single_vessel)
+  max_distance_to_nearest_vessel = np.max(distances_to_single_vessel)
+  print('min: %f, max: %f' %(min_distance_to_nearest_vessel,max_distance_to_nearest_vessel))
+  
+  max_endity_value_of_cells = 200
+  min_endity_value_of_cells = 10
+  
+  quantity_to_average_for_single_vessel = quantity_to_average[cell_indeces_at_vessel]
+  ''' this is not showing something -> I try it the other way round'''
+  
+  bins =[]    
+  no_of_bins = 40
+  goWithDistance = False
+  if goWithDistance:
+    diff = (max_distance_to_nearest_vessel - min_distance_to_nearest_vessel)/no_of_bins
+    print('diff: %f' % diff)
+    for i in range(no_of_bins):
+      bins.append(min_distance_to_nearest_vessel+i*diff)
+    print('bins:')
+    print(bins)
+    big_data = list()
+    for (i, a_lower_bound) in enumerate(bins):
+      upper_bound = a_lower_bound+diff
+      print('lower: %f, upper: %f' %(a_lower_bound, upper_bound))
+      good_indexes = np.where(np.logical_and(distances_to_single_vessel<upper_bound, distances_to_single_vessel > a_lower_bound))
+#    good_indexes = np.where(endity_value_of_cells>=min_distance_to_nearest_vessel)    
+      print('found %i indeces for %f' % (len(good_indexes[0]), a_lower_bound))
+      data_on_this = quantity_to_average[good_indexes[0]]
+      print('min: %f, max: %f' % (np.min(data_on_this),np.max(data_on_this)))
+      big_data.append(data_on_this)
+  
+  
+  else:
+    diff = (max_endity_value_of_cells - min_endity_value_of_cells)/no_of_bins
+    print('diff: %f' % diff)
+    for i in range(no_of_bins):
+      bins.append(min_endity_value_of_cells+i*diff)
+    print('bins:')
+    print(bins)
+    big_data = list()
+    for (i, a_lower_bound) in enumerate(bins):
+      upper_bound = a_lower_bound+diff
+      print('lower: %f, upper: %f' %(a_lower_bound, upper_bound))
+      good_indexes = np.where(np.logical_and(quantity_to_average_for_single_vessel<upper_bound, quantity_to_average_for_single_vessel > a_lower_bound))
+#    good_indexes = np.where(endity_value_of_cells>=min_distance_to_nearest_vessel)    
+      print('found %i indeces for %f' % (len(good_indexes[0]), a_lower_bound))
+      data_on_this = distance_to_nearest_vessel[good_indexes]
+      print('min: %f, max: %f' % (np.min(data_on_this),np.max(data_on_this)))
+      big_data.append(data_on_this)
+    #plt.boxplot(big_data)
+    #plt.show()
+      
+  #fig1 = plt.figure()
+  #ax1 = fig1.add_subplot(111)
+  #ax1.scatter(distances_to_nearest_vessel[0:1000], endity_value_of_cells[0:1000])
+  ax1.boxplot(big_data)
+#  if goWithDistance:
+#    ax1.set_ylabel(r'pO2 / mmHg')
+#    ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
+#  else:
+#    ax1.set_xlabel(r'pO2 / mmHg')
+#    ax2.set_ylabel(r' distance to nearest vessle/ $\mu m$')
+#    plt.title('file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+  #pp.savefig()
+  #plt.grid()
+#    if interactive:
+  
+#    else:
+#      pp.savefig()
+  
 def sample_line_vein_parallel_bifurcation(**keywords):
   starting_pos=vein_parallel_p1
   end_pos=vein_parallel_p2
@@ -271,6 +350,17 @@ if __name__ == '__main__':
   cell_center_pos = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/cell_center_pos')])
   cell_o2_mass = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/o2')])
   cell_radii = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/cell_radii')])
+  index_of_nearest_vessel = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/index_of_nearest_vessel')])
+  index_of_nearest_vessel = index_of_nearest_vessel[:,0]  
+  distance_to_nearest_vessel = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/distance_to_nearest_vessel')])
+  distance_to_nearest_vessel = distance_to_nearest_vessel[:,0]  
+  print('cell_o2_mass shape:')
+  cell_o2_mass=cell_o2_mass[:,0]
+  print(cell_o2_mass.shape)
+  
+  print('cell_radii_shape:')
+  cell_radii=cell_radii[:,0]
+  print(cell_radii.shape)
   # pg/ mum^3
   cell_o2_concentration = cell_o2_mass/ (4/float(3)* np.pi*np.power(cell_radii,3))
   #cell_o2_concentration = cell_o2_mass/ np.power(eps_tube,3)
@@ -288,7 +378,7 @@ if __name__ == '__main__':
   quantity_to_average = volume_o2_ml/solubility
   #quantity_to_average = cell_o2_mass
   print('cell_center_pos')
-  scoop.shared.setConst(cell_center_pos_=cell_center_pos)
+#  scoop.shared.setConst(cell_center_pos_=cell_center_pos)
   ''' pdf output '''
   meta_data_fig = plt.figure(figsize=(11.69,8.27))
   meta_data_fig.clf()
@@ -297,23 +387,35 @@ if __name__ == '__main__':
   infos = False  
   
   if goodArguments.type == 'a':
-    avg_values, errors_avg, distances = sample_line_artery()
+#    avg_values, errors_avg, distances = sample_line_artery()
     fig1, ax1 = plt.subplots(1)
-    ax1.errorbar(distances,avg_values, yerr=errors_avg)
-    if infos:
-      ax1.set(title = 'Cell based oxygen along parallel line \n at arterial bifurcation')
-    ax1.set_xlabel(r'distance along line/ $\mu m$')
-    ax1.set_ylabel('pO2/mmHg')
-    ax1.grid(color='k', linestyle=':', linewidth=0.5)
-    ax1.set_xlim([-10, 150])    
+#    ax1.errorbar(distances,avg_values, yerr=errors_avg)
+#    if infos:
+#      ax1.set(title = 'Cell based oxygen along parallel line \n at arterial bifurcation')
+#    ax1.set_xlabel(r'distance along line/ $\mu m$')
+#    ax1.set_ylabel('pO2/mmHg')
+#    ax1.grid(color='k', linestyle=':', linewidth=0.5)
+#    ax1.set_xlim([-10, 150])    
+    
+#    avg_values, errors_avg, distances = sample_in_orthogonal_plane(1215)
+    sample_in_orthogonal_plane(492)
+#    plt.show()
+#    fig1, ax1 = plt.subplots(1)
+#    ax1.errorbar(distances,avg_values, yerr=errors_avg)
+#    if infos:
+#      ax1.set(title = 'Cell based oxygen along parallel line \n at arterial bifurcation')
+#    ax1.set_xlabel(r'distance along line/ $\mu m$')
+#    ax1.set_ylabel('pO2/mmHg')
+#    ax1.grid(color='k', linestyle=':', linewidth=0.5)
+#    ax1.set_xlim([-10, 150])
     with PdfPages('arterial.pdf') as pp:
-      for entry in metadata_dict:
-        #print(entry)
-        result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
-      meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
+#      for entry in metadata_dict:
+#        #print(entry)
+#        result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
+#      meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
       pp.savefig(fig1)
-      if infos:
-        pp.savefig(meta_data_fig)
+#      if infos:
+#        pp.savefig(meta_data_fig)
     
   if goodArguments.type == 'v':
     with PdfPages('venous_parallel.pdf') as pp:
