@@ -44,6 +44,11 @@ eps_tube = 5
 ''' ARTERY
 initial seed at: 240,400,-310
 vessels at state 520
+              *
+              *
+              * 74
+              *
+              *
              299
            *    *
 edge:492  *      * edge: 1215
@@ -183,7 +188,30 @@ def sample_line_artery(**keywords):
       
   print('finished sample line artery')
   return (np.asarray(average_value), np.asarray(errors), np.asarray(distances))
-
+def get_cylinder_coordinate_relative_to_vessel_x(vessel_x):
+  edges = graph.edgelist
+  pos = graph['position']
+  zero_center = pos[edges[vessel_x][0]]
+  mid_point= zero_center+0.5*(pos[edges[vessel_x][1]]-pos[edges[vessel_x][0]])
+  print('mid_point: %s ' %mid_point)
+  
+#  zero_center = pos[edges[vessel_x][1]]
+  print('length_of vessel: %f ' % np.linalg.norm(pos[edges[vessel_x][1]]-pos[edges[vessel_x][0]])) #should be 130
+  '''shift everything to that point'''
+  shifted_pos = cell_center_pos-zero_center
+  '''only positive z values'''
+  good_indeces_plane = np.where(np.logical_and(shifted_pos[:,2]>60.0, shifted_pos[:,2]<70.0))
+  #shifted_pos = shifted_pos[good_indeces_plane]
+  r=np.sqrt(shifted_pos[:,0]*shifted_pos[:,0]+shifted_pos[:,1]*shifted_pos[:,1])
+  #indeces_in_cylinder = np.where(r<30.0)  
+  z=shifted_pos[:,2]
+  #z=z[indeces_in_cylinder]
+  phi= np.arctan2(shifted_pos[:,1],shifted_pos[:,0])
+  #phi=phi[indeces_in_cylinder]
+  print(r.shape)
+  indeces_in_cylinder = np.where(np.logical_and(shifted_pos[:,2]>0, shifted_pos[:,2]<120.0,r<30.0))
+  return (r,z,phi, indeces_in_cylinder)
+  
 def sample_in_orthogonal_plane(index_of_vessel_to_sample):
   print('shape of index_of_nearest_vessel')
   print(index_of_nearest_vessel.shape)
@@ -193,8 +221,10 @@ def sample_in_orthogonal_plane(index_of_vessel_to_sample):
   distances_to_single_vessel = distance_to_nearest_vessel[cell_indeces_at_vessel]
 #  for aIndex in cell_indeces_at_vessel[0]:
 #    print(aIndex)
-  min_distance_to_nearest_vessel = np.min(distances_to_single_vessel)
-  max_distance_to_nearest_vessel = np.max(distances_to_single_vessel)
+  #min_distance_to_nearest_vessel = np.min(distances_to_single_vessel)
+  #max_distance_to_nearest_vessel = np.max(distances_to_single_vessel)
+  min_distance_to_nearest_vessel = 2.5
+  max_distance_to_nearest_vessel = 40.0
   print('min: %f, max: %f' %(min_distance_to_nearest_vessel,max_distance_to_nearest_vessel))
   
   max_endity_value_of_cells = 200
@@ -204,8 +234,8 @@ def sample_in_orthogonal_plane(index_of_vessel_to_sample):
   ''' this is not showing something -> I try it the other way round'''
   
   bins =[]    
-  no_of_bins = 40
-  goWithDistance = False
+  no_of_bins = 20
+  goWithDistance = True
   if goWithDistance:
     diff = (max_distance_to_nearest_vessel - min_distance_to_nearest_vessel)/no_of_bins
     print('diff: %f' % diff)
@@ -248,7 +278,30 @@ def sample_in_orthogonal_plane(index_of_vessel_to_sample):
   #fig1 = plt.figure()
   #ax1 = fig1.add_subplot(111)
   #ax1.scatter(distances_to_nearest_vessel[0:1000], endity_value_of_cells[0:1000])
-  ax1.boxplot(big_data)
+  #ax1.boxplot(big_data)
+  (r,z,phi, good_indeces_in_cylinder) = get_cylinder_coordinate_relative_to_vessel_x(1215)
+  #good_in_pie = np.where(np.logical_and(np.logical_and(np.logical_and(phi>0,phi<0.1), z>50),z<80))
+  z_min = 0
+  z_max = 130
+  data_points = []
+  my_ranges= range(5,20)
+  for aRange in my_ranges:
+    #data_points.append(np.average(np.logical_and(np.logical_and(np.logical_and(r>aRange,r<aRange+1), z>z_min),z<z_max)))
+    data_points.append(np.average(np.logical_and(np.logical_and(r<aRange+1, z>z_min),z<z_max)))
+#  good_r5 = np.where()  
+#  good_r10 = np.where(np.logical_and(np.logical_and(np.logical_and(r>7,r<9), z>z_min),z<z_max))  
+#  good_r15 = np.where(np.logical_and(np.logical_and(np.logical_and(r>9,r<11), z>z_min),z<z_max))  
+#  a=np.average(quantity_to_average[good_r5])
+#  b=np.average(quantity_to_average[good_r10])
+#  c=np.average(quantity_to_average[good_r15])
+  #ax1.hist(quantity_to_average[good_in_pie])
+  #r_in_cylinder = r[good_indeces]
+  #z_in_cylinder = z[good_indeces]
+  #phi_in_cylinder = phi[good_indeces]
+  #ax1.scatter(r[good_in_pie],quantity_to_average[good_in_pie])
+  #ax1.scatter(range(len(data_points)),data_points)
+  ax1.scatter(range(len(data_points)-1),np.diff(data_points))
+  #ax1.hist(distances_to_single_vessel)
 #  if goWithDistance:
 #    ax1.set_ylabel(r'pO2 / mmHg')
 #    ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
@@ -374,9 +427,9 @@ if __name__ == '__main__':
   
   cell_po2 = x/solubility
   
-  #quantity_to_average = cell_o2_concentration
+  #quantity_to_average = cell_o2_concentration/solubility
   quantity_to_average = volume_o2_ml/solubility
-  #quantity_to_average = cell_o2_mass
+  #quantity_to_average = cell_po2
   print('cell_center_pos')
 #  scoop.shared.setConst(cell_center_pos_=cell_center_pos)
   ''' pdf output '''
@@ -398,7 +451,7 @@ if __name__ == '__main__':
 #    ax1.set_xlim([-10, 150])    
     
 #    avg_values, errors_avg, distances = sample_in_orthogonal_plane(1215)
-    sample_in_orthogonal_plane(492)
+    sample_in_orthogonal_plane(1215)
 #    plt.show()
 #    fig1, ax1 = plt.subplots(1)
 #    ax1.errorbar(distances,avg_values, yerr=errors_avg)
