@@ -613,7 +613,9 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       * the milotti vessel structure is initialize with the current configuration 
       * of the tumorcode vessel list
       */
-    findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
+    //findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
+    findNearestVessel(*state.previous_po2vessels);// to have the information for the first output
+    
     
     if (time >= next_output_time - params.dt*1.0)
     {
