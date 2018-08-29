@@ -534,14 +534,14 @@ void Model::GenerateSprouts()
   DynArray<SiteType> sitesSprout;
   DynArray<VesselNode*> vcExtendSprout;
   
-  //#pragma omp parallel
+  #pragma omp parallel
   {
     Random rnd(GetThreadRandomSeed());
-//     DynArray<SiteType> th_sitesSprout(1024, ConsTags::RESERVE);
-//     DynArray<VesselNode*> th_vcExtendSprout(1024, ConsTags::RESERVE);
+    DynArray<SiteType> th_sitesSprout(1024, ConsTags::RESERVE);
+    DynArray<VesselNode*> th_vcExtendSprout(1024, ConsTags::RESERVE);
 
     //edge stuff
-    //#pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
+    #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for( int i=0; i<vl->GetECount(); ++i )
     {
       Vessel* v = vl->GetEdge(i);
@@ -555,7 +555,7 @@ void Model::GenerateSprouts()
           v->timeSprout = -1; 
       }
     }
-    //#pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
+    #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for(int i=0; i<vl->GetNCount(); ++i)
     {
       //node stuff
@@ -568,8 +568,8 @@ void Model::GenerateSprouts()
       if( nd->Count()==2 )
       {
         if (CheckCanSprout(rnd, lpos, nd, NULL))
-          //th_sitesSprout.push_back(Ld().LatticeToSite(lpos));
-          sitesSprout.push_back(Ld().LatticeToSite(lpos)); 
+          th_sitesSprout.push_back(Ld().LatticeToSite(lpos));
+          //sitesSprout.push_back(Ld().LatticeToSite(lpos)); 
       }
       //if it has no link
       else if( nd->Count()==1 )
@@ -580,12 +580,12 @@ void Model::GenerateSprouts()
         //throw the dice on whether this sprout will grow
         if (rnd.Get01()>1.0/params.timeProlEcSprout ) 
           continue;
-        //th_vcExtendSprout.push_back(nd);
-        vcExtendSprout.push_back(nd);
+        th_vcExtendSprout.push_back(nd);
+        //vcExtendSprout.push_back(nd);
       }
     }//end node stuff
 
-    //#pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
+    #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for( int i=0; i<vl->GetECount(); ++i )
     {
       //edge loop
@@ -598,18 +598,18 @@ void Model::GenerateSprouts()
         //next lpos for walk
         lpos = Ld().NbLattice(lpos,v->dir);
         if (CheckCanSprout(rnd, lpos, NULL, v))
-          //th_sitesSprout.push_back( Ld().LatticeToSite(lpos) );
-          sitesSprout.push_back( Ld().LatticeToSite(lpos) );
+          th_sitesSprout.push_back( Ld().LatticeToSite(lpos) );
+          //sitesSprout.push_back( Ld().LatticeToSite(lpos) );
       }
     }//end edge loop
 
     
-//     main_mutex.lock();
-//     sitesSprout.insert(sitesSprout.end(), th_sitesSprout.begin(), th_sitesSprout.end());
-//     vcExtendSprout.insert(vcExtendSprout.end(), th_vcExtendSprout.begin(), th_vcExtendSprout.end());
-//     main_mutex.unlock();
-//     th_sitesSprout.remove_all();
-//     th_vcExtendSprout.remove_all();
+    main_mutex.lock();
+    sitesSprout.insert(sitesSprout.end(), th_sitesSprout.begin(), th_sitesSprout.end());
+    vcExtendSprout.insert(vcExtendSprout.end(), th_vcExtendSprout.begin(), th_vcExtendSprout.end());
+    main_mutex.unlock();
+    th_sitesSprout.remove_all();
+    th_vcExtendSprout.remove_all();
     
   }// end #pragma omp parallel
   
