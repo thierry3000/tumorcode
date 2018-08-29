@@ -103,17 +103,17 @@ def plot_no_cells_over_time_since_epoch(goodArguments,pp):
     pp.savefig()
 def plot_runtime_from_h5(goodArguments, pp):
   myH5Keys = [
-              #'run_ann',
+              'run_ann',
               'run_doMilottiStep',
-              #'run_doStep',
+              'run_doStep',
               'run_o2',
-              #'run_vbl_cellEvents',
-              #'run_vbl_diff',
-              #'run_vbl_diff_loop_1',
-              #'run_vbl_diff_loop_2',
-              #'run_vbl_diff_loop_3',
-              #'run_vbl_dynamics',
-              #'run_vbl_geometry',
+              'run_vbl_cellEvents',
+              'run_vbl_diff',
+              'run_vbl_diff_loop_1',
+              'run_vbl_diff_loop_2',
+              'run_vbl_diff_loop_3',
+              'run_vbl_dynamics',
+              'run_vbl_geometry',
               #'run_vbl_bico_call',
               #'run_vbl_writeToFile',
               'total_time', # NOTE: this is the integrated time, all others are runtimes!
@@ -306,4 +306,4 @@ if __name__ == '__main__':
   if 1:
     with PdfPages('runtime_analysis_file_%s.pdf' % str(goodArguments.vbl_simulation_output_filename)) as pp:
       plot_runtime_from_h5(goodArguments,pp)
-      #plot_memory_from_h5(goodArguments,pp)
+      plot_memory_from_h5(goodArguments,pp)
