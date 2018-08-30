@@ -186,9 +186,9 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
       else:
         print >>f, '#SBATCH --partition=bdw_usr_prod'
       if days or hours:
-        days, hours = fmtDate_(days, hours)
-        days = 0
-        hours = 23
+        expected_days, expected_hours = fmtDate_(days, hours)#not used on cinceca
+        hours = days
+        days=0
         print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)
       
     if mem:
