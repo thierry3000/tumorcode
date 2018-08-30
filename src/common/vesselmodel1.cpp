@@ -471,7 +471,9 @@ Vessel* Model::GenerateSprout(Random &rnd, const Int3 &pos, const Float3 &forwar
   //than we need to split the vessl into two
   if (!src_vc && src_v)
   {
+#ifndef NDEBUG
     cout<<"!src_vc && src_v happend" << endl;
+#endif
     vl->SplitVessel(src_v, FindPositionOnVessel(Ld(), src_v, pos), src_v2, src_vc);
   }
   //find vessel or node in the vicinity of the lattice position
@@ -479,14 +481,18 @@ Vessel* Model::GenerateSprout(Random &rnd, const Int3 &pos, const Float3 &forwar
   //again, if we found a vessel but no node, we need to split it
   if (dst_v && !dst_vc) 
   {
+#ifndef NDEBUG
     cout<<"dst_v && !dst_vc happend" << endl;
+#endif
     vl->SplitVessel(dst_v, FindPositionOnVessel(Ld(), dst_v, nbpos), dst_v2, dst_vc);
   }
   //if the destination node dst_vc in not yet end point of a vessel
   //we can use it for the end point of the new sprout
   if (!dst_vc)
   {
+#ifndef NDEBUG
     cout<<"!dst_vc happend" << endl;
+#endif
     dst_vc = vl->InsertNode(nbpos);
   }
 
