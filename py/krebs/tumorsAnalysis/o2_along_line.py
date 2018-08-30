@@ -555,12 +555,14 @@ if __name__ == '__main__':
   # pg/ mum^3
   cell_o2_concentration = cell_o2_mass/ (4/float(3)* np.pi*np.power(cell_radii,3))
   #cell_o2_concentration = cell_o2_mass/ np.power(eps_tube,3)
-  volume_o2_ml = cell_o2_concentration/1.429
+  volume_o2_ml = cell_o2_concentration/(1.429*1e9)
   ''' o2 density 1.429 g/L --> 1.429*10^9 pg/ml
+      1cm^3 = 10^12 (mum^3)
   '''
-  solubility = 3.1e-4 #ml O2/cm^3 mmHg
+  #solubility = 3.1e-4 #ml O2/cm^3 mmHg
+  solubility = 3.1e-3 #ml O2/cm^3 mmHg
   #solubility = 1.1e-4 #ml O2/cm^3 mmHg
-  #solubility = solubility*1e-12 #ml O2/mum^3 mmHg
+  solubility = solubility*1e-12 #ml O2/mum^3 mmHg
   #volume_density = 1.429e9 #pg/ml
   #x = cell_o2_concentration/volume_density # ml / mum^3
   
@@ -585,7 +587,7 @@ if __name__ == '__main__':
     with PdfPages('arterial.pdf') as pp:
       plot_averages_at_arterial_bifurcation(pp)
       plot_averages_along_outward_line(pp)
-      sample_in_orthogonal_plane(3553,pp)
+      #sample_in_orthogonal_plane(3553,pp)
     
   if goodArguments.type == 'v':
     with PdfPages('venous_parallel.pdf') as pp:
