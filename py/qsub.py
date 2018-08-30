@@ -51,6 +51,7 @@ def parse_args(argv):
   parserQueue = argparse.ArgumentParser(prog='qsub',description='Queueing system parser.')
   memory_option = parserQueue.add_argument('-m', '--memory', help= 'Memory assigned by the queueing system', type=str, default = None)
   days_option = parserQueue.add_argument('-d', '--days', help= 'runtime for job in days', type=float, default = None)
+  hours_option = parserQueue.add_argument('--hours', help= 'runtime for job in hours', type=float, default = None)
   threads_option = parserQueue.add_argument('-n', '--numThreads', help= 'num of threads for job', type=int, default = None)
   exclude_option = parserQueue.add_argument('--exclude', help= 'nodes to exclude', type=str, default = None)
   cineca_debub_option = parserQueue.add_argument('-c', '--cinecaDebug', help= 'if true, we submit do debug queue', default=False, action='store_true')
@@ -177,21 +178,21 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
       print >>f, '#SBATCH --ntasks-per-node=1'
       
     if goodArgumentsQueue.cinecaDebug:
+      print('cinecaDebug chosen time below 2 hours')
       print >>f, '#SBATCH --partition=bdw_usr_dbg'
-      print >>f, '#SBATCH --time=0-00:10:00'
+      #print >>f, '#SBATCH --time=0-00:10:00'
     else:
+      print >>f, '#SBATCH --partition=bdw_usr_prod'
       if goodArgumentsQueue.cinecaSpecial:
-	print >>f, '#SBATCH -p bdw_usr_prod'  
-	print >>f, '#SBATCH --qos=bdw_qos_special'
-      else:
-        print >>f, '#SBATCH --partition=bdw_usr_prod'
-      if days or hours:
-        expected_days, expected_hours = fmtDate_(days, hours)#not used on cinceca
-        hours = days
-        days=0
-        print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)
+        print >>f, '#SBATCH --qos=bdw_qos_special'
+    if days or hours:
+      days, hours = fmtDate_(days, hours)#not used on cinceca
+      days=0 #needs to be guaranteed in cineca
+      print('hours: %i' %hours)
+      print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)
       
     if mem:
+      print('cineca chosen mem below 110 GB')
       if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
         raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
       print >>f, '#SBATCH --mem=%s' % mem
@@ -510,14 +511,21 @@ def submit(obj, **qsubopts):
 #  num_cpus = goodArgumentsQueue.numThreads
 #  days = goodArgumentsQueue.days
     if goodArgumentsQueue.numThreads:
-      print('override thread with from %i to %i' % (qsubopts['num_cpus'],goodArgumentsQueue.numThreads))
       qsubopts['num_cpus'] = goodArgumentsQueue.numThreads
+      print('override thread with from %i to %i' % (qsubopts['num_cpus'],goodArgumentsQueue.numThreads))
+      
     if goodArgumentsQueue.memory:
-      print('override memory with from %s to %s' % (qsubopts['mem'],goodArgumentsQueue.memory))
       qsubopts['mem'] = goodArgumentsQueue.memory
+      print('override memory with from %s to %s' % (qsubopts['mem'],goodArgumentsQueue.memory))
+      
     if goodArgumentsQueue.days:
-      print('override time from %f to %f' % (qsubopts['days'],goodArgumentsQueue.days))
       qsubopts['days'] = goodArgumentsQueue.days
+      print('override time from %f to %f' % (qsubopts['days'],goodArgumentsQueue.days))
+      
+    if goodArgumentsQueue.hours:
+      qsubopts['hours'] = goodArgumentsQueue.hours
+      print('override time hours from %f to %f' % (qsubopts['hours'],goodArgumentsQueue.hours))
+      
     
     if sys.flags.debug:
       print(qsubopts)
