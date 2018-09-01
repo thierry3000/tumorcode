@@ -1239,16 +1239,16 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
 }
 
 //This checks if value is in the range [low, high)
-// template <typename T>
-//     bool IsInBounds(const T& value, const T& low, const T& high) {
-//     return !(value < low) && (value < high);
-// }
-
-//This checks if value is in the range [low, high]
 template <typename T>
     bool IsInBounds(const T& value, const T& low, const T& high) {
-    return !(value < low) && !(high < value);
+    return !(value < low) && (value < high);
 }
+
+//This checks if value is in the range [low, high]
+// template <typename T>
+//     bool IsInBounds(const T& value, const T& low, const T& high) {
+//     return !(value < low) && !(high < value);
+// }
 
 
 void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
@@ -1261,39 +1261,6 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
   
   my::log().push("gf:");
     
-  
-//   #pragma omp parallel
-//     {
-//       BOOST_FOREACH(const BBox3 &bbox, mtboxes->getCurrentThreadRange())
-//       {
-//         FOR_BBOX3(p, bbox)
-//         {
-//           float last = fieldLastSources(p);
-//           float src = sources(p);
-//   BOOST_FOREACH(const BBox3 bb, mtboxes->getCurrentThreadRange())
-//     {
-//       if (!has_vessels && params.ecm_noise_density <=0.)
-//       {
-//         other_volume[bb].fill(params.ncells_ecm);
-//       }
-//       else
-//       {
-//         if (params.ecm_noise_density > 0.)
-//         {
-//           BBox3 extbox = ExtendForDim(bb, grid->dim, 1);
-//           buffer.reshape(extbox); // assumes that AddSmoothDelta has 2 sites support
-//           buffer.fill(0.);
-//           
-//           const double num_noise = std::pow(grid->ld.Scale()*params.ecm_noise_density, grid->dim);
-// 
-//           FOR_BBOX3(p, bb)
-//           {
-//             double tmp = num_noise;
-//             while (rnd.Get01() < tmp)
-//             {
-//               float val = rnd.Get11f()*0.5*params.ecm_noise_std;
-//               Float3 pos = grid->ld.LatticeToWorld(p) + 0.49*grid->ld.Scale()*Float3(rnd.Get11f(), rnd.Get11f(), rnd.Get11f());
-//               AddSmoothDelta(buffer, grid->ir.cells, grid->ld, grid->dim, pos, val);
   //identify interesting boxes 
   Float3 origin = grid.ld.GetOriginPosition();
   cout << "origin:\t" << origin << endl;
@@ -1303,128 +1270,77 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
   float min_cell_x = tumorcode_pointer_to_currentCellsSystem->Get_min_x()-origin[0];
   float min_cell_y = tumorcode_pointer_to_currentCellsSystem->Get_min_y()-origin[1];
   float min_cell_z = tumorcode_pointer_to_currentCellsSystem->Get_min_z()-origin[2];
+  
+#if 0
+  //an example
+  float extention=30.;
+  max_cell_x = extention-origin[0];
+  min_cell_x =  -1.*extention -origin[0];
+  max_cell_y = extention-origin[1];
+  min_cell_y =  -1.*extention-origin[1];
+  max_cell_z = extention-origin[2];
+  min_cell_z =  -1.*extention -origin[2];
+#endif
+  
+#ifndef NDEBUG
   cout  << "x: [ " << min_cell_x << "," << max_cell_x << " ] \t"
         << "y: [ " << min_cell_y << "," << max_cell_y << " ] \t"
         << "z: [ " << min_cell_z << "," << max_cell_z << " ]" << endl;
-  //single cell
-  if(min_cell_x == max_cell_x)
-  {
-    max_cell_x=min_cell_x+10.0;
-  }
-  std::vector<int> domains_containing_cells;
-  std::vector<DomainDecomposition::ThreadBox> boxes_with_cells;
-  std::vector<float> list_of_xmins;
-  //cout << "mtboxes.getCurrentThreadRange(): " << mtboxes.getCurrentThreadRange().size() << endl;
-  //cout << "grid.ld.Scale()" << grid.ld.Scale() << endl;
-  double x_min_boxes = std::numeric_limits<double>::max();
-  double x_max_boxes = std::numeric_limits<double>::min();
-#if 1
-  //#pragma omp parallel
-  {
-    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
-    {
-#if 0
-      FOR_BBOX3(p, bbox)
-      {
-        Float3 center_of_this_box = grid.ld.LatticeToWorld(p);
-        float lower_bound = center_of_this_box[0]-0.5*(float)grid.ld.Scale();
-        float upper_bound = center_of_this_box[0]+0.5*(float)grid.ld.Scale();
-        lower_bound = lower_bound - 855.0;
-        upper_bound = upper_bound - 855.0;
-//         if( (double) center_of_this_box[0] < x_min_boxes )
-//         {
-//           x_min_boxes=(double) center_of_this_box[0];
-//         }
-//         if( (double) center_of_this_box[0] > x_max_boxes )
-//         {
-//           x_max_boxes=(double) center_of_this_box[0];
-//         }
-        if 
-        (
-          IsInBounds((float)90.0,lower_bound,upper_bound)
-          //&&
-          //IsInBounds(min_cell_y,(double)center_of_this_box[1] - (double)grid.ld.Scale(),(double)center_of_this_box[1] + (double)grid.ld.Scale())
-          //&&
-          //IsInBounds(min_cell_z,(double)center_of_this_box[2] - (double)grid.ld.Scale(),(double)center_of_this_box[2] + (double)grid.ld.Scale())
-        )
-        {
-          cout << center_of_this_box << endl;
-          cout <<"lowver" << lower_bound << endl;
-          cout <<"upper" << upper_bound << endl;
-          domains_containing_cells.push_back(0);
-        }
-//         if( 104. >= (double)center_of_this_box[0] - 0.5*(double)grid.ld.Scale() and 104.<(double)center_of_this_box[0] + 0.5*(double)grid.ld.Scale())
-//         {
-//           cout << center_of_this_box << endl;
-//           cout <<"(double)center_of_this_box[0] - 0.5*(double)grid.ld.Scale()" << (double)center_of_this_box[0] - 0.5*(double)grid.ld.Scale() << endl;
-//           cout <<"(double)center_of_this_box[0] + 0.5*(double)grid.ld.Scale()" << (double)center_of_this_box[0] + 0.5*(double)grid.ld.Scale() << endl;
-//         }
-      }
 #endif
-//         double y_min_of_this_box = center_of_this_box[1] - 0.5*grid.ld.Scale();
-//         double y_max_of_this_box = center_of_this_box[1] + 0.5*grid.ld.Scale();
-//         double z_min_of_this_box = center_of_this_box[2] - 0.5*grid.ld.Scale();
-//         double z_max_of_this_box = center_of_this_box[2] + 0.5*grid.ld.Scale();
-//         //right site
-//         if(x_min_of_this_box > min_cell_x and x_max_of_this_box < max_cell_x  
-//           and
-//           y_min_of_this_box > min_cell_y and y_max_of_this_box < max_cell_y
-//           and
-//           z_min_of_this_box > min_cell_z and z_max_of_this_box < max_cell_z
-//         )
-//         {
-//           cout << bbox.global_index << endl;
-//           domains_containing_cells.push_back(0);
-//         }
-        
-        //domains_containing_cells.push_back(0);
-        
-        //left site
-//         if(x_max_of_this_box > min_cell_x and max_cell_x > x_min_of_this_box  
-//           and
-//           y_max_of_this_box > min_cell_y and max_cell_y > y_min_of_this_box
-//           and
-//           z_max_of_this_box > min_cell_z and max_cell_z > z_min_of_this_box
-//         )
-//         {
-//           //cout << bbox.global_index << endl;
-//           domains_containing_cells.push_back(bbox.global_index);
-//         }
-        
-          
-        //cout<<center_of_this_box<<endl;
-      //}
-      
-//       float multi_box_x_min = grid.ld.LatticeToWorld(bbox[0])[0];
-//       float multi_box_x_max = grid.ld.LatticeToWorld(bbox[1])[0];
-//       float multi_box_y_min = grid.ld.LatticeToWorld(bbox[0])[1];
-//       float multi_box_y_max = grid.ld.LatticeToWorld(bbox[1])[1];
-//       float multi_box_z_min = grid.ld.LatticeToWorld(bbox[0])[2];
-//       float multi_box_z_max = grid.ld.LatticeToWorld(bbox[1])[2];
-      
+	
+  std::vector<DomainDecomposition::ThreadBox> thread_boxes_with_cells;
+  
+  //push back is not thread safe!
+  //#pragma omp parallel
+  //{
+    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.boxes)
+    {
       float multi_box_x_min = bbox[0][0]*grid.ld.Scale();
-      float multi_box_x_max = bbox[1][0]*grid.ld.Scale();
+      float multi_box_x_max = (bbox[1][0]+1)*grid.ld.Scale();
       float multi_box_y_min = bbox[0][1]*grid.ld.Scale();
-      float multi_box_y_max = bbox[1][1]*grid.ld.Scale();
+      float multi_box_y_max = (bbox[1][1]+1)*grid.ld.Scale();
       float multi_box_z_min = bbox[0][2]*grid.ld.Scale();
-      float multi_box_z_max = bbox[1][2]*grid.ld.Scale();
+      float multi_box_z_max = (bbox[1][2]+1)*grid.ld.Scale();
       
-      
-      //list_of_xmins.push_back(multi_box_z_min);
-      //cout << "bbox: " << bbox << endl;
-//       cout << "bbox[0]: " << bbox[0] << endl;
-//       cout << "bbox[1]: " << bbox[1] << endl;
-      if 
-        (
-          IsInBounds((float)118.0,multi_box_x_min, multi_box_x_max)
-//           &
-//           IsInBounds((float)60.0,multi_box_x_min, multi_box_x_max)
-//           &
-//           IsInBounds((float)100.0,multi_box_y_min,multi_box_y_max)
-//           &
-//           IsInBounds((float)-20.0,multi_box_z_min,multi_box_z_max)
-        )
+      /** in principal all those cases can overlap in 
+       * each dimension, but this would be a mess 
+       */
+      if
+	(
+	  (
+          IsInBounds(min_cell_x, multi_box_x_min, multi_box_x_max)
+          &&
+          IsInBounds(min_cell_y, multi_box_y_min,multi_box_y_max)
+          &&
+          IsInBounds(min_cell_z,multi_box_z_min,multi_box_z_max)
+	  )
+	or
+	  (
+          IsInBounds(max_cell_x, multi_box_x_min, multi_box_x_max)
+          &&
+          IsInBounds(max_cell_y, multi_box_y_min,multi_box_y_max)
+          &&
+          IsInBounds(max_cell_z,multi_box_z_min,multi_box_z_max)
+	  )
+	or
+	  (
+          IsInBounds(multi_box_x_min,min_cell_x, max_cell_x)
+          &&
+          IsInBounds(multi_box_y_min, min_cell_y, max_cell_y)
+          &&
+          IsInBounds(multi_box_z_min,min_cell_z, max_cell_z)
+	  )
+	or
+	  (
+          IsInBounds(multi_box_x_max,min_cell_x, max_cell_x)
+          &&
+          IsInBounds(multi_box_y_max, min_cell_y, max_cell_y)
+          &&
+          IsInBounds(multi_box_z_max,min_cell_z, max_cell_z)
+	  )
+	)
         {
+#ifndef NDEBUG
           cout << "bbox: " << bbox << endl;
           cout << "bbox[0]: " << bbox[0] << endl;
           cout << "bbox[1]: " << bbox[1] << endl;
@@ -1434,47 +1350,29 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
           cout << "multi_box_y_max" << multi_box_y_max<< endl;
           cout << "multi_box_z_min" << multi_box_z_min<< endl;
           cout << "multi_box_z_max" << multi_box_z_max<< endl;
-          domains_containing_cells.push_back(0);
-          boxes_with_cells.push_back(bbox);
-        }
-      
-//       if(multi_box_x_min < 100 and multi_box_x_max >100)
-//       {
-
-//       }
-//       
-//       if( min_cell_x > multi_box_x_min and max_cell_x < multi_box_x_max)
-//       {
-//         domains_containing_cells.push_back(0);
-//       }
-//       Float3 first_dim_min_box_center = grid.ld.LatticeToWorld(bbox[0])-0.5*grid.ld.Scale()*Float3(1,1,1);
-//       Float3 first_dim_max_box_center = grid.ld.LatticeToWorld(bbox[1])+0.5*grid.ld.Scale()*Float3(1,1,1);
-//       Float3 second_dim_min_box_center = grid.ld.LatticeToWorld(bbox[2])-0.5*grid.ld.Scale()*Float3(1,1,1);
-//       Float3 second_dim_max_box_center = grid.ld.LatticeToWorld(bbox[3])+0.5*grid.ld.Scale()*Float3(1,1,1);
-//       Float3 third_dim_min_box_center = grid.ld.LatticeToWorld(bbox[4])-0.5*grid.ld.Scale()*Float3(1,1,1);
-//       Float3 third_dim_max_box_center = grid.ld.LatticeToWorld(bbox[5])+0.5*grid.ld.Scale()*Float3(1,1,1);
-//       if( first_dim_max_box_center[0])
-//       {
-//         domains_containing_cells.push_back(bbox);
-//       }
-//       cout<<first_dim_min_box_center<<endl;
-//       cout<<first_dim_max_box_center<<endl;
-    }
-  }
 #endif
-  cout << "boxes_with_cells.size(): " << boxes_with_cells.size() << endl;
-  cout << "x_min_boxes: " << x_min_boxes << endl;
-  cout << "x_max_boxes: " << x_max_boxes << endl;
-//   std::sort(list_of_xmins.begin(), list_of_xmins.end());
-//   for( auto bla: list_of_xmins)
-//   {
-//     std::cout << bla << endl;
-//   }
+          thread_boxes_with_cells.push_back(bbox);
+        }
+    }
+  //}
+
+  cout << "found:\t " << thread_boxes_with_cells.size() << " boxes." << endl;
+  thread_boxes_with_cells.erase(std::unique( thread_boxes_with_cells.begin(), thread_boxes_with_cells.end() ), thread_boxes_with_cells.end() );
+  cout << "found:\t " << thread_boxes_with_cells.size() << " unique boxes." << endl;
   
+//   cout << "boxes_with_cells.size(): " << thread_boxes_with_cells.size() << endl;
+//   for(auto blub: thread_boxes_with_cells)
+//   {
+//     cout << "box: " << blub << endl;
+//   }
+//   thread_boxes_with_cells.erase(std::unique( thread_boxes_with_cells.begin(), thread_boxes_with_cells.end() ), thread_boxes_with_cells.end() );
+  
+
   
   #pragma omp parallel
   {
-    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
+    //BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
+    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, thread_boxes_with_cells)
     {
       for(int i=0; i<tumorcode_pointer_to_currentCellsSystem->Get_ncells();++i)
       {
