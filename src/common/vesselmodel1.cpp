@@ -328,7 +328,10 @@ void Model::DoStep(double dt, const BloodFlowParameters *bfparams)
     cout << "optimize finished" << endl;
 #endif
   }
-  if (IS_DEBUG) vl->IntegrityCheck();
+  if (IS_DEBUG)
+  {
+    vl->IntegrityCheck();
+  }
   ClassifyTumorVessels();
   //DebugOutVessels(*vl, "firstiter");
   ComputeCirculatedComponents(vl);

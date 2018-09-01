@@ -127,7 +127,7 @@ def plot_runtime_from_h5(goodArguments, pp):
   print("filename: %s" % str(goodArguments.vbl_simulation_output_filename))
   with h5py.File(str(goodArguments.vbl_simulation_output_filename), 'r') as f:
     #initialTime = f['out0001/timing'].attrs.get('secondsSinceEpoch')
-    no_of_threads=f.attrs.get('detectedNumberOfThreads')
+    #no_of_threads=f.attrs.get('detectedNumberOfThreads')
     #lastKey = 'out0001'
 #    def isKeyGood(key):
 #      if 'out' in key:
@@ -156,6 +156,7 @@ def plot_runtime_from_h5(goodArguments, pp):
     b_sytem_parameters_exist = '/parameters/system' in f
     if b_sytem_parameters_exist:
       no_of_threads = f['/parameters/system'].attrs.get('num_threads')
+
   
   plotVsCells = False;
   fig, ax = plt.subplots()

@@ -554,13 +554,14 @@ if __name__ == '__main__':
   print(cell_radii.shape)
   # pg/ mum^3
   cell_o2_concentration = cell_o2_mass/ (4/float(3)* np.pi*np.power(cell_radii,3))
-  #cell_o2_concentration = cell_o2_mass/ np.power(eps_tube,3)
+  #cell_o2_concentration = cell_o2_mass
   volume_o2_ml = cell_o2_concentration/(1.429*1e9)
+  #volume_o2_ml = cell_o2_mass/1.429
   ''' o2 density 1.429 g/L --> 1.429*10^9 pg/ml
       1cm^3 = 10^12 (mum^3)
   '''
-  #solubility = 3.1e-4 #ml O2/cm^3 mmHg
   solubility = 3.1e-3 #ml O2/cm^3 mmHg
+  #solubility = 2.8e-3 #ml O2/cm^3 mmHg
   #solubility = 1.1e-4 #ml O2/cm^3 mmHg
   solubility = solubility*1e-12 #ml O2/mum^3 mmHg
   #volume_density = 1.429e9 #pg/ml
@@ -569,7 +570,7 @@ if __name__ == '__main__':
   #cell_po2 = x/solubility
   
   quantity_to_average = volume_o2_ml/solubility
-  #quantity_to_average = volume_o2_ml/solubility
+  #quantity_to_average = cell_o2_mass/solubility
   #quantity_to_average = cell_po2
   #quantity_to_average = cell_o2_concentration
   #quantity_to_average = cell_o2_mass
