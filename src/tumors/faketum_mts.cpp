@@ -696,7 +696,12 @@ void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
   auto end_here = std::chrono::steady_clock::now();
   std::cout << "timing 1: " << (end_here-start_here).count() << endl;
   /* this calculates the simple diffusion of substances */
-  calcChemFields();
+  
+  if(isFirstIterationInRerun or num_iteration%21 == 0)
+  {
+    isFirstIterationInRerun = false;
+    calcChemFields();
+  }
   auto end_here_2 = std::chrono::steady_clock::now();
   std::cout << "timing 2: " << (end_here_2-end_here).count() << endl;
   
@@ -1484,6 +1489,12 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
 //   const DynArray<ThreadBox> &ar = by_thread[omp_get_thread_num()];
   //return range_type(ar.begin(), ar.end());
   
+  /** if   loop over cell 
+   *            loop over boxes
+   * than 
+   * when two cell live in the save box--> multiple thread access the same memory
+   */
+#if 0
   #pragma omp parallel
   {
     //BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
@@ -1500,6 +1511,21 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
       }
     }
   }
+#else 
+  for(int i=0; i<tumorcode_pointer_to_currentCellsSystem->Get_ncells();++i)
+  {
+    //cout << omp_get_thread_num() << " / " << omp_get_max_threads() << endl;
+    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, thread_boxes_with_cells)
+    {
+      Float3 pos(tumorcode_pointer_to_currentCellsSystem->Get_x()[i],tumorcode_pointer_to_currentCellsSystem->Get_y()[i],tumorcode_pointer_to_currentCellsSystem->Get_z()[i]);
+      AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)(tumorcode_pointer_to_currentCellsSystem->Get_r()[i]/tumorcode_pointer_to_currentCellsSystem->Get_ncells()));
+      
+      auto this_o2_rate = tumorcode_pointer_to_currentCellsSystem->Get_O2Rate()[i];
+      AddSmoothDelta(cell_O2src, bbox, grid.ld, grid.dim, pos, (float) this_o2_rate );
+    }
+  }
+  
+#endif
   gf_model.update(state.gffield, cell_GFsrc);
   o2_uptake_model.update(state.cell_O2_consumption, cell_O2src);
   
