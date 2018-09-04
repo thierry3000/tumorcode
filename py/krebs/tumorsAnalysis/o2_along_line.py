@@ -154,7 +154,7 @@ def is_index_good(sample_pos):
       
 ''' this is my development function
 '''
-def sample_line_artery(**keywords):
+def sample_line_artery(quantity_to_average, **keywords):
   starting_pos=artery_p1
   end_pos=artery_p2
   
@@ -183,7 +183,8 @@ def sample_line_artery(**keywords):
   box_length_of_max_norm = distances[1]*0.5
   print(distances)
   if scoop.IS_RUNNING:
-    scoop.shared.setConst(box_length_of_max_norm=box_length_of_max_norm)
+    if not scoop.shared.getConst('box_length_of_max_norm'):
+      scoop.shared.setConst(box_length_of_max_norm=box_length_of_max_norm)
   print('box_length_of_max_norm %f' % box_length_of_max_norm )
   #cell_center_pos = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/cell_center_pos')])
   #print('cell_center_pos')
@@ -416,14 +417,26 @@ def sample_line_vein_orthogonal_bifurcation(**keywords):
 
 def plot_averages_at_arterial_bifurcation(pp):
   result_string = ''
-  avg_values, errors_avg, distances = sample_line_artery()
+  avg_values, errors_avg, distances = sample_line_artery(quantity_to_average)
   fig1, ax1 = plt.subplots(1)
-  ax1.errorbar(distances,avg_values, yerr=errors_avg)
+  ax1.errorbar(distances,avg_values, yerr=errors_avg, linestyle='None', marker='o', color='k')
   if infos:
     ax1.set(title = 'Cell based oxygen along parallel line \n at arterial bifurcation')
   ax1.set_xlabel(r'distance along line/ $\mu m$')
-  ax1.set_ylabel('pO2/mmHg')
-  ax1.grid(color='k', linestyle=':', linewidth=0.5)
+  ax1.set_ylabel('pO2/mmHg', color='k')
+  #ax1.grid(color='k', linestyle=':', linewidth=0.5)
+  
+  if addpH:
+    avg_values_pH, errors_avg_pH, distances = sample_line_artery(quantity_to_average_2)
+    #fig2, ax2 = plt.subplots(1)
+    ax2=ax1.twinx()
+    distances=distances+2.0
+    ax2.errorbar(distances,avg_values_pH, yerr=errors_avg_pH,linestyle='None',marker='x',color='b' )
+    #if infos:
+    #  ax1.set(title = 'Cell based oxygen along parallel line \n at arterial bifurcation')
+    #ax2.set_xlabel(r'distance along line/ $\mu m$')
+    ax2.set_ylabel('pH', color='b')
+    #ax2.grid(color='k', linestyle=':', linewidth=0.5)
 #    ax1.set_xlim([-10, 150])    
   
 #    avg_values, errors_avg, distances = sample_in_orthogonal_plane(1215)
@@ -443,6 +456,8 @@ def plot_averages_at_arterial_bifurcation(pp):
     result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
   meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
   pp.savefig(fig1)
+#  if addpH:
+#    pp.savefig(fig2)
   if infos:
     pp.savefig(meta_data_fig)
 
@@ -462,23 +477,41 @@ def plot_averages_along_outward_line(pp, **keywords):
   ''' average '''
   average_value = []
   errors = []
+  if addpH:
+    average_value_pH=[]
+    errors_pH = []
+  
   for (aList, aSamplePos) in zip(lists,sample_pos):
     this_avg = np.average(quantity_to_average[aList])
     average_value.append(this_avg)
     errors.append(np.std(quantity_to_average[aList]))
+    if addpH:
+      this_avg_pH = np.average(quantity_to_average_2[aList])
+      average_value_pH.append(this_avg_pH)
+      errors_pH.append(np.std(quantity_to_average_2[aList]))
+    
       
   print('finished sample line artery')
   avg_values= np.asarray(average_value)
   errors_avg = np.asarray(errors)
   distances = np.asarray(factors)
+  if addpH:
+    avg_values_pH = np.asarray(average_value_pH)
+    errors_pH = np.asarray(errors_pH)
   #avg_values, errors_avg, distances = sample_line_vein_parallel_bifurcation()
   fig1, ax1 = plt.subplots(1)
-  ax1.errorbar(distances,avg_values, yerr=errors_avg)
+  ax1.errorbar(distances,avg_values, yerr=errors_avg, marker='o', color='k', linestyle='None')
   if infos:
     ax1.set(title = 'Cell based oxygen along parallel line \n at venous bifurcation')
   ax1.set_xlabel(r'distance along line/ $\mu m$')
   ax1.set_ylabel('pO2/mmHg')
-  ax1.grid(color='k', linestyle=':', linewidth=0.5)
+  if addpH:
+    ax2= ax1.twinx()
+    ax2.set_ylabel('pH')
+    distances = distances+2.0
+    ax2.errorbar(distances,avg_values_pH, yerr=errors_pH, marker='x', color='b', linestyle='None')
+  
+  #ax1.grid(color='k', linestyle=':', linewidth=0.5)
   
   for entry in metadata_dict:
     #print(entry)
@@ -535,6 +568,7 @@ if __name__ == '__main__':
   cell_center_pos = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/cell_center_pos')])
   cell_o2_mass = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/o2')])
   cell_radii = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/cell_radii')])
+  cell_pH = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/pH_ex')])
   index_of_nearest_vessel = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/index_of_nearest_vessel')])
   index_of_nearest_vessel = index_of_nearest_vessel[:,0]  
   distance_to_nearest_vessel = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/distance_to_nearest_vessel')])
@@ -570,6 +604,7 @@ if __name__ == '__main__':
   #cell_po2 = x/solubility
   
   quantity_to_average = volume_o2_ml/solubility
+  quantity_to_average_2 = cell_pH
   #quantity_to_average = cell_o2_mass/solubility
   #quantity_to_average = cell_po2
   #quantity_to_average = cell_o2_concentration
@@ -583,7 +618,7 @@ if __name__ == '__main__':
   result_string = ''
 
   infos = False  
-  
+  addpH = True
   if goodArguments.type == 'a':
     with PdfPages('arterial.pdf') as pp:
       plot_averages_at_arterial_bifurcation(pp)
