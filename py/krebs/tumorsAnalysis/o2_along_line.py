@@ -34,9 +34,10 @@ import myutils
 import multiprocessing
 import scoop
 import matplotlib
-matplotlib.use('agg')
+#matplotlib.use('agg')
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 eps_tube = 10
 
@@ -154,56 +155,114 @@ def is_index_good(sample_pos):
       
 ''' this is my development function
 '''
-def sample_line_artery(quantity_to_average, **keywords):
-  starting_pos=artery_p1
-  end_pos=artery_p2
+def sample_line_artery(quantity_name, group_name):
+  print('sample_line_artery called with')
+  print('quantity_name: %s \t group_name: %s' % (quantity_name, group_name))
+  print(goodArguments)
+  with h5py.File(goodArguments.vbl_simulation_file_name, 'r') as f:
   
-  print(goodArguments.vbl_simulation_file_name)
-  print(goodArguments.grp_pattern)
-  
-  print("sample along line from:")
-  print("%s to %s" % (starting_pos, end_pos))
-  #f = h5py.File(goodArguments.vbl_simulation_file_name, 'r')
-  #vesselgroup = f[os.path.join(goodArguments.grp_pattern, 'vessels')]
-  #graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
-  ''' these are the interesting vessels for the artery'''
-  interesting_vessels = [492, 1215]
-  edges = graph.edgelist
-  pos = graph['position']
-  for vessel in interesting_vessels:
-    print("edge: %i nodes: %s" %(vessel,edges[vessel]))
-    this_edges = edges[vessel]
-    print("node: %i, pos: %s" %(this_edges[0],pos[this_edges[0]]))
-    print("node: %i, pos: %s" %(this_edges[1],pos[this_edges[1]]))
-  print("pos 252: %s" % pos[252])
-  print("pos 293: %s" % pos[293])
-  print("pos 1259: %s" % pos[1259])
-  
-  sample_pos, distances = get_sample_points_along_line(starting_pos,end_pos,metadata_dict['number_of_sampling_points'])
-  box_length_of_max_norm = distances[1]*0.5
-  print(distances)
-  if scoop.IS_RUNNING:
-    if not scoop.shared.getConst('box_length_of_max_norm'):
-      scoop.shared.setConst(box_length_of_max_norm=box_length_of_max_norm)
-  print('box_length_of_max_norm %f' % box_length_of_max_norm )
-  #cell_center_pos = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/cell_center_pos')])
-  #print('cell_center_pos')
-  #scoop.shared.setConst(cell_center_pos_=cell_center_pos)
-  lists = list(scoop.futures.map(is_index_good, sample_pos))
-  for (aList, aSamplePos) in zip(lists,sample_pos):
-    print('for pos: %s found %i points in eps range' % (aSamplePos,len(aList)))
+    datalist = map(lambda s: s, map(str.strip, goodArguments.datalist.split(',')))
     
-  ''' average '''
-  average_value = []
-  errors = []
-  
-  for (aList, aSamplePos) in zip(lists,sample_pos):
-    this_avg = np.average(quantity_to_average[aList])
-    average_value.append(this_avg)
-    #errors.append(np.sqrt(1/float(len(aList)))*this_avg)
-    errors.append(np.std(quantity_to_average[aList]))
+    vesselgroup = f[os.path.join(group_name, 'vessels')]
+    graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
+    cell_center_pos = np.asarray(f[os.path.join(group_name, 'cells/cell_center_pos')])
+    cell_o2_mass = np.asarray(f[os.path.join(group_name, 'cells/o2')])
+    cell_radii = np.asarray(f[os.path.join(group_name, 'cells/cell_radii')])
+    cell_pH = np.asarray(f[os.path.join(group_name, 'cells/pH_ex')])
+    index_of_nearest_vessel = np.asarray(f[os.path.join(group_name, 'cells/index_of_nearest_vessel')])
+    index_of_nearest_vessel = index_of_nearest_vessel[:,0]  
+    distance_to_nearest_vessel = np.asarray(f[os.path.join(group_name, 'cells/distance_to_nearest_vessel')])
+    distance_to_nearest_vessel = distance_to_nearest_vessel[:,0]  
+    print('****** important points *************')
+    a=graph.edgelist[521]
+    print('a: %s pos_a: %s pos_b: %s' % (a,graph['position'][a[0]],graph['position'][a[1]]))
+    b=graph.edgelist[1244]
+    print('b: %s pos_a: %s pos_b: %s' % (b,graph['position'][b[0]],graph['position'][b[1]]))
+    
+    print('cell_o2_mass shape:')
+    cell_o2_mass=cell_o2_mass[:,0]
+    print(cell_o2_mass.shape)
+    
+    print('cell_radii_shape:')
+    cell_radii=cell_radii[:,0]
+    print(cell_radii.shape)
+    # pg/ mum^3
+    cell_o2_concentration = cell_o2_mass/ (4/float(3)* np.pi*np.power(cell_radii,3))
+    #cell_o2_concentration = cell_o2_mass
+    volume_o2_ml = cell_o2_concentration/(1.429*1e9)
+    #volume_o2_ml = cell_o2_mass/1.429
+    ''' o2 density 1.429 g/L --> 1.429*10^9 pg/ml
+        1cm^3 = 10^12 (mum^3)
+    '''
+    solubility = 3.1e-3 #ml O2/cm^3 mmHg
+    #solubility = 2.8e-3 #ml O2/cm^3 mmHg
+    #solubility = 1.1e-4 #ml O2/cm^3 mmHg
+    solubility = solubility*1e-12 #ml O2/mum^3 mmHg
+    #volume_density = 1.429e9 #pg/ml
+    #x = cell_o2_concentration/volume_density # ml / mum^3
+    
+    #cell_po2 = x/solubility
+    
+    quantity_to_average = volume_o2_ml/solubility
+    #quantity_to_average = cell_o2_mass/solubility
+    #quantity_to_average = cell_po2
+    #quantity_to_average = cell_o2_concentration
+    #quantity_to_average = cell_o2_mass
+    print('cell_center_pos')
+    if scoop.IS_RUNNING:
+      if not np.asarray(scoop.shared.getConst('cell_center_pos_')).any():
+        scoop.shared.setConst(cell_center_pos_=cell_center_pos)
+    
+    
+    starting_pos=artery_p1
+    end_pos=artery_p2
+    
+    print(goodArguments.vbl_simulation_file_name)
+    print(goodArguments.grp_pattern)
+    
+    print("sample along line from:")
+    print("%s to %s" % (starting_pos, end_pos))
+    #f = h5py.File(goodArguments.vbl_simulation_file_name, 'r')
+    #vesselgroup = f[os.path.join(goodArguments.grp_pattern, 'vessels')]
+    #graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
+    ''' these are the interesting vessels for the artery'''
+    interesting_vessels = [492, 1215]
+    edges = graph.edgelist
+    pos = graph['position']
+    for vessel in interesting_vessels:
+      print("edge: %i nodes: %s" %(vessel,edges[vessel]))
+      this_edges = edges[vessel]
+      print("node: %i, pos: %s" %(this_edges[0],pos[this_edges[0]]))
+      print("node: %i, pos: %s" %(this_edges[1],pos[this_edges[1]]))
+    print("pos 252: %s" % pos[252])
+    print("pos 293: %s" % pos[293])
+    print("pos 1259: %s" % pos[1259])
+    
+    sample_pos, distances = get_sample_points_along_line(starting_pos,end_pos,metadata_dict['number_of_sampling_points'])
+    box_length_of_max_norm = distances[1]*0.5
+    print(distances)
+    if scoop.IS_RUNNING:
+      if not scoop.shared.getConst('box_length_of_max_norm'):
+        scoop.shared.setConst(box_length_of_max_norm=box_length_of_max_norm)
+    print('box_length_of_max_norm %f' % box_length_of_max_norm )
+    #cell_center_pos = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/cell_center_pos')])
+    #print('cell_center_pos')
+    #scoop.shared.setConst(cell_center_pos_=cell_center_pos)
+    lists = list(scoop.futures.map(is_index_good, sample_pos))
+    for (aList, aSamplePos) in zip(lists,sample_pos):
+      print('for pos: %s found %i points in eps range' % (aSamplePos,len(aList)))
       
-  print('finished sample line artery')
+    ''' average '''
+    average_value = []
+    errors = []
+    
+    for (aList, aSamplePos) in zip(lists,sample_pos):
+      this_avg = np.average(quantity_to_average[aList])
+      average_value.append(this_avg)
+      #errors.append(np.sqrt(1/float(len(aList)))*this_avg)
+      errors.append(np.std(quantity_to_average[aList]))
+        
+    print('finished sample line artery')
   return (np.asarray(average_value), np.asarray(errors), np.asarray(distances))
 
 def sample_line_artery_ortho(**keywords):
@@ -415,9 +474,9 @@ def sample_line_vein_orthogonal_bifurcation(**keywords):
   print('finished sample line artery')
   return (np.asarray(average_value), np.asarray(errors), np.asarray(factors))
 
-def plot_averages_at_arterial_bifurcation(pp):
+def plot_averages_at_arterial_bifurcation_single_time(pp ):
   result_string = ''
-  avg_values, errors_avg, distances = sample_line_artery(quantity_to_average)
+  avg_values, errors_avg, distances = sample_line_artery('o2',goodArguments.grp_pattern)
   fig1, ax1 = plt.subplots(1)
   ax1.errorbar(distances,avg_values, yerr=errors_avg, linestyle='None', marker='o', color='k')
   if infos:
@@ -427,39 +486,89 @@ def plot_averages_at_arterial_bifurcation(pp):
   #ax1.grid(color='k', linestyle=':', linewidth=0.5)
   
   if addpH:
-    avg_values_pH, errors_avg_pH, distances = sample_line_artery(quantity_to_average_2)
-    #fig2, ax2 = plt.subplots(1)
+    avg_values_pH, errors_avg_pH, distances = sample_line_artery('pH_ex',goodArguments.grp_pattern)
     ax2=ax1.twinx()
     distances=distances+2.0
     ax2.errorbar(distances,avg_values_pH, yerr=errors_avg_pH,linestyle='None',marker='x',color='b' )
-    #if infos:
-    #  ax1.set(title = 'Cell based oxygen along parallel line \n at arterial bifurcation')
-    #ax2.set_xlabel(r'distance along line/ $\mu m$')
     ax2.set_ylabel('pH', color='b')
-    #ax2.grid(color='k', linestyle=':', linewidth=0.5)
-#    ax1.set_xlim([-10, 150])    
-  
-#    avg_values, errors_avg, distances = sample_in_orthogonal_plane(1215)
-  
-#    plt.show()
-#    fig1, ax1 = plt.subplots(1)
-#    ax1.errorbar(distances,avg_values, yerr=errors_avg)
-#    if infos:
-#      ax1.set(title = 'Cell based oxygen along parallel line \n at arterial bifurcation')
-#    ax1.set_xlabel(r'distance along line/ $\mu m$')
-#    ax1.set_ylabel('pO2/mmHg')
-#    ax1.grid(color='k', linestyle=':', linewidth=0.5)
-#    ax1.set_xlim([-10, 150])
   
   for entry in metadata_dict:
-    #print(entry)
     result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
   meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
   pp.savefig(fig1)
-#  if addpH:
-#    pp.savefig(fig2)
   if infos:
     pp.savefig(meta_data_fig)
+    
+    
+def plot_averages_at_arterial_bifurcation_for_all_times(pp ):
+  result_string=''
+  ''' get data from cache file '''
+  dict_with_a_lot_of_data=dataman.obtain_data('po2_at_all_times')
+  
+#  print(abc['out0350'][0])
+#  print(abc['out0350'][1])
+#  print(abc['out0350'][2])
+  
+  #avg_values, errors_avg, distances = sample_line_artery('o2',goodArguments.grp_pattern)
+  
+  max_group_id = (int)(goodArguments.grp_pattern[3:7])
+  min_group_id = 350
+  #fig1, ax1 = plt.subplots(1)
+  fig1 = plt.figure()
+  ax=fig1.add_subplot(111,projection='3d')
+  group_list = [353, 352, 351, 350]
+  group_list = np.arange(max_group_id, min_group_id, -1)
+  out_group = 'out%04i' % group_list[0]
+  dist=dict_with_a_lot_of_data[out_group][2]
+  avg = dict_with_a_lot_of_data[out_group][0]
+  print('shape dist: ')
+  print(dist.shape)
+  print('shape avb:')
+  print(avg.shape)
+  X,Y = np.meshgrid(dist,group_list)
+  #deepcopy here!!!
+  Z=np.ones(X.shape)
+  print('shapes')
+  print(X.shape)
+  print(Y.shape)
+  for (i,time_point) in enumerate(group_list):
+    out_group = 'out%04i' % time_point
+    #xs = dict_with_a_lot_of_data[out_group][2]
+    avg = dict_with_a_lot_of_data[out_group][0]
+    Z[i,:] = np.asarray(avg)
+  surf= ax.plot_surface(X,Y,Z)
+  plt.show()
+#  for color, time_point in zip(['r', 'g', 'b', 'y'], [353, 352, 351, 350]):
+#    out_group = 'out%04i' % time_point
+#    xs = dict_with_a_lot_of_data[out_group][2]
+#    ys = dict_with_a_lot_of_data[out_group][0]
+#    cs = [color] * len(xs)
+#    cs[0] = 'c'
+#    ax.bar(xs, ys, zs=time_point, zdir='y', color=cs, alpha=1.0)
+  
+#  ax1.errorbar(dict_with_a_lot_of_data['out0350'][2],dict_with_a_lot_of_data['out0350'][0], yerr=dict_with_a_lot_of_data['out0350'][1], linestyle='None', marker='o', color='k')
+#  if infos:
+#    ax1.set(title = 'Cell based oxygen along parallel line \n at arterial bifurcation')
+#  ax1.set_xlabel(r'distance along line/ $\mu m$')
+#  ax1.set_ylabel('pO2/mmHg', color='k')
+  
+  
+  #ax1.grid(color='k', linestyle=':', linewidth=0.5)
+  
+#  if addpH:
+#    avg_values_pH, errors_avg_pH, distances = sample_line_artery('pH_ex',goodArguments.grp_pattern)
+#    ax2=ax1.twinx()
+#    distances=distances+2.0
+#    ax2.errorbar(distances,avg_values_pH, yerr=errors_avg_pH,linestyle='None',marker='x',color='b' )
+#    ax2.set_ylabel('pH', color='b')
+  
+  for entry in metadata_dict:
+    result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
+  meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
+  #pp.savefig(fig1)
+  if infos:
+    pp.savefig(meta_data_fig)
+  
 
 def plot_averages_along_outward_line(pp, **keywords):
   result_string = ''
@@ -522,6 +631,85 @@ def plot_averages_along_outward_line(pp, **keywords):
     pp.savefig(meta_data_fig)
   meta_data_fig.clf()
   
+def getuuid_(h5grp):
+  try:
+    return h5grp.attrs['UUID']
+  except KeyError:
+    return ''
+
+#@myutils.UsesDataManager
+class Human(object):
+  keywords = ['leg']
+  def obtain_data(self, dataman, dataname, *args):
+    if dataname == 'leg':
+      def read(hdf_cache_grp_name, data_name):
+        the_data= hdf_cache_grp_name[data_name]
+        return the_data
+      def write(hdf_cache_grp_name, data_name):
+        hdf_data_grp = hdf_cache_grp_name.create_group(data_name)
+        hdf_data_grp.create_dataset(dataname, data=np.random.randn(100))
+    #version_id = myutils.checksum(getuuid_(h5_out_grp))
+      return myutils.hdf_data_caching(read, write, f_cache, 'blub')
+class DataArterialBifurcation(object):
+  keywords = ['po2_at_all_times','po2_at_certain_time_point']
+  
+  def obtain_data(self, dataman, dataname, *args):
+    max_group_id = (int)(goodArguments.grp_pattern[3:7])
+    min_group_id = 350
+    if dataname == 'po2_at_certain_time_point':
+      print(args)
+      this_out_grp_name =args[0]
+      def read(hdf_cache_grp, data_name):
+        print('data_name: %s' %data_name)
+        print('hdf_cache_grp in read')
+        print(hdf_cache_grp.keys())
+        return (np.asarray(hdf_cache_grp[data_name + '/' + 'average_po2']),np.asarray(hdf_cache_grp[data_name + '/' + 'average_po2_error']),np.asarray(hdf_cache_grp[data_name + '/' + 'distances']))
+      def write(hdf_cache_grp, data_name):
+        (average_value, errors, distances) = sample_line_artery('o2', this_out_grp_name)
+        group_of_single_timepoint = hdf_cache_grp.create_group(this_out_grp_name)
+        print('hdf_cache_grp')
+        print(hdf_cache_grp)
+        print(data_name)
+        print('before create')
+        group_of_single_timepoint.create_dataset('average_po2', data=average_value)
+        group_of_single_timepoint.create_dataset('average_po2_error', data=errors)
+        group_of_single_timepoint.create_dataset('distances', data=distances)
+        
+      return myutils.hdf_data_caching(read, write, f_cache['/po2_at_all_times/'], this_out_grp_name)
+    if dataname == 'po2_at_all_times':
+      def read(hdf_cache_grp_name, data_name):
+        return_dict=dict()
+        hdf_data_grp=hdf_cache_grp_name[data_name]
+        for out_group_id in np.arange(min_group_id,max_group_id+1):
+          out_group = 'out%04i' % out_group_id
+          print('reading group: %s' %out_group)
+          #this_out_group = hdf_data_grp[out_group]
+          (average_value, errors, distances) = dataman.obtain_data('po2_at_certain_time_point', out_group)
+          #average_value = np.asarray(this_out_group['average_po2'])
+          #errors = np.asarray(this_out_group['average_po2_error'])
+          #distances = np.asarray(this_out_group['distances'])
+          return_dict[out_group] = (average_value, errors, distances)
+          #(average_value, errors, distances) = sample_line_artery('o2', out_group)
+  #        this_out_group.create_dataset('average_po2', data=average_value)
+  #        this_out_group.create_dataset('average_po2_error', data=errors)
+  #        this_out_group.create_dataset('distances', data=distances)
+  #      the_data= hdf_cache_grp_name[data_name]
+        return return_dict
+      def write(hdf_cache_grp_name, data_name):
+        hdf_data_grp = hdf_cache_grp_name.create_group(data_name)
+        ''' here comes the calculation '''
+        for out_group_id in np.arange(min_group_id,max_group_id+1):
+          out_group_name = 'out%04i' % out_group_id
+          print('calculating group: %s' %out_group_name)
+          #this_out_group = hdf_data_grp.create_group(out_group)
+#          (average_value, errors, distances) = sample_line_artery('o2', out_group_name)
+          dataman.obtain_data('po2_at_certain_time_point', out_group_name)
+          #this_out_group.create_dataset('average_po2', data=average_value)
+          #this_out_group.create_dataset('average_po2_error', data=errors)
+          #this_out_group.create_dataset('distances', data=distances)
+          
+      return myutils.hdf_data_caching(read, write, f_cache, 'po2_at_all_times')
+
 if __name__ == '__main__':
   if scoop.IS_RUNNING:
     print("scoop is running")
@@ -559,59 +747,12 @@ if __name__ == '__main__':
     print(e.message)
     sys.exit(-1)
     
-    
+  
   ''' begin of code '''
-  f = h5py.File(goodArguments.vbl_simulation_file_name, 'r')
-  datalist = map(lambda s: s, map(str.strip, goodArguments.datalist.split(',')))
-  vesselgroup = f[os.path.join(goodArguments.grp_pattern, 'vessels')]
-  graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
-  cell_center_pos = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/cell_center_pos')])
-  cell_o2_mass = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/o2')])
-  cell_radii = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/cell_radii')])
-  cell_pH = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/pH_ex')])
-  index_of_nearest_vessel = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/index_of_nearest_vessel')])
-  index_of_nearest_vessel = index_of_nearest_vessel[:,0]  
-  distance_to_nearest_vessel = np.asarray(f[os.path.join(goodArguments.grp_pattern, 'cells/distance_to_nearest_vessel')])
-  distance_to_nearest_vessel = distance_to_nearest_vessel[:,0]  
-  print('****** important points *************')
-  a=graph.edgelist[521]
-  print('a: %s pos_a: %s pos_b: %s' % (a,graph['position'][a[0]],graph['position'][a[1]]))
-  b=graph.edgelist[1244]
-  print('b: %s pos_a: %s pos_b: %s' % (b,graph['position'][b[0]],graph['position'][b[1]]))
+  '''register a clases at data manager'''
+  f_cache = h5py.File('cache_'+ goodArguments.vbl_simulation_file_name, 'a')
+  dataman = myutils.DataManager(20, [Human(), DataArterialBifurcation()])
   
-  print('cell_o2_mass shape:')
-  cell_o2_mass=cell_o2_mass[:,0]
-  print(cell_o2_mass.shape)
-  
-  print('cell_radii_shape:')
-  cell_radii=cell_radii[:,0]
-  print(cell_radii.shape)
-  # pg/ mum^3
-  cell_o2_concentration = cell_o2_mass/ (4/float(3)* np.pi*np.power(cell_radii,3))
-  #cell_o2_concentration = cell_o2_mass
-  volume_o2_ml = cell_o2_concentration/(1.429*1e9)
-  #volume_o2_ml = cell_o2_mass/1.429
-  ''' o2 density 1.429 g/L --> 1.429*10^9 pg/ml
-      1cm^3 = 10^12 (mum^3)
-  '''
-  solubility = 3.1e-3 #ml O2/cm^3 mmHg
-  #solubility = 2.8e-3 #ml O2/cm^3 mmHg
-  #solubility = 1.1e-4 #ml O2/cm^3 mmHg
-  solubility = solubility*1e-12 #ml O2/mum^3 mmHg
-  #volume_density = 1.429e9 #pg/ml
-  #x = cell_o2_concentration/volume_density # ml / mum^3
-  
-  #cell_po2 = x/solubility
-  
-  quantity_to_average = volume_o2_ml/solubility
-  quantity_to_average_2 = cell_pH
-  #quantity_to_average = cell_o2_mass/solubility
-  #quantity_to_average = cell_po2
-  #quantity_to_average = cell_o2_concentration
-  #quantity_to_average = cell_o2_mass
-  print('cell_center_pos')
-  if scoop.IS_RUNNING:
-    scoop.shared.setConst(cell_center_pos_=cell_center_pos)
   ''' pdf output '''
   meta_data_fig = plt.figure(figsize=(11.69,8.27))
   meta_data_fig.clf()
@@ -621,9 +762,10 @@ if __name__ == '__main__':
   addpH = True
   if goodArguments.type == 'a':
     with PdfPages('arterial.pdf') as pp:
-      plot_averages_at_arterial_bifurcation(pp)
-      plot_averages_along_outward_line(pp)
-      #sample_in_orthogonal_plane(3553,pp)
+      plot_averages_at_arterial_bifurcation_for_all_times(pp)
+#      plot_averages_at_arterial_bifurcation_single_time(pp)
+#      plot_averages_along_outward_line(pp)
+#      sample_in_orthogonal_plane(3553,pp)
     
   if goodArguments.type == 'v':
     with PdfPages('venous_parallel.pdf') as pp:
