@@ -27,42 +27,89 @@ import h5py
 import krebsutils as ku
 import itertools
 import vapory
-
+def povray_test():
+  """ Just a purple sphere """
+  scene = vapory.Scene(  vapory.Camera('location',  [0.0, 0.5, -4.0],
+                         'direction', [0,0,1.5],
+                         'look_at',  [0, 0, 0]),
+  
+                  objects = [
+  
+                      vapory.Background("color", [0.85, 0.75, 0.75]),
+  
+                      vapory.LightSource([0, 0, 0],
+                                    'color',[1, 1, 1],
+                                    'translate', [-5, 5, -5]),
+  
+                      vapory.LightSource ([0, 0, 0],
+                                      'color', [0.25, 0.25, 0.25],
+                                      'translate', [600, -600, -600]),
+  
+  
+                      vapory.Box([-0.5, -0.5, -0.5], [0.5, 0.5, 0.5],
+                           vapory.Texture( vapory.Pigment( 'color', [1,0,0]),
+                                    vapory.Finish('specular', 0.6),
+                                    vapory.Normal('agate', 0.25, 'scale', 0.5)),
+                          'rotate', [45,46,47])
+                 ]
+  )
+  # We use antialiasing. Remove this option for faster rendering.
+  scene.render("cube.png", width=300, height=300, antialiasing=0.001)
 def povray_cells(goodArguments):
   with h5py.File(goodArguments.vbl_simulation_output_filename, 'r') as f:
-    h5_cells_grp = f[goodArguments.output_grp_name + "/cells"]
+    h5_cells_grp = f[goodArguments.grp_pattern + "/cells"]
     pos = h5_cells_grp['cell_center_pos']
     pos = np.asarray(pos)
     rad = h5_cells_grp['cell_radii']
     rad = np.asarray(rad)
     o2 = h5_cells_grp['o2']
     o2 = np.asarray(o2)
+    x_min= np.min(pos[:,0])
+    x_max = np.max(pos[:,0])
+    center_x = x_min+0.5*(x_max-x_min)
+    y_min= np.min(pos[:,1])
+    y_max = np.max(pos[:,1])
+    center_y = x_min+0.5*(y_max-y_min)
+    z_min= np.min(pos[:,2])
+    z_max = np.max(pos[:,2])
+    center_z = z_min+0.5*(z_max-z_min)
+    print('x: [%f,%f]' % (x_min, x_max))
+    print('y: [%f,%f]' % (y_min, y_max))
+    print('z: [%f,%f]' % (z_min, z_max))
+    print('%f, %f, %f' %(center_x,center_y,center_z))
     #o2 = o2/np.max(o2)
-    x = pos[:,0]
-    y = pos[:,1]
-    z = pos[:,2]
-    s = rad[:,0]
-  camera = vapory.Camera('location', [40,40,-80], 'look_at', [0,0,0])
-  light = vapory.LightSource( [20,20,-50], 'color', 1 )
+#    x = pos[:,0]
+#    y = pos[:,1]
+#    z = pos[:,2]
+#    s = rad[:,0]
+  camera = vapory.Camera('location', [700,700,-700], 'look_at', [0,0,0])
+  light = vapory.LightSource([1000,-1000,-1000], 'color', [1, 1, 1])
+  light2 = vapory.LightSource([0,0,0], 'color',[1, 1, 1], 'translate', [1000,-1000,-1000] )
+  light3 = vapory.LightSource([500,-1000,500], 'color', [1, 1, 1] )
   myObjectList = []
   myObjectList.append(light)
+  myObjectList.append(light2)
+  myObjectList.append(light3)
   
   cuttingY = vapory.Plane([0,1,0], 0,)
   cuttingX = vapory.Plane([1,0,0], -1,)
   max_rad = np.max(rad)
   max_o2 = np.max(o2)
-  for (aPosition, aRadius, aO2Value) in zip(pos, rad, o2):
+  n= 10000
+  for (aPosition, aRadius, aO2Value) in zip(pos[0:n], rad[0:n], o2[0:n]):
     thisSphere = vapory.Sphere( aPosition, aRadius[0])
     color = matplotlib.cm.hsv(aO2Value[0]/max_o2)
-    print(color[0:3])
-    cuttedSphere = vapory.Intersection(thisSphere, cuttingY, vapory.Texture( vapory.Pigment( 'color', color[0:3]  )))    
+    #print(color[0:3])
+    #cuttedSphere = vapory.Intersection(thisSphere, cuttingY, vapory.Texture( vapory.Pigment( 'color', color[0:3]  )))    
     #cuttedSphere = vapory.Intersection(thisSphere, cuttingY, cuttingX)    
     #cuttedSphere = thisSphere  
-    myObjectList.append(cuttedSphere)
-    #myObjectList.append(vapory.Sphere( aPosition, aRadius[0], vapory.Texture( vapory.Pigment( 'color', matplotlib.cm.Blues(aO2Value[0]) ))))
-
-  scene = vapory.Scene( camera, objects= myObjectList)
-  scene.render("purple_sphere.png", width=400, height=300, antialiasing=0.001, remove_temp=False)
+    #myObjectList.append(cuttedSphere)
+    #myObjectList.append(thisSphere)
+   # myObjectList.append(vapory.Sphere( aPosition, aRadius[0], vapory.Texture( vapory.Pigment( 'color', matplotlib.cm.Blues(aO2Value[0]/max_o2) ))))
+    myObjectList.append(vapory.Sphere( aPosition, aRadius[0], vapory.Texture( vapory.Pigment( 'color', [1,0,0] ))))
+    
+  scene = vapory.Scene( camera, objects= myObjectList,  defaults = [vapory.Finish( 'ambient', 1.5)],)
+  scene.render("purple_sphere.png", width=400, height=300,  antialiasing=0.01, remove_temp=True)
     
   
   
@@ -70,14 +117,15 @@ def povray_cells(goodArguments):
 if __name__ == "__main__":
   import argparse
   parser = argparse.ArgumentParser(description='Plot MTS with mayavi')  
-  parser.add_argument('--s',dest='vbl_simulation_output_filename', type=str, default='check_types.h5', help='output file name in hdf5 format')
+  parser.add_argument('vbl_simulation_output_filename', type=str, default='check_types.h5', help='output file name in hdf5 format')
+  parser.add_argument('grp_pattern')
   
   interactive = True;
   goodArguments, otherArguments = parser.parse_known_args()
   
-  goodArguments.output_grp_name = 'out0300'
+  goodArguments.grp_pattern = 'out0490'
   #goodArguments.output_grp_name = 'out0458'
   
   povray_cells(goodArguments)
-  
+  povray_test()
   #plot_vessels(goodArguments)
