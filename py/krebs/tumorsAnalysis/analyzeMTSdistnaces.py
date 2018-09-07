@@ -27,6 +27,9 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.mplot3d import Axes3D
 
+from matplotlib import rcParams
+rcParams.update({'figure.autolayout': True})
+
 no_bins = 30
 
 def distances_to_vessels(out_grp_name,pp):
@@ -107,77 +110,106 @@ def plot_cell_endity_vs_distances_to_next_vessel(endity, out_grp_name,pp):
     
     endity_value_of_cells = np.asarray(h5_out_grp['cells/' + endity])
     endity_value_of_cells = endity_value_of_cells[:,0]
-    volume_o2_ml = endity_value_of_cells*1e-9/1.429
-    ''' o2 density 1.429 g/L --> 1.429*10^9 pg/ml
-    '''
-    solubility = 2.8e-4 #ml O2/cm^3 mmHg
-    solubility = solubility*1e-12 #ml O2/mum^3 mmHg
-    endity_value_of_cells = volume_o2_ml/solubility
-#    max_endity_value_of_cells = np.max(endity_value_of_cells)
-#    min_endity_value_of_cells = np.min(endity_value_of_cells)
+    cell_radii = np.asarray(h5_out_grp['cells/cell_radii'])
+    cell_radii=cell_radii[:,0]
+    cell_o2_concentration = endity_value_of_cells/ (4/float(3)* np.pi*np.power(cell_radii,3))
+    volume_o2_ml = cell_o2_concentration/(1.429*1e9)
     
-    max_endity_value_of_cells = 200
-    min_endity_value_of_cells = 10
+    solubility = 3.1e-3 #ml O2/cm^3 mmHg
+    solubility = solubility*1e-12 #ml O2/mum^3 mmHg
+    if(endity == 'o2'):
+      endity_value_of_cells = volume_o2_ml/solubility
+    max_endity_value_of_cells = np.max(endity_value_of_cells)
+    min_endity_value_of_cells = np.min(endity_value_of_cells)
+    
+#    max_endity_value_of_cells = 200
+#    min_endity_value_of_cells = 20
     ''' this is not showing something -> I try it the other way round'''
     
     bins =[]    
-    no_of_bins = 10
-    goWithDistance = False
-    if goWithDistance:
-      diff = (max_distance_to_nearest_vessel - min_distance_to_nearest_vessel)/no_of_bins
-      print('diff: %f' % diff)
-      for i in range(no_of_bins):
-        bins.append(min_distance_to_nearest_vessel+i*diff)
-      print('bins:')
-      print(bins)
-      big_data = list()
-      for (i, a_lower_bound) in enumerate(bins):
-        upper_bound = a_lower_bound+diff
-        print('lower: %f, upper: %f' %(a_lower_bound, upper_bound))
-        good_indexes = np.where(np.logical_and(distances_to_nearest_vessel<upper_bound, distances_to_nearest_vessel > a_lower_bound))
-  #    good_indexes = np.where(endity_value_of_cells>=min_distance_to_nearest_vessel)    
-        print('found %i indeces for %f' % (len(good_indexes[0]), a_lower_bound))
-        data_on_this = endity_value_of_cells[good_indexes]
-        print('min: %f, max: %f' % (np.min(data_on_this),np.max(data_on_this)))
-        big_data.append(endity_value_of_cells[good_indexes])
+    no_of_bins = 20
+    #goWithDistance = False
+    big_data = list()
+    my_x_labels = list()
     
+    ''' this will plot with distance '''
     
-    else:
-      diff = (max_endity_value_of_cells - min_endity_value_of_cells)/no_of_bins
-      print('diff: %f' % diff)
-      for i in range(no_of_bins):
-        bins.append(min_endity_value_of_cells+i*diff)
-      print('bins:')
-      print(bins)
-      big_data = list()
-      for (i, a_lower_bound) in enumerate(bins):
-        upper_bound = a_lower_bound+diff
-        print('lower: %f, upper: %f' %(a_lower_bound, upper_bound))
-        good_indexes = np.where(np.logical_and(endity_value_of_cells<upper_bound, endity_value_of_cells > a_lower_bound))
-  #    good_indexes = np.where(endity_value_of_cells>=min_distance_to_nearest_vessel)    
-        print('found %i indeces for %f' % (len(good_indexes[0]), a_lower_bound))
-        data_on_this = distances_to_nearest_vessel[good_indexes]
-        print('min: %f, max: %f' % (np.min(data_on_this),np.max(data_on_this)))
-        big_data.append(endity_value_of_cells[good_indexes])
-      #plt.boxplot(big_data)
-      #plt.show()
-      
+    diff = (max_distance_to_nearest_vessel - min_distance_to_nearest_vessel)/no_of_bins
+    print('diff: %f' % diff)
+    for i in range(no_of_bins):
+      bins.append(min_distance_to_nearest_vessel+i*diff)
+    print('bins:')
+    print(bins)
+    
+    for (i, a_lower_bound) in enumerate(bins):
+      upper_bound = a_lower_bound+diff
+      print('lower: %f, upper: %f' %(a_lower_bound, upper_bound))
+      good_indexes = np.where(np.logical_and(distances_to_nearest_vessel<upper_bound, distances_to_nearest_vessel > a_lower_bound))
+#    good_indexes = np.where(endity_value_of_cells>=min_distance_to_nearest_vessel)    
+      print('found %i indeces for %f' % (len(good_indexes[0]), a_lower_bound))
+      data_on_this = endity_value_of_cells[good_indexes]
+      print('min: %f, max: %f' % (np.min(data_on_this),np.max(data_on_this)))
+      big_data.append(endity_value_of_cells[good_indexes])
+      my_x_labels.append('%1.0f' % float(a_lower_bound+0.5*diff))
+    
     fig1 = plt.figure()
     ax1 = fig1.add_subplot(111)
     #ax1.scatter(distances_to_nearest_vessel[0:1000], endity_value_of_cells[0:1000])
     ax1.boxplot(big_data)
-    if goWithDistance:
-      plt.ylabel(r'pO2 / mmHg')
-      plt.xlabel(r' distance to nearest vessle/ $\mu m$')
-    else:
-      plt.xlabel(r'pO2 / mmHg')
-      plt.ylabel(r' distance to nearest vessle/ $\mu m$')
-    plt.title('file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
-    plt.grid()
-    if interactive:
-      plt.show()
-    else:
-      pp.savefig()
+    ax1.set_xticklabels(my_x_labels,rotation=75)
+    ax1.set_xticks(np.arange(len(my_x_labels))+1)
+    if endity == 'o2':
+      ax1.set_ylabel(r'pO2 / mmHg')
+      ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
+      
+    if endity == 'pH_ex':
+      ax1.set_ylabel(r'pH')
+      ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
+    ax1.set(title='file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+    ax1.grid(color='k', linestyle=':', linewidth=0.5)
+    pp.savefig()    
+    
+    
+    ''' this will plot the data on the absissis '''
+    bins =[]
+    big_data = list()
+    my_x_labels = list()
+    diff = (max_endity_value_of_cells - min_endity_value_of_cells)/no_of_bins
+    print('diff: %f' % diff)
+    for i in range(no_of_bins):
+      bins.append(min_endity_value_of_cells+i*diff)
+    print('bins:')
+    print(bins)
+    for (i, a_lower_bound) in enumerate(bins):
+      upper_bound = a_lower_bound+diff
+      print('lower: %f, upper: %f' %(a_lower_bound, upper_bound))
+      good_indexes = np.where(np.logical_and(endity_value_of_cells<upper_bound, endity_value_of_cells > a_lower_bound))
+#    good_indexes = np.where(endity_value_of_cells>=min_distance_to_nearest_vessel)    
+      print('found %i indeces for %f' % (len(good_indexes[0]), a_lower_bound))
+      data_on_this = distances_to_nearest_vessel[good_indexes]
+      print('min: %f, max: %f' % (np.min(data_on_this),np.max(data_on_this)))
+      big_data.append(data_on_this)
+      #endity_value_of_cells[good_indexes
+      if(endity == 'pH_ex'):
+        my_x_labels.append('%.2f' % float(a_lower_bound+0.5*diff))
+      else:
+        my_x_labels.append('%1.0f' % float(a_lower_bound+0.5*diff))
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot(111)
+    #ax1.scatter(distances_to_nearest_vessel[0:1000], endity_value_of_cells[0:1000])
+    ax2.boxplot(big_data)
+    ax2.set_xticklabels(my_x_labels,rotation=75)
+    ax2.set_xticks(np.arange(len(my_x_labels))+1)
+    if endity == 'o2':
+      ax2.set_xlabel(r'pO2 / mmHg')
+      ax2.set_ylabel(r' distance to nearest vessle/ $\mu m$')
+      
+    if endity == 'pH_ex':
+      ax2.set_xlabel(r'pH')
+      ax2.set_ylabel(r' distance to nearest vessle/ $\mu m$')
+    ax2.set(title='file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+    ax2.grid(color='k', linestyle=':', linewidth=0.5)
+    pp.savefig()  
       
     '''WHAT ABOUT THE CELLS ON THE SURFACE AND NOT SURFACE?'''
     
@@ -197,7 +229,7 @@ if __name__ == '__main__':
     
     distances_to_vessels(goodArguments, pp);
 #    cell_endities = ['o2', 'pH_ex', 'glucose_ex','cell_age','cell_no_neigh', 'cell_o2_consumption_rate', 'cell_phase', 'cell_phase_age','cell_radii']
-    cell_endities = ['o2']    
+    cell_endities = ['o2','pH_ex','cell_radii']    
     for cell_endity in cell_endities:
       #scatter_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)
       #hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)
