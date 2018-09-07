@@ -1,0 +1,10 @@
+#ifndef TUMORCODE_BUILD_INFO_H
+#define TUMORCODE_BUILD_INFO_H  // header guard
+
+// the configured options and settings from cmake
+#define TUMORCODE_VERSION_MAJOR @TUMORCODE_VERSION_MAJOR@
+#define TUMORCODE_VERSION_MINOR @TUMORCODE_VERSION_MINOR@
+
+#define USE_MILOTTI_MTS @USE_MILOTTI_MTS@
+
+#endif // header guard

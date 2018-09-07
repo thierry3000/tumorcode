@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.3)
 project(tumorcode C CXX)
 
+# I try to follow the tutorial at:
+# https://cmake.org/cmake-tutorial/
+set(TUMORCODE_VERSION_MAJOR 2)
+set(TUMORCODE_VERSION_MINOR 1)
+
 if(FALSE)
 ###############  set up spack stuff  ##############
 
