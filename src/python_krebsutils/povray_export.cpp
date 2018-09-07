@@ -348,10 +348,92 @@ py::object pv_clip_object_str(const py::tuple &py_clip_data, const py::object &p
   return py::str(cp->asPovRayObject(stylestr));
 }
 
+#if BOOST_VERSION>106300
+void export_VBL_Cells_for_povray(const np::ndarray pos,
+                               const np::ndarray rad,
+                               const np::ndarray color,
+                               const py::object &py_styler,
+                               const py::object &py_clip_styler,
+                               const py::tuple &py_clip_data,
+                               const std::string filename)
+{
+  #ifndef NDEBUG
+  cout << "pos.get_nd(): " << pos.get_nd() << endl;
+  for(int i=0; i< pos.get_nd(); i++)
+  {
+    cout << "dim: " << i << "pos.get_shape()[i]: " << pos.get_shape()[i] << endl;
+  }
+  cout << "rad.get_nd(): " << rad.get_nd() << endl;
+  for(int i=0; i< rad.get_nd(); i++)
+  {
+    cout << "dim: " << i << "rad.get_shape()[i]: " << rad.get_shape()[i] << endl;
+  }
+#endif
+  //int num_edges = edges.get_shape()[0];
+  std::ofstream os(filename.c_str());
+  printf("writing to file: %s\n", filename.c_str());
+  CP cp = clipper_factory(py_clip_data);
+  int num_cells = rad.get_shape()[0];
+  for( uint i = 0; i< num_cells; ++i)
+  {
+    float radius = py::extract<float>(rad[i][0]);
+    float pos_x = py::extract<float>(pos[i][0]);
+    float pos_y = py::extract<float>(pos[i][1]);
+    float pos_z = py::extract<float>(pos[i][2]);
+//     float radius = .010;
+//     float pos_x = 0.0;
+//     float pos_y = 0.0;
+//     float pos_z = 0.0;
+    Float3 correct_data_pos(pos_x, pos_y, pos_z);
+    int intersect = cp ? cp->clipSphere(correct_data_pos, radius) :CLIP_NONE;
+    if (intersect == CLIP_FULL) 
+      continue;
+    //cout << "i: " << i << "rad: " << radius << endl;
+    string stylestr = py::extract<string>(py_styler.attr("cell_style")(i));
+    string objstr = str(format("sphere {\n<%f,%f,%f>, %f\n%s}\n") %
+                                pos_x % pos_y % pos_z % radius % stylestr);
+    os << objstr;
+  
+  }
+}
+
+#else
+void export_VBL_Cells_for_povray(const np::arrayt<float> pos,
+                               const np::arrayt<float> rad,
+                               const np::arrayt<float> color,
+                               const py::object &py_styler,
+                               const py::object &py_clip_styler,
+                               const py::tuple &py_clip_data,
+                               const std::string filename)
+{
+  std::ofstream os(filename.c_str());
+  printf("writing to file: %s\n", filename.c_str());
+  CP cp = clipper_factory(py_clip_data);
+  int num_cells = rad.shape()[0];
+  for( int i = 0; i< num_cells; ++i)
+  {
+    float radius = rad(i,0);
+    Float3 correct_data_pos(pos(i,0), pos(i,1), pos(i,2));
+    int intersect = cp ? cp->clipSphere(correct_data_pos, radius) :CLIP_NONE;
+    if (intersect == CLIP_FULL) 
+      continue;
+    //cout << "i: " << i << "rad: " << radius << endl;
+    string stylestr = py::extract<string>(py_styler.attr("cell_style")(i));
+    string objstr = str(format("sphere {\n<%f,%f,%f>, %f\n%s}\n") %
+                                correct_data_pos[0] % correct_data_pos[1] % correct_data_pos[2] % radius % stylestr);
+    os << objstr;
+  
+  }
+
+}
+#endif
 
 void export_povray_export()
 {
   py::def("export_network_for_povray", export_network_for_povray);
+#if MILOTTI_MTS
+  py::def("export_VBL_Cells_for_povray", export_VBL_Cells_for_povray);
+#endif
   py::enum_<ClipId>("ClipShape")
     .value("slice", CLIP_ID_SLICE)
     .value("pie", CLIP_ID_PIE)

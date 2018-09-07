@@ -104,7 +104,14 @@ class RenderJob(object):
       elif 'tumor' in f[self.group_name]:
         from krebs.povrayRenderTumor import render_different_data_types
         self.params.timepoint = f[self.group_name].attrs.get('time')
-        render_different_data_types(f[self.group_name]['vessels'],
+        ''' check if we have cell '''
+        if 'cells' in f[self.group_name]:
+          render_different_data_types(f[self.group_name]['vessels'],
+                    f[self.group_name]['tumor'],
+                    self.imageFilename,
+                    self.params, cell_group = f[self.group_name]['cells'])
+        else:
+          render_different_data_types(f[self.group_name]['vessels'],
                     f[self.group_name]['tumor'],
                     self.imageFilename,
                     self.params)
@@ -162,6 +169,10 @@ if __name__ == '__main__':
   parser.add_argument("--not_render_volume", help="For combined images", default=False, action="store_true")
   parser.add_argument("--not_render_vessels", help="For combined images", default=False, action="store_true")
   parser.add_argument("--timepoint", help="timepoint for tumor overlay", default=None)
+  # maybe we need that in future?
+  parser.add_argument("--vessel_clip", help="???", default=None)
+  parser.add_argument("--tumor_clip", help="???", default=None)
+  parser.add_argument("--slice_pos", help="slice position on z axis", default=None, type=int)
   
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)

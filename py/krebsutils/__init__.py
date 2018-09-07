@@ -92,34 +92,67 @@ SetupFieldLattice:
 #    CalcConductivities'.split(',')
 #]
 
-imports_ = [ f.strip() for f in
-    '\
-    LatticeData, \
-    read_lattice_data_from_hdf_by_filename, \
-    write_lattice_data_to_hdf_by_filename, \
-    export_network_for_povray, \
-    ClipShape, \
-    povray_clip_object_str, \
-    make_position_field, \
-    calcBulkTissueSourceTerm, \
-    make_vessel_volume_fraction_field, \
-    calc_vessel_boxcounts, \
-    run_vesselgen, \
-    vesselgen_generate_grid, \
-    vesselgen_generate_single, \
-    vesselgen_generate_symmetric, \
-    GetHealthyVesselWallThickness, \
-    CalcRelativeViscosity, \
-    CalcFahraeusEffect, \
-    CalcIntervascularInterpolationField_, \
-    SetupFieldLattice, \
-    PressureRadiusRelation, \
-    SumIsoSurfaceIntersectionWithVessels_, \
-    get_Murray2, \
-    get_Murray_scale, \
-    CalcViscosities, \
-    CalcConductivities'.split(',')
-]
+if libkrebs.is_vbl_used():
+    print("VBL is used!")
+    imports_ = [ f.strip() for f in
+        '\
+        LatticeData, \
+        read_lattice_data_from_hdf_by_filename, \
+        write_lattice_data_to_hdf_by_filename, \
+        export_network_for_povray, \
+        export_VBL_Cells_for_povray, \
+        ClipShape, \
+        povray_clip_object_str, \
+        make_position_field, \
+        calcBulkTissueSourceTerm, \
+        make_vessel_volume_fraction_field, \
+        calc_vessel_boxcounts, \
+        run_vesselgen, \
+        vesselgen_generate_grid, \
+        vesselgen_generate_single, \
+        vesselgen_generate_symmetric, \
+        GetHealthyVesselWallThickness, \
+        CalcRelativeViscosity, \
+        CalcFahraeusEffect, \
+        CalcIntervascularInterpolationField_, \
+        SetupFieldLattice, \
+        PressureRadiusRelation, \
+        SumIsoSurfaceIntersectionWithVessels_, \
+        get_Murray2, \
+        get_Murray_scale, \
+        CalcViscosities, \
+        CalcConductivities'.split(',')
+    ]
+else:
+    print("VBL is unused!")
+    imports_ = [ f.strip() for f in
+        '\
+        LatticeData, \
+        read_lattice_data_from_hdf_by_filename, \
+        write_lattice_data_to_hdf_by_filename, \
+        export_network_for_povray, \
+        ClipShape, \
+        povray_clip_object_str, \
+        make_position_field, \
+        calcBulkTissueSourceTerm, \
+        make_vessel_volume_fraction_field, \
+        calc_vessel_boxcounts, \
+        run_vesselgen, \
+        vesselgen_generate_grid, \
+        vesselgen_generate_single, \
+        vesselgen_generate_symmetric, \
+        GetHealthyVesselWallThickness, \
+        CalcRelativeViscosity, \
+        CalcFahraeusEffect, \
+        CalcIntervascularInterpolationField_, \
+        SetupFieldLattice, \
+        PressureRadiusRelation, \
+        SumIsoSurfaceIntersectionWithVessels_, \
+        get_Murray2, \
+        get_Murray_scale, \
+        CalcViscosities, \
+        CalcConductivities'.split(',')
+    ]
 
 # CalcRelativeViscosityByTable, \
 # load functions from libkrebs_ into local namespace

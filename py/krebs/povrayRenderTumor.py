@@ -28,7 +28,9 @@ import os,sys
 from os.path import basename, splitext
 
 import krebsutils
+import numpy as np
 import povrayRenderVessels
+import povrayRenderCells
 #from povrayRenderVessels import *
 import povrayEasy
 import myutils
@@ -77,6 +79,7 @@ def addBulkTissueTumor(epv, tumorgroup, trafo, options):
       }""" % (value_bounds[0], (value_bounds[1]-value_bounds[0]), voldata_cells.name)
     #style = " texture { pigment { color rgb<1,0.8,0.3> }  finish { specular 0.3 }}"
     epv.addIsosurface(voldata_ls, 0., lambda : style, clip, style)
+
 
 
 
@@ -142,7 +145,7 @@ def renderScene(vesselgroup, tumorgroup, imagefn, options):
       else:
         povrayEasy.RenderImageWithOverlay(epv, imagefn+'.png', None, 'tumor', options)
       
-def render_different_data_types( vesselgroup, tumorgroup, imagefn, options):
+def render_different_data_types( vesselgroup, tumorgroup, imagefn, options, cell_group=None):
   filenamepostfix = ''
   labels = {
     'flow' : '$log_{10}$ Flow Rate',
@@ -178,7 +181,14 @@ def render_different_data_types( vesselgroup, tumorgroup, imagefn, options):
       if options.noOverlay:
         epv.render(imagefn)
       else:
-        povrayEasy.RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options)
+        if cell_group:
+          ''' convert data to color here'''
+          data_of_cells = np.asarray(cell_group['o2'])
+          cells_cm = povrayRenderCells.createColormapForCells(data_of_cells[:,0])
+          povrayRenderCells.addVBLCells(epv, cells_cm, cell_group, options)
+          povrayEasy.RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options,colormap_cells=cells_cm )
+        else:
+          povrayEasy.RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options)
 
 
 #if __name__ == '__main__':

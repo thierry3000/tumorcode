@@ -99,22 +99,23 @@ class Transform(object):
     self.center, self.w = np.asarray(center, dtype=float), w
 
 
-def transform_scalar(trafo, s):
-  return trafo.w * s
+  def transform_scalar(self, s):
+    return self.w * s
 
-def transform_position(trafo, p):
-  return (p - trafo.center) * trafo.w
 
-def transform_ld(trafo, ld):
-  ld = ld.Copy()
-  #arrange bounding box in 3by 2 manner
-  bbox = ld.worldBox.reshape(3,2)
-  #move bbox
-  moved_bbox = bbox[:,0] - trafo.center
-  
-  ld.SetOriginPosition(moved_bbox)
-  ld.Rescale(trafo.w)
-  return ld
+  def transform_position(self, p):
+    return (p - self.center) * self.w
+
+  def transform_ld(self, ld):
+    ld = ld.Copy()
+    #arrange bounding box in 3by 2 manner
+    bbox = ld.worldBox.reshape(3,2)
+    #move bbox
+    moved_bbox = bbox[:,0] - self.center
+    
+    ld.SetOriginPosition(moved_bbox)
+    ld.Rescale(self.w)
+    return ld
 
 def calc_centering_normalization_trafo(bbox_xxyyzz):
     '''
@@ -235,7 +236,7 @@ class EasyPovRayRender(object):
             ).write(self.pvfile)
     #self.pvfile.write("""sky_sphere { pigment {color rgb <1,1,1> } }""")
 
-
+  ''' calls the povray binary in the terminal '''
   def render(self, imgfn):
     # write
     #tf = mkstemp.File(suffix='.pov',prefix='mwpov_main',dir='.',text=True)
@@ -271,7 +272,7 @@ class EasyPovRayRender(object):
     self.clear()
     return imgfn
 
-
+  ''' deletes the temp files'''
   def clear(self):
     for tf in self.tempfiles:
       tf.remove()
@@ -337,8 +338,8 @@ class EasyPovRayRender(object):
       pos = vesselgraph['position']
       rad = vesselgraph.edges['radius']
       #print 'positions = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
-      pos = transform_position(trafo, pos)
-      rad = transform_scalar(trafo, rad)
+      pos = trafo.transform_position(pos)
+      rad = trafo.transform_scalar(rad)
       #print 'positions after trafo = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
       
       if 'vessel_clip' in options:
@@ -396,10 +397,10 @@ class EasyPovRayRender(object):
       #print 'write time: ', time.time(
 
   def addVesselTree(self, edges, pos, rad, style_object, clip_object, clip_style_object):
-    tf = self.makeTmpFile()
+    tempfile = self.makeTmpFile()
     krebsutils.export_network_for_povray(
-      edges, pos, rad, style_object, clip_style_object, clip_object, tf.filename)
-    self.pvfile.write("#include \"%s\"" % tf.filename)
+      edges, pos, rad, style_object, clip_style_object, clip_object, tempfile.filename)
+    self.pvfile.write("#include \"%s\"" % tempfile.filename)
 
 
   def declareVolumeData(self, data, worldbox, ld = None):
@@ -449,6 +450,70 @@ class EasyPovRayRender(object):
       pv.String('color_map\n{\n%s\n}' % s)
     ).write(self.pvfile)
 
+  
+                      
+  def addVBLCells(self, trafo, position, radius, colors_in_rgb , options):
+    
+    def addVBLCells_intern(self,position, radius, colors_in_rgb, style_object, clip_object, clip_style_object):
+      tempfile = self.makeTmpFile()
+      position = np.asarray(position, dtype=np.float32)
+      radius = np.asarray(radius, dtype=np.float32)
+      colors_in_rgb = np.asarray(colors_in_rgb, dtype=np.float32)
+      krebsutils.export_VBL_Cells_for_povray(
+      position, radius, colors_in_rgb, style_object, clip_style_object, clip_object, tempfile.filename)
+      self.pvfile.write("#include \"%s\"" % tempfile.filename)
+    
+    if 'vessel_clip' in options:
+      clip = clipFactory(options.vessel_clip)
+    else:
+      clip = clipFactory(None)
+      #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
+  
+    #edgecolors = vesselgraph.edges['colors']
+    #nodecolors = vesselgraph.nodes['colors']
+    
+    class Styler(object):
+#      @staticmethod
+#      def cell_style(i, a, b):
+#        #c = edgecolors[i]
+#        c = [1,0,0] #red
+#        return "MkStyle(<%0.2f,%0.2f,%0.2f>)" % tuple(c)
+      @staticmethod
+      def cell_style(i):
+        #print(data_color)
+        c = colors_in_rgb[i]
+        #c = [1,0,0] #red
+        return "MkStyleCell(<%0.2f,%0.2f,%0.2f>)" % tuple(c)
+    
+    if 'colored_slice' in options:
+      ClipStyler = Styler
+    else:
+      class ClipStyler(object):
+        styleString = "pigment { color rgb<%0.2f,%0.2f,%0.2f> }" % defaultCrossSectionColor
+#        @staticmethod
+#        def edge_style(i, a, b):
+#          return ClipStyler.styleString
+        @staticmethod
+        def cell_style(i):
+          return ClipStyler.styleString
+  #	  ambient 0.05 * c
+    self.pvfile.write("""
+      #macro MkStyleCell(c)
+      texture {
+  	pigment {
+  	  color rgb c
+  	}
+  	finish {
+  	  specular 0.1
+        ambient 1.
+  	}
+      }
+      #end
+      """)
+    position = trafo.transform_position(position)
+    radius = trafo.transform_scalar(radius)
+    
+    addVBLCells_intern(self,position, radius, colors_in_rgb, Styler, clip, ClipStyler)
 
   def addIsosurface(self, volumedata, level, style_object, clip_object, clip_style_object):
     vb = volumedata.value_bounds
@@ -560,7 +625,7 @@ def clipFactory(args):
 ##############################################################################
 ''' if cm=None, we only plot a sizebar'''
 #def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, wbbox, fontcolor = 'black', dpi = 90.):  
-def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename): 
+def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, colormap_cells=None): 
   '''
     overlays a small colorbar and adds a label on top of the image and writes it over the original location
   '''
@@ -617,6 +682,31 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename):
              transform=ax.transAxes,
              size=mytextsize*0.7,
              fontweight='bold')
+  if not colormap_cells==None:
+    ax3 = fig.add_axes([0.65, 0.05, 0.26, 0.018]) # left bottom width height
+    c2 = np.linspace(0, 1, 256).reshape(1,-1)
+    c2 = np.vstack((c2,c2))
+    ax3.imshow(c2, aspect='auto', cmap = colormap_cells.get_cmap(), vmin = 0, vmax = 1)
+    ax3.yaxis.set_visible(False)
+    xticks = np.linspace(0., 256., 5)
+    #xticklabels = [ myutils.f2s(v,prec=1) for v in np.linspace(*cm.get_clim(), num = 5) ]
+    ''' TODO:
+        border of colorbar 
+        still not resolution independent
+    '''
+    xticklabels = [ '%0.1f'%v for v in np.linspace(*colormap_cells.get_clim(), num = 5) ] 
+    
+    ax3.set(xticks = xticks)
+    ax3.set(xticklabels=xticklabels)
+    ax3.tick_params(labelsize=mytextsize/4, colors='black')
+    #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
+    
+    ax3.text(0.4,-0.09,label,
+             horizontalalignment='left',
+             verticalalignment='bottom',
+             transform=ax.transAxes,
+             size=mytextsize*0.7,
+             fontweight='bold')
   ''' length of ax is in dots
   how many dots correlates to 200mu m?
   1 pixel length im inch = 1/float(resx)/float(dpi)
@@ -657,11 +747,11 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename):
   fig.savefig(output_filename, dpi=dpi, bbox_inches=None ) # overwrite the original
 
 
-def RenderImageWithOverlay(epv, imagefn, colormap, label, options):
+def RenderImageWithOverlay(epv, imagefn, colormap, label, options, colormap_cells=None):
   tf = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True) 
   epv.render(tf.filename)
   #plotsettings = dict(myutils.iterate_items(kwargs, ['dpi','fontcolor','wbbox'], skip=True))    
-  OverwriteImageWithColorbar(options,tf.filename, colormap, label, output_filename = imagefn)
+  OverwriteImageWithColorbar(options,tf.filename, colormap, label, output_filename = imagefn, colormap_cells=colormap_cells)
 
 ''' try an common interface for data plotting '''
 def CreateScene2(vesselgroup, epv, graph, imagefn, options):
@@ -677,9 +767,15 @@ def CreateScene2(vesselgroup, epv, graph, imagefn, options):
     #epv.addLight(10*Vec3(1.7,1.2,2), 1., area=(4, 4, 3, 3), jitter=True)
     epv.addLight(10.*Vec3(1,0.5,2), 1.2)
     if cam == 'topdown_slice':
-      options.vessel_clip=('zslice', -301*trafo.w, 301*trafo.w)
-      options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
-      epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
+      if options.slice_pos:
+        print(trafo.w)
+        options.vessel_clip=('zslice', (options.slice_pos-200)*trafo.w, (options.slice_pos+200)*trafo.w)
+        #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+        epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
+      else:
+        options.vessel_clip=('zslice', -301*trafo.w, 301*trafo.w)
+        options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+        epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
     else:
       epv.setCamera((0,0,cam_distance_factor*0.5*(zsize*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
   else:
@@ -689,8 +785,13 @@ def CreateScene2(vesselgroup, epv, graph, imagefn, options):
     num_samples_small_light = 3
     epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
     epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
-    kwargs.update(vessel_clip = ('pie', 0.),
-                  tumor_clip = ('pie', -20*trafo.w))
+    #options.keys()
+    #print(options)
+    #print(options.vessel_clip)
+    options.vessel_clip = ('pie', 0.)
+    options.tumor_clip = ('pie', -20*trafo.w)
+    #options.update(vessel_clip = ('pie', 0.),
+    #              tumor_clip = ('pie', -20*trafo.w))
   #epv.addVesselTree2(epv, graph, trafo = trafo, options=options )
   epv.addVesselTree2(epv, graph, trafo = trafo, options=options )
 
