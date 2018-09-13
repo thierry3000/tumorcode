@@ -14,3 +14,6 @@ target_link_libraries(testH5Cpp "common;${myLibs};${Boost_RANDOM_LIBRARY};${HDF5
 add_executable(test_cluster_stackoverflow test_cluster_stackoverflow.cpp)
 target_link_libraries(test_cluster_stackoverflow "common;${myLibs}")
 
+add_executable(test_tumorcode_hdfio test_tumorcode_hdfio.cpp)
+target_link_libraries(test_tumorcode_hdfio "common;${myLibs};${Boost_RANDOM_LIBRARY}")
+

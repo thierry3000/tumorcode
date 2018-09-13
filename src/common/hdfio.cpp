@@ -69,7 +69,9 @@ H5::DataType getH5TypeFromCpp()
   }
   else if(typeid(T) == typeid(bool))
   {
-    thisWritingType = H5::PredType::NATIVE_CHAR;
+    //hdf5 is not supporting bit wise data!!!
+    // NATIVE_HBOOL is the same as H5::PredType::NATIVE_UINT8
+    thisWritingType = H5::PredType::NATIVE_HBOOL;
   }
   else if(typeid(T) == typeid(char))
   {
@@ -93,7 +95,8 @@ H5::DataType getH5TypeFromCpp()
   }
   else
   {
-    cout << "unsupported Template type in writeDataSetToGroup!" << endl;
+    cout << thisWritingType.fromClass() << endl;
+    cout << "unsupported Template type in getH5TypeFromCpp!" << endl;
     exit(1);
   }
   return thisWritingType;
@@ -1034,21 +1037,43 @@ H5::DataSet writeDataSetToGroup(H5::Group &g, const string &dataset_name, DynArr
 
 /** bool s work differently
  * 
- * untested!!!
+ * untested!!!, nice there is indeed a problem!!!
  * 
  */
 template<>
 void writeDataSetToGroup(H5::Group &g, const string &dataset_name, const std::vector<bool> &value)
 {
-  int sizeOfvector = value.size();
+  const int sizeOfvector = value.size();
   int rank = 2;
   hsize_t dims[rank];
   dims[0]=sizeOfvector;
   H5::DataType thisWritingType = getH5TypeFromCpp<bool>();
+  /**
+   * http://www.cplusplus.com/reference/vector/vector-bool/
+   * 
+   * The specialization has the same member functions as the unspecialized vector, 
+   * except data, emplace, and emplace_back, that are not present in this specialization.
+   * 
+   * The memory allocation of std::vector<bool> is not continous, 
+   * therefore .data() does not make any sense. We need to copy.
+   */
+  bool converted_value[sizeOfvector];
+  //converted_value.resize(sizeOfvector);
+  for(int i = 0; i< sizeOfvector; ++i)
+  {
+    if (value[i])
+    {
+      converted_value[i] = 1;
+    }
+    else
+    {
+      converted_value[i] = 0;
+    }
+  }
   dims[1] = 1;
 #ifndef NDEBUG
-  cout << "value[0]: " << value[0] << endl;
-  cout<< "writing std::vector: " << dataset_name << " to hdf5" << endl;
+  cout << "value[0]: " << converted_value[0] << endl;
+  cout<< "writing std::vector of type bool " << dataset_name << " to hdf5" << endl;
   cout << "we are writting data of size (" << dims[0] << ", " << dims[1] << "!" <<endl;
 #endif
   H5::DataSet ds;
@@ -1056,7 +1081,7 @@ void writeDataSetToGroup(H5::Group &g, const string &dataset_name, const std::ve
   {
     H5::DataSpace dataspace( rank, dims);
     ds = g.createDataSet(dataset_name, thisWritingType, dataspace);
-    ds.write(&value, thisWritingType, dataspace);
+    ds.write(&converted_value, thisWritingType, dataspace);
   }
   catch( H5::Exception &e)
   {
