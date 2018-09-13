@@ -394,7 +394,10 @@ def read_graph_(grp, *prop_names):
     not_found = set()
     for prop_name in prop_names:
         if prop_name in gn:
-            g.nodes[prop_name] = asarray(gn[prop_name])
+            if prop_name == 'pressure':
+              g.nodes[prop_name] = 7.5*asarray(gn[prop_name]) # to mmHg
+            else:
+              g.nodes[prop_name] = asarray(gn[prop_name])
         elif prop_name in ge:
             g.edges[prop_name] = asarray(ge[prop_name])
         else:

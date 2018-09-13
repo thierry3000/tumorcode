@@ -673,7 +673,7 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, col
     
     ax2.set(xticks = xticks)
     ax2.set(xticklabels=xticklabels)
-    ax2.tick_params(labelsize=mytextsize/4, colors='black')
+    ax2.tick_params(labelsize=mytextsize/4, colors=fontcolor)
     #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
     
     ax2.text(0.4,-0.09,label,
@@ -698,7 +698,7 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, col
     
     ax3.set(xticks = xticks)
     ax3.set(xticklabels=xticklabels)
-    ax3.tick_params(labelsize=mytextsize/4, colors='black')
+    ax3.tick_params(labelsize=mytextsize/4, colors=fontcolor)
     #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
     
     ax3.text(0.4,-0.09,label,

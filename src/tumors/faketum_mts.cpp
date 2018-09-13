@@ -818,6 +818,8 @@ void FakeTumMTS::FakeTumorSimMTS::writeVBLDataToHDF(H5::Group &h5_vbl)
   writeDataSetToGroup(h5_vbl, string("cyclinX"), tumorcode_pointer_to_currentCellsSystem->Get_cyclinX());
   writeDataSetToGroup(h5_vbl, string("NpRbk"), tumorcode_pointer_to_currentCellsSystem->Get_NpRbk());
   
+  writeDataSetToGroup(h5_vbl, string("isonAS"),tumorcode_pointer_to_currentCellsSystem->Get_isonAS());
+  writeDataSetToGroup(h5_vbl, string("isonCH"),tumorcode_pointer_to_currentCellsSystem->Get_isonCH());
   //writeDataSetToGroup(h5_vbl, string("DNA_spread"), tumorcode_pointer_to_currentCellsSystem->Get_DNA_spread());
   std::cout << "finished writeVBLDataToHDF" << std::endl;
 }

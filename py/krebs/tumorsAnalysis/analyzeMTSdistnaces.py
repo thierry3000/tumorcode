@@ -27,10 +27,17 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.mplot3d import Axes3D
 
+if __name__ == '__main__':
+  import os.path, sys
+  sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+  sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
+
+import povrayRenderCells
+
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 
-no_bins = 30
+no_bins = 50
 
 def distances_to_vessels(out_grp_name,pp):
   with h5py.File(goodArguments.vbl_simulation_output_filename, 'r') as h5_f:
@@ -42,9 +49,10 @@ def distances_to_vessels(out_grp_name,pp):
     fig1 = plt.figure()
     ax1 = fig1.add_subplot(111)
     ax1.plot(centers, counts*width)
-    ax1.set_xlabel(r'distance from nearest vessel')
+    ax1.set_xlabel(r'distance from nearest vessel / $\mu m')
     ax1.set_ylabel(r'probability')
-    ax1.set_title('file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+    if infos:
+      ax1.set_title('file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
     ax1.grid()
     if interactive:
       plt.show()
@@ -76,13 +84,27 @@ def hist_cell_endity_vs_distances_to_next_vessel(endity, out_grp_name,pp):
     distances_to_nearest_vessel = distances_to_nearest_vessel[:,0]
     endity_value_of_cells = np.asarray(h5_out_grp['cells/' + endity])
     endity_value_of_cells = endity_value_of_cells[:,0]
+    cell_radii = np.asarray(h5_out_grp['cells/cell_radii'])
+    cell_radii=cell_radii[:,0]
+    
+    if(endity == 'o2'):
+      endity_value_of_cells = povrayRenderCells.convert_to_mmHg(endity_value_of_cells, cell_radii)
+    #max_endity_value = np.max(endity_value_of_cells)
+    #endity_value_of_cells = endity_value_of_cells/max_endity_value
+    
     fig1 = plt.figure()
     ax1 = fig1.add_subplot(111)
     plt.hist2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins,norm=matplotlib.colors.LogNorm())
+    #ax1.hist2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins, normed=True,norm=matplotlib.colors.LogNorm())
     
-    plt.xlabel(r'distance from nearest vessel')
-    plt.ylabel(r' %s of cell' % endity)
-    plt.title('file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+    ax1.set_xlabel(r'distance from nearest vessel')
+    if endity == 'o2':
+      ax1.set_ylabel(r'$pO_2 / mmHg$')
+    else:
+      ax1.set_ylabel(r' %s of cell' % endity)
+    if infos:
+      fig1.set(title = 'file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+    #ax1.grid()
     plt.grid()
     plt.colorbar()
     if interactive:
@@ -99,26 +121,14 @@ def plot_cell_endity_vs_distances_to_next_vessel(endity, out_grp_name,pp):
     max_distance_to_nearest_vessel = np.max(distances_to_nearest_vessel)
     print('min: %f, max: %f' %(min_distance_to_nearest_vessel,max_distance_to_nearest_vessel))
     
-#    spread = np.random.rand(50) * 100
-#    center = np.ones(25) * 50
-#    flier_high = np.random.rand(10) * 100 + 100
-#    flier_low = np.random.rand(10) * -100
-#    data = np.concatenate((spread, center, flier_high, flier_low), 0)
-#    
-#    # basic plot
-#    plt.boxplot(data)    
-    
     endity_value_of_cells = np.asarray(h5_out_grp['cells/' + endity])
     endity_value_of_cells = endity_value_of_cells[:,0]
     cell_radii = np.asarray(h5_out_grp['cells/cell_radii'])
     cell_radii=cell_radii[:,0]
-    cell_o2_concentration = endity_value_of_cells/ (4/float(3)* np.pi*np.power(cell_radii,3))
-    volume_o2_ml = cell_o2_concentration/(1.429*1e9)
     
-    solubility = 3.1e-3 #ml O2/cm^3 mmHg
-    solubility = solubility*1e-12 #ml O2/mum^3 mmHg
     if(endity == 'o2'):
-      endity_value_of_cells = volume_o2_ml/solubility
+      endity_value_of_cells = povrayRenderCells.convert_to_mmHg(endity_value_of_cells, cell_radii)
+    
     max_endity_value_of_cells = np.max(endity_value_of_cells)
     min_endity_value_of_cells = np.min(endity_value_of_cells)
     
@@ -220,17 +230,24 @@ if __name__ == '__main__':
   parser.add_argument('--s',dest='vbl_simulation_output_filename', type=str, default='safe.h5', help='output file name in hdf5 format')
   parser.add_argument('--g',dest='output_grp_name', type=str, default='out0001', help='output group withing hdf5 file')
   interactive = False;
+  infos = False;
   goodArguments, otherArguments = parser.parse_known_args()
   
-  with PdfPages('analysisMTS_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name)) as pp:
-    pp.attach_note(r"$\beta$ ", positionRect=[-100,-100,0,0])
-    pp.attach_note(r'$\beta$ ')
-    pp.attach_note("klsdfjal")
-    
+#  pp.attach_note(r"$\beta$ ", positionRect=[-100,-100,0,0])
+#  pp.attach_note(r'$\beta$ ')
+#  pp.attach_note("klsdfjal")
+  
+  with PdfPages('analysisMTS_prop_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name)) as pp:
     distances_to_vessels(goodArguments, pp);
-#    cell_endities = ['o2', 'pH_ex', 'glucose_ex','cell_age','cell_no_neigh', 'cell_o2_consumption_rate', 'cell_phase', 'cell_phase_age','cell_radii']
-    cell_endities = ['o2','pH_ex','cell_radii']    
-    for cell_endity in cell_endities:
+  cell_endities = ['o2','pH_ex','cell_radii']
+  cell_endities = ['o2'] 
+  for cell_endity in cell_endities:
+    with PdfPages('analysisMTS_hist_%s_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename[:-3], cell_endity, goodArguments.output_grp_name)) as pp:
+      hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)
+      plot_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)
+      #    cell_endities = ['o2', 'pH_ex', 'glucose_ex','cell_age','cell_no_neigh', 'cell_o2_consumption_rate', 'cell_phase', 'cell_phase_age','cell_radii']
+    
+#    for cell_endity in cell_endities:
       #scatter_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)
       #hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)
-      plot_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)
+      #plot_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)

@@ -127,8 +127,10 @@ def renderScene(vesselgroup, tumorgroup, imagefn, options):
         if options.filteruncirculated:
           graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))        
         if 'colorfactory' in options:
+          print('colorfactory is in options')
           colorfactory = options.colorfactory
         else:
+          print('colorfactory not in options')
           colorfactory = make_pressure_color_arrays
         colorfactory(graph)
         #addVesselTree(epv, graph, trafo, vesselgroup = vesselgroup, options)
@@ -170,6 +172,7 @@ def render_different_data_types( vesselgroup, tumorgroup, imagefn, options, cell
     filenamepostfix = '_rlp'
   for data_name in options.datalist:
     if 'colorfactory' in options:
+      print('colorfactory in options')
       colors_factory = options.colorfactory
       colors_factory(graph)
     
@@ -181,11 +184,8 @@ def render_different_data_types( vesselgroup, tumorgroup, imagefn, options, cell
       if options.noOverlay:
         epv.render(imagefn)
       else:
-        if cell_group:
-          ''' convert data to color here'''
-          data_of_cells = np.asarray(cell_group['o2'])
-          cells_cm = povrayRenderCells.createColormapForCells(data_of_cells[:,0])
-          povrayRenderCells.addVBLCells(epv, cells_cm, cell_group, options)
+        if cell_group and options.cells:
+          cells_cm = povrayRenderCells.addVBLCells(epv, 'o2', cell_group, options)
           povrayEasy.RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options,colormap_cells=cells_cm )
         else:
           povrayEasy.RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options)

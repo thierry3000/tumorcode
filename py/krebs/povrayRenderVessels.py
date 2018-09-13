@@ -69,6 +69,7 @@ def make_pressure_color_arrays(vesselgraph):
     flags = flags[:,0]
     data = vesselgraph.nodes['pressure']
     data = data[:,0]
+    data = data * 7.5 # to mmHg
     num_nodes = len(vesselgraph.nodes['position'])
     nflags = krebsutils.edge_to_node_property(num_nodes, edges, flags, 'or')
 
