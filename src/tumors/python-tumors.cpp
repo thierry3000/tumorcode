@@ -52,9 +52,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
-#ifdef MILOTTI_MTS
+//#ifdef MILOTTI_MTS
 H5::H5File file;
-#endif
+//#endif
 //https://stackoverflow.com/questions/77005/how-to-automatically-generate-a-stacktrace-when-my-gcc-c-program-crashes
 void handler(int sig) 
 {
