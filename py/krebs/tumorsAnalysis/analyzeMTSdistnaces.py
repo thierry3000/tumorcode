@@ -27,20 +27,38 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.mplot3d import Axes3D
 
-import myutils
-
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 
 import povrayRenderCells
+import myutils
 
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 
 no_bins = 50
 
+def example_plot():
+    x_edges = np.arange(6)
+    y_edges = np.arange(6)
+    data = np.random.rand(340,2)*5
+    
+    ### using numpy.histogram2d
+    bin_values,_,__ = np.histogram2d(data[:,0],data[:,1],bins=(x_edges, y_edges) )
+    X, Y = np.meshgrid(x_edges,y_edges)
+    
+    fig, (ax,ax2) = plt.subplots(ncols=2)
+    ax.set_title("numpy.histogram2d \n + plt.pcolormesh")
+    ax.pcolormesh(X, Y, bin_values.T)
+    
+    ### using plt.hist2d
+    ax2.set_title("plt.hist2d")
+    ax2.hist2d(data[:,0],data[:,1],bins=(x_edges, y_edges))
+    
+    
+    plt.show()
 def distances_to_vessels(out_grp_name,pp):
   with h5py.File(goodArguments.vbl_simulation_output_filename, 'r') as h5_f:
     h5_out_grp = h5_f[goodArguments.output_grp_name]
@@ -97,7 +115,7 @@ class Hist2d_data(object):
         return (h, xedges, yedges)
       def write(hdf_cache_grp, data_name):
         this_out_grp = hdf_cache_grp.create_group(data_name)
-        (h, xedges, yedges, image) = create_2d_histo(endity)
+        (h, xedges, yedges) = create_2d_histo(endity)
         #(average_value, errors, distances) = sample_line_general('o2', this_out_grp_name, vein_parallel_p1, vein_parallel_p2)
         #group_of_single_timepoint = hdf_cache_grp.create_group(this_out_grp_name)
         this_out_grp.create_dataset('h', data=h)
@@ -110,8 +128,9 @@ class Hist2d_data(object):
 #        group_of_single_timepoint.create_dataset('average_po2', data=average_value)
 #        group_of_single_timepoint.create_dataset('average_po2_error', data=errors)
 #        group_of_single_timepoint.create_dataset('distances', data=distances)
-      
-      #f_cache.create_group('hist_2d_data')
+      if not 'hist_2d_data' in f_cache:
+        f_cache.create_group('hist_2d_data')
+          
       return myutils.hdf_data_caching(read, write, f_cache['hist_2d_data/'], this_out_grp_name)
     
 def create_2d_histo(endity):
@@ -126,9 +145,12 @@ def create_2d_histo(endity):
     
     if(endity == 'o2'):
       endity_value_of_cells = povrayRenderCells.convert_to_mmHg(endity_value_of_cells, cell_radii)
-    #(h, xedges, yedges, image) = plt.hist2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins,norm=matplotlib.colors.LogNorm())
-    (h, xedges, yedges, image) = np.histogram2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins,normed=True)
-    return (h, xedges, yedges, image)
+    #h, xedges, yedges, image) = plt.hist2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins,norm=matplotlib.colors.LogNorm())
+    hist_return = np.histogram2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins,normed=True)
+    h = hist_return[0]
+    xedges = hist_return[1]
+    yedges = hist_return[2]
+    return (h, xedges, yedges)
 
 def hist_cell_endity_vs_distances_to_next_vessel(endity, out_grp_name,pp):
   h, xedges, yedges = dataman.obtain_data('hist_2d_data', out_grp_name, endity)
@@ -136,39 +158,17 @@ def hist_cell_endity_vs_distances_to_next_vessel(endity, out_grp_name,pp):
   fig1 = plt.figure()
   ax1 = fig1.add_subplot(111)
   
-  #ax1.imshow(h, cmap=plt.cm.Reds, interpolation='none',extent=[np.min(xedges),np.max(xedges),np.min(yedges),np.max(yedges)] )
-  ax1.imshow(h, cmap=plt.cm.Reds, interpolation='none' )
-  #ax1.set_aspect(3)
-  #plt.hist2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins,norm=matplotlib.colors.LogNorm())
-  #ax1.hist2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins, normed=True,norm=matplotlib.colors.LogNorm())
-  
-  xtickslist=[]
+  X,Y = np.meshgrid(xedges,yedges)
+  im = ax1.pcolormesh(X,Y, h.T,norm=matplotlib.colors.LogNorm())
+  fig1.colorbar(im, ax=ax1)
   ax1.set_xlabel(r'distance from nearest vessel')
-  for atick in xedges:
-    print(atick)
-    xtickslist.append('%2i' %atick)
-  ytickslist=[]
-  for atick in yedges:
-    print(atick)
-    ytickslist.append('%2i' %atick)
-  #xedges_s = ['%f' % atick for atick in xedges]
-  my_dist=20;
-  x_tick_pos=np.arange(0,xedges[-1], my_dist)
-  print(x_tick_pos)
-  ax1.set_xticks(x_tick_pos)
-  used_x_ticks = xtickslist[0:my_dist:]
-  ax1.set_xticklabels(used_x_ticks)
-  ax1.set_yticklabels(ytickslist)
-  #ax1.set_yticks(yedges)
   if endity == 'o2':
-    ax1.set_ylabel(r'$pO_2 / mmHg$')
+      ax1.set_ylabel(r'$pO_2 / mmHg$')
   else:
     ax1.set_ylabel(r' %s of cell' % endity)
   if infos:
     fig1.set(title = 'file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
-  #ax1.grid()
-  #plt.grid()
-  #plt.colorbar()
+  
   if interactive:
     plt.show()
   else:
@@ -285,7 +285,6 @@ def plot_cell_endity_vs_distances_to_next_vessel(endity, out_grp_name,pp):
       
     '''WHAT ABOUT THE CELLS ON THE SURFACE AND NOT SURFACE?'''
     
-    
 if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Analyze MTS distances')  
@@ -312,8 +311,8 @@ if __name__ == '__main__':
   cell_endities = ['o2'] 
   for cell_endity in cell_endities:
     with PdfPages('analysisMTS_hist_%s_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename[:-3], cell_endity, goodArguments.output_grp_name)) as pp:
-      hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments.output_grp_name, pp)
-      #plot_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)
+      #hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments.output_grp_name, pp)
+      plot_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments, pp)
       #    cell_endities = ['o2', 'pH_ex', 'glucose_ex','cell_age','cell_no_neigh', 'cell_o2_consumption_rate', 'cell_phase', 'cell_phase_age','cell_radii']
     
 #    for cell_endity in cell_endities:
