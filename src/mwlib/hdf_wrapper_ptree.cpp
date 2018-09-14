@@ -91,7 +91,12 @@ void printObjectName( H5::H5Location &g, const H5std_string attr_name, void* ope
   }
 }
 
-#if H5_VERS_MINOR > 9
+// #if H5_VERS_MINOR < 9
+// #warning "at add_all_attributes_to_ptree"
+/** NOTE: this method change the API from 1.10.0 to 1.10.1
+ * 1.10.0 --> H5::H5Location
+ * 1.10.1 --> H5::H5Object
+ */
 void add_all_attributes_to_ptree( H5::H5Object &g, const H5std_string attr_name, void* p_to_user_data)
 {
   boost::property_tree::ptree *pt = static_cast<boost::property_tree::ptree *>(p_to_user_data);
@@ -109,14 +114,19 @@ void add_all_attributes_to_ptree( H5::H5Object &g, const H5std_string attr_name,
     e.printError();
   }
 }
-#else // H5_VERS_MINOR > 9
-void add_all_attributes_to_ptree( H5::H5Location &g, const H5std_string attr_name, void* p_to_user_data)
+
+void add_all_attributes_to_ptree( H5::H5Location &g, H5std_string attr_name, void* p_to_user_data)
 {
   boost::property_tree::ptree *pt = static_cast<boost::property_tree::ptree *>(p_to_user_data);
   try
   {
     std::string output_buffer; // I hope all ptree values are also strings
-    readAttrFromH5(g, attr_name, output_buffer);
+    /**
+     * now I hack the system like MW used to :-(
+     * this is really bad style, but it works!!!
+     */
+    H5::Group & g_ref = dynamic_cast<H5::Group&>(g);
+    readAttrFromH5(g_ref, attr_name, output_buffer);
 #ifndef NDEBUG
     std::cout << "adding " << attr_name << " : " << output_buffer << " to ptree." << std::endl;
 #endif
@@ -127,7 +137,6 @@ void add_all_attributes_to_ptree( H5::H5Location &g, const H5std_string attr_nam
     e.printError();
   }
 }
-#endif // H5_VERS_MINOR > 9
 
 
 void ReadHdfPtree(boost::property_tree::ptree &pt, H5::Group &f, HdfWritePtreeAs storage_mode)
