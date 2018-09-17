@@ -38,8 +38,11 @@ import myutils
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 
-no_bins = 50
+no_bins = 30
+max_distance_to_vessel = 150
 
+my_markers = ['o', 'v', 's','h', 'x', 'd']
+my_colors   = ['b', 'g', 'c', 'm', 'k', 'k']
 def example_plot():
     x_edges = np.arange(6)
     y_edges = np.arange(6)
@@ -64,12 +67,12 @@ def distances_to_vessels(out_grp_name,pp):
   with h5py.File(goodArguments.vbl_simulation_output_filename, 'r') as h5_f:
     h5_out_grp = h5_f[goodArguments.output_grp_name]
     distances_to_nearest_vessel = np.asarray(h5_out_grp['cells/distance_to_nearest_vessel'])
-    counts, bin_edges = np.histogram(distances_to_nearest_vessel, density=True)
+    counts, bin_edges = np.histogram(distances_to_nearest_vessel, bins=no_bins,density=True)
     width = bin_edges[1]-bin_edges[0]
     centers = (bin_edges[:-1] +bin_edges[1:])/2
     fig1 = plt.figure()
     ax1 = fig1.add_subplot(111)
-    ax1.plot(centers, counts*width)
+    ax1.plot(centers, counts*width, '*')
     ax1.set_xlabel(r'distance from nearest vessel / $\mu m')
     ax1.set_ylabel(r'probability')
     if infos:
@@ -79,7 +82,34 @@ def distances_to_vessels(out_grp_name,pp):
       plt.show()
     else:
       pp.savefig()
+
+def distances_to_vessels_for_multiple_group(out_grp_name,pp):
+  with h5py.File(goodArguments.vbl_simulation_output_filename, 'r') as h5_f:
+    
+    centers_list =[]
+    for aOutGroup in out_groups_to_consider:
+      h5_out_grp = h5_f[ aOutGroup]
+      distances_to_nearest_vessel = np.asarray(h5_out_grp['cells/distance_to_nearest_vessel'])
+      counts, bin_edges = np.histogram(distances_to_nearest_vessel, bins=no_bins,density=True)
+      width = bin_edges[1]-bin_edges[0]
+      centers = (bin_edges[:-1] +bin_edges[1:])/2
+      centers_list.append(centers)
       
+    fig1 = plt.figure()
+    ax1 = fig1.add_subplot(111)
+    abc=np.asarray(centers_list)
+    ax1.plot(abc.transpose(), counts*width, '*')
+    ax1.set_xlabel(r'distance from nearest vessel / $\mu m')
+    ax1.set_ylabel(r'probability')
+    ax1.legend(out_groups_to_consider)
+    if infos:
+      ax1.set_title('file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+    ax1.grid()
+    if interactive:
+      plt.show()
+    else:
+      pp.savefig()
+
 #def scatter_cell_endity_vs_distances_to_next_vessel(endity, out_grp_name,pp):
 #  with h5py.File(goodArguments.vbl_simulation_output_filename, 'r') as h5_f:
 #    h5_out_grp = h5_f[goodArguments.output_grp_name]
@@ -130,7 +160,7 @@ class Hist2d_data(object):
 #        group_of_single_timepoint.create_dataset('average_po2', data=average_value)
 #        group_of_single_timepoint.create_dataset('average_po2_error', data=errors)
 #        group_of_single_timepoint.create_dataset('distances', data=distances)
-      possible_hdf_group_name = 'hist_2d_data_bins_%s/' % no_of_bins
+      possible_hdf_group_name = '%s/hist_2d_data_bins_%s/' % (this_out_grp_name, no_of_bins)
       possible_hdf_group_name = possible_hdf_group_name+'/' + endity
       if not possible_hdf_group_name in f_cache:
         f_cache.create_group(possible_hdf_group_name)
@@ -148,7 +178,12 @@ def create_2d_histo(endity):
     if(endity == 'o2'):
       endity_value_of_cells = povrayRenderCells.convert_to_mmHg(endity_value_of_cells, cell_radii)
     #h, xedges, yedges, image) = plt.hist2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins,norm=matplotlib.colors.LogNorm())
-    hist_return = np.histogram2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins,normed=True)
+    if 'max_distance_to_vessel' in globals():
+      ymin=np.min(endity_value_of_cells)
+      ymax=np.max(endity_value_of_cells)
+      hist_return = np.histogram2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins,normed=True, range=[[0, max_distance_to_vessel],[ymin,ymax]])
+    else:
+      hist_return = np.histogram2d(distances_to_nearest_vessel, endity_value_of_cells, bins = no_bins,normed=True)
     h = hist_return[0]
     xedges = hist_return[1]
     yedges = hist_return[2]
@@ -177,13 +212,13 @@ def hist_cell_endity_vs_distances_to_next_vessel(endity, out_grp_name, no_of_bin
     pp.savefig()
 
 class Boxplot_data(object):
-  keywords = ['boxplot_data']
+  keywords = ['boxplot_data', 'boxplot_data_multiple']
   
   def obtain_data(self, dataman, dataname, *args):
     if dataname == 'boxplot_data':
       print(args)
-      endity = args[0]
-      this_out_grp_name =args[1]
+      this_out_grp_name =args[0]
+      endity = args[1]
       no_of_bins = args[2]
       def read(hdf_cache_grp, data_name):
         print('read data at: %s' %hdf_cache_grp.name)
@@ -201,10 +236,47 @@ class Boxplot_data(object):
         #group_of_single_timepoint = hdf_cache_grp.create_group(this_out_grp_name)
         for (data_around, center_pos) in zip(big_data, my_x_labels):
           proper_string = '%03i' % (int)(center_pos)
+          print(proper_string)
           this_out_grp.create_dataset(proper_string, data=data_around)
         print('created data at: %s' % this_out_grp.name)
 
-      possible_hdf_group_name = 'box_plot_data_bins_%s/' % no_of_bins
+      possible_hdf_group_name = '%s/box_plot_data_bins_%s/' % (this_out_grp_name,no_of_bins)
+      possible_hdf_group_name = possible_hdf_group_name+'/' + endity
+      if not possible_hdf_group_name in f_cache:
+        f_cache.create_group(possible_hdf_group_name)
+          
+      #return myutils.hdf_data_caching(read, write, f_cache[possible_hdf_group_name], this_out_grp_name)
+      return myutils.hdf_data_caching(read, write, f_cache, possible_hdf_group_name)
+    if dataname == 'boxplot_data_multiple':
+      print(args)
+      multiple_out_grp_names =args[0]
+      endity = args[1]
+      no_of_bins = args[2]
+      def read(hdf_cache_grp, data_name):
+        print('read data at: %s' %hdf_cache_grp.name)
+        print('data_name: %s ' % data_name)
+        big_big_data=dict()
+        
+        for aOutGroup in multiple_out_grp_names:
+          big_big_data[aOutGroup] = list()
+          x_labels = list()
+          for the_key in hdf_cache_grp[data_name+'/'+aOutGroup].keys():
+            big_big_data[aOutGroup].append(np.asarray(hdf_cache_grp[data_name+'/'+aOutGroup][the_key]))
+            x_labels.append(str(the_key))
+        return (big_big_data,x_labels)
+      def write(hdf_cache_grp, data_name):
+        for this_out_grp_name in multiple_out_grp_names:
+          this_out_grp = hdf_cache_grp.create_group(data_name+'/'+this_out_grp_name)
+          (big_data, my_x_labels) = create_box_plot(this_out_grp_name, endity, no_of_bins)
+        #(average_value, errors, distances) = sample_line_general('o2', this_out_grp_name, vein_parallel_p1, vein_parallel_p2)
+        #group_of_single_timepoint = hdf_cache_grp.create_group(this_out_grp_name)
+          for (data_around, center_pos) in zip(big_data, my_x_labels):
+            proper_string = '%03i' % (int)(center_pos)
+            #print(proper_string)
+            this_out_grp.create_dataset(proper_string, data=data_around)
+        print('created data at: %s' % this_out_grp.name)
+
+      possible_hdf_group_name = 'box_plot_data_bins_%s_multiple/' % (no_of_bins)
       possible_hdf_group_name = possible_hdf_group_name+'/' + endity
       if not possible_hdf_group_name in f_cache:
         f_cache.create_group(possible_hdf_group_name)
@@ -221,6 +293,10 @@ def create_box_plot(this_out_grp_name, endity, no_of_bins):
     max_distance_to_nearest_vessel = np.max(distances_to_nearest_vessel)
     print('min: %f, max: %f' %(min_distance_to_nearest_vessel,max_distance_to_nearest_vessel))
     
+    if 'max_distance_to_vessel' in globals():
+      min_distance_to_nearest_vessel= 0.
+      max_distance_to_nearest_vessel= max_distance_to_vessel
+      
     endity_value_of_cells = np.asarray(h5_out_grp['cells/' + endity])
     endity_value_of_cells = endity_value_of_cells[:,0]
     cell_radii = np.asarray(h5_out_grp['cells/cell_radii'])
@@ -256,7 +332,8 @@ def create_box_plot(this_out_grp_name, endity, no_of_bins):
 #    good_indexes = np.where(endity_value_of_cells>=min_distance_to_nearest_vessel)    
     print('found %i indeces for %f' % (len(good_indexes[0]), a_lower_bound))
     data_on_this = endity_value_of_cells[good_indexes]
-    print('min: %f, max: %f' % (np.min(data_on_this),np.max(data_on_this)))
+    if(len(data_on_this)>0):
+      print('min: %f, max: %f' % (np.min(data_on_this),np.max(data_on_this)))
     big_data.append(endity_value_of_cells[good_indexes])
     my_x_labels.append('%1.0f' % float(a_lower_bound+0.5*diff))
   return (big_data, my_x_labels)
@@ -270,14 +347,15 @@ def plot_cell_endity_vs_distances_to_next_vessel(out_grp_name,endity, no_of_bins
   ax1.boxplot(big_data)
   ax1.set_xticklabels(x_ticks_labels,rotation=75)
   ax1.set_xticks(np.arange(len(x_ticks_labels))+1)
-  if endity == 'o2':
-    ax1.set_ylabel(r'pO2 / mmHg')
-    ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
-    
-  if endity == 'pH_ex':
-    ax1.set_ylabel(r'pH')
-    ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
-  ax1.set(title='file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+  if infos:
+    if endity == 'o2':
+      ax1.set_ylabel(r'pO2 / mmHg')
+      ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
+      
+    if endity == 'pH_ex':
+      ax1.set_ylabel(r'pH')
+      ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
+    ax1.set(title='file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
   ax1.grid(color='k', linestyle=':', linewidth=0.5)
   pp.savefig()    
   
@@ -324,7 +402,38 @@ def plot_cell_endity_vs_distances_to_next_vessel(out_grp_name,endity, no_of_bins
 #  pp.savefig()  
       
   '''WHAT ABOUT THE CELLS ON THE SURFACE AND NOT SURFACE?'''
-    
+def plot_cell_endity_vs_distances_to_next_vessel_multiple_times(multiple_out_grp_names, endity, no_of_bins,pp):
+  big_data, x_ticks_labels = dataman.obtain_data('boxplot_data_multiple', multiple_out_grp_names, endity, no_of_bins)
+  fig1 = plt.figure()
+  ax1 = fig1.add_subplot(111)
+  #ax1.scatter(distances_to_nearest_vessel[0:1000], endity_value_of_cells[0:1000])
+  ax1.boxplot(big_data[multiple_out_grp_names[-1]])
+  ax1.set_color_cycle(my_colors)
+  #ax1.set_marker_cycle(my_markers)
+  for (i,outGrpName) in enumerate(multiple_out_grp_names[0:-1]):
+    list_of_avg=list()
+    patchList = list()
+    for aDataEntry in big_data[outGrpName]:
+      this_avg= np.average(aDataEntry)
+      print(this_avg)
+      list_of_avg.append(this_avg)
+    ax1.plot(list_of_avg, linestyle='None', marker=my_markers[i], label='%s hours' % outGrpName[4:])
+  ax1.set_xticklabels(x_ticks_labels,rotation=75)
+  ax1.set_xticks(np.arange(len(x_ticks_labels))+1)
+  #legendlabel = ['%s hours' % entry[4:] for entry in multiple_out_grp_names]
+  ax1.legend()
+  if infos:
+    if endity == 'o2':
+      ax1.set_ylabel(r'pO2 / mmHg')
+      ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
+      
+    if endity == 'pH_ex':
+      ax1.set_ylabel(r'pH')
+      ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
+    ax1.set(title='file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+  ax1.grid(color='k', linestyle=':', linewidth=0.5)
+  pp.savefig()  
+  
 if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Analyze MTS distances')  
@@ -334,6 +443,15 @@ if __name__ == '__main__':
   infos = False;
   goodArguments, otherArguments = parser.parse_known_args()
   
+  
+  out_groups_to_consider= ['out0%i' % aentry for aentry in np.arange(280, 581, 100)]
+  ''' get base line for distances
+      to use the individual line commet this
+  '''
+  with h5py.File(goodArguments.vbl_simulation_output_filename, 'r') as h5_f:
+    h5_out_grp = h5_f[ out_groups_to_consider[-1]]
+    distances_to_nearest_vessel_latest = np.asarray(h5_out_grp['cells/distance_to_nearest_vessel'])
+    max_distance_to_vessel = np.max(distances_to_nearest_vessel_latest)
   
   ''' begin of code '''
   '''register a clases at data manager'''
@@ -346,10 +464,13 @@ if __name__ == '__main__':
   #  pp.attach_note("klsdfjal")
     
     with PdfPages('analysisMTS_prop_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name)) as pp:
-      distances_to_vessels(goodArguments, pp);
+      #distances_to_vessels(goodArguments, pp);
+      distances_to_vessels_for_multiple_group(goodArguments, pp);
     cell_endities = ['o2','pH_ex','cell_radii']
     #cell_endities = ['o2'] 
     for cell_endity in cell_endities:
-      with PdfPages('analysisMTS_hist_%s_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename[:-3], cell_endity, goodArguments.output_grp_name)) as pp:
-        hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments.output_grp_name, no_bins,pp)
-        plot_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments.output_grp_name, no_bins,pp)
+#      with PdfPages('analysisMTS_hist_%s_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename[:-3], cell_endity, goodArguments.output_grp_name)) as pp:
+#        hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments.output_grp_name, no_bins,pp)
+      with PdfPages('analysisMTS_boxplot_%s_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename[:-3], cell_endity, goodArguments.output_grp_name)) as pp:
+        #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
+        plot_cell_endity_vs_distances_to_next_vessel_multiple_times(out_groups_to_consider,cell_endity,no_bins,pp)
