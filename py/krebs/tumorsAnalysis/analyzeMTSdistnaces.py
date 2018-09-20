@@ -99,11 +99,12 @@ def distances_to_vessels_for_multiple_group(out_grp_name,pp):
     ax1 = fig1.add_subplot(111)
     abc=np.asarray(centers_list)
     ax1.plot(abc.transpose(), counts*width, '*')
-    ax1.set_xlabel(r'distance from nearest vessel / $\mu m')
-    ax1.set_ylabel(r'probability')
-    ax1.legend(out_groups_to_consider)
+    
+    ax1.legend(out_groups_to_hours(out_groups_to_consider))
     if infos:
-      ax1.set_title('file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+      ax1.set_xlabel(r'distance from nearest vessel / $\mu m$')
+      ax1.set_ylabel(r'probability')
+      #ax1.set_title('file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
     ax1.grid()
     if interactive:
       plt.show()
@@ -417,34 +418,135 @@ def plot_cell_endity_vs_distances_to_next_vessel_multiple_times(multiple_out_grp
       this_avg= np.average(aDataEntry)
       print(this_avg)
       list_of_avg.append(this_avg)
-    ax1.plot(list_of_avg, linestyle='None', marker=my_markers[i], label='%s hours' % outGrpName[4:])
+    ax1.plot(list_of_avg, linestyle='None', marker=my_markers[i], label='%s h' % outGrpName[4:])
   ax1.set_xticklabels(x_ticks_labels,rotation=75)
   ax1.set_xticks(np.arange(len(x_ticks_labels))+1)
   #legendlabel = ['%s hours' % entry[4:] for entry in multiple_out_grp_names]
   ax1.legend()
   if infos:
+    ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
     if endity == 'o2':
-      ax1.set_ylabel(r'pO2 / mmHg')
-      ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
+      ax1.set_ylabel(r'pO2 / $mmHg$')
       
     if endity == 'pH_ex':
       ax1.set_ylabel(r'pH')
-      ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
-    ax1.set(title='file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+    
+    if endity == 'cell_radii':
+      ax1.set_ylabel(r'radius of cells/ $\mu m$')
+      
+    
+    #ax1.set(title='file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
   ax1.grid(color='k', linestyle=':', linewidth=0.5)
   pp.savefig()  
+
+
+class Dev_from_sphere_data(object):
+  keywords = ['dev_from_sphere']
   
+  def obtain_data(self, dataman, dataname, *args):
+    if dataname == 'dev_from_sphere':
+      print(args)
+      this_out_grp_name =args[0]
+      no_of_bins = args[1]
+      rangeMin = args[2]
+      rangeMax = args[3]
+      def read(hdf_cache_grp, data_name):
+        print('read data at: %s' %hdf_cache_grp.name)
+        print('data_name: %s ' % data_name)
+        hist_data = np.asarray(hdf_cache_grp[data_name + '/hist_data'])
+        hist_edges= np.asarray(hdf_cache_grp[data_name + '/hist_edges'])
+        return (hist_data,hist_edges)
+      def write(hdf_cache_grp, data_name):
+        with h5py.File(goodArguments.vbl_simulation_output_filename, 'r') as h5_f:
+          isonAS = np.asarray(h5_f[this_out_grp_name + '/vbl/isonAS'], dtype=bool)
+          isonAS = isonAS[:,0]
+          pos = np.asarray(h5_f[this_out_grp_name +'/cells/cell_center_pos'])
+          dist_to_center = np.sqrt(np.sum(np.power(pos,2),1))
+          hist, bin_edges = np.histogram(dist_to_center[isonAS], bins=no_of_bins, range=[rangeMin, rangeMax])
+          #print(pos)
+
+        this_out_grp = hdf_cache_grp.create_group(data_name)
+        this_out_grp.create_dataset('hist_data', data=hist)
+        this_out_grp.create_dataset('hist_edges', data=bin_edges)
+        print('created data at: %s' % this_out_grp.name)
+
+      possible_hdf_group_name = '%s/dev_from_sphere_%s/' % (this_out_grp_name,no_of_bins)
+      #possible_hdf_group_name = possible_hdf_group_name+'/' + endity
+      if not possible_hdf_group_name in f_cache:
+        f_cache.create_group(possible_hdf_group_name)
+          
+      #return myutils.hdf_data_caching(read, write, f_cache[possible_hdf_group_name], this_out_grp_name)
+      return myutils.hdf_data_caching(read, write, f_cache, possible_hdf_group_name)
+    
+
+      possible_hdf_group_name = 'box_plot_data_bins_%s_multiple/' % (no_of_bins)
+      possible_hdf_group_name = possible_hdf_group_name+'/' + endity
+      if not possible_hdf_group_name in f_cache:
+        f_cache.create_group(possible_hdf_group_name)
+          
+      #return myutils.hdf_data_caching(read, write, f_cache[possible_hdf_group_name], this_out_grp_name)
+      return myutils.hdf_data_caching(read, write, f_cache, possible_hdf_group_name)
+def plot_dev_from_sphere_multiple_times(multiple_out_grp_names, no_of_bins,pp):
+  rangeMin = 0.0
+  rangeMax = 400.5
+  fig1 = plt.figure()
+  #multiple_out_grp_names = [multiple_out_grp_names[-3]]
+  for aOutGroupName in multiple_out_grp_names:
+  #aOutGroupName = multiple_out_grp_names[0] 
+    hist_data, bin_edges = dataman.obtain_data('dev_from_sphere', aOutGroupName, 1000, rangeMin, rangeMax)
+    bin_centers = bin_edges[0:-1]+0.5*(bin_edges[1:]-bin_edges[:-1])
+  
+    ax1 = fig1.add_subplot(111)
+  #ax1.scatter(distances_to_nearest_vessel[0:1000], endity_value_of_cells[0:1000])
+  #ax1.boxplot(big_data[multiple_out_grp_names[-1]])
+  #ax1.set_color_cycle(my_colors)
+  #ax1.set_marker_cycle(my_markers)
+  
+    ax1.plot(bin_centers,hist_data, label='%s h' % aOutGroupName[4:])
+#  for (i,outGrpName) in enumerate(multiple_out_grp_names[0:-1]):
+#    list_of_avg=list()
+#    patchList = list()
+#    for aDataEntry in big_data[outGrpName]:
+#      this_avg= np.average(aDataEntry)
+#      print(this_avg)
+#      list_of_avg.append(this_avg)
+#    ax1.plot(list_of_avg, linestyle='None', marker=my_markers[i], label='%s h' % outGrpName[4:])
+    
+  #ax1.set_xticklabels(x_ticks_labels,rotation=75)
+  #ax1.set_xticks(np.arange(len(x_ticks_labels))+1)
+  #legendlabel = ['%s h' % entry[4:] for entry in multiple_out_grp_names]
+  ax1.legend()
+  if infos:
+    ax1.set_xlabel(r' distance from center/ $\mu m$')
+    ax1.set_ylabel(r' number of found cells')
+      
+    
+    #ax1.set(title='file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
+  ax1.grid(color='k', linestyle=':', linewidth=0.5)
+  pp.savefig()
+def create_file_name_multiple_out(out_groups_to_consider):
+  string_to_append= ''
+  for aGroup in out_groups_to_consider:
+    string_to_append=string_to_append+'_%s' % aGroup[-4:]
+  return string_to_append[1:]
+def out_groups_to_hours(outGroups):
+  return ['%s h' % aGroup[-3:] for aGroup in outGroups]
 if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Analyze MTS distances')  
   parser.add_argument('--s',dest='vbl_simulation_output_filename', type=str, default='safe.h5', help='output file name in hdf5 format')
   parser.add_argument('--g',dest='output_grp_name', type=str, default='out0001', help='output group withing hdf5 file')
   interactive = False;
-  infos = False;
+  infos = True;
   goodArguments, otherArguments = parser.parse_known_args()
   
   
-  out_groups_to_consider= ['out0%i' % aentry for aentry in np.arange(280, 581, 100)]
+  go_down = np.arange(515,116, -50)
+  go_right = go_down[::-1]
+#  go_right = np.arange(280, 581, 100)
+  
+  out_groups_to_consider= ['out0%i' % aentry for aentry in go_right]
+  grop_string_for_multiple = create_file_name_multiple_out(out_groups_to_consider)
   ''' get base line for distances
       to use the individual line commet this
   '''
@@ -455,15 +557,19 @@ if __name__ == '__main__':
   
   ''' begin of code '''
   '''register a clases at data manager'''
-  with h5py.File('cache_'+ goodArguments.vbl_simulation_output_filename, 'a') as f_cache:
-    dataman = myutils.DataManager(20, [Hist2d_data(), Boxplot_data()])
+  print(os.path.basename(goodArguments.vbl_simulation_output_filename))
+  print(grop_string_for_multiple)
+  print(out_groups_to_hours(out_groups_to_consider))
+  #print(os.path.dirname(goodArguments.vbl_simulation_output_filename))
+  with h5py.File('cache_'+ os.path.basename(goodArguments.vbl_simulation_output_filename), 'a') as f_cache:
+    dataman = myutils.DataManager(20, [Hist2d_data(), Boxplot_data(),Dev_from_sphere_data()])
     
     
   #  pp.attach_note(r"$\beta$ ", positionRect=[-100,-100,0,0])
   #  pp.attach_note(r'$\beta$ ')
   #  pp.attach_note("klsdfjal")
     
-    with PdfPages('analysisMTS_prop_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name)) as pp:
+    with PdfPages('analysisMTS_prop_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], grop_string_for_multiple)) as pp:
       #distances_to_vessels(goodArguments, pp);
       distances_to_vessels_for_multiple_group(goodArguments, pp);
     cell_endities = ['o2','pH_ex','cell_radii']
@@ -471,6 +577,10 @@ if __name__ == '__main__':
     for cell_endity in cell_endities:
 #      with PdfPages('analysisMTS_hist_%s_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename[:-3], cell_endity, goodArguments.output_grp_name)) as pp:
 #        hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments.output_grp_name, no_bins,pp)
-      with PdfPages('analysisMTS_boxplot_%s_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename[:-3], cell_endity, goodArguments.output_grp_name)) as pp:
-        #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
-        plot_cell_endity_vs_distances_to_next_vessel_multiple_times(out_groups_to_consider,cell_endity,no_bins,pp)
+      if False:
+        with PdfPages('analysisMTS_boxplot_%s_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], cell_endity, grop_string_for_multiple)) as pp:
+          #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
+          plot_cell_endity_vs_distances_to_next_vessel_multiple_times(out_groups_to_consider,cell_endity,no_bins,pp)
+    with PdfPages('analysisMTS_dev_from_sphere_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], grop_string_for_multiple)) as pp:
+      #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
+      plot_dev_from_sphere_multiple_times(out_groups_to_consider,no_bins,pp)
