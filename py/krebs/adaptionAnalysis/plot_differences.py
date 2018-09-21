@@ -37,7 +37,7 @@ if __name__ == '__main__':
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 import myutils
 
-def plot_differences(grp1,grp2, quantity,pp,interactive_output=True):
+def plot_differences(grp1,grp2, quantity,pp):
   if quantity == 'pressure':
     quantity_1 = grp1['nodes/pressure']
     quantity_2 = grp2['nodes/pressure']
@@ -68,15 +68,15 @@ def plot_differences(grp1,grp2, quantity,pp,interactive_output=True):
     plt.show()
   plt.close()
   
-def plot_hists(grp1,grp2, quantity,pp,interactive_output=True):
+def plot_hists(grp1,grp2, quantity,pp):
   no_bins=30
   fig2 = plt.figure()
   fig2.suptitle(quantity)
   ax1 = fig2.add_subplot(211)
   ax2 = fig2.add_subplot(212)
   if quantity == 'pressure':
-    quantity_1 = grp1['nodes/pressure']
-    quantity_2 = grp2['nodes/pressure']
+    quantity_1 = np.asarray(grp1['nodes/pressure'])
+    quantity_2 = np.asarray(grp2['nodes/pressure'])
     ax1.hist(quantity_1,no_bins)
     ax1.set_title('before')
     ax2.hist(quantity_2,no_bins)
@@ -84,8 +84,8 @@ def plot_hists(grp1,grp2, quantity,pp,interactive_output=True):
     
     
   else:
-    quantity_1 = grp1['edges/'+quantity]
-    quantity_2 = grp2['edges/'+quantity]
+    quantity_1 = np.asarray(grp1['edges/'+quantity])
+    quantity_2 = np.asarray(grp2['edges/'+quantity])
     ax1.hist(quantity_1,no_bins)
     ax1.set_title('before')
     ax2.hist(quantity_2,no_bins)
@@ -99,21 +99,21 @@ def plot_hists(grp1,grp2, quantity,pp,interactive_output=True):
   pp.savefig()
   if interactive_output:
     plt.show()
-  plt.close()
+  #plt.close()
     
 if __name__ == '__main__':
-  filenames = sys.argv[1:]
+  filebefore = sys.argv[1]
+  fileafter = sys.argv[2]
+  interactive_output=False;
   #filename= 'mesentry_secomb_adption_p_mesentry_subset.h5'
-  for fn in filenames:
-    f = h5py.File(fn)
-    vesselgrp_before = f['/adaption/recomputed']
-    vesselgrp_after = f['/adaption/vessels_after_adaption']
-    common_filename = os.path.splitext(os.path.basename(fn))[0]
-    pp = PdfPages('diff_summary' + '_' + common_filename + '.pdf')
-    for quan in 'radius flow pressure'.split():    
-      
-      #plot_differences(vesselgrp_before,vesselgrp_after,quan,pp, False)
-      plot_hists(vesselgrp_before,vesselgrp_after,quan,pp, False)
-      
-    f.close
-    pp.close()
+  with h5py.File(filebefore,'r') as f_before:
+    with h5py.File(fileafter,'r') as f_after:
+ 
+      vesselgrp_before = f_before['vessels']
+      vesselgrp_after = f_after['vessels_after_adaption']
+      common_filename = os.path.splitext(os.path.basename(filebefore))[0]
+      with PdfPages('diff_summary' + '_' + common_filename + '.pdf') as pp:
+        for quan in 'radius flow pressure'.split():    
+        
+          plot_differences(vesselgrp_before,vesselgrp_after,quan,pp)
+          #plot_hists(vesselgrp_before,vesselgrp_after,quan,pp, False)

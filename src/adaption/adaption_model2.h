@@ -100,7 +100,7 @@ namespace Adaption
     double tum_manitulate_s1,tum_manitulate_s2,tum_manitulate_s3,tum_manitulate_s4,tum_manitulate_s5;
     bool write2File;
     string outputFileName;
-    
+    string parameterSetName;
     double radMin_for_kill;
     uint boundary_Condition_handling;
     double a_pressure;
@@ -118,6 +118,7 @@ namespace Adaption
     template<class Archive>
       void serialize(Archive &ar, const unsigned int version)
       {
+  ar & parameterSetName;
 	ar & k_c;
 	ar & k_m;
 	ar & k_s;

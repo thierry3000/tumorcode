@@ -326,6 +326,7 @@ Parameters::Parameters()
   radMin_for_kill = 2.5;
   write2File = true;
   outputFileName = "empty";
+  parameterSetName = "";
   boundary_Condition_handling = KEEP;
   a_pressure = 1.8;
   a_flow = 200000.;
@@ -362,6 +363,7 @@ void Parameters::assign(const ptree& pt)
   a_pressure = pt.get<double>("a_pressure", 42.);
   a_flow = pt.get<double>("a_flow", 42.);
   write2File = pt.get<bool>("write2File", true);
+  parameterSetName = pt.get<string>("name", "parameterSetName");
   outputFileName = pt.get<string>("outputFileName", "empty");
   pop = pt.get<int>("pop",5);
   individuals = pt.get<int>("individuals",42);
@@ -397,6 +399,7 @@ ptree Parameters::as_ptree() const
 		   ("a_flow", a_flow)
 		   ("write2File", write2File)
        ("outputFileName", outputFileName)
+       ("parameterSetName", parameterSetName)
 		   ("pop", pop)
 		   ("individuals", individuals)
 		   ("opt_iter", opt_iter)
@@ -1731,9 +1734,10 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Param
       }
       else
       {
+        cout << " no outputFileName found!!! --> creating one" << endl;
         string stripped = RemoveAllExtensions(params.vesselFileName);
         stripped = RemovePath(stripped);
-        f= H5::H5File( "adaption_" + stripped +".h5", H5F_ACC_TRUNC);
+        f= H5::H5File( "adaption_" + params.parameterSetName +"_" + stripped +".h5", H5F_ACC_TRUNC);
       }
       H5::Group out_ = f.openGroup("/");
       H5::Group params_;

@@ -163,9 +163,23 @@ def make_any_color_arrays(vesselgraph, data_name):
     unmapped_range = edgedata.min(), edgedata.max()
     edgedata = np.log10(edgedata)
     nodedata = np.log10(nodedata)
-    p0 = -4#np.amin(edgedata)
-    p1 = -1#np.amax(edgedata)
-    cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.spectral)
+    #p0 = -4
+    #p1 = -1
+    p0 = np.amin(edgedata)
+    p1 = np.amax(edgedata)
+    cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.Spectral)
+    cm.set_clim(p0, p1)
+    edgecolors[mask[:,0]] = colors(edgedata)
+    nodecolors[nmask[:,0]] = colors(nodedata)
+  elif data_name == 'radius':
+    mask = mask & (edgedata>0)
+    nmask = nmask & (nodedata>0)
+    edgedata = edgedata[mask]
+    nodedata = nodedata[nmask]
+    unmapped_range = edgedata.min(), edgedata.max()
+    cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.Spectral)
+    p0 = np.amin(edgedata)
+    p1 = np.amax(edgedata)
     cm.set_clim(p0, p1)
     edgecolors[mask[:,0]] = colors(edgedata)
     nodecolors[nmask[:,0]] = colors(nodedata)
@@ -211,8 +225,8 @@ def make_any_color_arrays(vesselgraph, data_name):
     p1 = np.amax(edgedata)
     cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.jet)
     cm.set_clim(p0, p1)
-    edgecolors[mask] = colors(edgedata)
-    nodecolors[nmask] = colors(nodedata)
+    edgecolors[mask[:,0]] = colors(edgedata)
+    nodecolors[nmask[:,0]] = colors(nodedata)
   elif data_name == 'metabolicSignal':
     edgedata = edgedata[mask]
     nodedata = nodedata[nmask]
@@ -221,8 +235,8 @@ def make_any_color_arrays(vesselgraph, data_name):
     p1 = np.amax(edgedata)
     cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.jet)
     cm.set_clim(p0, p1)
-    edgecolors[mask] = colors(edgedata)
-    nodecolors[nmask] = colors(nodedata)
+    edgecolors[mask[:,0]] = colors(edgedata)
+    nodecolors[nmask[:,0]] = colors(nodedata)
   elif data_name == 'flags':
     edgecolors[mask & (flags & krebsutils.ARTERY).astype(np.bool)] = np.asarray((1., 0., 0.))
     nodecolors[nmask & (nflags & krebsutils.ARTERY).astype(np.bool)] = np.asarray((1., 0., 0.))
@@ -381,6 +395,7 @@ def render_different_data_types( vesselgroup, options):
     'S_tot' : 'Adaption Signal',
     'conductivitySignal' : 'Conductivity Signal',
     'metabolicSignal' : 'Metabolic Signal',
+    'radius': 'vessel radius/ $\mu m$',
   }
   graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'nodeflags'] + options.datalist, return_graph=True)
   #nodeflags not good for apj.h5

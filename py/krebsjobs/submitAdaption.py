@@ -127,7 +127,7 @@ def do_optimize_adaption_deap():
 if not qsub.is_client and __name__=='__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Compute adaption see Secomb model', formatter_class=argparse.ArgumentDefaultsHelpFormatter)  
-  parser.add_argument('AdaptionParamSet', default="deap_test")
+  parser.add_argument('AdaptionParamSetName', type=str, default="deap_test")
   #this is not needed in the case without vessels
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin)
   parser.add_argument('grp_pattern', default="adaption/vessels_after_adaption")
@@ -141,7 +141,7 @@ if not qsub.is_client and __name__=='__main__':
   qsub.parse_args(otherArguments)
   
   try:
-    if not goodArguments.AdaptionParamSet in dir(parameterSetsAdaption):
+    if not goodArguments.AdaptionParamSetName in dir(parameterSetsAdaption):
       raise AssertionError('Unknown parameter set %s!' % goodArguments.AdaptionParamSet)
     dirs = set()
     for fn in goodArguments.vesselFileNames:
@@ -164,14 +164,14 @@ if not qsub.is_client and __name__=='__main__':
   for fn in goodArguments.vesselFileNames:
     filenames.append(fn.name)
   
-  factory = getattr(parameterSetsAdaption, goodArguments.AdaptionParamSet)
+  factory = getattr(parameterSetsAdaption, goodArguments.AdaptionParamSetName)
   if factory.__class__ == list:
     factory=factory[7]
     print("warning: you are using several parameter sets")
   
   if factory.__class__ == dict:
     print('single parameter set chosen')
-    factory['name'] = goodArguments.AdaptionParamSet
+    factory['adaption']['name'] = goodArguments.AdaptionParamSetName
     #run_optimize(factory, filenames, goodArguments.grp_pattern, goodArguments.time)
     if goodArguments.kc is not None:
       print("setting kc = %f" % float(goodArguments.kc))
