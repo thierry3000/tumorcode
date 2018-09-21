@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/optional/optional.hpp>
 
 //#include "hdfcppwrapper/hdf_wrapper.h"
-// #include "H5Cpp.h"
+#include "H5Cpp.h"
 // #ifndef H5_NO_NAMESPACE
 //   using namespace H5;
 // #endif

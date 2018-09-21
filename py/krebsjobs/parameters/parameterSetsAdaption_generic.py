@@ -829,6 +829,54 @@ def _value_pressure_2():
     return p
   return list(mk1(i) for i in xrange(len(combined)))
 value_list_pressure_2 = _value_pressure_2()
+
+final_I = dict(
+  num_threads = 1,
+  adaption = dict(
+    k_c = 2.74,
+    k_m = 0.83,
+    k_s = 1.79,
+    Q_refdot = 40.,
+    S_0 = 20,
+    cond_length = 1500.,
+    #if this is 0 we iterate until qdev is reached
+    max_nun_iterations = 500,
+    #qdev = 0, means local conditions!
+    qdev = 0.10,
+    #if starting_radii is 0. we use the values given in
+    #the input file
+    starting_radii = 0.,
+    delta_t = 0.05,
+    addAverageConductivity = False,
+    radMin_for_kill = 3.5,
+    boundary_Condition_handling = boundary_Condition_handling_map['KEEP'],
+    a_pressure = 2.8,
+    a_flow = 20000000.,
+    pop = 3,
+    individuals = 9,
+    opt_iter = 10,
+    ),
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6, #commented means using default for rats
+    rheology = 'RheologySecomb2005',
+    inletHematocrit = 0.40,
+    includePhaseSeparationEffect = 0,
+  ),
+  optimization = dict(
+      desired_cap_flow = 20000,      
+      )
+)
+final_II = deepcopy(final_I)
+final_II['adaption']['k_m'] = 0.63
+final_II['adaption']['k_c'] = 3.19
+final_II['adaption']['k_s'] = 1.57
+
+final_III = deepcopy(final_II)
+final_III['adaption']['k_m'] = 0.97
+final_III['adaption']['k_c'] = 2.85
+final_III['adaption']['k_s'] = 1.79
+final_III['adaption']['max_nun_iterations'] = 1000
+
 if __name__ == '__main__':
   index = 142
   print_c = deepcopy(value_list14)

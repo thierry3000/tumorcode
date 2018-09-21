@@ -230,7 +230,7 @@ def doit_optimize_deap(individual):
 
 
 def doit(parameters):
-  _ku.set_num_threads(1)
+  #_ku.set_num_threads(1)
   if sys.flags.debug:
     print(parameters)
 #  fn = parameters['adaption']['vesselFileName']

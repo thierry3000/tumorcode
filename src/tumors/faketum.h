@@ -40,7 +40,6 @@ struct Parameters
   double dt;
   double latest_executed_timepoint;
   
-  double apply_adaption_intervall;
   string message;
   string fn_out, fn_vessel, vessel_path, vesselfile_message;
   string paramset_name;

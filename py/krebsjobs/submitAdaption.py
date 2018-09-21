@@ -133,9 +133,9 @@ if not qsub.is_client and __name__=='__main__':
   parser.add_argument('grp_pattern', default="adaption/vessels_after_adaption")
   parser.add_argument('-t','--tumorParams', help='by explicitly enable this you can use tumor parameters for the adaption as well', action='store_true')
   parser.add_argument('--time', default=False, help='Show time profile', action='store_true')
-  parser.add_argument('--ks', help='ks')
-  parser.add_argument('--kc', help='kc')
-  parser.add_argument('--km', help='km')
+  parser.add_argument('--ks', default = None, help='ks')
+  parser.add_argument('--kc', default = None, help='kc')
+  parser.add_argument('--km', default = None, help='km')
   
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
@@ -168,8 +168,9 @@ if not qsub.is_client and __name__=='__main__':
   if factory.__class__ == list:
     factory=factory[7]
     print("warning: you are using several parameter sets")
-  #single parameter set chosen  
+  
   if factory.__class__ == dict:
+    print('single parameter set chosen')
     factory['name'] = goodArguments.AdaptionParamSet
     #run_optimize(factory, filenames, goodArguments.grp_pattern, goodArguments.time)
     if goodArguments.kc is not None:

@@ -117,7 +117,8 @@ def make_any_color_arrays(vesselgraph, data_name):
   edges = vesselgraph.edgelist
   num_nodes = len(vesselgraph.nodes['position'])
   flags = vesselgraph.edges['flags']
-  flags = np.asarray(flags,dtype='uint32')
+  #flags = flags[:,0]
+  #flags = np.asarray(flags,dtype='uint32')
   nflags = krebsutils.edge_to_node_property(num_nodes, edges, flags, 'or')
 
   mask = myutils.bbitwise_and(flags,krebsutils.CIRCULATED)
@@ -133,7 +134,7 @@ def make_any_color_arrays(vesselgraph, data_name):
   gray = np.asarray((0.1,0.1,0.1))
   edgecolors = np.repeat(gray.reshape(1,-1), len(edgedata), axis=0)
   nodecolors = np.repeat(gray.reshape(1,-1), len(nodedata), axis=0)
-  #colors = lambda arr: cm.to_rgba(arr)[:,:3]
+ # colors = lambda arr: cm.to_rgba(arr)[:,:3]
   colors = lambda arr: np.power(cm.to_rgba(arr)[:,:3], 2.4)
 
   if data_name == 'hematocrit':
@@ -152,6 +153,8 @@ def make_any_color_arrays(vesselgraph, data_name):
     cm.set_clim(p0, p1)
     edgecolors[mask[:,0]] = colors(edgedata[mask])
     nodecolors[nmask[:,0]] = colors(nodedata[nmask])
+    #edgecolors[mask] = colors(edgedata[mask])
+    #nodecolors[nmask] = colors(nodedata[nmask])
   elif data_name == 'shearforce':
     mask = mask & (edgedata>0)
     nmask = nmask & (nodedata>0)
