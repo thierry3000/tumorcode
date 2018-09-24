@@ -420,18 +420,21 @@ if __name__ == '__main__':
     for fn in goodArguments.FileNames:
       filenames.append(fn.name)   
     
+    rc = matplotlib.rc
+    rc('font', size = 8.)
+    rc('axes', titlesize = 10., labelsize = 8.)
+    
     for fn in filenames:
       with h5py.File(fn) as f:
-        no_of_iterations = '1'
+        no_of_iterations = ''
         vesselgrp = f['vessels_after_adaption']
         common_filename = os.path.splitext(os.path.basename(fn))[0]
       
-        with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_stimulies.pdf') as pp:
-          rc = matplotlib.rc
-          rc('font', size = 8.)
-          rc('axes', titlesize = 10., labelsize = 8.)
+        with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_hydrodynamic_stimulies.pdf') as pp:
           hydrodynamic_fig = plot_hydrodynamic_stimuli(vesselgrp, pp)
+        with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_conductive_stimulies.pdf') as pp:
           plot_conductive_stimuli(vesselgrp,pp)
+        with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_hydrodynamics.pdf') as pp:
           plot_hydorodynamic_charicteristics(vesselgrp,pp)
   
       #plot_movie(f,pp=None)
