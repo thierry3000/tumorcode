@@ -48,10 +48,13 @@ def RemoveArteriovenousFlagsFromCapillaries(flags):
 '''returns in \mu m^3 '''
 def totalLdVolume(vesselgrp):
   if vesselgrp.attrs['CLASS'] == 'GRAPH':
-    ld = krebsutils.read_lattice_data_from_hdf(vesselgrp['lattice'])
+    #ld = krebsutils.read_lattice_data_from_hdf(vesselgrp['lattice'])
+    print(str(vesselgrp.file.filename))
+    print(vesselgrp.name)
+    ld = krebsutils.read_lattice_data_from_hdf_by_filename(str(vesselgrp.file.filename), str(vesselgrp.name)+'/lattice')
     #if we have 2d config one entry of sizeOfDim is zero!  
     sizeOfDim = ld.GetWorldSize()
-    sizeOfDim = np.asarray(sizeOfDim)
+    sizeOfDim = np.asarray(sizeOfDim, dtype='float64')
     vol = np.prod(sizeOfDim[sizeOfDim.nonzero()])
     if vol>0:
       return vol

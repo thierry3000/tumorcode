@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 if __name__ == '__main__':
   import os.path, sys
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+  sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../krebs'))
   
 import os,sys
 import h5py
@@ -38,6 +39,7 @@ from collections import defaultdict
 from pprint import pprint
 
 import matplotlib
+import mpl_utils
 import identifycluster
 if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
   matplotlib.use('agg')
@@ -58,6 +60,7 @@ from analyzeGeneral import RemoveArteriovenousFlagsFromCapillaries,totalLdVolume
 def cylinderCollectionVolumeDensity(vesselgroup):
   vessels = krebsutils.read_vesselgraph(vesselgroup, ['flags', 'radius', 'length'])
   flags   = RemoveArteriovenousFlagsFromCapillaries(vessels['flags'])
+  flags = flags[:,0]
   mask1 = myutils.bbitwise_and(flags, krebsutils.CIRCULATED)
   totalvol = totalLdVolume(vesselgroup)
   def compute(flagMask):
@@ -67,6 +70,7 @@ def cylinderCollectionVolumeDensity(vesselgroup):
       mask = mask1
     length = np.asarray(vessels['length'][mask], dtype = np.float64)
     radius = np.asarray(vessels['radius'][mask], dtype = np.float64)
+    radius = radius[:,0]
     vol = math.pi * np.power(radius, 2.) * length
     vol = np.sum(vol)
     return vol/totalvol
@@ -75,6 +79,7 @@ def cylinderCollectionVolumeDensity(vesselgroup):
 def cylinderCollectionLineDensity(vesselgroup):
   vessels = krebsutils.read_vesselgraph(vesselgroup, ['flags', 'length'])
   flags   = RemoveArteriovenousFlagsFromCapillaries(vessels['flags'])
+  flags = flags[:,0]
   mask1 = myutils.bbitwise_and(flags, krebsutils.CIRCULATED)
   totalvol = totalLdVolume(vesselgroup)
   def compute(flagMask):
@@ -87,6 +92,31 @@ def cylinderCollectionLineDensity(vesselgroup):
     return total/totalvol
   return compute(0), compute(krebsutils.ARTERY), compute(krebsutils.VEIN), compute(krebsutils.CAPILLARY)
 
+def surface2Volume(vesselgroup):
+  vessels = krebsutils.read_vesselgraph(vesselgroup, ['flags', 'radius', 'length'])
+  flags   = RemoveArteriovenousFlagsFromCapillaries(vessels['flags'])
+  flags = flags[:,0]
+  mask1 = myutils.bbitwise_and(flags, krebsutils.CIRCULATED)
+  totalvol = totalLdVolume(vesselgroup)
+  def compute(flagMask):
+    if flagMask:
+      mask = mask1 & myutils.bbitwise_and(flags, flagMask)
+    else:
+      mask = mask1
+    length = np.asarray(vessels['length'][mask], dtype = np.float64)
+    radius = np.asarray(vessels['radius'][mask], dtype = np.float64)
+    radius = radius[:,0]
+    vol = math.pi * np.power(radius, 2.) * length
+    surface = 2* math.pi* radius* length
+    #surface = np.sum(surface)
+    #vol = np.sum(vol)
+    s2v = surface/vol
+    mystd = np.std(s2v)
+    myavg = np.average(s2v)
+    myrel = mystd/myavg
+    print("spread: %f" % myrel)
+    return np.average(surface/vol)
+  return compute(0), compute(krebsutils.ARTERY), compute(krebsutils.VEIN), compute(krebsutils.CAPILLARY)
 
 ## ---------------- ------- -----------------------
 ## plotting
@@ -125,17 +155,140 @@ def printBloodFlowSimple(filenames, group):
   printit('total_flow_p_volume', 'rBF_{total}', 'ml Blood / (ml Tissue min)')
   print 'total_volume %e' % bv['total_volume'][0]
 
+def boxplotFromData_rBV(data, pp, data2=None):
+  print('do box')
+  fig2, ax2 = matplotlib.pyplot.subplots(1,1)
+  #ax2.boxplot([data[0,:], data[1,:],data[2,:], data[3,:]])
+  violin1 = ax2.violinplot([data[0,:], data[1,:],data[2,:], data[3,:]], positions=[0,1,2,3],showmeans=False,showmedians=True)
+  
+  if not data2.any() == None:
+    violin2 = ax2.violinplot([data2[0,:], data2[1,:],data2[2,:], data2[3,:]],positions=[0.5,1.5,2.5,3.5],showmeans=False,showmedians=True)
+  ax2.set_xticklabels([r'$rBV$', r'artery', r'vein',r'capillary'])
+  ax2.set_xticks([0.25, 1.25, 2.25,3.25])
+  
+  aColor = violin1['cmedians'].get_color()
+  aColor = aColor[0,0:3]
+  blue_patch = matplotlib.patches.Patch(color=aColor)
+  aColor = violin2['cmedians'].get_color()
+  aColor = aColor[0,0:3]
+  red_patch = matplotlib.patches.Patch(color=aColor)
+  label = ['tumorCode', 'adaption']
+  fake_handels = [blue_patch, red_patch]
+  ax2.legend(fake_handels, label)
+  #ax2.legend(['bl','dlf'])
+  pp.savefig(fig2)
+  
+  
+def boxplotFromData_s2v(data, pp, data2=None):
+  print('do box')
+  fig2, ax2 = matplotlib.pyplot.subplots(1,1)
+  #ax2.boxplot([data[0,:], data[1,:],data[2,:], data[3,:]])
+  violin1 = ax2.violinplot([data[8,:], data[9,:],data[10,:], data[11,:]], positions=[0,1,2,3],showmeans=False,showmedians=True)
+  
+  if not data2.any() == None:
+    violin2 = ax2.violinplot([data2[8,:], data2[9,:],data2[10,:], data2[11,:]],positions=[0.5,1.5,2.5,3.5],showmeans=False,showmedians=True)
+  ax2.set_xticklabels([r'all', r'artery', r'vein',r'capillary'])
+  ax2.set_xticks([0.25, 1.25, 2.25,3.25])
+  
+  aColor = violin1['cmedians'].get_color()
+  aColor = aColor[0,0:3]
+  blue_patch = matplotlib.patches.Patch(color=aColor)
+  aColor = violin2['cmedians'].get_color()
+  aColor = aColor[0,0:3]
+  red_patch = matplotlib.patches.Patch(color=aColor)
+  label = ['tumorCode', 'adaption']
+  fake_handels = [blue_patch, red_patch]
+  ax2.legend(fake_handels, label, loc='upper center')
+  #ax2.legend(['bl','dlf'])
+  pp.savefig(fig2)
 
+def getDataFromFiles(filenames, groupname):
+  dat = []
+  for fn in filenames:
+    with h5py.File(fn, 'r') as f:
+      print('open file: %s at %s' %(fn,groupname))
+      rv, rv_a, rv_v, rv_c = cylinderCollectionVolumeDensity(f[groupname])
+      mvd, mvd_a, mvd_v, mvd_c = cylinderCollectionLineDensity(f[groupname])
+      s2v, s2v_a, s2v_v, s2v_c = surface2Volume(f[groupname])
+      dat.append((rv, rv_a, rv_v, rv_c, mvd, mvd_a, mvd_v, mvd_c,s2v,s2v_a,s2v_v,s2v_c))
+  dat = np.asarray(dat).transpose()
+  
+  ### rBV to percentage
+  dat[0:4,:] = 100*dat[0:4,:]
+  return dat
 
 if __name__ == '__main__':
-  group = sys.argv[-1]
-  dat = []
-  for fn in sys.argv[:-1]:
-    with h5py.File(fn, 'r') as f:
-      rv, rv_a, rv_v, rv_c = cylinderCollectionVolumeDensity(f[group])
-      mvd, mvd_a, mvd_v, mvd_c = cylinderCollectionLineDensity(f[group])
-      dat.append((rv, rv_a, rv_v, rv_c, mvd, mvd_a, mvd_v, mvd_c))
-  dat = np.asarray(dat).transpose()
+  
+  import argparse
+  parser = argparse.ArgumentParser(description='Plot/ Analyze rBV surface to volume.')
+  parser.add_argument('grp_pattern1',help='Where to find the vessel group in the file')    
+  parser.add_argument('--grp_pattern2',help='Where to find the vessel group in the file') 
+  parser.add_argument('vesselFileNames1', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
+  
+  #parser.add_argument('--vesselFileNames2', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
+  #parser.add_argument('vesselFileNames2', nargs='+', type=argparse.FileType('r'), default=sys.stdin,help='Vessel file to calculate')  
+  
+    
+  goodArguments, otherArguments = parser.parse_known_args()
+  
+  if goodArguments.grp_pattern2:
+    n_files = len(goodArguments.vesselFileNames1)
+    print('found %i files' % n_files)
+    #print(goodArguments.vesselFileNames1)
+    
+  try:
+    dirs = set()
+    for fn in goodArguments.vesselFileNames1[0:n_files/2]:
+      if not os.path.isfile(fn.name):
+        raise AssertionError('The file %s is not present!'%fn)
+      with h5py.File(fn.name, 'r') as f:
+        d = myutils.walkh5(f, goodArguments.grp_pattern1)
+        if not len(d)>0:
+          raise AssertionError('pattern "%s" not found in "%s"!' % (goodArguments.grp_pattern1, fn))
+        else:
+          dirs = set.union(dirs,d)
+  except Exception, e:
+    print e.message
+    sys.exit(-1)
+  filenames1=[]
+  for fn in goodArguments.vesselFileNames1[0:n_files/2]:
+    filenames1.append(fn.name)
+  print(filenames1)
+  
+  if goodArguments.grp_pattern2:
+    try:
+      dirs = set()
+      for fn in goodArguments.vesselFileNames1[n_files/2:]:
+        if not os.path.isfile(fn.name):
+          raise AssertionError('The file %s is not present!'%fn)
+        with h5py.File(fn.name, 'r') as f:
+          d = myutils.walkh5(f, goodArguments.grp_pattern2)
+          if not len(d)>0:
+            raise AssertionError('pattern "%s" not found in "%s"!' % (goodArguments.grp_pattern2, fn))
+          else:
+            dirs = set.union(dirs,d)
+    except Exception, e:
+      print e.message
+      sys.exit(-1)
+    filenames2=[]
+    for fn in goodArguments.vesselFileNames1[n_files/2:]:
+      filenames2.append(fn.name)
+    print(filenames2)
+  #group = sys.argv[-1]
+  #filenames = sys.argv[1:-1]
+  #print(filenames)
+  
+  dat = getDataFromFiles(filenames1, goodArguments.grp_pattern1)
+  dat2 = getDataFromFiles(filenames2, goodArguments.grp_pattern2)
+  
+  outfilename='rBV_for_file_%s' % os.path.basename(filenames1[0])
+  with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
+    boxplotFromData_rBV(dat, pdfpages, data2 = dat2)
+  outfilename='s2v_for_file_%s' % os.path.basename(filenames1[0])
+  with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
+    boxplotFromData_s2v(dat, pdfpages, data2 = dat2)
+    
+  
   def printstuff(name, a, mult):
     print '%s = %f +/- %f' % (name, np.average(a)*mult, np.std(a)*mult)
   rbv, a, v, c = dat[:4]
@@ -149,6 +302,10 @@ if __name__ == '__main__':
   printstuff('mvd_a', dat[5], 1e6)
   printstuff('mvd_v', dat[6], 1e6)
   printstuff('mvd_c', dat[7], 1e6)
+  printstuff('s2v', dat[8], 1)
+  printstuff('s2v_a', dat[9], 1)
+  printstuff('s2v_v', dat[10], 1)
+  printstuff('s2v_c', dat[11], 1)
 
   #printBloodFlowSimple(sys.argv[2:], group)
 
