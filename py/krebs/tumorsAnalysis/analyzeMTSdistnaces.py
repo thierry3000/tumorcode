@@ -572,15 +572,16 @@ if __name__ == '__main__':
     with PdfPages('analysisMTS_prop_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], grop_string_for_multiple)) as pp:
       #distances_to_vessels(goodArguments, pp);
       distances_to_vessels_for_multiple_group(goodArguments, pp);
-    cell_endities = ['o2','pH_ex','cell_radii']
+    #cell_endities = ['o2','pH_ex','cell_radii', 'cell_phase']
+    cell_endities = ['cell_radii', 'cell_phase']
     #cell_endities = ['o2'] 
     for cell_endity in cell_endities:
 #      with PdfPages('analysisMTS_hist_%s_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename[:-3], cell_endity, goodArguments.output_grp_name)) as pp:
 #        hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments.output_grp_name, no_bins,pp)
-      if False:
+      if True:
         with PdfPages('analysisMTS_boxplot_%s_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], cell_endity, grop_string_for_multiple)) as pp:
-          #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
-          plot_cell_endity_vs_distances_to_next_vessel_multiple_times(out_groups_to_consider,cell_endity,no_bins,pp)
+          plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
+          #plot_cell_endity_vs_distances_to_next_vessel_multiple_times(out_groups_to_consider,cell_endity,no_bins,pp)
     with PdfPages('analysisMTS_dev_from_sphere_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], grop_string_for_multiple)) as pp:
       #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
       plot_dev_from_sphere_multiple_times(out_groups_to_consider,no_bins,pp)

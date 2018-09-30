@@ -185,7 +185,7 @@ def render_different_data_types( vesselgroup, tumorgroup, imagefn, options, cell
         epv.render(imagefn)
       else:
         if cell_group and options.cells:
-          cells_cm = povrayRenderCells.addVBLCells(epv, 'o2', cell_group, options)
+          cells_cm = povrayRenderCells.addVBLCells(epv, options.cellsProperty, cell_group, options)
           povrayEasy.RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options,colormap_cells=cells_cm )
         else:
           povrayEasy.RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options)

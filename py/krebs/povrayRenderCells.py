@@ -72,13 +72,13 @@ def convert_to_mmHg(o2_in_pg, cell_radii):
   
   return volume_o2_ml/solubility
 
-def createColormapForCells(data_color):
-  ''' convert data to color here'''
-  data_color = data_color
-  print(data_color[0:100])
-  cNorm = matplotlib.colors.Normalize(vmin=np.min(data_color), vmax=np.max(data_color))
-  scalar_map = matplotlib.cm.ScalarMappable(norm=cNorm, cmap='terrain')
-  return scalar_map
+#def createColormapForCells(data_color):
+#  ''' convert data to color here'''
+#  data_color = data_color
+#  print(data_color[0:100])
+#  cNorm = matplotlib.colors.Normalize(vmin=np.min(data_color), vmax=np.max(data_color))
+#  scalar_map = matplotlib.cm.ScalarMappable(norm=cNorm, cmap='terrain')
+#  return scalar_map
 
 def addVBLCells(epv, quantity , cell_hdf_group, options):
     print('path to vbl group is: %s' % cell_hdf_group.name)
@@ -91,7 +91,13 @@ def addVBLCells(epv, quantity , cell_hdf_group, options):
     data_of_cells = np.asarray(cell_hdf_group[quantity])
     if quantity == 'o2':
       data_of_cells= convert_to_mmHg(data_of_cells, radii_of_cells )
-    cells_cm = createColormapForCells(data_of_cells[:,0])
+
+    cNorm = matplotlib.colors.Normalize(vmin=np.min(data_of_cells[:,0]), vmax=np.max(data_of_cells[:,0]))
+    if quantity == 'o2':
+      cells_cm = matplotlib.cm.ScalarMappable(norm=cNorm, cmap='terrain')
+    else:
+      cells_cm = matplotlib.cm.ScalarMappable(norm=cNorm, cmap='jet')
+    #cells_cm = createColormapForCells(data_of_cells[:,0])
     
     
     #data_of_cells= np.asarray(cell_hdf_group[quantity])
@@ -101,8 +107,10 @@ def addVBLCells(epv, quantity , cell_hdf_group, options):
 #    cNorm = matplotlib.colors.Normalize(vmin=np.min(data_color), vmax=np.max(data_color))
 #    scalar_map = matplotlib.cm.ScalarMappable(norm=cNorm, cmap='terrain')
 #    scalar_map.get_cmap()
+    print('cells_cm.get_clim()')
     print(cells_cm.get_clim())
     
+    print('data_color.shape')
     print(data_color.shape)
     data_color = cells_cm.to_rgba(data_color)
     print(data_color.shape)
