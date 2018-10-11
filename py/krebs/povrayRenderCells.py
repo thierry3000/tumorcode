@@ -43,7 +43,7 @@ import copy
 import matplotlib
 
 def paraview_color_space(scheme='jet'):
-  #colors = eval(scheme);
+  colors = eval(scheme);
   N = len(colors);
   outfile_name = scheme + '.xml'
   with open(outfile_name, 'w') as f:
@@ -79,7 +79,24 @@ def convert_to_mmHg(o2_in_pg, cell_radii):
 #  cNorm = matplotlib.colors.Normalize(vmin=np.min(data_color), vmax=np.max(data_color))
 #  scalar_map = matplotlib.cm.ScalarMappable(norm=cNorm, cmap='terrain')
 #  return scalar_map
-
+#class nlcmap(matplotlib.colors.LinearSegmentedColormap):
+#    """A nonlinear colormap"""
+#
+#    name = 'nlcmap'
+#
+#    def __init__(self, cmap, levels):
+#        self.cmap = cmap
+#        self.monochrome = self.cmap.monochrome
+#        self.levels = np.asarray(levels, dtype='float64')
+#        self._x = self.levels/ self.levels.max()
+#        self.levmax = self.levels.max()
+#        self.levmin = self.levels.min()
+#        self._y = np.linspace(self.levmin, self.levmax, len(self.levels))
+#
+#    def __call__(self, xi, alpha=1.0, **kw):
+#        yi = np.interp(xi, self._x, self._y)
+#        return self.cmap(yi/self.levmax, alpha)
+      
 def addVBLCells(epv, quantity , cell_hdf_group, options):
     print('path to vbl group is: %s' % cell_hdf_group.name)
     print('adding quantity: %s' % quantity)
@@ -95,9 +112,16 @@ def addVBLCells(epv, quantity , cell_hdf_group, options):
     cNorm = matplotlib.colors.Normalize(vmin=np.min(data_of_cells[:,0]), vmax=np.max(data_of_cells[:,0]))
     if quantity == 'o2':
       cells_cm = matplotlib.cm.ScalarMappable(norm=cNorm, cmap='terrain')
+    elif quantity == 'cell_phase':
+      colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]  # R -> G -> B
+      cmap_name = 'cell_phase_colors'
+      cells_cm = matplotlib.colors.LinearSegmentedColormap.from_list(cmap_name, colors, N=len(colors))
+      levels = [1.0, 4.0, 6.0]
+      cells_cm = matplotlib.cm.ScalarMappable(norm=cNorm, cmap=cells_cm)
     else:
       cells_cm = matplotlib.cm.ScalarMappable(norm=cNorm, cmap='jet')
     #cells_cm = createColormapForCells(data_of_cells[:,0])
+   
     
     
     #data_of_cells= np.asarray(cell_hdf_group[quantity])
@@ -107,23 +131,46 @@ def addVBLCells(epv, quantity , cell_hdf_group, options):
 #    cNorm = matplotlib.colors.Normalize(vmin=np.min(data_color), vmax=np.max(data_color))
 #    scalar_map = matplotlib.cm.ScalarMappable(norm=cNorm, cmap='terrain')
 #    scalar_map.get_cmap()
-    print('cells_cm.get_clim()')
-    print(cells_cm.get_clim())
+    if quantity == 'cell_phase':
+      the_colors = cells_cm.to_rgba(data_color)
+      rgb_colors_of_cells = copy.deepcopy(the_colors)
+      for (i, data) in enumerate(data_color):
+        if data == 1 or data == 2:
+          #G1m, G1p
+          #red
+          rgb_colors_of_cells[i] = (1,0,0,0)
+        if data == 3 or data == 4 or data ==5:
+          #S, G2, M
+          #yellow
+          rgb_colors_of_cells[i] = (1,1,0,0)
+        if data == 6:
+          #dead
+          rgb_colors_of_cells[i] = (0.22,0.44,0,0)
+      rgb_colors_of_cells = rgb_colors_of_cells[:,:3]
+      wbbox = options.wbbox
+      trafo = povrayEasy.calc_centering_normalization_trafo(wbbox)
     
-    print('data_color.shape')
-    print(data_color.shape)
-    data_color = cells_cm.to_rgba(data_color)
-    print(data_color.shape)
-    data_color=data_color[:,:3]
-    print(data_color.shape)
-    rgb_colors_of_cells=data_color
+      epv.addVBLCells(trafo, position_of_cells, radii_of_cells, rgb_colors_of_cells, options)
     
-    wbbox = options.wbbox
-    trafo = povrayEasy.calc_centering_normalization_trafo(wbbox)
+      return None
+      
+    else:
+      print('cells_cm.get_clim()')
+      print(cells_cm.get_clim())
+      print('data_color.shape')
+      print(data_color.shape)
+      data_color = cells_cm.to_rgba(data_color)
+      print(data_color.shape)
+      data_color=data_color[:,:3]
+      print(data_color.shape)
+      rgb_colors_of_cells=data_color
     
-    epv.addVBLCells(trafo, position_of_cells, radii_of_cells, rgb_colors_of_cells, options)
-    
-    return cells_cm
+      wbbox = options.wbbox
+      trafo = povrayEasy.calc_centering_normalization_trafo(wbbox)
+      
+      epv.addVBLCells(trafo, position_of_cells, radii_of_cells, rgb_colors_of_cells, options)
+      
+      return cells_cm
     
 #    ld = krebsutils.read_lattice_data_from_hdf_by_filename(str(tumorgroup.file.filename), str(tumorgroup['conc'].attrs['LATTICE_PATH']))
 #    ld = transform_ld(trafo, ld)

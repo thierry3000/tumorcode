@@ -533,7 +533,7 @@ def create_file_name_multiple_out(out_groups_to_consider):
 def out_groups_to_hours(outGroups):
   return ['%s h' % aGroup[-3:] for aGroup in outGroups]
   
-def get_dict_for_intervalls(filename, intervalls):
+def get_dict_for_intervalls_by_nearest_vessel(filename, intervalls):
   with h5py.File(filename, 'r') as h5_f:
     h5_out_grp = h5_f[goodArguments.output_grp_name]
     distances_to_nearest_vessel = np.asarray(h5_out_grp['cells/distance_to_nearest_vessel'])
@@ -559,32 +559,71 @@ def get_dict_for_intervalls(filename, intervalls):
         dict_of_this_intervall['dead'] = len(array_of_6[0]) 
         counts_per_intervall.append(dict_of_this_intervall)
   return counts_per_intervall
+
+def get_dict_for_intervalls_by_center(filename, intervalls):
+  with h5py.File(filename, 'r') as h5_f:
+    h5_out_grp = h5_f[goodArguments.output_grp_name]
+    cell_centers = np.asarray(h5_out_grp['cells/cell_center_pos'])
+    distances_to_center = np.sqrt(np.sum(np.power(cell_centers,2),1))
+    #distances_to_nearest_vessel = np.asarray(h5_out_grp['cells/distance_to_nearest_vessel'])
+    #distances_to_nearest_vessel = distances_to_nearest_vessel[:,0] 
+    cell_phases= np.asarray(h5_out_grp['cells/cell_phase'])
+    cell_phases = cell_phases[:,0]
+    counts_per_intervall = list()
+    for (i,aIntervall) in enumerate(intervalls):
+      if i>0:
+        good_indexes_in_intervall = np.where(np.logical_and(distances_to_center<aIntervall, distances_to_center > intervalls[i-1]))
+      
+        good_indexes_in_intervall = good_indexes_in_intervall[0]
+        #cell_phases_in_this_intervall = cell_phases[good_indexes_in_intervall]
+        array_of_1 = np.where(cell_phases[good_indexes_in_intervall] == 1)
+        array_of_2 = np.where(cell_phases[good_indexes_in_intervall] == 2)
+        array_of_3 = np.where(cell_phases[good_indexes_in_intervall] == 3)
+        array_of_4 = np.where(cell_phases[good_indexes_in_intervall] == 4)
+        array_of_5= np.where(cell_phases[good_indexes_in_intervall] == 5)
+        array_of_6= np.where(cell_phases[good_indexes_in_intervall] == 6)
+        dict_of_this_intervall = dict()
+        dict_of_this_intervall['S'] = len(array_of_1[0]) + len(array_of_2[0])
+        dict_of_this_intervall['G'] = len(array_of_3[0]) + len(array_of_4[0]) + len(array_of_5[0])
+        dict_of_this_intervall['dead'] = len(array_of_6[0]) 
+        counts_per_intervall.append(dict_of_this_intervall)
+  return counts_per_intervall
   
 def plot_cell_phases(s_by_intervall,g_by_intervall,dead_by_intervall,intervalls,pp):
   fig1 = plt.figure()
   ax1 = fig1.add_subplot(111)
   #ax1.scatter(distances_to_nearest_vessel[0:1000], endity_value_of_cells[0:1000])
-  ax1.boxplot(s_by_intervall.transpose())
-  ax1.boxplot(g_by_intervall.transpose())
-  ax1.boxplot(dead_by_intervall.transpose())
+  def draw_plot(data, edge_color, fill_color):
+    bp = ax1.boxplot(data, patch_artist=True)
+
+    for element in ['boxes', 'whiskers', 'fliers', 'means', 'medians', 'caps']:
+        plt.setp(bp[element], color=edge_color)
+
+    for patch in bp['boxes']:
+        patch.set(facecolor=fill_color)
+#  ax1.boxplot(s_by_intervall.transpose())
+#  ax1.boxplot(g_by_intervall.transpose())
+#  ax1.boxplot(dead_by_intervall.transpose())
+  s_phase_color = '#FFD700'
+  g_phase_color = 'red'
+  dead_phase_color = 'green'
+  draw_plot(s_by_intervall.transpose(), 'k' , s_phase_color)
+  draw_plot(g_by_intervall.transpose(), g_phase_color, g_phase_color)
+  draw_plot(dead_by_intervall.transpose(), dead_phase_color, dead_phase_color)
   labels = []
   for (i,inter) in enumerate(intervalls):
     if i < len(intervalls[:-1]):
       labels.append('%i - %i' %(inter, intervalls[i+1]))
   ax1.set_xticklabels(labels,rotation=75)
+  print(len(s_by_intervall.transpose()))
+  s_patch = matplotlib.patches.Patch(color=s_phase_color,       label=r's- phase # $%i \pm %i$' % (np.mean(np.sum(s_by_intervall,0)),np.std(np.sum(s_by_intervall,0))))
+  g_patch = matplotlib.patches.Patch(color=g_phase_color,       label='g- phase # $%i \pm %i$' % (np.mean(np.sum(g_by_intervall,0)),np.std(np.sum(g_by_intervall,0))))
+  dead_patch = matplotlib.patches.Patch(color=dead_phase_color, label='dead       # $%i \pm %i$' % (np.mean(np.sum(dead_by_intervall,0)),np.std(np.sum(dead_by_intervall,0))))
+  ax1.legend(handles=[s_patch, g_patch, dead_patch])
   pp.savefig(fig1)
-if __name__ == '__main__':
-  import argparse
-  parser = argparse.ArgumentParser(description='Analyze MTS distances')  
-  parser.add_argument('--s',dest='vbl_simulation_output_filename', type=str, default='safe.h5', help='output file name in hdf5 format')
-  parser.add_argument('--g',dest='output_grp_name', type=str, default='out0001', help='output group withing hdf5 file')
-  interactive = False;
-  infos = True;
-  goodArguments, otherArguments = parser.parse_known_args()
   
-  list_of_filenames=['/mydata/output/3489294/fakeTumMTS-default-typeI-sample00-vbl_safe_1.h5','/mydata/output/3489295/fakeTumMTS-default-typeI-sample00-vbl_safe_1.h5']
+def create_matrix_nearest_vessels(list_of_filenames, max_distance_to_vessel=max_distance_to_vessel):
   list_by_file_name=dict()  
-  
   '''find max distance 
     only if max_distance_to_vessel == 0.0
     otherwise we use the give value
@@ -603,7 +642,7 @@ if __name__ == '__main__':
 
 
   for aFilename in list_of_filenames:
-    list_for_that_file = get_dict_for_intervalls(aFilename, intervalls)
+    list_for_that_file = get_dict_for_intervalls_by_nearest_vessel(aFilename, intervalls)
     
     list_by_file_name[aFilename] = list_for_that_file
   
@@ -620,6 +659,66 @@ if __name__ == '__main__':
       dead_by_intervall[i,k] = list_by_file_name[aFilename][i]['dead']
       i=i+1
     k=k+1
+  return s_by_intervall, g_by_intervall, dead_by_intervall, intervalls
+
+def create_matrix_center(list_of_filenames, max_distance_to_center=None):
+  list_by_file_name=dict()  
+  '''find max distance 
+    only if max_distance_to_vessel == 0.0
+    otherwise we use the give value
+  '''
+  if not max_distance_to_center:
+    max_distance_to_center = 0.0
+  for aFilename in list_of_filenames:
+    with h5py.File(goodArguments.vbl_simulation_output_filename, 'r') as h5_f:
+      h5_out_grp = h5_f[goodArguments.output_grp_name]
+      cell_centers = np.asarray(h5_out_grp['cells/cell_center_pos'])
+      distances_to_center = np.sqrt(np.sum(np.power(cell_centers,2),1))
+      
+      if(np.max(distances_to_center)>max_distance_to_center):
+        max_distance_to_center = np.max(distances_to_center)
+          
+  intervalls = np.arange(0,max_distance_to_center,intervall_for_plot_numbers )
+  print('max_distance_to_center')
+  print(max_distance_to_center)
+
+  for aFilename in list_of_filenames:
+    list_for_that_file = get_dict_for_intervalls_by_center(aFilename, intervalls)
+    
+    list_by_file_name[aFilename] = list_for_that_file
+  
+  s_by_intervall = np.zeros([len(intervalls), len(list_of_filenames)])
+  g_by_intervall = np.zeros([len(intervalls), len(list_of_filenames)])
+  dead_by_intervall = np.zeros([len(intervalls), len(list_of_filenames)])
+  
+  k=0
+  for aFilename in list_of_filenames:
+    i=0
+    for aIntervall in intervalls[0:-1]:
+      s_by_intervall[i,k] = list_by_file_name[aFilename][i]['S']
+      g_by_intervall[i,k] = list_by_file_name[aFilename][i]['G']
+      dead_by_intervall[i,k] = list_by_file_name[aFilename][i]['dead']
+      i=i+1
+    k=k+1
+  return s_by_intervall, g_by_intervall, dead_by_intervall, intervalls
+
+if __name__ == '__main__':
+  import argparse
+  parser = argparse.ArgumentParser(description='Analyze MTS distances')  
+  parser.add_argument('--s',dest='vbl_simulation_output_filename', type=str, default='None', help='output file name in hdf5 format')
+  parser.add_argument('--g',dest='output_grp_name', type=str, default='out0001', help='output group withing hdf5 file')
+  interactive = False;
+  infos = True;
+  goodArguments, otherArguments = parser.parse_known_args()
+  
+  if goodArguments.vbl_simulation_output_filename == 'None':
+    print('no --s option found')
+    list_of_filenames=['/localdisk/output/center_with_AS_latest/3489294/fakeTumMTS-default-typeI-sample00-vbl_safe_1.h5','/localdisk/output/center_with_AS_latest/3489295/fakeTumMTS-default-typeI-sample00-vbl_safe_1.h5']
+  else:
+    list_of_filenames=[goodArguments.vbl_simulation_output_filename]
+  
+  
+  
     
   #print('doing for upper bount %s' % aIntervall)
   ''' begin of code '''
@@ -627,6 +726,10 @@ if __name__ == '__main__':
   print(os.path.basename(goodArguments.vbl_simulation_output_filename))
   
     
-  with PdfPages('analysisCell_phase.pdf') as pp:
+  with PdfPages('analysisCell_phase_dist_from_nearestvessel_%s.pdf' % goodArguments.output_grp_name ) as pp:
+    s_by_intervall, g_by_intervall, dead_by_intervall, intervalls = create_matrix_nearest_vessels(list_of_filenames)
+    plot_cell_phases(s_by_intervall,g_by_intervall,dead_by_intervall,intervalls,pp)
+  with PdfPages('analysisCell_phase_dist_from_center_%s.pdf' % goodArguments.output_grp_name ) as pp:
+    s_by_intervall, g_by_intervall, dead_by_intervall, intervalls = create_matrix_center(list_of_filenames, max_distance_to_center=422.0)
     plot_cell_phases(s_by_intervall,g_by_intervall,dead_by_intervall,intervalls,pp)  
  
