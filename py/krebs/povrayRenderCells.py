@@ -137,15 +137,26 @@ def addVBLCells(epv, quantity , cell_hdf_group, options):
       for (i, data) in enumerate(data_color):
         if data == 1 or data == 2:
           #G1m, G1p
-          #red
-          rgb_colors_of_cells[i] = (1,0,0,0)
-        if data == 3 or data == 4 or data ==5:
-          #S, G2, M
+          #green
+          rgb_colors_of_cells[i] = (0,1,0,0)
+        if data == 3:
+          #S
           #yellow
           rgb_colors_of_cells[i] = (1,1,0,0)
+        if data == 4 or data ==5:
+          #G2, M
+          #yellow
+          rgb_colors_of_cells[i] = (1,0,0,0)
         if data == 6:
           #dead
-          rgb_colors_of_cells[i] = (0.22,0.44,0,0)
+          if options.background == 1.0:
+            rgb_colors_of_cells[i] = (0.,0.,0.,0.)
+          elif options.background == 0.0:
+            rgb_colors_of_cells[i] = (0.75,0.75,0.75,0)
+          else:
+            inv_val = 1.0 - options.background
+            rgb_colors_of_cells[i] = (inv_val,inv_val,inv_val,0)
+            
       rgb_colors_of_cells = rgb_colors_of_cells[:,:3]
       wbbox = options.wbbox
       trafo = povrayEasy.calc_centering_normalization_trafo(wbbox)

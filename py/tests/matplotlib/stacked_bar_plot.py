@@ -27,6 +27,7 @@ plt.xticks(ind, countries)
 plt.ylabel("Medals")
 plt.xlabel("Countries")
 plt.title("2012 Olympics Top Scorers' Medals by Proportion")
+plt.legend(bbox_to_anchor=(1.04,0.8), loc="center left", borderaxespad=0)
 plt.ylim=1.0
 
 # rotate axis labels
