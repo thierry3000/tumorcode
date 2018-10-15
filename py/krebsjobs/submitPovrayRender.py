@@ -175,6 +175,7 @@ if __name__ == '__main__':
   parser.add_argument("--slice_pos", help="slice position on z axis", default=None, type=int)
   parser.add_argument("--cells", help="if activated, the VBL cells will be rendered", default=False, action="store_true")
   parser.add_argument("--cellsProperty", help="property of the cells to plot", default= "o2", type=str)
+  parser.add_argument("--cellsColorLimits", help = "set border of visible data usage: simply name followed by 2 number no, bracket or quotations", nargs=2, metavar=('a', 'b'),type=float, default=None)
   
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)

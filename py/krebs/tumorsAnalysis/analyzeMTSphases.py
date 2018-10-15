@@ -881,17 +881,10 @@ def plot_stacked_bar_slice(s_by_intervall,g_by_intervall,g2_by_intervall,dead_by
   ind = [x for x, _ in enumerate(intervalls)]
   
   if noDead:
-    if split_g:
-      total = s_by_intervall + g_by_intervall + g2_by_intervall
-    else:
-      g_by_intervall = g_by_intervall+g2_by_intervall
-      total = s_by_intervall + g_by_intervall
+    total = s_by_intervall + g_by_intervall + g2_by_intervall
   else:
-    if split_g:
-      total = s_by_intervall + g_by_intervall + dead_by_intervall + g2_by_intervall
-    else:
-      g_by_intervall = g_by_intervall+g2_by_intervall
-      total = s_by_intervall + g_by_intervall + dead_by_intervall
+    total = s_by_intervall + g_by_intervall + dead_by_intervall + g2_by_intervall
+    
     
   noOfGoodIntervall = np.sum(total>0)
   
@@ -902,14 +895,14 @@ def plot_stacked_bar_slice(s_by_intervall,g_by_intervall,g2_by_intervall,dead_by
   s_by_intervall = s_by_intervall[0:noOfGoodIntervall]
   g_by_intervall = g_by_intervall[0:noOfGoodIntervall]
   dead_by_intervall = dead_by_intervall[0:noOfGoodIntervall]
-  if split_g:
-    g2_by_intervall = g2_by_intervall[0:noOfGoodIntervall]
-    proportion_g2 = np.true_divide(g2_by_intervall, total) * 100
+  #if split_g:
+  g2_by_intervall = g2_by_intervall[0:noOfGoodIntervall]
+  proportion_g2 = np.true_divide(g2_by_intervall, total) * 100
   
   proportion_s = np.true_divide(s_by_intervall, total) * 100
   proportion_g = np.true_divide(g_by_intervall, total) * 100
-  if not noDead:
-    proportion_dead = np.true_divide(dead_by_intervall, total) * 100
+  
+  proportion_dead = np.true_divide(dead_by_intervall, total) * 100
   
   fig1 = plt.figure()
   ax1 = fig1.add_subplot(111)
@@ -921,8 +914,9 @@ def plot_stacked_bar_slice(s_by_intervall,g_by_intervall,g2_by_intervall,dead_by
       ax1.bar(ind, proportion_g2, width=0.8, label='g2+M', color=g2_phase_color)
       #ax1.bar(ind, proportion_dead, width=0.8, label='dead', color='k')
     else:
-      ax1.bar(ind, proportion_s, width=0.8, label='s', color=s_phase_color, bottom=proportion_g+proportion_dead)
-      ax1.bar(ind, proportion_g, width=0.8, label='g', color=g_phase_color, bottom=proportion_dead)
+      proportion_g= proportion_g+proportion_g2
+      ax1.bar(ind, proportion_s, width=0.8, label='s', color=s_phase_color, bottom=proportion_g)
+      ax1.bar(ind, proportion_g, width=0.8, label='g', color=g_phase_color)
       #ax1.bar(ind, proportion_dead, width=0.8, label='dead', color='k')
   else:
     if split_g:
@@ -931,6 +925,7 @@ def plot_stacked_bar_slice(s_by_intervall,g_by_intervall,g2_by_intervall,dead_by
       ax1.bar(ind, proportion_g2, width=0.8, label='g2+M', color=g2_phase_color, bottom=proportion_dead)
       ax1.bar(ind, proportion_dead, width=0.8, label='dead', color=dead_phase_color)
     else:
+      proportion_g= proportion_g+proportion_g2
       ax1.bar(ind, proportion_s, width=0.8, label='s', color=s_phase_color, bottom=proportion_g+proportion_dead)
       ax1.bar(ind, proportion_g, width=0.8, label='g', color=g_phase_color, bottom=proportion_dead)
       ax1.bar(ind, proportion_dead, width=0.8, label='dead', color=dead_phase_color)
@@ -1042,21 +1037,22 @@ if __name__ == '__main__':
   print(os.path.basename(goodArguments.vbl_simulation_output_filename))
   
     
-#  with PdfPages('analysisCell_phase_dist_from_nearestvessel_%s.pdf' % goodArguments.output_grp_name ) as pp:
-#    s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_nearest_vessels(list_of_filenames)
-#    plot_cell_phases(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
-#  with PdfPages('analysisCell_phase_stackedbar_from_nearest_%s.pdf' % goodArguments.output_grp_name ) as pp:
-#    plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
-#  with PdfPages('analysisCell_phase_stackedbar_from_nearest_only_alive_%s.pdf' % goodArguments.output_grp_name ) as pp:
-#    plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead=True)
-#  with PdfPages('analysisCell_phase_dist_from_center_%s.pdf' % goodArguments.output_grp_name ) as pp:
-#    s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_center(list_of_filenames, max_distance_to_center=422.0)
-#    plot_cell_phases(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)  
-#  with PdfPages('analysisCell_phase_stackedbar_from_center_%s.pdf' % goodArguments.output_grp_name ) as pp:
-#    plot_stacked_bar_from_center(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
-#  with PdfPages('analysisCell_phase_stackedbar_from_center_only_alive_%s.pdf' % goodArguments.output_grp_name ) as pp:
-#    plot_stacked_bar_from_center(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead= True)
-  s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_slices(list_of_filenames, min_max_of_slice=[-100, 100])
+  with PdfPages('analysisCell_phase_dist_from_nearestvessel_%s.pdf' % goodArguments.output_grp_name ) as pp:
+    s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_nearest_vessels(list_of_filenames)
+    plot_cell_phases(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
+  with PdfPages('analysisCell_phase_stackedbar_from_nearest_%s.pdf' % goodArguments.output_grp_name ) as pp:
+    plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
+  with PdfPages('analysisCell_phase_stackedbar_from_nearest_only_alive_%s.pdf' % goodArguments.output_grp_name ) as pp:
+    plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead=True)
+  with PdfPages('analysisCell_phase_dist_from_center_%s.pdf' % goodArguments.output_grp_name ) as pp:
+    s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_center(list_of_filenames, max_distance_to_center=422.0)
+    plot_cell_phases(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)  
+  with PdfPages('analysisCell_phase_stackedbar_from_center_%s.pdf' % goodArguments.output_grp_name ) as pp:
+    plot_stacked_bar_from_center(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
+  with PdfPages('analysisCell_phase_stackedbar_from_center_only_alive_%s.pdf' % goodArguments.output_grp_name ) as pp:
+    plot_stacked_bar_from_center(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead= True)
+  s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_slices(list_of_filenames)
+  #s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_slices(list_of_filenames, min_max_of_slice=[-100, 100])
   with PdfPages('analysisCell_phase_slices_with_dead_%s.pdf' % goodArguments.output_grp_name ) as pp:
     plot_stacked_bar_slice(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead=False) 
   with PdfPages('analysisCell_phase_slices_no_dead_%s.pdf' % goodArguments.output_grp_name ) as pp:

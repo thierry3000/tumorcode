@@ -683,12 +683,18 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, col
              size=mytextsize*0.7,
              fontweight='bold')
   if not colormap_cells==None:
+    if options.cellsColorLimits is not None:
+      print('setting colors limits')
+      print(options.cellsColorLimits[0])
+      print(options.cellsColorLimits[1])
+      colormap_cells.set_clim(vmin=options.cellsColorLimits[0], vmax=options.cellsColorLimits[1])
     ax3 = fig.add_axes([0.65, 0.05, 0.26, 0.018]) # left bottom width height
     c2 = np.linspace(0, 1, 256).reshape(1,-1)
     c2 = np.vstack((c2,c2))
     ax3.imshow(c2, aspect='auto', cmap = colormap_cells.get_cmap(), vmin = 0, vmax = 1)
     ax3.yaxis.set_visible(False)
     xticks = np.linspace(0., 256., 5)
+    
     #xticklabels = [ myutils.f2s(v,prec=1) for v in np.linspace(*cm.get_clim(), num = 5) ]
     ''' TODO:
         border of colorbar 
