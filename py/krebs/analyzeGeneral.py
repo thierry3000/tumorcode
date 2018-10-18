@@ -416,19 +416,33 @@ def CalcPhiVessels(dataman, vesselgroup, ld, scaling, samples_per_cell = 5):
   '''samples per cell mean the lattice grid cell,
      the total number of samples for a vessel is determined by the ratio
      of its volume to the volume of a grid cell times the samples_per_cell'''
-  # vessel volume fraction
-  #vessels = krebsutils.read_vesselgraph(ds, ['radius','position', 'flags'])
-  vessels = dataman.obtain_data('vessel_graph', vesselgroup, ['radius', 'position', 'flags'])
-  mask = np.nonzero(vessels.edges['flags'] & krebsutils.CIRCULATED)[0]
-  vessels = vessels.get_filtered(edge_indices = mask)
-  vessels.nodes['position'] *= scaling
-  vessels.edges['radius'] *= scaling
-  vessel_fraction = krebsutils.make_vessel_volume_fraction_field(
-    vessels.nodes['position'],
-    vessels.edgelist,
-    vessels.edges['radius'],
-    ld,
-    samples_per_cell)
+  graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'flags'] , return_graph=True)
+  mask=myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED)
+  print(mask.shape)
+  graph = graph.get_filtered(edge_indices = mask)
+  print('vessels filtered before fraction calculation!')
+  
+  thePositions = np.asarray(graph['position'])*scaling
+  theRadii = np.asarray(graph['radius'])*scaling
+  theRadii = theRadii[:,0]
+  theEdgeList = np.asarray(graph.edgelist)
+  if sys.flags.debug:
+    print(thePositions)
+    print(thePositions.shape)
+    print(type(thePositions))
+    print(theEdgeList)
+    print(theEdgeList.shape)
+    print(type(theEdgeList))
+    print(theRadii)
+    print(theRadii.shape)
+    print(type(theRadii))
+    print(ld)
+    print(type(ld))
+    print(ld.GetScale())
+    print(type(samples_per_cell))
+  
+  vessel_fraction = krebsutils.make_vessel_volume_fraction_field(thePositions,theEdgeList,theRadii,ld,samples_per_cell)
+  
   return vessel_fraction
 
 

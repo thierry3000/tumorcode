@@ -454,18 +454,17 @@ np::arraytbase make_position_field(const py::object &py_ldobj)
 /**@brief Approximately fill a grid with how much of each voxel is occupied by vessels.
 */
 #if BOOST_VERSION>106300
-np::ndarray compute_vessel_volume_fraction_field(np::ndarray pos, np::ndarray edges, np::ndarray radius, const py::object &py_ldfield, int samples_per_cell)
+np::ndarray compute_vessel_volume_fraction_field(np::ndarray &pos, np::ndarray &edges, np::ndarray &radius, const py::object &py_ldfield, int samples_per_cell)
 {
+  
   LatticeDataQuad3d ld = py::extract<LatticeDataQuad3d>(py_ldfield);
-
   int cnt = edges.get_shape()[0];
 
   Array3d<float> tmp(ld.Box());
-
+  
   int num_total_samples = 0;
   CylinderNetworkSampler sampler;
   sampler.Init(ld.Scale(), make_ptree("samples_per_cell", samples_per_cell));
-
   for(int i=0; i<cnt; ++i)
   {
     Float3 p0, p1;
@@ -476,6 +475,7 @@ np::ndarray compute_vessel_volume_fraction_field(np::ndarray pos, np::ndarray ed
       p0[j] = py::extract<float>(pos[a][j]);
       p1[j] = py::extract<float>(pos[b][j]);
     }
+    
     sampler.Set(p0, p1, py::extract<float>(radius[i])); // 3rd arg is the radius
     int num_samples = sampler.GenerateVolumeSamples();
     for (int k=0; k<num_samples; ++k)
@@ -484,10 +484,13 @@ np::ndarray compute_vessel_volume_fraction_field(np::ndarray pos, np::ndarray ed
     }
     //cout << sampler.GetSample(0).wpos << endl;
   }
+  
   np::dtype dtype = np::dtype::get_builtin<float>();
-  py::tuple shape = py::tuple(Cast<Py_ssize_t>(::Size(ld.Box())));
-  np::ndarray res = np::zeros(shape, dtype);
-  //np::arrayt<float> res = np::zeros(3, Cast<Py_ssize_t>(::Size(ld.Box())).data(), np::getItemtype<float>());
+  
+  Int3 size = Size(ld.Box());
+  py::tuple shape = py::make_tuple(size[0],size[1],size[2], 3);
+  np::ndarray res = np::zeros(shape,np::dtype::get_builtin<float>());
+  
   FOR_BBOX3(p, ld.Box())
   {
     res[p[0]][p[1]][p[2]] = std::min<float>(1., tmp(p));
