@@ -463,8 +463,8 @@ class EasyPovRayRender(object):
       position, radius, colors_in_rgb, style_object, clip_style_object, clip_object, tempfile.filename)
       self.pvfile.write("#include \"%s\"" % tempfile.filename)
     
-    if 'vessel_clip' in options:
-      clip = clipFactory(options.vessel_clip)
+    if 'tumor_clip' in options:
+      clip = clipFactory(options.tumor_clip)
     else:
       clip = clipFactory(None)
       #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
@@ -784,21 +784,25 @@ def CreateScene2(vesselgroup, epv, graph, imagefn, options):
         epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
     else:
       epv.setCamera((0,0,cam_distance_factor*0.5*(zsize*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
-  else:
+  elif cam in ('pie_only_cells', 'pie_only_vessels'):
     basepos = np.asarray((0.6,0.7,0.7))*(1./1.4)
     epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
     num_samples_large_light = 10
     num_samples_small_light = 3
     epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
     epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
-    #options.keys()
-    #print(options)
-    #print(options.vessel_clip)
-    options.vessel_clip = ('pie', 0.)
-    options.tumor_clip = ('pie', -20*trafo.w)
-    #options.update(vessel_clip = ('pie', 0.),
-    #              tumor_clip = ('pie', -20*trafo.w))
-  #epv.addVesselTree2(epv, graph, trafo = trafo, options=options )
+    options.vessel_clip = ('pie', 100*trafo.w)
+    options.tumor_clip = ('pie', 0)
+  else: #this is the pie case!!!
+    basepos = np.asarray((0.6,0.7,0.7))*(1./1.4)
+    epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
+    num_samples_large_light = 10
+    num_samples_small_light = 3
+    epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
+    epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
+    options.vessel_clip = ('pie', 20*trafo.w)
+    options.tumor_clip = ('pie', 0)
+    
   epv.addVesselTree2(epv, graph, trafo = trafo, options=options )
 
 

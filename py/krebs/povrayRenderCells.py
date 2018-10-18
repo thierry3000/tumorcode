@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 a nice rendering command
 submitPovrayRender fakeTumMTS-default-typeI-sample00-vbl_safe_1.h5 out0442 --fontcolor='white' --background=0.0 --cam=pie -f --cells
+for i in {000..619}; do submitPovrayRender ../../fakeTumMTS-default-typeI-sample00-vbl_3484335.h5 out0${i} --fontcolor='white' --background=0.0 --cam=pie -f --cells --cellsColorLimits 5.8 23.9 --cellsProperty=o2 --numThreads=4;done
 '''
 
 if __name__ == '__main__':
