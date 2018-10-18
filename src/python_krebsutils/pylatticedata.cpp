@@ -263,15 +263,18 @@ void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float sa
 
 PyLd* PySetupFieldLattice(const py::object &py_wbbox, int dim, float spacing, float safety_spacing)
 {
+  cout << "setting up lattice field in python" << endl;
   FloatBBox3 wbbox = BBoxFromPy<float, 3>(py_wbbox);  
   LatticeDataQuad3d ld;
   SetupFieldLattice(wbbox, dim, spacing, safety_spacing, ld);
   typedef polymorphic_latticedata::Derived<LatticeDataQuad3d> LD;
-  //return new PyLd(new LD(ld));
-  //return new PyLd(new LD(ld));
-  //serialization issues here!!!
-  //LD alattice = new LD(ld);
-  //return new PyLd(alattice);
+  //PyLd pyld(new polymorphic_latticedata::Derived<LatticeDataQuad3d>(ld));
+  BBox3 bbox_of_input = ld.Box();
+#ifdef DEBUG
+  cout << bbox_of_input << endl;
+#endif
+  PyLd *pyld = new PyLd("QUAD3D",bbox_of_input, spacing); 
+  return pyld;
 }
 
 
