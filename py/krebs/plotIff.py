@@ -65,7 +65,7 @@ gridcolor = (0.7,0.7,0.7)
 def mk_CM_():
   grey = matplotlib.cm.gray_r
   grey_r = matplotlib.cm.gray
-  spectral = matplotlib.cm.spectral
+  spectral = matplotlib.cm.Spectral
   return Struct(locals())
 ColorMaps = mk_CM_()
 CM = ColorMaps

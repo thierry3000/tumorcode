@@ -42,8 +42,9 @@ import h5py
 import myutils
 import krebs.analyzeGeneral
 import krebs.plotIff
-import detailedo2Analysis as o2analysis
+import krebs.detailedo2Analysis as o2analysis
 import pydicom
+
 def std_example():
   # Particle setup
   domain_size = 20.0
@@ -73,37 +74,41 @@ def std_example():
 def from_vessel_file(filenames,grp_pattern):
   dirs = set()
   dataman = myutils.DataManager(20, [krebs.plotIff.DataTissue(), krebs.plotIff.DataGlobalIff(), krebs.plotIff.DataRadialIff(), krebs.analyzeGeneral.DataDistanceFromCenter(), krebs.analyzeGeneral.DataVesselSamples(),krebs.analyzeGeneral.DataBasicVessel(), o2analysis.DataDetailedPO2()])
-  f_measure = h5files.open('chache.h5', 'a', search = False)  
-  def cachelocation(g):
-    path = posixpath.join('FileCS_'+myutils.checksum(basename(g.file.filename)), g.name.strip(posixpath.sep))
-    return (f_measure, path)
-  #run with grp_pattern: iff/vessels
-  for fn in filenames:
-    with h5py.File(fn, 'r+') as f:
-      d = myutils.walkh5(f, grp_pattern)
-      assert len(d), 'you fucked up, pattern "%s" not found in "%s"!' % (grp_pattern, fn)
-      dirs =set.union(dirs, d)
-      for group_path in dirs:
-        if 'vessel' in grp_pattern and not 'o2' in grp_pattern:
-          vesselgroup = f[group_path]
-          ldvessels = ku.read_lattice_data_from_hdf(vesselgroup['lattice'])
-          fieldld = ku.SetupFieldLattice(ldvessels.worldBox, 3, 10, 0.)        
-          phi_vessels = krebs.analyzeGeneral.CalcPhiVessels(dataman, vesselgroup, fieldld, scaling = 1., samples_per_cell = 5)
-          print('bla')
-          import nibabel as nib
-          new_image=nib.Nifti1Image(phi_vessels,affine=np.eye(4))
-          common_filename = os.path.splitext(os.path.basename(fn))[0]
-          new_image.to_filename(common_filename + '_vessels'+ '.nii')
-        if 'o2' in grp_pattern:
-          po2group = f[group_path]
-          #sample_length = 500.
-          #data = dataman.obtain_data('detailedPO2_global', 'po2_tissue', po2group, sample_length, cachelocation(po2group))        
-          data = np.asarray(po2group['po2field'])
-          print('bla')
-          import nibabel as nib
-          new_image=nib.Nifti1Image(data,affine=np.eye(4))
-          common_filename = os.path.splitext(os.path.basename(fn))[0]
-          new_image.to_filename(common_filename + '_po2'+ '.nii')
+  with h5py.File('chache.h5', 'a') as f_measure:
+  #f_measure = h5files.open('chache.h5', 'a', search = False)  
+    def cachelocation(g):
+      path = posixpath.join('FileCS_'+myutils.checksum(basename(g.file.filename)), g.name.strip(posixpath.sep))
+      return (f_measure, path)
+    #run with grp_pattern: iff/vessels
+    for fn in filenames:
+      with h5py.File(fn, 'r') as f:
+        d = myutils.walkh5(f, grp_pattern)
+        assert len(d), 'your refered pattern "%s" not found in "%s"!' % (grp_pattern, fn)
+        dirs =set.union(dirs, d)
+        for group_path in dirs:
+          if 'vessel' in grp_pattern and not 'o2' in grp_pattern:
+            vesselgroup = f[group_path]
+            print("try to read vessel lattice data")
+            ldvessels = ku.read_lattice_data_from_hdf_by_filename(str(vesselgroup.file.filename), str(vesselgroup.name)+'/lattice') #['lattice']
+            print('worldbox:')
+            print(ldvessels.worldBox)
+            fieldld = ku.SetupFieldLattice(ldvessels.worldBox, 3, 10, 0.)
+            print("extract vessel fraction")
+            phi_vessels = krebs.analyzeGeneral.CalcPhiVessels(dataman, vesselgroup, fieldld, scaling = 1., samples_per_cell = 5)
+            import nibabel as nib
+            new_image=nib.Nifti1Image(phi_vessels,affine=np.eye(4))
+            common_filename = os.path.splitext(os.path.basename(fn))[0]
+            new_image.to_filename(common_filename + '_vessels'+ '.nii')
+          if 'o2' in grp_pattern:
+            po2group = f[group_path]
+            #sample_length = 500.
+            #data = dataman.obtain_data('detailedPO2_global', 'po2_tissue', po2group, sample_length, cachelocation(po2group))        
+            data = np.asarray(po2group['po2field'])
+            print('bla')
+            import nibabel as nib
+            new_image=nib.Nifti1Image(data,affine=np.eye(4))
+            common_filename = os.path.splitext(os.path.basename(fn))[0]
+            new_image.to_filename(common_filename + '_po2'+ '.nii')
         
 
   
