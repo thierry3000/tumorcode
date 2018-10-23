@@ -44,6 +44,7 @@ import identifycluster
 if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
   matplotlib.use('agg')
 import matplotlib.pyplot
+import matplotlib.colors
 import mpl_utils
 
 ##############################################################################
@@ -317,6 +318,10 @@ class EasyPovRayRender(object):
     pv.LightSource(*ls_args).write(self.pvfile)
 
   def setBackground(self, color):
+    '''color come with matplotlib text style
+        we have to transform to RGB here
+    '''
+    color = matplotlib.colors.to_rgb(color)
     pv.Background(color=Vec3(color)).write(self.pvfile)
 
   def addPlane(self, pos, normal, color):
@@ -342,10 +347,17 @@ class EasyPovRayRender(object):
       rad = trafo.transform_scalar(rad)
       #print 'positions after trafo = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
       
-      if 'vessel_clip' in options:
-        clip = clipFactory(options.vessel_clip)
+      if options.clip_box is None:
+        if 'vessel_clip' in options:
+          clip = clipFactory(options.vessel_clip)
+        else:
+          clip = clipFactory(None)
       else:
-        clip = clipFactory(None)
+        relativeWorld = [trafo.transform_scalar(x) for x in options.clip_box]
+        print("relative world")
+        print(relativeWorld)
+        #clip = clipFactory(['clip_box', options.clip_box])
+        clip = clipFactory(['clip_box', relativeWorld])
       #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
   
       edgecolors = vesselgraph.edges['colors']
@@ -593,6 +605,9 @@ def ClipKuchen(v0, v1, o):
 def ClipSlice(v0, v1, o0, o1):
   return (krebsutils.ClipShape.slice, v3_(v0), v3_(v1), v3_(o0), v3_(o1))
 
+def ClipBox(center, extents):
+  return (krebsutils.ClipShape.box, v3_(center), v3_(extents))
+
 def ClipNone():
   return (krebsutils.ClipShape.none,)
 
@@ -616,7 +631,14 @@ def clipFactory(args):
     a, b = args[1:]
     a = np.asarray([a,0,0])
     b = np.asarray([b,0,0])
-    clip = ClipSlice((1,0,0),(-1,0,0),b,a)   
+    clip = ClipSlice((1,0,0),(-1,0,0),b,a)
+  elif 'clip_box' == args[0]:
+    center_and_extent = args[1]
+    center = center_and_extent[0:3]
+    extents = center_and_extent[3:6]
+    print(center)
+    print(extents)
+    clip = ClipBox(center, extents)
   return clip
 
 
@@ -638,9 +660,11 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, col
   rc('axes', edgecolor = fontcolor, labelcolor = fontcolor)
   rc('xtick', color = fontcolor)
   rc('ytick', color = fontcolor)
-  rc('axes', facecolor = 'none')
+  rc('axes', facecolor = fontcolor)
+  rc('savefig', facecolor = options.background, edgecolor = 'none')
   #rc('font', size = 10.)
-  rc('savefig', facecolor = 'none', edgecolor = 'none') # no background so transparency is preserved no matter what the config file settings are
+  if options.out_alpha:
+    rc('savefig', facecolor = 'none', edgecolor = 'none') # no background so transparency is preserved no matter what the config file settings are
   img = matplotlib.image.imread(image_fn)
   resy, resx, _ = img.shape
   mytextsize=resx/float(dpi)*4
@@ -675,8 +699,8 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, col
     ax2.set(xticklabels=xticklabels)
     ax2.tick_params(labelsize=mytextsize/4, colors=fontcolor)
     #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
-    
-    ax2.text(0.4,-0.09,label,
+    if not options.noLabel:
+      ax2.text(0.4,-0.09,label,
              horizontalalignment='left',
              verticalalignment='bottom',
              transform=ax.transAxes,
@@ -706,8 +730,8 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, col
     ax3.set(xticklabels=xticklabels)
     ax3.tick_params(labelsize=mytextsize/4, colors=fontcolor)
     #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
-    
-    ax3.text(0.4,-0.09,label,
+    if not options.noLabel:
+      ax3.text(0.4,-0.09,label,
              horizontalalignment='left',
              verticalalignment='bottom',
              transform=ax.transAxes,
@@ -721,8 +745,8 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, col
     #haven't thought about adjustion the sizebar for rotated systems
     '''resx units = x_length_in_mum
     '''
-    x_length_in_mum = abs(wbbox[1]-wbbox[0])
-    y_length_in_mum = abs(wbbox[3]-wbbox[2])
+    x_length_in_mum = options.cam_distance_multiplier*abs(wbbox[1]-wbbox[0])
+    y_length_in_mum = options.cam_distance_multiplier*abs(wbbox[3]-wbbox[2])
     length_of_size_bar_in_mum = 250;
     length_in_data_space = float(resx)*length_of_size_bar_in_mum/x_length_in_mum
     length_in_data_spaceY = float(resy)*length_of_size_bar_in_mum/y_length_in_mum    
@@ -750,59 +774,84 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, col
              transform=ax.transAxes,
              size=mytextsize*0.4,
              fontweight='bold')
-  fig.savefig(output_filename, dpi=dpi, bbox_inches=None ) # overwrite the original
+  fig.savefig(output_filename, dpi=dpi, bbox_inches=None) # overwrite the original
 
 
-def RenderImageWithOverlay(epv, imagefn, colormap, label, options, colormap_cells=None):
+def RenderImageWithOverlay(epv, colormap, label, options, colormap_cells=None):
   tf = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True) 
   epv.render(tf.filename)
   #plotsettings = dict(myutils.iterate_items(kwargs, ['dpi','fontcolor','wbbox'], skip=True))    
-  OverwriteImageWithColorbar(options,tf.filename, colormap, label, output_filename = imagefn, colormap_cells=colormap_cells)
+  OverwriteImageWithColorbar(options,tf.filename, colormap, label, output_filename = options.imageFileName, colormap_cells=colormap_cells)
 
 ''' try an common interface for data plotting '''
-def CreateScene2(vesselgroup, epv, graph, imagefn, options):
+def CreateScene2(vesselgroup, epv, graph, options):
   #wbbox = ComputeBoundingBox(vesselgroup, graph)
   wbbox = options.wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
   zsize = (wbbox[5]-wbbox[4])
   epv.setBackground(options.background)
   cam = options.cam
-  if cam in ('topdown', 'topdown_slice'):
-    cam_fov = 60.
-    cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
-    #epv.addLight(10*Vec3(1.7,1.2,2), 1., area=(4, 4, 3, 3), jitter=True)
-    epv.addLight(10.*Vec3(1,0.5,2), 1.2)
-    if cam == 'topdown_slice':
-      if options.slice_pos:
-        print(trafo.w)
-        options.vessel_clip=('zslice', (options.slice_pos-200)*trafo.w, (options.slice_pos+200)*trafo.w)
-        #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
-        epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
+  if not options.cam_distance_multiplier is None:
+    cam_distance_factor = options.cam_distance_multiplier
+  else:
+    cam_distance_factor = 1.0
+  
+  if options.clip_box is None:
+    if cam in ('topdown', 'topdown_slice'):
+      cam_fov = 60.
+      if not options.cam_distance_multiplier is None:
+        cam_distance_factor = options.cam_distance_multiplier
       else:
-        options.vessel_clip=('zslice', -301*trafo.w, 301*trafo.w)
-        options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
-        epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
-    else:
-      epv.setCamera((0,0,cam_distance_factor*0.5*(zsize*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
-  elif cam in ('pie_only_cells', 'pie_only_vessels'):
-    basepos = np.asarray((0.6,0.7,0.7))*(1./1.4)
-    epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
-    num_samples_large_light = 10
-    num_samples_small_light = 3
-    epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
-    epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
-    options.vessel_clip = ('pie', 100*trafo.w)
-    options.tumor_clip = ('pie', 0)
-  else: #this is the pie case!!!
-    basepos = np.asarray((0.6,0.7,0.7))*(1./1.4)
-    epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
+        cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
+      #epv.addLight(10*Vec3(1.7,1.2,2), 1., area=(4, 4, 3, 3), jitter=True)
+      epv.addLight(10.*Vec3(1,0.5,2), 1.2)
+      if cam == 'topdown_slice':
+        options.imageFileName += '_topdown_slice_'
+        if options.slice_pos:
+          print(trafo.w)
+          options.vessel_clip=('zslice', (options.slice_pos-200)*trafo.w, (options.slice_pos+200)*trafo.w)
+          #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+          epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
+        else:
+          options.vessel_clip=('zslice', -301*trafo.w, 301*trafo.w)
+          options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+          epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
+      else:
+        options.imageFileName += '_topdown_'
+        epv.setCamera((0,0,cam_distance_factor*0.5*(zsize*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
+    elif cam in ('pie_only_cells', 'pie_only_vessels'):
+      options.imageFileName += '_pie_vbl_'
+      basepos = np.asarray((0.6,0.7,0.7))*(1./1.4)
+      epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
+      num_samples_large_light = 10
+      num_samples_small_light = 3
+      epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
+      epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
+      options.vessel_clip = ('pie', 100*trafo.w)
+      options.tumor_clip = ('pie', 0)
+    else: #this is the pie case!!!
+      options.imageFileName += '_pie_'
+      basepos = cam_distance_factor * np.asarray((0.6,0.7,0.7))*(1./1.4)
+      epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
+      num_samples_large_light = 10
+      num_samples_small_light = 3
+      epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
+      epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
+      options.vessel_clip = ('pie', 20*trafo.w)
+      options.tumor_clip = ('pie', 0)
+  else:
+    options.imageFileName += '_box_at_%i_%i_%i' % ( options.clip_box[0],options.clip_box[1],options.clip_box[2]  )
+    center_of_box = trafo.transform_position(np.asarray(options.clip_box[0:3]))
+    extent = trafo.transform_position(np.asarray(options.clip_box[3:6]))
+    basepos = cam_distance_factor * ( center_of_box + extent)
+    epv.setCamera(basepos, center_of_box, 90, up = (0,0,1))
     num_samples_large_light = 10
     num_samples_small_light = 3
     epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
     epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
     options.vessel_clip = ('pie', 20*trafo.w)
     options.tumor_clip = ('pie', 0)
-    
+      
   epv.addVesselTree2(epv, graph, trafo = trafo, options=options )
 
 

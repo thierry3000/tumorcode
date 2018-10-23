@@ -37,11 +37,73 @@ public:
   virtual int clipSphere(const Float3 &pos, float rad) { return CLIP_NONE; }
   virtual int clipCylinder(const Float3 &posa, const Float3 &posb, float rad) { return CLIP_NONE; }
   virtual string asPovRayObject(const string &stylestr) { return string(""); }
+  virtual void print_type() {}
 };
 
 typedef boost::shared_ptr<ClipBase> CP;
 
+/* certain implementation
+ * uses box information to clip 
+ */
+class ClipBox : public ClipBase
+{
+  Float3 center;
+  Float3 extents;
+public:
+  ClipBox(const Float3 &center_, const Float3 &extents_) : center(center_), extents(extents_){}
+  virtual int clipSphere(const Float3 &pos_, float r)
+  {
+    // NOTE: in principle one need to include the radius as well
+    bool inX = pos_[0] < center[0]+0.5*extents[0] and pos_[0] > center[0]-0.5*extents[0];
+    bool inY = pos_[1] < center[1]+0.5*extents[1] and pos_[1] > center[1]-0.5*extents[1];
+    bool inZ = pos_[2] < center[2]+0.5*extents[2] and pos_[2] > center[2]-0.5*extents[2];
+    if( inX and inY and inZ)
+    {
+      // this is in the box
+      //cout << pos_ << endl;
+      return CLIP_NONE;
+    }
+    else 
+    {
+      return CLIP_FULL;
+    }
+  }
+  virtual int clipCylinder(const Float3 &pos1, const Float3 &pos2, float r)
+  {
+    Float3 pos_ = pos1;
+    //cout << " center: " << center << endl;
+    //cout << " extents: " << extents << endl;
+    //cout << " pos : " << pos_ << endl;
+    // NOTE: in principle one need to include the radius as well
+    bool inX_a = pos_[0] < center[0]+0.5*extents[0] and pos_[0] > center[0]-0.5*extents[0];
+    bool inY_a = pos_[1] < center[1]+0.5*extents[1] and pos_[1] > center[1]-0.5*extents[1];
+    bool inZ_a = pos_[2] < center[2]+0.5*extents[2] and pos_[2] > center[2]-0.5*extents[2];
+    
+    pos_ = pos2;
+    bool inX_b = pos_[0] < center[0]+0.5*extents[0] and pos_[0] > center[0]-0.5*extents[0];
+    bool inY_b = pos_[1] < center[1]+0.5*extents[1] and pos_[1] > center[1]-0.5*extents[1];
+    bool inZ_b = pos_[2] < center[2]+0.5*extents[2] and pos_[2] > center[2]-0.5*extents[2];
+    
+    if( (inX_a and inY_a and inZ_a) or (inX_b and inY_b and inZ_b) )
+    {
+      // this is in the box
+      //cout << pos_ << endl;
+      return CLIP_NONE;
+    }
+    else 
+    {
+      return CLIP_FULL;
+    }
+  }
+  void print_type()
+  {
+    printf("ClipBox\n");
+  }
+};
 
+/* certain implementation
+ * uses plane information to clip 
+ */
 class ClipPlane : public ClipBase
 {
   Float3 n;
@@ -57,6 +119,7 @@ public:
     if (q<-r) return CLIP_NONE;
     return CLIP_PARTIAL;
   }
+  
   virtual int clipCylinder(const Float3 &pos1, const Float3 &pos2, float r)
   {
     float q1 = pos1.dot(n)-d;
@@ -136,7 +199,8 @@ public:
 enum ClipId {
   CLIP_ID_NONE = 0,
   CLIP_ID_PIE,
-  CLIP_ID_SLICE
+  CLIP_ID_SLICE,
+  CLIP_ID_BOX
 };
 
 
@@ -168,6 +232,19 @@ CP clipper_factory(const py::tuple &py_clip_data)
           CP(new ClipPlane(n1, o1)),
           CP(new ClipPlane(n2, o2))
                      ));
+      }
+      break;
+      case CLIP_ID_BOX:
+      {
+        Float3 center = py::extract<Float3>(py_clip_data[1]);
+        Float3 extents = py::extract<Float3>(py_clip_data[2]);
+        //Float3 o1  = py::extract<Float3>(py_clip_data[3]);
+        //Float3 o2  = py::extract<Float3>(py_clip_data[4]);
+//         cp.reset(new ClipOr(
+//           CP(new ClipPlane(n1, o1)),
+//           CP(new ClipPlane(n2, o2))
+//                      ));
+        cp.reset(new ClipBox(center, extents));
       }
       break;
     }
@@ -216,6 +293,10 @@ void export_network_for_povray(const np::ndarray edges,
     noderad[b] = std::fmax(noderad[b], radius);
   }
 
+  /** this initializes the clipper,
+   * all information are stored in this class and we loop over all edges and nodes to 
+   * apply the set clips
+   */
   CP cp = clipper_factory(py_clip_data);
 
   std::ofstream os(filename.c_str());
@@ -235,12 +316,17 @@ void export_network_for_povray(const np::ndarray edges,
 
     //double radius = py::extract<float>(rad[i]); //required for the hdf5 format < 1.10
     double radius = py::extract<float>(rad[i][0]);
+    
+    //if cp is definede cp->clipCylinder is executed
+    //cp->print_type();
     int intersect = cp ? cp->clipCylinder(pa, pb, radius) : CLIP_NONE;
-    if (intersect == CLIP_FULL) continue;
+    
+    if (intersect == CLIP_FULL) continue; // go to next vessel, this one is not shown
 
     string stylestr = py::extract<string>(py_styler.attr("edge_style")(i, a, b));
     string objstr = str(format("cylinder {\n<%f,%f,%f>, <%f,%f,%f>, %f\n%s}\n") %
                                 pa[0] % pa[1] % pa[2] % pb[0] % pb[1] % pb[2] % radius % stylestr);
+    
     if (intersect == CLIP_PARTIAL)
     {
       string clip_stylestr = py::extract<string>(py_clip_styler.attr("edge_style")(i, a, b));
@@ -260,6 +346,7 @@ void export_network_for_povray(const np::ndarray edges,
     Float3 p(pos_1, pos_2, pos_3);
 
     int intersect = cp ? cp->clipSphere(p, noderad[i]) : CLIP_NONE;
+    
     if (intersect == CLIP_FULL) continue;
 
     string stylestr = py::extract<string>(py_styler.attr("node_style")(i));
@@ -440,6 +527,7 @@ void export_povray_export()
   py::enum_<ClipId>("ClipShape")
     .value("slice", CLIP_ID_SLICE)
     .value("pie", CLIP_ID_PIE)
+    .value("box", CLIP_ID_BOX)
     .value("none", CLIP_ID_NONE);
   py::def("povray_clip_object_str", pv_clip_object_str);
 }

@@ -293,9 +293,13 @@ def writeCells_(graph, options):
     keys_I_want = ['volume_extra', 'isonAS']
     if 'vbl' in f[str(options.grp_pattern)]:
       vblGroup = f[str(options.grp_pattern)+'/vbl']
+      
       for aKey in keys_I_want:
-        npReadOut = np.asarray(vblGroup[aKey])
-        polydata.GetPointData().AddArray(asVtkArray(npReadOut, aKey, vtkFloatArray))
+        if aKey in vblGroup:
+          npReadOut = np.asarray(vblGroup[aKey])
+          polydata.GetPointData().AddArray(asVtkArray(npReadOut, aKey, vtkFloatArray))
+        else:
+          print('%s is not found in your data file' % aKey)
     else:
       print('vbl subfolder not found!')
       

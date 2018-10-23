@@ -75,7 +75,7 @@ void printObjectName(const H5::Group &g)
   }
   catch(H5::Exception &e)
   {
-    e.printError();
+    e.printErrorStack();
   }
 }
 
@@ -87,7 +87,7 @@ void printObjectName( H5::H5Location &g, const H5std_string attr_name, void* ope
   }
   catch(H5::Exception &e)
   {
-    e.printError();
+    e.printErrorStack();
   }
 }
 
@@ -111,7 +111,7 @@ void add_all_attributes_to_ptree( H5::H5Object &g, const H5std_string attr_name,
   }
   catch(H5::Exception &e)
   {
-    e.printError();
+    e.printErrorStack();
   }
 }
 
@@ -134,7 +134,7 @@ void add_all_attributes_to_ptree( H5::H5Location &g, H5std_string attr_name, voi
   }
   catch(H5::Exception &e)
   {
-    e.printError();
+    e.printErrorStack();
   }
 }
 
@@ -149,7 +149,7 @@ void ReadHdfPtree(boost::property_tree::ptree &pt, H5::Group &f, HdfWritePtreeAs
   }
   catch(H5::Exception &e)
   {
-    e.printError();
+    e.printErrorStack();
   }
 #endif
 

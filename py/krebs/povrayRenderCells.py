@@ -21,8 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 '''
 a nice rendering command
-submitPovrayRender fakeTumMTS-default-typeI-sample00-vbl_safe_1.h5 out0442 --fontcolor='white' --background=0.0 --cam=pie -f --cells
-for i in {000..619}; do submitPovrayRender ../../fakeTumMTS-default-typeI-sample00-vbl_3484335.h5 out0${i} --fontcolor='white' --background=0.0 --cam=pie -f --cells --cellsColorLimits 5.8 23.9 --cellsProperty=o2 --numThreads=4;done
+submitPovrayRender ../../fakeTumMTS-default-typeI-sample00-vbl_3486978.h5 out0* --cam=pie_only_cells --cells --noLabel --background=black --fontcolor=white -f --numTreads=4 --cellsProperty=o2 --cellsColorLimits 6 24
+pH_ex 5.8 7.5
+ffmpeg -r 20 -f image2 -s 1920x1080 -i "fakeTum-gero_3d_8mm-typeI-sample00-gero_3month_to_5mmd-out0%03d.png_slice.png" -vcodec libx264 -crf 25 -pix_fmt yuv420p growth.mp4
 '''
 
 if __name__ == '__main__':

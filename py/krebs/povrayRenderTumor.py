@@ -178,20 +178,20 @@ def render_different_data_types( vesselgroup, tumorgroup, imagefn, options, cell
     
     cm, (datamin, datamax) = povrayRenderVessels.make_any_color_arrays(graph, data_name)
     fn = vesselgroup.file.filename
-    if cell_group is not None:
-      imagefn = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+'_cell_'+ options.cellsProperty +'_'+filenamepostfix+'.'+ options.format
+    if cell_group is not None and options.cells:
+      options.imageFileName = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+'_cell_'+ options.cellsProperty +'_'+filenamepostfix #+'.'+ options.format
     else:
-      imagefn = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix+'.'+ options.format
+      options.imageFileName = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix #+'.'+ options.format
     with povrayEasy.EasyPovRayRender(options) as epv:
-      povrayEasy.CreateScene2(vesselgroup,epv, graph, imagefn, options)
+      povrayEasy.CreateScene2(vesselgroup,epv, graph, options)
       if options.noOverlay:
-        epv.render(imagefn)
+        epv.render(options.imageFileName)
       else:
         if cell_group and options.cells:
           cells_cm = povrayRenderCells.addVBLCells(epv, options.cellsProperty, cell_group, options)
-          povrayEasy.RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options,colormap_cells=cells_cm )
+          povrayEasy.RenderImageWithOverlay(epv, cm, labels[data_name], options,colormap_cells=cells_cm )
         else:
-          povrayEasy.RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options)
+          povrayEasy.RenderImageWithOverlay(epv, cm, labels[data_name], options)
 
 
 #if __name__ == '__main__':
