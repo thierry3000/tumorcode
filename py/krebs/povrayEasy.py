@@ -347,19 +347,31 @@ class EasyPovRayRender(object):
       rad = trafo.transform_scalar(rad)
       #print 'positions after trafo = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
       
-      if options.clip_box is None:
-        if 'vessel_clip' in options:
+      print("addVesselTree2")
+      if options.clip_box is None and options.clip_ball is None:
+        if options.vessel_clip is not None:
+          
+          print(options.vessel_clip)
           clip = clipFactory(options.vessel_clip)
         else:
           clip = clipFactory(None)
       else:
-        relativeWorld = [trafo.transform_scalar(x) for x in options.clip_box]
-        print("relative world")
-        print(relativeWorld)
-        #clip = clipFactory(['clip_box', options.clip_box])
-        clip = clipFactory(['clip_box', relativeWorld])
-      #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
-  
+        print("apply vessel_clip")
+        print(options.vessel_clip)
+        clip = clipFactory(options.vessel_clip)
+#        if not options.clip_box is None:
+#          #relativeWorld = [trafo.transform_scalar(x) for x in options.clip_box]
+#          print("relative world")
+#          #print(relativeWorld)
+#          #clip = clipFactory(['clip_box', options.clip_box])
+#          clip = clipFactory(['clip_box', relativeWorld])
+#        if not options.clip_ball is None:
+#      #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
+#          relativeWorld = [trafo.transform_scalar(x) for x in options.clip_ball]
+#          print("bla")
+#          print(options.vessel_clip)
+#          #clip = clipFactory(['clip_box', options.clip_box])
+#          clip = clipFactory(options.vessel_clip)
       edgecolors = vesselgraph.edges['colors']
       nodecolors = vesselgraph.nodes['colors']
   
@@ -410,6 +422,8 @@ class EasyPovRayRender(object):
 
   def addVesselTree(self, edges, pos, rad, style_object, clip_object, clip_style_object):
     tempfile = self.makeTmpFile()
+    print(clip_style_object)
+    print(clip_object)
     krebsutils.export_network_for_povray(
       edges, pos, rad, style_object, clip_style_object, clip_object, tempfile.filename)
     self.pvfile.write("#include \"%s\"" % tempfile.filename)
@@ -474,12 +488,26 @@ class EasyPovRayRender(object):
       krebsutils.export_VBL_Cells_for_povray(
       position, radius, colors_in_rgb, style_object, clip_style_object, clip_object, tempfile.filename)
       self.pvfile.write("#include \"%s\"" % tempfile.filename)
-    
-    if 'tumor_clip' in options:
-      clip = clipFactory(options.tumor_clip)
+    print("print")
+    print(options.tumor_clip)
+    print(options.clip_ball)
+    if options.clip_box is not None:
+      if options.tumor_clip is not None:
+        #print(options.tumor_clip)
+        clip = clipFactory(options.tumor_clip)
+        #clip = clipFactory(['pie', np.asarray(options.tumor_clip)])
+        #options.vessel_clip = ('pie', 20*trafo.w)
+        #options.tumor_clip = ('pie', 0)
+      else:
+        clip = clipFactory(None)
     else:
-      clip = clipFactory(None)
-      #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
+      if options.tumor_clip is not None:
+        print('found tumor_clip at')
+        print(options.tumor_clip)
+        clip = clipFactory(options.tumor_clip)
+      else:
+        clip = clipFactory(None)
+        #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
   
     #edgecolors = vesselgraph.edges['colors']
     #nodecolors = vesselgraph.nodes['colors']
@@ -608,6 +636,9 @@ def ClipSlice(v0, v1, o0, o1):
 def ClipBox(center, extents):
   return (krebsutils.ClipShape.box, v3_(center), v3_(extents))
 
+def ClipBall(center, radius):
+  return (krebsutils.ClipShape.ball, v3_(center), radius)
+
 def ClipNone():
   return (krebsutils.ClipShape.none,)
 
@@ -615,7 +646,7 @@ def clipFactory(args):
   if not args or not args[0]: return ClipNone()
   if 'pie' == args[0]:
     a = args[1]
-    a = np.asarray([a,a,0])
+    #a = np.asarray([a,a,0])
     clip = ClipKuchen((1,0,0),(0,1,0),a)
   elif 'zslice' == args[0]:
     a, b = args[1:]
@@ -639,6 +670,13 @@ def clipFactory(args):
     print(center)
     print(extents)
     clip = ClipBox(center, extents)
+  elif 'clip_ball' == args[0]:
+    print(args)
+    center = args[1]
+    radius = args[2]
+    clip = ClipBall(center, radius)
+  else:
+    print('no fiiting clip found to %s' % args)
   return clip
 
 
@@ -796,7 +834,7 @@ def CreateScene2(vesselgroup, epv, graph, options):
   else:
     cam_distance_factor = 1.0
   
-  if options.clip_box is None:
+  if options.clip_box is None and options.clip_ball is None:
     if cam in ('topdown', 'topdown_slice'):
       cam_fov = 60.
       if not options.cam_distance_multiplier is None:
@@ -837,21 +875,34 @@ def CreateScene2(vesselgroup, epv, graph, options):
       num_samples_small_light = 3
       epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
       epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
-      options.vessel_clip = ('pie', 20*trafo.w)
+      #options.vessel_clip = ('pie', 200*trafo.w)
+      options.vessel_clip = ('pie', np.zeros(3))
       options.tumor_clip = ('pie', 0)
   else:
-    options.imageFileName += '_box_at_%i_%i_%i' % ( options.clip_box[0],options.clip_box[1],options.clip_box[2]  )
-    center_of_box = trafo.transform_position(np.asarray(options.clip_box[0:3]))
-    extent = trafo.transform_position(np.asarray(options.clip_box[3:6]))
-    basepos = cam_distance_factor * ( center_of_box + extent)
-    epv.setCamera(basepos, center_of_box, 90, up = (0,0,1))
-    num_samples_large_light = 10
-    num_samples_small_light = 3
-    epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
-    epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
-    options.vessel_clip = ('pie', 20*trafo.w)
-    options.tumor_clip = ('pie', 0)
-      
+    if options.clip_box is not None:
+      options.imageFileName += '_box_at_%i_%i_%i' % ( options.clip_box[0],options.clip_box[1],options.clip_box[2]  )
+      center_of_box = trafo.transform_position(np.asarray(options.clip_box[0:3]))
+      extent = trafo.transform_position(np.asarray(options.clip_box[3:6]))
+      basepos = cam_distance_factor * ( center_of_box + extent)
+      epv.setCamera(basepos, center_of_box, 90, up = (0,0,1))
+      num_samples_large_light = 10
+      num_samples_small_light = 3
+      epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
+      epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
+      options.vessel_clip = ('pie', 20*trafo.w)
+      options.tumor_clip = ('pie', center_of_box)
+    if options.clip_ball is not None:
+      options.imageFileName += '_ball_at_%i_%i_%i' % ( options.clip_ball[0],options.clip_ball[1],options.clip_ball[2]  )
+      center_of_ball = trafo.transform_position(np.asarray(options.clip_ball[0:3]))
+      radius = trafo.transform_scalar(options.clip_ball[3])
+      basepos = cam_distance_factor * ( center_of_ball + radius)
+      epv.setCamera(basepos, center_of_ball, 90, up = (0,0,1))
+      num_samples_large_light = 10
+      num_samples_small_light = 3
+      epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
+      epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
+      options.vessel_clip = ('clip_ball', center_of_ball, radius)
+      options.tumor_clip = ('pie', center_of_ball)
   epv.addVesselTree2(epv, graph, trafo = trafo, options=options )
 
 

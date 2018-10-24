@@ -102,6 +102,53 @@ public:
 };
 
 /* certain implementation
+ * uses box information to clip 
+ */
+class ClipBall : public ClipBase
+{
+  Float3 center;
+  float radius;
+public:
+  ClipBall(const Float3 &center_, const float &radius_) : center(center_), radius(radius_){}
+  virtual int clipSphere(const Float3 &pos_, float r)
+  {
+    // NOTE: in principle one need to include the radius as well
+    Float3 diff = pos_ - center;
+    if( diff[0]*diff[0]+diff[1]*diff[1]+diff[2]*diff[2] < radius*radius)
+    {
+      // this is in the ball
+      //cout << pos_ << endl;
+      return CLIP_NONE;
+    }
+    else 
+    {
+      return CLIP_FULL;
+    }
+  }
+  virtual int clipCylinder(const Float3 &pos1, const Float3 &pos2, float r)
+  {
+    Float3 pos_ = pos1;
+    // NOTE: in principle one need to include the radius as well
+    Float3 diff = pos_ - center;
+    Float3 diff2 = pos2 - center;
+    if( diff[0]*diff[0]+diff[1]*diff[1]+diff[2]*diff[2] < radius*radius or  diff2[0]*diff2[0]+diff2[1]*diff2[1]+diff2[2]*diff2[2] < radius*radius)
+    {
+      // this is in the ball
+      //cout << pos_ << endl;
+      return CLIP_NONE;
+    }
+    else 
+    {
+      return CLIP_FULL;
+    }
+  }
+  void print_type()
+  {
+    printf("ClipBall\n");
+  }
+};
+
+/* certain implementation
  * uses plane information to clip 
  */
 class ClipPlane : public ClipBase
@@ -200,7 +247,8 @@ enum ClipId {
   CLIP_ID_NONE = 0,
   CLIP_ID_PIE,
   CLIP_ID_SLICE,
-  CLIP_ID_BOX
+  CLIP_ID_BOX,
+  CLIP_ID_BALL,
 };
 
 
@@ -245,6 +293,19 @@ CP clipper_factory(const py::tuple &py_clip_data)
 //           CP(new ClipPlane(n2, o2))
 //                      ));
         cp.reset(new ClipBox(center, extents));
+      }
+      break;
+      case CLIP_ID_BALL:
+      {
+        Float3 center = py::extract<Float3>(py_clip_data[1]);
+        float radius = py::extract<float>(py_clip_data[2]);
+        //Float3 o1  = py::extract<Float3>(py_clip_data[3]);
+        //Float3 o2  = py::extract<Float3>(py_clip_data[4]);
+//         cp.reset(new ClipOr(
+//           CP(new ClipPlane(n1, o1)),
+//           CP(new ClipPlane(n2, o2))
+//                      ));
+        cp.reset(new ClipBall(center, radius));
       }
       break;
     }
@@ -528,6 +589,7 @@ void export_povray_export()
     .value("slice", CLIP_ID_SLICE)
     .value("pie", CLIP_ID_PIE)
     .value("box", CLIP_ID_BOX)
+    .value("ball", CLIP_ID_BALL)
     .value("none", CLIP_ID_NONE);
   py::def("povray_clip_object_str", pv_clip_object_str);
 }

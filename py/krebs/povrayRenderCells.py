@@ -23,6 +23,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 a nice rendering command
 submitPovrayRender ../../fakeTumMTS-default-typeI-sample00-vbl_3486978.h5 out0* --cam=pie_only_cells --cells --noLabel --background=black --fontcolor=white -f --numTreads=4 --cellsProperty=o2 --cellsColorLimits 6 24
 pH_ex 5.8 7.5
+
+@artery
+python2 /localdisk/thierry/tc_install/py/krebsjobs/submitPovrayRender.py fakeTumMTS-default-typeI-sample00-vbl_3484331.h5 out0540 --clip_box 240 400 -310 800 800 800 --cam_distance_multiplier=0.8 -f --cells --tumor_clip 240 400 -310
+pwd: /localdisk/thierry/output/choose_position_2/artery/finished
+python2 /localdisk/thierry/tc_install/py/krebsjobs/submitPovrayRender.py fakeTumMTS-default-typeI-sample00-vbl_3484331.h5 out0340 --clip_ball 240 400 -310 300 --cam_distance_multiplier=1.0 -f --cells --tumor_clip 240 400 -310
+NOTE: something with the cam_distance_multiplier is still going wrong.
 ffmpeg -r 20 -f image2 -s 1920x1080 -i "fakeTum-gero_3d_8mm-typeI-sample00-gero_3month_to_5mmd-out0%03d.png_slice.png" -vcodec libx264 -crf 25 -pix_fmt yuv420p growth.mp4
 '''
 

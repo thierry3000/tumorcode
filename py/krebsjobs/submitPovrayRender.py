@@ -171,8 +171,9 @@ if __name__ == '__main__':
   parser.add_argument("--timepoint", help="timepoint for tumor overlay", default=None)
   # maybe we need that in future?
   parser.add_argument("--vessel_clip", help="???", default=None)
-  parser.add_argument("--tumor_clip", help="???", default=None)
+  parser.add_argument("--tumor_clip", help="origin of tumor clipping", nargs=3, metavar=('x', 'y', 'z'),type=float,default=None)
   parser.add_argument("--clip_box", help="clip a box from vessels", nargs=6, metavar=('box_center_x', 'box_center_y', 'box_center_z', 'x_extent', 'y_extent', 'z_extent'),type=float, default=None)
+  parser.add_argument("--clip_ball", help="clip a ball from vessels", nargs=4, metavar=('ball_x', 'ball_y', 'ball_z', 'radius'),type=float, default=None)
   parser.add_argument("--slice_pos", help="slice position on z axis", default=None, type=int)
   parser.add_argument("--cells", help="if activated, the VBL cells will be rendered", default=False, action="store_true")
   parser.add_argument("--cellsProperty", help="property of the cells to plot", default= "o2", type=str)
