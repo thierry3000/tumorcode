@@ -477,7 +477,7 @@ def vessels_require_(vesselgroup, g, name):
       fn=str(vesselgroup.file.filename)
       path = str(vesselgroup.name)
       pos_x, pos_y, pos_z = read_vessel_positions_from_hdf_by_filename(fn, path)
-      pos = np.asarray([pos_x, pos_y, pos_z])
+      pos = np.asarray([pos_x, pos_y, pos_z],dtype=np.float32)
       print("before:")
       print("max x: %f" % np.max(pos_x))
       print("min x: %f" % np.min(pos_x))

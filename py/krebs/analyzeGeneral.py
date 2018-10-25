@@ -421,7 +421,7 @@ def CalcPhiVessels(dataman, vesselgroup, ld, scaling, samples_per_cell = 5):
   
   thePositions = np.asarray(graph['position'])*scaling
   theRadii = np.asarray(graph['radius'])*scaling
-  theRadii = theRadii[:,0]
+  #theRadii = theRadii[:,0]
   theEdgeList = np.asarray(graph.edgelist)
   if sys.flags.debug:
     print(thePositions)

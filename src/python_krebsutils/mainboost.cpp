@@ -54,7 +54,14 @@ enum Mode {
 };
 //#pragma message("BOOST_VERSION=" BOOST_PP_STRINGIZE(BOOST_VERSION))
 //#if ((BOOST_VERSION/100)%1000) < 63
-
+bool is_vbl_used()
+{
+#ifdef MILOTTI_MTS 
+  return true;
+#else 
+  return false;
+#endif 
+}
 py::tuple read_vessel_positions_from_hdf_by_filename(const string fn, const string groupname)
 {
   cout << "read vessel from file: " << fn << endl;
@@ -850,7 +857,7 @@ py::object test(np::ndarray arg)
 }
 #endif
 
-// fwd declare of functions which export functions to python.
+// fwd declare since they are stored in other files
 namespace mw_py_impl
 {
   void exportLatticeData();
@@ -917,6 +924,7 @@ BOOST_PYTHON_MODULE(libkrebs_)
   py::def("distancemap", distancemap);
   py::def("GetHealthyVesselWallThickness", GetInitialThickness);
   py::def("SumIsoSurfaceIntersectionWithVessels_", SumIsoSurfaceIntersectionWithVessels);
+  py::def("is_vbl_used", is_vbl_used);
   // using macros to register some more functions
 #define DEFINE_edge_to_node_property_t(T) \
   py::def("edge_to_node_property_"#T, edge_to_node_property_t<T>);
