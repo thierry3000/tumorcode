@@ -163,7 +163,7 @@ if __name__ == '__main__':
   parser.add_argument("--res", help="use comma seperated list of resx,resy ", default=(2048,2048))
   parser.add_argument("--num_threads", help=" ", type=int, default=7)
   parser.add_argument("--out_alpha", help=" ", default=False, action="store_true")
-  parser.add_argument("--cam_distance_multiplier", help=" ", type=float, default=None )
+  parser.add_argument("--cam_distance_multiplier", help=" ", type=float, default=1.0 )
   parser.add_argument("--colored_slice", help=" ", default=True)
   #parser.add_argument("--projection_plot", help=" ", default=True)
   parser.add_argument("--not_render_volume", help="For combined images", default=False, action="store_true")

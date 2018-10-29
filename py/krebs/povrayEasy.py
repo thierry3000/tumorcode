@@ -829,15 +829,13 @@ def CreateScene2(vesselgroup, epv, graph, options):
   zsize = (wbbox[5]-wbbox[4])
   epv.setBackground(options.background)
   cam = options.cam
-  if not options.cam_distance_multiplier is None:
-    cam_distance_factor = options.cam_distance_multiplier
-  else:
-    cam_distance_factor = 1.0
+  cam_distance_factor = options.cam_distance_multiplier
+  
   
   if options.clip_box is None and options.clip_ball is None:
     if cam in ('topdown', 'topdown_slice'):
       cam_fov = 60.
-      if not options.cam_distance_multiplier is None:
+      if not options.cam_distance_multiplier == 1.0:
         cam_distance_factor = options.cam_distance_multiplier
       else:
         cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)

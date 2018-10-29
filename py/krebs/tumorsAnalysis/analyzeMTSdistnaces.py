@@ -408,31 +408,49 @@ def plot_cell_endity_vs_distances_to_next_vessel_multiple_times(multiple_out_grp
   fig1 = plt.figure()
   ax1 = fig1.add_subplot(111)
   #ax1.scatter(distances_to_nearest_vessel[0:1000], endity_value_of_cells[0:1000])
-  ax1.boxplot(big_data[multiple_out_grp_names[-1]])
+  bp = ax1.boxplot(big_data[multiple_out_grp_names[-1]], sym='')
   ax1.set_color_cycle(my_colors)
   #ax1.set_marker_cycle(my_markers)
+  plotList = []
+  labelList = []
   for (i,outGrpName) in enumerate(multiple_out_grp_names[0:-1]):
     list_of_avg=list()
     patchList = list()
     for aDataEntry in big_data[outGrpName]:
-      this_avg= np.average(aDataEntry)
+      #this_avg= np.average(aDataEntry)
+      this_avg= np.median(aDataEntry)
       print(this_avg)
       list_of_avg.append(this_avg)
-    ax1.plot(list_of_avg, linestyle='None', marker=my_markers[i], label='%s h' % outGrpName[4:])
+    lab = '%s h' % outGrpName[4:]
+    print(lab)
+    labelList.append(lab)
+    p=ax1.plot(list_of_avg, linestyle='None', marker=my_markers[i], label='%s h' % outGrpName[4:])
+    plotList.append(p[0])
   ax1.set_xticklabels(x_ticks_labels,rotation=75)
   ax1.set_xticks(np.arange(len(x_ticks_labels))+1)
+  plotList.append(bp["boxes"][0])
+  plotList[-1].set_color('C1')
+  lab_last = '%s h' % multiple_out_grp_names[-1][4:]
+  labelList.append(lab_last)
   #legendlabel = ['%s hours' % entry[4:] for entry in multiple_out_grp_names]
-  ax1.legend()
+  ax1.legend(plotList, labelList)
+  #reset color to default
+  plotList[-1].set_color('k')
   if infos:
     ax1.set_xlabel(r' distance to nearest vessle/ $\mu m$')
     if endity == 'o2':
       ax1.set_ylabel(r'pO2 / $mmHg$')
+      ax1.set_ylim([4.9, 24])
       
     if endity == 'pH_ex':
       ax1.set_ylabel(r'pH')
+      ax1.set_ylim([6.5, 7.6])
     
     if endity == 'cell_radii':
       ax1.set_ylabel(r'radius of cells/ $\mu m$')
+    if endity == 'cell_phase':
+      #index shift by one
+      ax1.set_yticklabels(['','G1m', 'G1p', 'S', 'G2', 'M', 'dead'])
       
     
     #ax1.set(title='file: %s \n at %s' % (goodArguments.vbl_simulation_output_filename, goodArguments.output_grp_name))
@@ -488,7 +506,7 @@ class Dev_from_sphere_data(object):
       return myutils.hdf_data_caching(read, write, f_cache, possible_hdf_group_name)
 def plot_dev_from_sphere_multiple_times(multiple_out_grp_names, no_of_bins,pp):
   rangeMin = 0.0
-  rangeMax = 400.5
+  rangeMax = 500.5
   fig1 = plt.figure()
   #multiple_out_grp_names = [multiple_out_grp_names[-3]]
   for aOutGroupName in multiple_out_grp_names:
@@ -511,7 +529,7 @@ def plot_dev_from_sphere_multiple_times(multiple_out_grp_names, no_of_bins,pp):
 #      print(this_avg)
 #      list_of_avg.append(this_avg)
 #    ax1.plot(list_of_avg, linestyle='None', marker=my_markers[i], label='%s h' % outGrpName[4:])
-    
+  ax1.set_xlim([rangeMin, rangeMax])
   #ax1.set_xticklabels(x_ticks_labels,rotation=75)
   #ax1.set_xticks(np.arange(len(x_ticks_labels))+1)
   #legendlabel = ['%s h' % entry[4:] for entry in multiple_out_grp_names]
@@ -543,7 +561,9 @@ if __name__ == '__main__':
   
   go_down = np.arange(515,116, -50)
   go_right = go_down[::-1]
-#  go_right = np.arange(280, 581, 100)
+  go_right = np.arange(340, 541, 80)
+  go_right = np.arange(540, 219, -80)
+  go_right = go_right[::-1]
   
   out_groups_to_consider= ['out0%i' % aentry for aentry in go_right]
   grop_string_for_multiple = create_file_name_multiple_out(out_groups_to_consider)
@@ -572,16 +592,16 @@ if __name__ == '__main__':
     with PdfPages('analysisMTS_prop_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], grop_string_for_multiple)) as pp:
       #distances_to_vessels(goodArguments, pp);
       distances_to_vessels_for_multiple_group(goodArguments, pp);
-    #cell_endities = ['o2','pH_ex','cell_radii', 'cell_phase']
-    cell_endities = ['cell_radii', 'cell_phase']
+    cell_endities = ['o2','pH_ex','cell_radii', 'cell_phase']
+    #cell_endities = ['cell_radii', 'cell_phase']
     #cell_endities = ['o2'] 
     for cell_endity in cell_endities:
 #      with PdfPages('analysisMTS_hist_%s_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename[:-3], cell_endity, goodArguments.output_grp_name)) as pp:
 #        hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments.output_grp_name, no_bins,pp)
       if True:
         with PdfPages('analysisMTS_boxplot_%s_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], cell_endity, grop_string_for_multiple)) as pp:
-          plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
-          #plot_cell_endity_vs_distances_to_next_vessel_multiple_times(out_groups_to_consider,cell_endity,no_bins,pp)
+          #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
+          plot_cell_endity_vs_distances_to_next_vessel_multiple_times(out_groups_to_consider,cell_endity,no_bins,pp)
     with PdfPages('analysisMTS_dev_from_sphere_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], grop_string_for_multiple)) as pp:
       #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
       plot_dev_from_sphere_multiple_times(out_groups_to_consider,no_bins,pp)

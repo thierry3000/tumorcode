@@ -39,7 +39,7 @@ from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 
 no_bins = 30
-max_distance_to_vessel = 120
+max_distance_to_vessel = 160
 intervall_for_plot_numbers=20
 
 my_markers = ['o', 'v', 's','h', 'x', 'd']
@@ -938,7 +938,7 @@ def plot_stacked_bar_slice(s_by_intervall,g_by_intervall,g2_by_intervall,dead_by
   ax1.set_xticklabels(niceTags,rotation=75)
   pp.savefig(fig1)
 
-def plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall,g2_by_intervall, dead_by_intervall,intervalls,pp,noDead= False):
+def plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall,g2_by_intervall, dead_by_intervall,intervalls,pp,noDead= False, outname=None):
   s_by_intervall = s_by_intervall[:,0]
   g_by_intervall = g_by_intervall[:,0]
   dead_by_intervall = dead_by_intervall[:,0]
@@ -992,10 +992,30 @@ def plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall,g2_by_intervall,
       #ax1.bar(ind, proportion_dead, width=0.8, label='dead', color='k')
   else:
     if split_g:
-      ax1.bar(ind, proportion_s, width=0.8, label='s', color=s_phase_color, bottom=proportion_g+proportion_g2+proportion_dead)
-      ax1.bar(ind, proportion_g, width=0.8, label='g1', color=g_phase_color, bottom=proportion_g2+proportion_dead)
-      ax1.bar(ind, proportion_g2, width=0.8, label='g2+M', color=g2_phase_color, bottom=proportion_dead)
+#      ax1.bar(ind, proportion_s, width=0.8, label='s', color=s_phase_color, bottom=proportion_g+proportion_g2+proportion_dead)
+#      ax1.bar(ind, proportion_g, width=0.8, label='g1', color=g_phase_color, bottom=proportion_g2+proportion_dead)
+#      ax1.bar(ind, proportion_g2, width=0.8, label='g2+M', color=g2_phase_color, bottom=proportion_dead)
+#      ax1.bar(ind, proportion_dead, width=0.8, label='dead', color=dead_phase_color)
+      #ax1.bar(ind, proportion_s, width=0.8, label='s', color=s_phase_color, bottom=proportion_g+proportion_g2+proportion_dead)
+      #ax1.bar(ind, proportion_g, width=0.8, label='g1', color=g_phase_color, bottom=proportion_g2+proportion_dead)
+      ax1.bar(ind, proportion_g2, width=0.8, label='g2+M', color=g2_phase_color, bottom=proportion_s+proportion_g+proportion_dead)
+      ax1.bar(ind, proportion_s, width=0.8, label='s', color=s_phase_color, bottom=proportion_g+proportion_dead)
+      ax1.bar(ind, proportion_g, width=0.8, label='g1', color=g_phase_color, bottom=proportion_dead)
       ax1.bar(ind, proportion_dead, width=0.8, label='dead', color=dead_phase_color)
+      if outname is not None:
+        with open('data_of_' + outname[:-4] + '.txt', 'w+') as f:
+          myWidth = 100
+          f.write('proportion_dead:\n')
+          f.write( np.array2string(proportion_dead, max_line_width = myWidth))
+          f.write('\n')
+          f.write('proportion_g1:\n')
+          f.write(np.array2string(proportion_g, max_line_width = myWidth))
+          f.write('\n')
+          f.write('proportion_s:\n')
+          f.write(np.array2string(proportion_s, max_line_width = myWidth))
+          f.write('\n')
+          f.write('proportion_g2:\n')
+          f.write(np.array2string(proportion_g2, max_line_width = myWidth))
     else:
       ax1.bar(ind, proportion_s, width=0.8, label='s', color=s_phase_color, bottom=proportion_g+proportion_dead)
       ax1.bar(ind, proportion_g, width=0.8, label='g', color=g_phase_color, bottom=proportion_dead)
@@ -1040,8 +1060,9 @@ if __name__ == '__main__':
   with PdfPages('analysisCell_phase_dist_from_nearestvessel_%s.pdf' % goodArguments.output_grp_name ) as pp:
     s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_nearest_vessels(list_of_filenames)
     plot_cell_phases(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
-  with PdfPages('analysisCell_phase_stackedbar_from_nearest_%s.pdf' % goodArguments.output_grp_name ) as pp:
-    plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
+  outname = 'analysisCell_phase_stackedbar_from_nearest_%s.pdf' % goodArguments.output_grp_name
+  with PdfPages(outname ) as pp:
+    plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp,outname=outname)
   with PdfPages('analysisCell_phase_stackedbar_from_nearest_only_alive_%s.pdf' % goodArguments.output_grp_name ) as pp:
     plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead=True)
   with PdfPages('analysisCell_phase_dist_from_center_%s.pdf' % goodArguments.output_grp_name ) as pp:
