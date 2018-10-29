@@ -328,7 +328,10 @@ void Model::DoStep(double dt, const BloodFlowParameters *bfparams)
     cout << "optimize finished" << endl;
 #endif
   }
-  if (IS_DEBUG) vl->IntegrityCheck();
+  if (IS_DEBUG)
+  {
+    vl->IntegrityCheck();
+  }
   ClassifyTumorVessels();
   //DebugOutVessels(*vl, "firstiter");
   ComputeCirculatedComponents(vl);
@@ -471,7 +474,9 @@ Vessel* Model::GenerateSprout(Random &rnd, const Int3 &pos, const Float3 &forwar
   //than we need to split the vessl into two
   if (!src_vc && src_v)
   {
+#ifndef NDEBUG
     cout<<"!src_vc && src_v happend" << endl;
+#endif
     vl->SplitVessel(src_v, FindPositionOnVessel(Ld(), src_v, pos), src_v2, src_vc);
   }
   //find vessel or node in the vicinity of the lattice position
@@ -479,14 +484,18 @@ Vessel* Model::GenerateSprout(Random &rnd, const Int3 &pos, const Float3 &forwar
   //again, if we found a vessel but no node, we need to split it
   if (dst_v && !dst_vc) 
   {
+#ifndef NDEBUG
     cout<<"dst_v && !dst_vc happend" << endl;
+#endif
     vl->SplitVessel(dst_v, FindPositionOnVessel(Ld(), dst_v, nbpos), dst_v2, dst_vc);
   }
   //if the destination node dst_vc in not yet end point of a vessel
   //we can use it for the end point of the new sprout
   if (!dst_vc)
   {
+#ifndef NDEBUG
     cout<<"!dst_vc happend" << endl;
+#endif
     dst_vc = vl->InsertNode(nbpos);
   }
 
@@ -530,18 +539,18 @@ void Model::GenerateSprouts()
 {
   FUNC_TIMING_START
   typedef LatticeData::SiteType SiteType;
-  //tbb::spin_mutex mutex;
+  tbb::spin_mutex mutex;  // NOTE: it is stupid to use the main mutex here--> that holds back all other threads
   DynArray<SiteType> sitesSprout;
   DynArray<VesselNode*> vcExtendSprout;
   
-  //#pragma omp parallel
+  #pragma omp parallel
   {
     Random rnd(GetThreadRandomSeed());
-//     DynArray<SiteType> th_sitesSprout(1024, ConsTags::RESERVE);
-//     DynArray<VesselNode*> th_vcExtendSprout(1024, ConsTags::RESERVE);
+    DynArray<SiteType> th_sitesSprout(1024, ConsTags::RESERVE);
+    DynArray<VesselNode*> th_vcExtendSprout(1024, ConsTags::RESERVE);
 
     //edge stuff
-    //#pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
+    #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for( int i=0; i<vl->GetECount(); ++i )
     {
       Vessel* v = vl->GetEdge(i);
@@ -555,7 +564,7 @@ void Model::GenerateSprouts()
           v->timeSprout = -1; 
       }
     }
-    //#pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
+    #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for(int i=0; i<vl->GetNCount(); ++i)
     {
       //node stuff
@@ -568,8 +577,8 @@ void Model::GenerateSprouts()
       if( nd->Count()==2 )
       {
         if (CheckCanSprout(rnd, lpos, nd, NULL))
-          //th_sitesSprout.push_back(Ld().LatticeToSite(lpos));
-          sitesSprout.push_back(Ld().LatticeToSite(lpos)); 
+          th_sitesSprout.push_back(Ld().LatticeToSite(lpos));
+          //sitesSprout.push_back(Ld().LatticeToSite(lpos)); 
       }
       //if it has no link
       else if( nd->Count()==1 )
@@ -580,12 +589,12 @@ void Model::GenerateSprouts()
         //throw the dice on whether this sprout will grow
         if (rnd.Get01()>1.0/params.timeProlEcSprout ) 
           continue;
-        //th_vcExtendSprout.push_back(nd);
-        vcExtendSprout.push_back(nd);
+        th_vcExtendSprout.push_back(nd);
+        //vcExtendSprout.push_back(nd);
       }
     }//end node stuff
 
-    //#pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
+    #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for( int i=0; i<vl->GetECount(); ++i )
     {
       //edge loop
@@ -598,35 +607,35 @@ void Model::GenerateSprouts()
         //next lpos for walk
         lpos = Ld().NbLattice(lpos,v->dir);
         if (CheckCanSprout(rnd, lpos, NULL, v))
-          //th_sitesSprout.push_back( Ld().LatticeToSite(lpos) );
-          sitesSprout.push_back( Ld().LatticeToSite(lpos) );
+          th_sitesSprout.push_back( Ld().LatticeToSite(lpos) );
+          //sitesSprout.push_back( Ld().LatticeToSite(lpos) );
       }
     }//end edge loop
 
     
-//     main_mutex.lock();
-//     sitesSprout.insert(sitesSprout.end(), th_sitesSprout.begin(), th_sitesSprout.end());
-//     vcExtendSprout.insert(vcExtendSprout.end(), th_vcExtendSprout.begin(), th_vcExtendSprout.end());
-//     main_mutex.unlock();
-//     th_sitesSprout.remove_all();
-//     th_vcExtendSprout.remove_all();
+    mutex.lock();
+    sitesSprout.insert(sitesSprout.end(), th_sitesSprout.begin(), th_sitesSprout.end());
+    vcExtendSprout.insert(vcExtendSprout.end(), th_vcExtendSprout.begin(), th_vcExtendSprout.end());
+    mutex.unlock();
+    th_sitesSprout.remove_all();
+    th_vcExtendSprout.remove_all();
     
   }// end #pragma omp parallel
   
   /** 
      * what happens if an extenting sprout was found by 2 threads?
      */
-  std::vector<uint> found_indices;
-  for(int i = 0;i<vcExtendSprout.size(); i++)
-  {
-    found_indices.push_back(vcExtendSprout[i]->Index());
-  }
-  std::map<uint,uint> CountMap;
-  for(auto it = found_indices.begin(); it!= found_indices.end();++it)
-    CountMap[*it]++;
-  for(auto it = CountMap.begin(); it!=CountMap.end(); ++it)
-    if(it->second>1)
-      cout << "Duplicate " << it->first << endl;
+//   std::vector<uint> found_indices;
+//   for(int i = 0;i<vcExtendSprout.size(); i++)
+//   {
+//     found_indices.push_back(vcExtendSprout[i]->Index());
+//   }
+//   std::map<uint,uint> CountMap;
+//   for(auto it = found_indices.begin(); it!= found_indices.end();++it)
+//     CountMap[*it]++;
+//   for(auto it = CountMap.begin(); it!=CountMap.end(); ++it)
+//     if(it->second>1)
+//       cout << "Duplicate " << it->first << endl;
   
 #ifndef TOTAL_SILENCE
   cout << "finished can sprout " << endl;
@@ -717,7 +726,7 @@ void Model::CollapseVessels()
   FUNC_TIMING_START
 
   DynArray<Vessel*> toKill;
-  //tbb::spin_mutex mutex;
+  tbb::spin_mutex mutex;  // NOTE: it is stupid to use the main mutex here--> that holds back all other threads
 
   #pragma omp parallel
   {
@@ -809,9 +818,9 @@ void Model::CollapseVessels()
         th_toKill.push_back(v);
     }
     //parallel kill ;-)
-    main_mutex.lock();
+    mutex.lock();
     toKill.insert(toKill.end(), th_toKill.begin(), th_toKill.end());
-    main_mutex.unlock();
+    mutex.unlock();
     th_toKill.remove_all();
   }//#pragma omp parallel
   

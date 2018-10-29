@@ -101,6 +101,7 @@ def ConvertMyHdfVesselsToVTKPolydata(graph, newflag_for_backward_compatibility, 
     
   if 1:
       #pressure
+      pressure=pressure*7.5 #to mmHg
       polydata.GetPointData().AddArray(asVtkArray(pressure, "pressure_at_node", vtkFloatArray))
       #isnodeboundary = np.asarray(np.bitwise_and(nodeflags,krebsutils.BOUNDARY) > 0, dtype=np.int32)
       #polydata.GetPointData().AddArray(asVtkArray(isnodeboundary, "isNodeBoundary", vtkFloatArray))
@@ -254,37 +255,63 @@ def writeVessels_(graph, options):
 def writeCells_(graph, options):
   print("begin writeCells_")
   fn = str(graph.from_fn)
-  f = h5py.File(fn, 'r')
-  #fn, _ = myutils.splitH5PathsFromFilename(fn)
-  #search_groups.append('po2/adaption/vessels_after_adaption')
-  #search_groups = ['po2/adaption/vessels_after_adaption/po2field']
-  #search_groups = []
-  #search_groups.append(str(options.writeFields))
-  #search_groups.append("out0005")
-  pos = np.asarray(f[str(options.grp_pattern)+'/cells/cell_center_pos'])
-  
-  pts = vtkPoints()
-  pts.SetNumberOfPoints(len(pos))
-  for i,(x,y,z) in enumerate(pos):
-    pts.SetPoint(i, (float(x), float(y), float(z)))
+  with h5py.File(fn, 'r') as f:
     
-  polydata = vtkPolyData()
-  polydata.SetPoints(pts)
-  
-  cellGroup = f[str(options.grp_pattern)+'/cells']
-  for aKey in cellGroup.keys():
-    npReadOut = np.asarray(cellGroup[aKey])
-    polydata.GetPointData().AddArray(asVtkArray(npReadOut, aKey, vtkFloatArray))
-  
-  writer = vtkPolyDataWriter()
-  print("use vtkVersion: %s" % vtkVersion.GetVTKVersion())
-  if(int(vtkVersion.GetVTKVersion()[0])>5):
-    writer.SetInputData(polydata)
-  else:
-    writer.SetInput(polydata)
-  
-  writer.SetFileName(options.outfn % 'cells')  
-  writer.Write()
+    #fn, _ = myutils.splitH5PathsFromFilename(fn)
+    #search_groups.append('po2/adaption/vessels_after_adaption')
+    #search_groups = ['po2/adaption/vessels_after_adaption/po2field']
+    #search_groups = []
+    #search_groups.append(str(options.writeFields))
+    #search_groups.append("out0005")
+    pos = np.asarray(f[str(options.grp_pattern)+'/cells/cell_center_pos'])
+    
+    pts = vtkPoints()
+    pts.SetNumberOfPoints(len(pos))
+    for i,(x,y,z) in enumerate(pos):
+      pts.SetPoint(i, (float(x), float(y), float(z)))
+      
+    polydata = vtkPolyData()
+    polydata.SetPoints(pts)
+    
+    cellGroup = f[str(options.grp_pattern)+'/cells']
+    cell_radii = np.asarray(cellGroup['cell_radii'])
+    polydata.GetPointData().AddArray(asVtkArray(cell_radii, 'cell_radii', vtkFloatArray))
+    
+    ''' this covers the initial data set by tumorcode'''
+    for aKey in cellGroup.keys():
+      if not aKey == 'cell_radii':
+        npReadOut = np.asarray(cellGroup[aKey])
+        if aKey == 'o2':
+          cell_o2_mass = npReadOut
+          cell_o2_concentration = cell_o2_mass/ (4/float(3)* np.pi*np.power(cell_radii,3))
+          volume_o2_ml = cell_o2_concentration/(1.429*1e9)
+          solubility = 3.1e-3 #ml O2/cm^3 mmHg
+          solubility = solubility*1e-12 #ml O2/mum^3 mmHg
+          npReadOut = volume_o2_ml/solubility
+        polydata.GetPointData().AddArray(asVtkArray(npReadOut, aKey, vtkFloatArray))
+    ''' later I stored everything from vbl, so I can plot it now'''
+    keys_I_want = ['volume_extra', 'isonAS']
+    if 'vbl' in f[str(options.grp_pattern)]:
+      vblGroup = f[str(options.grp_pattern)+'/vbl']
+      
+      for aKey in keys_I_want:
+        if aKey in vblGroup:
+          npReadOut = np.asarray(vblGroup[aKey])
+          polydata.GetPointData().AddArray(asVtkArray(npReadOut, aKey, vtkFloatArray))
+        else:
+          print('%s is not found in your data file' % aKey)
+    else:
+      print('vbl subfolder not found!')
+      
+    writer = vtkPolyDataWriter()
+    print("use vtkVersion: %s" % vtkVersion.GetVTKVersion())
+    if(int(vtkVersion.GetVTKVersion()[0])>5):
+      writer.SetInputData(polydata)
+    else:
+      writer.SetInput(polydata)
+    
+    writer.SetFileName(options.outfn % 'cells')  
+    writer.Write()
 
 def hdftumor2vtk(graph, options ):
   print("begin hdftumor2vtk")

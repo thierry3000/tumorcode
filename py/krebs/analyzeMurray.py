@@ -36,64 +36,62 @@ import matplotlib.pyplot as plt
 import mpl_utils
 
 def DoGetMurrayForSingleFileGENERAL(fn,pattern, pdfpages):
-  afile = h5files.open(fn, 'r')
-  vesselgrp = afile[pattern]
-  print(vesselgrp)
-  result_venous, result_a = ku.get_Murray(vesselgrp)
-  #result = ku.get_Murray(vesselgrp, alpha)
-  result_venous = removeZeros(result_venous)
-  result_a = removeZeros(result_a)
- 
-  #x=np.arange(0,max_,0.1)
-  #y=x
-  #fig1, (ax1, ax2) = plt.subplots(2,1,sharex=True, sharey=True)
-  fig1, (ax1, ax2) = plt.subplots(2,1)
-  ### plot murrays law with exponent
-  alphas = np.arange(2,6,0.5)
-  alphas = [3]
-  max_ = np.max(result_venous[2,:])
-  min_ = np.min(result_venous[0,:])
-  x = np.arange(min_,max_, 0.1)
-  font = {'family': 'serif',
-        'color':  'black',
-        'weight': 'normal',
-        'size': 4,
-        'rotation': 30,
-        'verticalalignment': 'bottom',
-        'horizontalalignment': 'left',
-        }
-  for alpha in alphas:
-    ax1.text(x[-1], x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
-    ax1.plot(x , x, c='k', linewidth=0.1)
+#  with h5py.File(fn,'r') as afile:
   
-  ### plot data
-  ax1.set_title('%i venous points, %i arterial points' % (result_venous.shape[1], result_a.shape[1]), size=6)
-# ax1.set_title('Murray for file:\n%s\n%i venous points, %i arterial points' % (os.path.basename(afile.filename),result_venous.shape[1], result_a.shape[1]), size=6)
-  pointsize = 0.1
-  venous = ax1.scatter(np.power(result_venous[0,:]**3+result_venous[1,:]**3,1/float(3)),result_venous[2,:],c='b', s=pointsize, label='bldk')
-  arterial = ax1.scatter(np.power(result_a[0,:]**3+result_a[1,:]**3,1/float(3)),result_a[2,:],c='r',s=pointsize)
-  ax1.set_xlabel(r'$\sqrt[3]{r_{daughter_1}^3 + r_{daughter_2}^3}$')
-  ax1.set_ylabel(r'$r_{mother}$')
-  ax1.legend((venous,arterial),('Venous', 'Arterial'),loc='lower right')
-  ax1.grid()
-  
-  
-  ### histogramm deviation of daughters
-  hist, bin_edges = np.histogram(result_a[1,:]-result_a[0,:], bins=50) #note. they are sorted in on c++ side
-  width = 0.7*(bin_edges[1]-bin_edges[0])
-  centers = (bin_edges[:-1]+bin_edges[1:])/2
-  ax2.bar(centers,hist/float(len(result_a[0,:])), align='center', width=width, color='red')
-  ax2.set_xlabel(r'$\|r_{daughter 1}- r_{daughter 2}\|$')
-  ax2.set_ylabel(r'$p$')
-  fig1.tight_layout()
-  pdfpages.savefig(fig1)
+#    vesselgrp = afile[pattern]
+#    print(vesselgrp)
+    result_venous, result_a = ku.get_Murray2(fn,pattern)
+    #result = ku.get_Murray(vesselgrp, alpha)
+    result_venous = removeZeros(result_venous)
+    result_a = removeZeros(result_a)
+   
+    #x=np.arange(0,max_,0.1)
+    #y=x
+    #fig1, (ax1, ax2) = plt.subplots(2,1,sharex=True, sharey=True)
+    fig1, (ax1, ax2) = plt.subplots(2,1)
+    ### plot murrays law with exponent
+    alphas = np.arange(2,6,0.5)
+    alphas = [3]
+    max_ = np.max(result_venous[2,:])
+    min_ = np.min(result_venous[0,:])
+    x = np.arange(min_,max_, 0.1)
+    font = {'family': 'serif',
+          'color':  'black',
+          'weight': 'normal',
+          'size': 4,
+          'rotation': 30,
+          'verticalalignment': 'bottom',
+          'horizontalalignment': 'left',
+          }
+    for alpha in alphas:
+      ax1.text(x[-1], x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
+      ax1.plot(x , x, c='k', linewidth=0.1)
+    
+    ### plot data
+    ax1.set_title('%i venous points, %i arterial points' % (result_venous.shape[1], result_a.shape[1]), size=6)
+  # ax1.set_title('Murray for file:\n%s\n%i venous points, %i arterial points' % (os.path.basename(afile.filename),result_venous.shape[1], result_a.shape[1]), size=6)
+    pointsize = 0.1
+    venous = ax1.scatter(np.power(result_venous[0,:]**3+result_venous[1,:]**3,1/float(3)),result_venous[2,:],c='b', s=pointsize, label='bldk')
+    arterial = ax1.scatter(np.power(result_a[0,:]**3+result_a[1,:]**3,1/float(3)),result_a[2,:],c='r',s=pointsize)
+    ax1.set_xlabel(r'$\sqrt[3]{r_{daughter_1}^3 + r_{daughter_2}^3}$')
+    ax1.set_ylabel(r'$r_{mother}$')
+    ax1.legend((venous,arterial),('Venous', 'Arterial'),loc='lower right')
+    ax1.grid()
+    
+    
+    ### histogramm deviation of daughters
+    hist, bin_edges = np.histogram(result_a[1,:]-result_a[0,:], bins=50) #note. they are sorted in on c++ side
+    width = 0.7*(bin_edges[1]-bin_edges[0])
+    centers = (bin_edges[:-1]+bin_edges[1:])/2
+    ax2.bar(centers,hist/float(len(result_a[0,:])), align='center', width=width, color='red')
+    ax2.set_xlabel(r'$\|r_{daughter 1}- r_{daughter 2}\|$')
+    ax2.set_ylabel(r'$p$')
+    fig1.tight_layout()
+    pdfpages.savefig(fig1)
 
-def DoGetMurrayForSingleFileGENERALtwoSingleFigs(fn,pattern, pdfpages):
-  afile = h5files.open(fn, 'r')
-  vesselgrp = afile[pattern]
-  print(vesselgrp)
-  result_venous, result_a = ku.get_Murray(vesselgrp)
-  #result = ku.get_Murray(vesselgrp, alpha)
+def DoGetMurrayForSingleFile(fn,pattern, pdfpages):
+
+  result_venous, result_a = ku.get_Murray2(fn, pattern)
   result_venous = removeZeros(result_venous)
   result_a = removeZeros(result_a)
  
@@ -149,41 +147,102 @@ def DoGetMurrayForSingleFileGENERALtwoSingleFigs(fn,pattern, pdfpages):
   ax2.set_ylabel(r'$p$')
   #fig1.tight_layout()
   pdfpages.savefig(fig1) 
+  #fig2.tight_layout()
+  #pdfpages.savefig(fig2)
+  
+def DoSymetryMurrayForSingleFile(fn,pattern, pdfpages):
+
+  result_venous, result_a = ku.get_Murray2(fn, pattern)
+  result_venous = removeZeros(result_venous)
+  result_a = removeZeros(result_a)
+ 
+#  fig1, ax1 = plt.subplots(1,1)
+#  ### plot murrays law with exponent
+#  alphas = np.arange(2,6,0.5)
+#  alphas = [3]
+#  max_ = np.max(result_venous[2,:])
+#  min_ = np.min(result_venous[0,:])
+#  x = np.arange(min_,max_, 0.1)
+#  font = {'family': 'serif',
+#        'color':  'black',
+#        'weight': 'normal',
+#        'size': 4,
+#        'rotation': 30,
+#        'verticalalignment': 'bottom',
+#        'horizontalalignment': 'left',
+#        }
+#  for alpha in alphas:
+#    ax1.text(x[-1], x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
+#    ax1.plot(x , x, c='k', linewidth=0.1)
+#  
+#  ### plot data
+#  ax1.set_title('%i venous points, %i arterial points' % (result_venous.shape[1], result_a.shape[1]), size=6)
+## ax1.set_title('Murray for file:\n%s\n%i venous points, %i arterial points' % (os.path.basename(afile.filename),result_venous.shape[1], result_a.shape[1]), size=6)
+#  pointsize = 0.1
+#  venous = ax1.scatter(np.power(result_venous[0,:]**3+result_venous[1,:]**3,1/float(3)),result_venous[2,:],c='b', s=pointsize, label='bldk')
+#  arterial = ax1.scatter(np.power(result_a[0,:]**3+result_a[1,:]**3,1/float(3)),result_a[2,:],c='r',s=pointsize)
+#  ax1.set_xlabel(r'$\sqrt[3]{r_{daughter_1}^3 + r_{daughter_2}^3}$')
+#  ax1.set_ylabel(r'$r_{mother}$')
+#  ax1.legend((venous,arterial),('Venous', 'Arterial'),loc='lower right')
+#  ax1.grid()
+#  ### inset
+#  insetXrange = 30
+#  indicesX = x<insetXrange
+#  indicesVenous = result_venous[2,:] < insetXrange
+#  indicesArterial = result_a[2,:] < insetXrange
+#  axInset = plt.axes([.2,.6,.2,.2])
+#  x=x[indicesX]
+#  for alpha in alphas:
+#    #axInset.text(x[-1], x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
+#    axInset.plot(x , x, c='k', linewidth=0.1)
+#  venous = axInset.scatter(np.power(result_venous[0,indicesVenous]**3+result_venous[1,indicesVenous]**3,1/float(3)),result_venous[2,indicesVenous],c='b', s=pointsize, label='bldk')
+#  arterial = axInset.scatter(np.power(result_a[0,indicesArterial]**3+result_a[1,indicesArterial]**3,1/float(3)),result_a[2,indicesArterial],c='r',s=pointsize)
+  
+  fig2, ax2 = plt.subplots(1,1)
+  ### histogramm deviation of daughters
+  hist, bin_edges = np.histogram(result_a[1,:]-result_a[0,:], bins=50) #note. they are sorted in on c++ side
+  width = 0.7*(bin_edges[1]-bin_edges[0])
+  centers = (bin_edges[:-1]+bin_edges[1:])/2
+  ax2.bar(centers,hist/float(len(result_a[0,:])), align='center', width=width, color='red')
+  ax2.set_xlabel(r'$\|r_{daughter 1}- r_{daughter 2}\|$')
+  ax2.set_ylabel(r'$p$')
+  #fig1.tight_layout()
+#  pdfpages.savefig(fig1) 
   fig2.tight_layout()
   pdfpages.savefig(fig2)
 
-def DoGetMurrayForSingleFile(fn,pattern):
-    vesselgrp_before = fn['adaption/recomputed']
-    result = ku.get_Murray(ku.find_lattice_group_(vesselgrp_before),vesselgrp_before)
-    vesselgrp_after = fn['adaption/vessels_after_adaption']
-    result_after = ku.get_Murray(ku.find_lattice_group_(vesselgrp_after),vesselgrp_after)
-    #print result
-    max_before = np.max(result[0,:])
-    max_after = np.max(result_after[0,:])
-    xmax = np.ceil(np.fmax(max_before,max_after))
-    x=np.arange(0,xmax,0.1)
-    y=x
-    fig1, (ax1, ax2) = plt.subplots(2,1,sharex=True, sharey=True)
-
-    #fig1.suptitle('this is the figure title', fontsize=12)
-    ax1.set_title('Murray for \n%s\n%i points considered' % (os.path.basename(afile.filename),result.shape[1]))
-    #plt.subplot(2,1,1)
-    ax1.scatter(result[0,:],np.sqrt(result[1,:]**2+result[2,:]**2))
-    ax1.set_xlabel('radius mother/ daughter vessel')
-    ax1.set_ylabel(r"$\sqrt{r_a^2+r_b^2}$")
-    #plt.title('Murray for \n%s\n%i points considered' % (os.path.basename(afile.filename),result.shape[1]))
-    ax1.plot(x,y,'k')
-    ax1.grid()
-    ax1.legend(['murray','before_data'], loc=4)
-#      plt.subplot(2,1,2)
-    ax2.scatter(result_after[0,:],np.sqrt(result_after[1,:]**2+result_after[2,:]**2))
-    #ax2.set_xlabel('radius mother/ daughter vessel')
-    ax2.set_ylabel(r"$\sqrt{r_a^2+r_b^2}$")
-    #plt.title('Murray for \n%s\n%i points considered' % (os.path.basename(afile.filename),result.shape[1]))
-    ax2.plot(x,y,'k')
-    ax2.legend(['murray','after_data'], loc=4)
-    ax2.grid()
-    plt.savefig('murray_%s.png' % os.path.basename(afile.filename))
+#def DoGetMurrayForSingleFile(fn,pattern):
+#    vesselgrp_before = fn['adaption/recomputed']
+#    result = ku.get_Murray(ku.find_lattice_group_(vesselgrp_before),vesselgrp_before)
+#    vesselgrp_after = fn['adaption/vessels_after_adaption']
+#    result_after = ku.get_Murray(ku.find_lattice_group_(vesselgrp_after),vesselgrp_after)
+#    #print result
+#    max_before = np.max(result[0,:])
+#    max_after = np.max(result_after[0,:])
+#    xmax = np.ceil(np.fmax(max_before,max_after))
+#    x=np.arange(0,xmax,0.1)
+#    y=x
+#    fig1, (ax1, ax2) = plt.subplots(2,1,sharex=True, sharey=True)
+#
+#    #fig1.suptitle('this is the figure title', fontsize=12)
+#    ax1.set_title('Murray for \n%s\n%i points considered' % (os.path.basename(afile.filename),result.shape[1]))
+#    #plt.subplot(2,1,1)
+#    ax1.scatter(result[0,:],np.sqrt(result[1,:]**2+result[2,:]**2))
+#    ax1.set_xlabel('radius mother/ daughter vessel')
+#    ax1.set_ylabel(r"$\sqrt{r_a^2+r_b^2}$")
+#    #plt.title('Murray for \n%s\n%i points considered' % (os.path.basename(afile.filename),result.shape[1]))
+#    ax1.plot(x,y,'k')
+#    ax1.grid()
+#    ax1.legend(['murray','before_data'], loc=4)
+##      plt.subplot(2,1,2)
+#    ax2.scatter(result_after[0,:],np.sqrt(result_after[1,:]**2+result_after[2,:]**2))
+#    #ax2.set_xlabel('radius mother/ daughter vessel')
+#    ax2.set_ylabel(r"$\sqrt{r_a^2+r_b^2}$")
+#    #plt.title('Murray for \n%s\n%i points considered' % (os.path.basename(afile.filename),result.shape[1]))
+#    ax2.plot(x,y,'k')
+#    ax2.legend(['murray','after_data'], loc=4)
+#    ax2.grid()
+#    plt.savefig('murray_%s.png' % os.path.basename(afile.filename))
 
 def removeZeros(atwoarray):
     first_line = atwoarray[0,:]
@@ -320,8 +379,15 @@ if __name__ == "__main__":
     pattern =  goodArguments.grp_pattern
     print(pattern)
     print(filenames[0])
-    outfilename='murray_for_file_%s' % basename(filenames[0])
+    outfilename='murray_both_for_file_%s' % basename(filenames[0])
     with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:
       DoGetMurrayForSingleFileGENERAL(filenames[0],pattern, pdfpages)
-      DoGetMurrayForSingleFileGENERALtwoSingleFigs(filenames[0],pattern, pdfpages)
+      
+    outfilename='murray_for_file_%s' % basename(filenames[0])
+    with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
+      DoGetMurrayForSingleFile(filenames[0],pattern, pdfpages)
+    
+    outfilename='murray_symmetry_for_file_%s' % basename(filenames[0])
+    with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
+      DoSymetryMurrayForSingleFile(filenames[0],pattern, pdfpages)
     

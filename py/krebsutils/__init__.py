@@ -92,34 +92,67 @@ SetupFieldLattice:
 #    CalcConductivities'.split(',')
 #]
 
-imports_ = [ f.strip() for f in
-    '\
-    LatticeData, \
-    read_lattice_data_from_hdf_by_filename, \
-    write_lattice_data_to_hdf_by_filename, \
-    export_network_for_povray, \
-    ClipShape, \
-    povray_clip_object_str, \
-    make_position_field, \
-    calcBulkTissueSourceTerm, \
-    make_vessel_volume_fraction_field, \
-    calc_vessel_boxcounts, \
-    run_vesselgen, \
-    vesselgen_generate_grid, \
-    vesselgen_generate_single, \
-    vesselgen_generate_symmetric, \
-    GetHealthyVesselWallThickness, \
-    CalcRelativeViscosity, \
-    CalcFahraeusEffect, \
-    CalcIntervascularInterpolationField_, \
-    SetupFieldLattice, \
-    PressureRadiusRelation, \
-    SumIsoSurfaceIntersectionWithVessels_, \
-    get_Murray2, \
-    get_Murray_scale, \
-    CalcViscosities, \
-    CalcConductivities'.split(',')
-]
+if libkrebs.is_vbl_used():
+    print("VBL is used!")
+    imports_ = [ f.strip() for f in
+        '\
+        LatticeData, \
+        read_lattice_data_from_hdf_by_filename, \
+        write_lattice_data_to_hdf_by_filename, \
+        export_network_for_povray, \
+        export_VBL_Cells_for_povray, \
+        ClipShape, \
+        povray_clip_object_str, \
+        make_position_field, \
+        calcBulkTissueSourceTerm, \
+        make_vessel_volume_fraction_field, \
+        calc_vessel_boxcounts, \
+        run_vesselgen, \
+        vesselgen_generate_grid, \
+        vesselgen_generate_single, \
+        vesselgen_generate_symmetric, \
+        GetHealthyVesselWallThickness, \
+        CalcRelativeViscosity, \
+        CalcFahraeusEffect, \
+        CalcIntervascularInterpolationField_, \
+        SetupFieldLattice, \
+        PressureRadiusRelation, \
+        SumIsoSurfaceIntersectionWithVessels_, \
+        get_Murray2, \
+        get_Murray_scale, \
+        CalcViscosities, \
+        CalcConductivities'.split(',')
+    ]
+else:
+    print("VBL is unused!")
+    imports_ = [ f.strip() for f in
+        '\
+        LatticeData, \
+        read_lattice_data_from_hdf_by_filename, \
+        write_lattice_data_to_hdf_by_filename, \
+        export_network_for_povray, \
+        ClipShape, \
+        povray_clip_object_str, \
+        make_position_field, \
+        calcBulkTissueSourceTerm, \
+        make_vessel_volume_fraction_field, \
+        calc_vessel_boxcounts, \
+        run_vesselgen, \
+        vesselgen_generate_grid, \
+        vesselgen_generate_single, \
+        vesselgen_generate_symmetric, \
+        GetHealthyVesselWallThickness, \
+        CalcRelativeViscosity, \
+        CalcFahraeusEffect, \
+        CalcIntervascularInterpolationField_, \
+        SetupFieldLattice, \
+        PressureRadiusRelation, \
+        SumIsoSurfaceIntersectionWithVessels_, \
+        get_Murray2, \
+        get_Murray_scale, \
+        CalcViscosities, \
+        CalcConductivities'.split(',')
+    ]
 
 # CalcRelativeViscosityByTable, \
 # load functions from libkrebs_ into local namespace
@@ -172,9 +205,9 @@ typelist = 'typeA typeB typeC typeD typeE typeF typeG typeH typeI'.split()
 #----------------------------------------------------------------------------------#
 #  utility routines
 #----------------------------------------------------------------------------------#
-def get_Murray(vesselgrp):
-  #return get_Murray2_p(vesselgrp, alpha)
-  return get_Murray2(vesselgrp)
+#def get_Murray(vesselgrp):
+#  #return get_Murray2_p(vesselgrp, alpha)
+#  return get_Murray2(vesselgrp)
 
 def get_full_tumor_executable_path(name):
   from os.path import join, abspath, normpath, dirname
@@ -361,7 +394,10 @@ def read_graph_(grp, *prop_names):
     not_found = set()
     for prop_name in prop_names:
         if prop_name in gn:
-            g.nodes[prop_name] = asarray(gn[prop_name])
+            if prop_name == 'pressure':
+              g.nodes[prop_name] = 7.5*asarray(gn[prop_name]) # to mmHg
+            else:
+              g.nodes[prop_name] = asarray(gn[prop_name])
         elif prop_name in ge:
             g.edges[prop_name] = asarray(ge[prop_name])
         else:
@@ -477,7 +513,7 @@ def vessels_require_(vesselgroup, g, name):
       fn=str(vesselgroup.file.filename)
       path = str(vesselgroup.name)
       pos_x, pos_y, pos_z = read_vessel_positions_from_hdf_by_filename(fn, path)
-      pos = np.asarray([pos_x, pos_y, pos_z],dtype=np.float32)
+      pos = np.asarray([pos_x, pos_y, pos_z])
       print("before:")
       print("max x: %f" % np.max(pos_x))
       print("min x: %f" % np.min(pos_x))

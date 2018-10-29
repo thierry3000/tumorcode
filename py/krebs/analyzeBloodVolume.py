@@ -230,8 +230,8 @@ def plot_mvd_in_large_bins2(pdfpages, groupslist):
 
 if __name__ == '__main__':
   filenames = sys.argv[1:]
-  files = [ h5files.open(fn, 'r') for fn in filenames ]
-  fmeasure = h5files.open('analyzeBloodVolumeMeasurements.h5', 'a')
+  files = [ h5py.File(fn, 'r') for fn in filenames ]
+  fmeasure = h5py.File('analyzeBloodVolumeMeasurements.h5', 'a')
   dataman = myutils.DataManager(10, [DataTumorTissueSingle(),
                                       DataVesselRadial(),
                                       DataVesselSamples(),
@@ -254,3 +254,6 @@ if __name__ == '__main__':
       plot_mvd_in_large_bins1(pdfpages, groupslist)
     else:
       plot_mvd_in_large_bins2(pdfpages, groupslist)
+  for f in files:
+    f.close()
+  fmeasure.close()

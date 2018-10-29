@@ -57,6 +57,13 @@ DynArray<BBox3> MakeMtBoxGrid(const BBox3 &bb, const Int3 &bs);
 DynArray<BBox3> MakeMtBoxGrid(const BBox3 &bb); // smallish boxes 32^dim
 DynArray<BBox3> MakeMtBoxGridLarge(const BBox3 &bb, int max_size = 128); // fairly large boxes
 
+/** this is tight MW shit!!!!!
+ * a DomainDecomposition goes along with 
+ * UpdateVesselVolumeFraction --> check this function to understand the purpose
+ * a discrete lattice is split into subpart
+ * the getCurrentThreadRange() allows to loop over 
+ * boxes containing a vessels ONLY
+ */
 class DomainDecomposition
 {
 public:

@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.3)
 project(tumorcode C CXX)
 
+# I try to follow the tutorial at:
+# https://cmake.org/cmake-tutorial/
+set(TUMORCODE_VERSION_MAJOR 2)
+set(TUMORCODE_VERSION_MINOR 1)
+
 if(FALSE)
 ###############  set up spack stuff  ##############
 
@@ -69,12 +74,14 @@ add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src"
 endif()
 
 ## HDF5-cpp-wrapper does not need compilation
-# configure_file(externalProjects/HDF5-cpp-wrapper/CMakeLists.txt.in externalProjects/HDF5-cpp-wrapper/CMakeLists.txt)
-# execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-#   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper" )
-# execute_process(COMMAND "${CMAKE_COMMAND}" --build .
-#   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper" )
-# include_directories("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src")
+configure_file(externalProjects/HDF5-cpp-wrapper/CMakeLists.txt.in externalProjects/HDF5-cpp-wrapper/CMakeLists.txt)
+execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper" )
+execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper" )
+include_directories("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src")
+# add_subdirectory("${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-src"
+#                  "${CMAKE_BINARY_DIR}/externalProjects/HDF5-cpp-wrapper-build")
 
 ## ANN
 # it is now supposed, that ANN is present on the system
