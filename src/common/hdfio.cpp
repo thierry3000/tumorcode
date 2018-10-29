@@ -589,7 +589,7 @@ void ReadHdfGraph( H5::Group &g, VesselList3d *vl )
   }
   catch(H5::Exception &e)
   {
-    e.printError();
+    e.printErrorStack();
   }
   
   int ecnt=0,ncnt=0;

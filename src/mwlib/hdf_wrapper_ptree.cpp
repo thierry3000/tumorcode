@@ -75,7 +75,7 @@ void printObjectName(const H5::Group &g)
   }
   catch(H5::Exception &e)
   {
-    e.printError();
+    e.printErrorStack();
   }
 }
 
@@ -87,7 +87,7 @@ void printObjectName( H5::H5Location &g, const H5std_string attr_name, void* ope
   }
   catch(H5::Exception &e)
   {
-    e.printError();
+    e.printErrorStack();
   }
 }
 
@@ -106,7 +106,7 @@ void add_all_attributes_to_ptree( H5::H5Object &g, const H5std_string attr_name,
   }
   catch(H5::Exception &e)
   {
-    e.printError();
+    e.printErrorStack();
   }
 }
 #else // H5_VERS_MINOR > 9
