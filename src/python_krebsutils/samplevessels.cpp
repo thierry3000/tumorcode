@@ -1111,10 +1111,6 @@ void export_samplevessels()
   DEFINE_sample_field_t(double)
   py::def("sample_edges_weights", sample_edges_weights);
   py::def("make_position_field", make_position_field);
-#if BOOST_VERSION>106300
-  py::def("make_vessel_volume_fraction_field", compute_vessel_volume_fraction_field);
-  py::def("calc_vessel_boxcounts", compute_vessel_boxcounts);
-#else
   py::def("make_vessel_volume_fraction_field", compute_vessel_volume_fraction_field);
   py::def("calc_vessel_boxcounts", compute_vessel_boxcounts);
 //   py::def("calculate_lengths_lattice_based", calculate_lengths_lattice_based);
@@ -1122,7 +1118,6 @@ void export_samplevessels()
 
 //  py::def("calculate_within_fake_tumor_lattice_based", calculate_within_fake_tumor_lattice_based);
 
-#endif
 }
 
 
