@@ -421,21 +421,31 @@ def CalcPhiVessels(dataman, vesselgroup, ld, scaling, samples_per_cell = 5):
   print(mask.shape)
   graph = graph.get_filtered(edge_indices = mask)
   print('vessels filtered before fraction calculation!')
-  
-  thePositions = np.asarray(graph['position'])*scaling
   theRadii = np.asarray(graph['radius'])*scaling
-  theRadii = theRadii[:,0]
+  if(theRadii.ndim>1):
+  	theRadii = theRadii[:,0]
+  if theRadii.dtype == np.float32: 
+    thePositions = np.asarray(graph['position'],dtype=np.float32)*scaling
+  else:
+    thePositions = np.asarray(graph['position'])*scaling
+ 
   theEdgeList = np.asarray(graph.edgelist)
   if sys.flags.debug:
     print(thePositions)
     print(thePositions.shape)
     print(type(thePositions))
+    print("thepos: %s" % thePositions.dtype)
+
     print(theEdgeList)
     print(theEdgeList.shape)
     print(type(theEdgeList))
+    print("theEd: %s" % theEdgeList.dtype)
+
     print(theRadii)
     print(theRadii.shape)
     print(type(theRadii))
+    print('theRadii: %s' % theRadii.dtype)
+
     print(ld)
     print(type(ld))
     print(ld.GetScale())
