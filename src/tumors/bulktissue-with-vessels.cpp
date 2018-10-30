@@ -184,6 +184,7 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
     
     //state.vessels.reset(vl.release());
     //state.vessels.reset(vl.reset());
+    state.vessels = vl;
     last_vessels_checksum = -1;
   }
 

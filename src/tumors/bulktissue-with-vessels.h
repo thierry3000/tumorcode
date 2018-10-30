@@ -92,7 +92,7 @@ struct State : boost::noncopyable
     
   NewBulkTissueModel::State tumor;
   int tumor_checksum;
-  boost::scoped_ptr<VesselList3d> vessels;
+  std::shared_ptr<VesselList3d> vessels;
   int vessels_checksum;
   Array3d<float> o2field;
   Array3d<float> gffield;
