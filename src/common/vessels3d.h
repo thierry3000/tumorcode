@@ -162,7 +162,10 @@ struct HemodynamicBounds
   HemodynamicBounds( const VesselList3d *g ) { Add(g,false); }
   void Add( const VesselList3d *g, bool bClear=true );
 };
-
+/** NOTE 
+ * this is a bottle neck for all simulations and should be 
+ * parallized. Maybe with boost graph.
+ */
 void ComputeCirculatedComponents( VesselList3d *list );
 
 
