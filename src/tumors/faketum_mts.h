@@ -57,16 +57,12 @@ struct State : boost::noncopyable
     tumor_checksum(0), vessels_checksum(0), chem_checksum(0)
     {}
     
-  //NewBulkTissueModel::State tumor;
   int tumor_checksum;
-  //boost::scoped_ptr<VesselList3d> vessels;
   int vessels_checksum;
 
   boost::optional<Array3df> previous_po2field;
   boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels;
 
-  //Array3d<float> o2field;
-  //Array3d<float> glucoseField;
   Array3d<float> gffield;
   Array3d<float> cell_O2_consumption;
   int chem_checksum;
