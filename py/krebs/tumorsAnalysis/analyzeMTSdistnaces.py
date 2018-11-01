@@ -290,18 +290,32 @@ def create_box_plot(this_out_grp_name, endity, no_of_bins):
     h5_out_grp = h5_f[this_out_grp_name]
     distances_to_nearest_vessel = np.asarray(h5_out_grp['cells/distance_to_nearest_vessel'])
     distances_to_nearest_vessel = distances_to_nearest_vessel[:,0]
-    min_distance_to_nearest_vessel = np.min(distances_to_nearest_vessel)
-    max_distance_to_nearest_vessel = np.max(distances_to_nearest_vessel)
-    print('min: %f, max: %f' %(min_distance_to_nearest_vessel,max_distance_to_nearest_vessel))
+    
     
     if 'max_distance_to_vessel' in globals():
       min_distance_to_nearest_vessel= 0.
       max_distance_to_nearest_vessel= max_distance_to_vessel
-      
+    if noDead:
+      print('remove the dead cells from data')
+      cell_phase = np.asarray(h5_out_grp['cells/cell_phase'])
+      cell_phase = cell_phase[:,0]
+      goodIndexes = cell_phase<6
+    else:
+      goodIndexes = np.full(len(distances_to_nearest_vessel), True)
+    print('shape of goodIndexes: %s' % goodIndexes.shape)
+    
+    distances_to_nearest_vessel = distances_to_nearest_vessel[goodIndexes]
+    min_distance_to_nearest_vessel = np.min(distances_to_nearest_vessel)
+    max_distance_to_nearest_vessel = np.max(distances_to_nearest_vessel)
+    print('min: %f, max: %f' %(min_distance_to_nearest_vessel,max_distance_to_nearest_vessel))
+    
     endity_value_of_cells = np.asarray(h5_out_grp['cells/' + endity])
     endity_value_of_cells = endity_value_of_cells[:,0]
+    endity_value_of_cells = endity_value_of_cells[goodIndexes]
+    
     cell_radii = np.asarray(h5_out_grp['cells/cell_radii'])
     cell_radii=cell_radii[:,0]
+    cell_radii = cell_radii[goodIndexes]
     
   if(endity == 'o2'):
     endity_value_of_cells = povrayRenderCells.convert_to_mmHg(endity_value_of_cells, cell_radii)
@@ -331,7 +345,7 @@ def create_box_plot(this_out_grp_name, endity, no_of_bins):
     print('lower: %f, upper: %f' %(a_lower_bound, upper_bound))
     good_indexes = np.where(np.logical_and(distances_to_nearest_vessel<upper_bound, distances_to_nearest_vessel > a_lower_bound))
 #    good_indexes = np.where(endity_value_of_cells>=min_distance_to_nearest_vessel)    
-    print('found %i indeces for %f' % (len(good_indexes[0]), a_lower_bound))
+    print('found %i indeces for %f at endity: %s' % (len(good_indexes[0]), a_lower_bound, endity))
     data_on_this = endity_value_of_cells[good_indexes]
     if(len(data_on_this)>0):
       print('min: %f, max: %f' % (np.min(data_on_this),np.max(data_on_this)))
@@ -413,6 +427,10 @@ def plot_cell_endity_vs_distances_to_next_vessel_multiple_times(multiple_out_grp
   #ax1.set_marker_cycle(my_markers)
   plotList = []
   labelList = []
+  if endity =='o2':
+    #remove first time point because nothing interesting is happening
+    multiple_out_grp_names = multiple_out_grp_names[1:]
+    
   for (i,outGrpName) in enumerate(multiple_out_grp_names[0:-1]):
     list_of_avg=list()
     patchList = list()
@@ -556,6 +574,7 @@ if __name__ == '__main__':
   parser.add_argument('--g',dest='output_grp_name', type=str, default='out0001', help='output group withing hdf5 file')
   interactive = False;
   infos = True;
+  noDead = True;
   goodArguments, otherArguments = parser.parse_known_args()
   
   
@@ -599,7 +618,11 @@ if __name__ == '__main__':
 #      with PdfPages('analysisMTS_hist_%s_%s_%s.pdf' % (goodArguments.vbl_simulation_output_filename[:-3], cell_endity, goodArguments.output_grp_name)) as pp:
 #        hist_cell_endity_vs_distances_to_next_vessel(cell_endity, goodArguments.output_grp_name, no_bins,pp)
       if True:
-        with PdfPages('analysisMTS_boxplot_%s_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], cell_endity, grop_string_for_multiple)) as pp:
+        if noDead:
+          thisOutFn = 'analysisMTS_boxplot_%s_%s_%s_removed_dead.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], cell_endity, grop_string_for_multiple)
+        else:
+          thisOutFn = 'analysisMTS_boxplot_%s_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], cell_endity, grop_string_for_multiple)
+        with PdfPages(thisOutFn) as pp:
           #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
           plot_cell_endity_vs_distances_to_next_vessel_multiple_times(out_groups_to_consider,cell_endity,no_bins,pp)
     with PdfPages('analysisMTS_dev_from_sphere_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], grop_string_for_multiple)) as pp:
