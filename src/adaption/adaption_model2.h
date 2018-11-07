@@ -40,10 +40,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "common/calcflow_common.h" //inhere from the CompressedFlowNetwork
 
-#if PAGMO_ENABLE_MPI
-#include <mpi.h>
-#endif
-
 namespace Adaption
 {
   enum TissueIDs

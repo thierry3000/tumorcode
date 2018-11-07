@@ -29,12 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/hdf_wrapper_ptree.h"
 #include "mwlib/log.h"
 
-// moved to calcflow
-// #include <Epetra_ConfigDefs.h>
-// #ifdef EPETRA_MPI
-//   #include "mpi.h"
-// #endif
-
 /** @brief Vesselgenerator stuff
  */
 void run_vesselgen(const py::str &param_info_str)

@@ -25,6 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mwlib/dynamicarray.h"
 #include "mwlib/field.h"
 #include "continuum-flow.h"
+#include "shared-objects.h"
+#include "mwlib/timer.h"
 
 #if (defined __GNUC__) && !(defined __INTEL_COMPILER)
 #pragma GCC diagnostic push
@@ -53,6 +55,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <BelosSolverFactory.hpp>
 #include <BelosLinearProblem.hpp>
 #include <BelosEpetraAdapter.hpp>
+#include <BelosBiCGStabSolMgr.hpp>
 
 typedef double BelosScalarType;
 typedef Epetra_MultiVector BelosMultiVector;

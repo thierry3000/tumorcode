@@ -24,10 +24,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "oxygen_model2.h"
 #include "calcflow.h"
 
-#ifdef EPETRA_MPI
-  #include "mpi.h"
-#endif
-
 #define BOOST_RESULT_OF_USE_DECLTYPE 1
 
 #include <boost/foreach.hpp>
