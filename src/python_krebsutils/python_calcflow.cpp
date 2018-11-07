@@ -35,6 +35,8 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
 
   H5::H5File readInFile;
   H5::Group g_vess;
+  H5::H5File outFile;
+  H5::Group vess_recomp;
   try{
     readInFile = H5::H5File(fn, H5F_ACC_RDONLY);
     g_vess = readInFile.openGroup(vesselgroup_path); // groupname should end by vesselgroup
@@ -77,14 +79,15 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
   {
     try
     {
-      g_vess.openGroup("recomputed");
+      outFile = H5::H5File("recomputed_" +fn, H5F_ACC_TRUNC);
+      vess_recomp = outFile.createGroup("recomputed"); // groupname should end by vesselgroup
     }
     catch(H5::Exception &e)
     {
-      H5::Group recomp = g_vess.createGroup("recomputed");
-      ptree getEverytingPossible = make_ptree("w_adaption", false);
-      WriteVesselList3d(*vl, recomp, getEverytingPossible);
+      e.printErrorStack();
     }
+    ptree getEverytingPossible = make_ptree("w_adaption", false);
+    WriteVesselList3d(*vl, vess_recomp, getEverytingPossible);
 //     if( not g_vess.exists("recomputed") )
 //     {
 //       h5::Group grp_temp;
