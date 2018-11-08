@@ -294,6 +294,6 @@ if __name__ == '__main__':
       ##CALCULATE!!!!
       #pressure, flow, force, hema, flags = ku.calc_vessel_hydrodynamics(f3['vessels'], False, False, None, adaptionParams['calcflow'],storeCalculationInHDF=True)
     #dd = ku.calc_vessel_hydrodynamics(f3['vessels'], return_flags = True, bloodflowparams = adaptionParams['calcflow'],storeCalculationInHDF=True)
-    #dd = ku.calc_vessel_hydrodynamics_Ccode(fn, 'vessels', True, adaptionParams['calcflow'], False, True)
-    dd = ku.calc_vessel_hydrodynamics_Ccode('vessels-default-typeI-11x15L130-sample00.h5', 'vessels', True, adaptionParams['calcflow'], False, True)
+    dd = ku.calc_vessel_hydrodynamics_Ccode(fn, 'vessels', True, adaptionParams['calcflow'], False, True)
+    #dd = ku.calc_vessel_hydrodynamics_Ccode('vessels-default-typeI-11x15L130-sample00.h5', 'vessels', True, adaptionParams['calcflow'], False, True)
 

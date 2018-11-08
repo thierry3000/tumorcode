@@ -118,7 +118,7 @@ int getSecondDimForRank2();
  *
  */
 template<class T>
-void readAttrFromH5(H5::H5Object &g, const string &attr_name, T &output_buffer);
+void readAttrFromH5(const H5::H5Object &g, const string &attr_name, T &output_buffer);
 
 /** @brief
  * write attributes to Group or DataSet

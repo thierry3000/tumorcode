@@ -104,7 +104,7 @@ H5::DataType getH5TypeFromCpp()
 
 //#if H5_VERS_MINOR < 9
 template<class T>
-void readAttrFromH5(H5::H5Object &g, const string &attr_name, T &output_buffer)
+void readAttrFromH5(const H5::H5Object &g, const string &attr_name, T &output_buffer)
 {
   H5::Attribute att_to_read;
   H5::DataType type; 
@@ -123,7 +123,7 @@ void readAttrFromH5(H5::H5Object &g, const string &attr_name, T &output_buffer)
 /** especially strings work differently
  */
 template<>
-void readAttrFromH5<string>(H5::H5Object &g, const string &attr_name, string &output_buffer)
+void readAttrFromH5<string>(const H5::H5Object &g, const string &attr_name, string &output_buffer)
 { 
   H5::Attribute att_to_read = g.openAttribute(attr_name);
   
@@ -1260,7 +1260,7 @@ INSTANTIATE2(string)
 
 
 #define INSTANTIATE_H5Cpp_read(T)\
-template void readAttrFromH5<T>(H5::H5Object &g, const string &name, T &output_buffer);
+template void readAttrFromH5<T>(const H5::H5Object &g, const string &name, T &output_buffer);
 INSTANTIATE_H5Cpp_read(float)
 INSTANTIATE_H5Cpp_read(Float3)
 INSTANTIATE_H5Cpp_read(double)

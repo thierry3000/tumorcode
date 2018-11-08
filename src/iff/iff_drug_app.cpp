@@ -226,9 +226,10 @@ bool IffDrugApp3d::InitNewState()
     ReadInto(grid.ld.Box(), tum_grp.openDataSet("obstacle"), phi_obstacle);
 //     if (tum_grp.exists("necro"))
 //       ReadInto(grid.ld.Box(), tum_grp.open_dataset("necro"), theta_necro);
+    H5::DataSet necro;
     try
     {
-      H5::DataSet necro = tum_grp.openDataSet("necro");
+      necro = tum_grp.openDataSet("necro");
     }
     catch(H5::Exception &e)
     {
