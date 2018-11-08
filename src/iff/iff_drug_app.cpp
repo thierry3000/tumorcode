@@ -211,11 +211,10 @@ bool IffDrugApp3d::InitNewState()
     string lattice_path;
     readAttrFromH5(ds_theta_tumor, "LATTICE_PATH", lattice_path);
     H5::Group ld_group = root.openGroup(lattice_path);
-    { 
-      LatticeDataQuad3d ld;
-      ReadHdfLd(ld_group, ld);
-      grid = ContinuumGrid(ld, dim); 
-    }
+    LatticeDataQuad3d ld;
+    ReadHdfLd(ld_group, ld);
+    grid = ContinuumGrid(ld, dim); 
+    
     Array3d<float> phi_obstacle(MakeArray3dWithBorder<float>(grid.ld.Box(), dim, 1));
     phi_water = MakeArray3dWithBorder<float>(grid.ld.Box(), dim, 3);
     phi_cells = MakeArray3dWithBorder<float>(grid.ld.Box(), dim, 1);
@@ -230,12 +229,12 @@ bool IffDrugApp3d::InitNewState()
     try
     {
       H5::DataSet necro = tum_grp.openDataSet("necro");
-      ReadInto(grid.ld.Box(), necro, theta_necro);
     }
     catch(H5::Exception &e)
     {
-      //std::cout << error.printErrorStack();
+      e.printErrorStack();
     }
+    ReadInto(grid.ld.Box(), necro, theta_necro);
 
     FOR_BBOX3(p, grid.ld.Box())
     {

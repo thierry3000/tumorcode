@@ -145,90 +145,85 @@ int BulkTissue::NewTumorSim::run(const ptree &pparams)
 #ifdef USE_ADAPTION
   all_pt_params.put_child("adaption", Adaption::Parameters().as_ptree());
 #endif
-  { 
-    //boost::optional<ptree> read_params = HandleSimulationProgramArguments(all_pt_params, argc, argv);
-    //boost::optional<ptree> read_params = all_pt_params;
-    //if (!pparams) return 0;
-    Params::update_ptree(all_pt_params, pparams);
-    this->params.assign(all_pt_params); // this sets some options based on which parameters are supplied
-  }
-  //HACK2018
-  //my::SetNumThreads(all_pt_params.get<int>("num_threads"));
+  
+  //boost::optional<ptree> read_params = HandleSimulationProgramArguments(all_pt_params, argc, argv);
+  //boost::optional<ptree> read_params = all_pt_params;
+  //if (!pparams) return 0;
+  Params::update_ptree(all_pt_params, pparams);
+  this->params.assign(all_pt_params); // this sets some options based on which parameters are supplied
 
   my::log().push(" init: ");
-  {
-    H5::H5File readInfile = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
-    ptree pt;
-    //factor by which lattice is subdivided for tumor growth
-    pt.put("scale subdivide", 10.);
-    pt.put("scale override", params.override_scale);
-    //pt.put("filter", true); // does not help, is also filtered in oxygen model
-    H5::Group h5_vessels = readInfile.openGroup("/vessels");
-    std::shared_ptr<VesselList3d> vl = ReadVesselList3d(h5_vessels,pt);
-    // adjust vessel list ld
-    const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
-    vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
+  
+  H5::H5File readInfile = H5::H5File(params.fn_vessel, H5F_ACC_RDONLY);
+  ptree pt;
+  //factor by which lattice is subdivided for tumor growth
+  pt.put("scale subdivide", 10.);
+  pt.put("scale override", params.override_scale);
+  //pt.put("filter", true); // does not help, is also filtered in oxygen model
+  H5::Group h5_vessels = readInfile.openGroup("/vessels");
+  std::shared_ptr<VesselList3d> vl = ReadVesselList3d(h5_vessels,pt);
+  // adjust vessel list ld
+  const Float3 c = 0.5 * (vl->Ld().GetWorldBox().max + vl->Ld().GetWorldBox().min);
+  vl->SetDomainOrigin(vl->Ld().LatticeToWorld(Int3(0))-c);
 
-    cout << "--------------------"<< endl;
-    cout << "Vessel Lattice is: " << endl;
-    vl->Ld().print(cout); cout  << endl;
-    H5::Group h5params = readInfile.openGroup("/parameters");
-    string message;
-    readAttrFromH5(h5params, string("MESSAGE"),message);
-    params.vesselfile_message = message;
-    int index;
-    readAttrFromH5(h5params, string("ENSEMBLE_INDEX"),index);
-    params.vesselfile_ensemble_index = index;
-    //params.vesselfile_message = file.openGroup("/parameters").attrs().get<string>("MESSAGE");
-    //params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
-    
-    //state.vessels.reset(vl.release());
-    //state.vessels.reset(vl.reset());
-    state.vessels = vl;
-    last_vessels_checksum = -1;
-  }
+  cout << "--------------------"<< endl;
+  cout << "Vessel Lattice is: " << endl;
+  vl->Ld().print(cout); cout  << endl;
+  H5::Group h5params = readInfile.openGroup("/parameters");
+  string message;
+  readAttrFromH5(h5params, string("MESSAGE"),message);
+  params.vesselfile_message = message;
+  int index;
+  readAttrFromH5(h5params, string("ENSEMBLE_INDEX"),index);
+  params.vesselfile_ensemble_index = index;
+  //params.vesselfile_message = file.openGroup("/parameters").attrs().get<string>("MESSAGE");
+  //params.vesselfile_ensemble_index = file.root().open_group("parameters").attrs().get<int>("ENSEMBLE_INDEX");
+  
+  //state.vessels.reset(vl.release());
+  //state.vessels.reset(vl.reset());
+  state.vessels = vl;
+  last_vessels_checksum = -1;
+  
 
-  {
-    Int3 s = params.lattice_size;
-    int dim = s[2]<=1 ? (s[1]<=1 ? 1 : 2) : 3;
-    LatticeDataQuad3d field_ld;
-    Bool3 centering = Bool3::mapIndex([=](int i) { return i<dim; });
-    field_ld.Init(params.lattice_size, params.lattice_scale);
-    field_ld.SetCellCentering(centering);
-    field_ld.SetOriginPosition(-field_ld.GetWorldBox().max.cwiseProduct(centering.cast<float>()) * 0.5); // set origin = lower left side
-    //grid.init(field_ld, dim);
-    grid = ContinuumGrid(field_ld, dim);
-    mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
-    
-    cout << "--------------------"<< endl;
-    cout << format("Tumor Lattice is %i dimensional ") % dim << endl;
-    field_ld.print(cout); cout  << endl;
-    cout << "--------------------"<< endl;
-    cout << "With DomainDecomposition:"<< endl;
-    mtboxes.print(cout);
-    cout << "--------------------"<< endl;
-  }
+  
+  Int3 s = params.lattice_size;
+  int dim = s[2]<=1 ? (s[1]<=1 ? 1 : 2) : 3;
+  LatticeDataQuad3d field_ld;
+  Bool3 centering = Bool3::mapIndex([=](int i) { return i<dim; });
+  field_ld.Init(params.lattice_size, params.lattice_scale);
+  field_ld.SetCellCentering(centering);
+  field_ld.SetOriginPosition(-field_ld.GetWorldBox().max.cwiseProduct(centering.cast<float>()) * 0.5); // set origin = lower left side
+  //grid.init(field_ld, dim);
+  grid = ContinuumGrid(field_ld, dim);
+  mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(32, 32, 32)));
+  
+  cout << "--------------------"<< endl;
+  cout << format("Tumor Lattice is %i dimensional ") % dim << endl;
+  field_ld.print(cout); cout  << endl;
+  cout << "--------------------"<< endl;
+  cout << "With DomainDecomposition:"<< endl;
+  mtboxes.print(cout);
+  cout << "--------------------"<< endl;
+  
 
-  {
-    //fieldinterp_extrapolate.init(CONT_EXTRAPOLATE);
-    //fieldinterp_const.init(CONT_CONST, make_ptree("value", 0.)("gradient", Float3(0.)));
-    
-    VesselModel1::Callbacks callbacks;
-    callbacks.getGf = boost::bind(&NewTumorSim::getGf, boost::ref(*this), _1);
-    callbacks.getPress = boost::bind(&NewTumorSim::getPress, boost::ref(*this), _1);
-    callbacks.getTumorDens = boost::bind(&NewTumorSim::getTumorDens, boost::ref(*this), _1);
-    callbacks.getGfGrad = boost::bind(&NewTumorSim::getGfGrad, boost::ref(*this), _1);
+  //fieldinterp_extrapolate.init(CONT_EXTRAPOLATE);
+  //fieldinterp_const.init(CONT_CONST, make_ptree("value", 0.)("gradient", Float3(0.)));
+  
+  VesselModel1::Callbacks callbacks;
+  callbacks.getGf = boost::bind(&NewTumorSim::getGf, boost::ref(*this), _1);
+  callbacks.getPress = boost::bind(&NewTumorSim::getPress, boost::ref(*this), _1);
+  callbacks.getTumorDens = boost::bind(&NewTumorSim::getTumorDens, boost::ref(*this), _1);
+  callbacks.getGfGrad = boost::bind(&NewTumorSim::getGfGrad, boost::ref(*this), _1);
 
-    VesselModel1::Params params_vess; 
-    params_vess.assign(all_pt_params.get_child("vessels"));
-    
-    /* need to compute flow because shearforce must be
-     * known and be consistent with current parameters.
-     * Shear force is used e.g. in model.Init to initialize
-     * f_initial. */
-    CalcFlow(*state.vessels, params.bfparams); 
-    vessel_model.Init(state.vessels.get(), params_vess, callbacks);
-  }
+  VesselModel1::Params params_vess; 
+  params_vess.assign(all_pt_params.get_child("vessels"));
+  
+  /* need to compute flow because shearforce must be
+    * known and be consistent with current parameters.
+    * Shear force is used e.g. in model.Init to initialize
+    * f_initial. */
+  CalcFlow(*state.vessels, params.bfparams); 
+  vessel_model.Init(state.vessels.get(), params_vess, callbacks);
 
   gf_model.init(grid, mtboxes, all_pt_params);
   gf_model.initField(state.gffield);

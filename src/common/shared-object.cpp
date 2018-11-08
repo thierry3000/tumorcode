@@ -59,34 +59,16 @@ TumorTypes determineTumorType(boost::optional<H5::Group> tumorgroup)
   TumorTypes tumortype;
   if(tumorgroup)//means it is initialized
   {
-    //std::string detailedTumorDescription = tumorgroup.attrs().get<std::string>("TYPE");
-    /*
-    try {  // to determine if the dataset exists in the group
-        dataset = new DataSet( group->openDataSet( "Compressed_Data" ));
-    }
-    catch( GroupIException not_found_error ) {
-        cout << " Dataset is not found." << endl;
-    }
-    cout << "dataset \"/Data/Compressed_Data\" is open" << endl;
-    */
-    
-    try
+    string detailedTumorDescription;
+    //now the BUG is here!
+    readAttrFromH5(*tumorgroup, string("TYPE"), detailedTumorDescription);
+    if( detailedTumorDescription == "faketumor" )
     {
-      string detailedTumorDescription;
-      //now the BUG is here!
-      readAttrFromH5(*tumorgroup, string("TYPE"), detailedTumorDescription);
-      if( detailedTumorDescription == "faketumor" )
-      {
-        tumortype = TumorTypes::FAKE;
-      }
-      else if ( detailedTumorDescription == "BulkTissueFormat1")
-      {
-        tumortype = TumorTypes::BULKTISSUE;
-      }
+      tumortype = TumorTypes::FAKE;
     }
-    catch( H5::AttributeIException &not_found_error)
+    else if ( detailedTumorDescription == "BulkTissueFormat1")
     {
-      cout << " Attribute TYPE not found" << endl;
+      tumortype = TumorTypes::BULKTISSUE;
     }
   }
   else
@@ -94,47 +76,7 @@ TumorTypes determineTumorType(boost::optional<H5::Group> tumorgroup)
     //means not tumorgroup is not initialized
     tumortype = TumorTypes::NONE;
   }
-//     if( tumorgroup->attrs().exists("TYPE") )
-//     {
-//       std::string detailedTumorDescription = tumorgroup->attrs().get<std::string>("TYPE");
-//       if( detailedTumorDescription == "faketumor" )
-//       {
-//         tumortype = TumorTypes::FAKE;
-//       }
-//       else if ( detailedTumorDescription == "BulkTissueFormat1")
-//       {
-//         tumortype = TumorTypes::BULKTISSUE;
-//       }
-//     }
-//   }
-//   else
-//   {
-//     tumortype = TumorTypes::NONE;
-//   }
-//   try
-//     {
-//       std::string detailedTumorDescription = tumorgroup.attrs().get<std::string>("TYPE");
-//       if( detailedTumorDescription == "faketumor" )
-//       {
-//         tumortype = TumorTypes::FAKE;
-//       }
-//       else if ( detailedTumorDescription == "BulkTissueFormat1")
-//       {
-//         tumortype = TumorTypes::BULKTISSUE;
-//       }
-//       else
-//       {
-// //         throw myexception();
-//         tumortype = TumorTypes::NONE;
-//       }
-//     }
-//     catch(std::exception& e)
-//     {
-//       cout << "reading tumor type from hdf failed because of: " << e.what() << '\n';
-//     }
   return tumortype;
-//   tumortype = TumorTypes::FAKE;
-//   return TumorTypes::FAKE;
 }
 
 void SetupTissuePhases(TissuePhases &phases, const ContinuumGrid &grid, DomainDecomposition &mtboxes, boost::optional<H5::Group> tumorgroup)
