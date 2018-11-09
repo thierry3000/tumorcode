@@ -38,7 +38,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common/continuum-grid.h"
 #include "common/vessels3d.h"
 
-#include "common/calcflow_common.h" //inhere from the CompressedFlowNetwork
+#include "common/calcflow.h" //inhere from the CompressedFlowNetwork
 
 namespace Adaption
 {

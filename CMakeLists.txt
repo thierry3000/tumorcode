@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
 project(tumorcode CXX)
-#add_definitions(-DMPICH_SKIP_MPICXX -DOMPI_SKIP_MPICXX)
 
 # I try to follow the tutorial at:
 # https://cmake.org/cmake-tutorial/

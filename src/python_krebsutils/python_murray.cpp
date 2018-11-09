@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "shared-objects.h"
 #include "vessels3d.h"
 
-#include "common/calcflow_common.h" //at least for remap_keys
+#include "common/calcflow.h" //at least for remap_keys
 
 
 namespace py = boost::python;

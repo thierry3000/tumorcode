@@ -20,7 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef CALCFLOW_LINSYS_H
 #define CALCFLOW_LINSYS_H
 
-#include "calcflow_common.h"
 #include "trilinos_linsys_construction.h"
 #include "mwlib/ptree_ext.h"
 
