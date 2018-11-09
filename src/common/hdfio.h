@@ -54,7 +54,7 @@ template<class T>
 class Array3d;
 
 void WriteHdfGraph( H5::Group &f, const VesselList3d &vl );
-void ReadHdfGraph( H5::Group &f, VesselList3d *vl );
+void ReadHdfGraph( const H5::Group &f, VesselList3d *vl );
 
 /** former hdf_wrapper_array3d.h */
 //void WriteHdfLd( H5::Group &f, const LatticeDataQuad3d &ld );
@@ -133,11 +133,11 @@ template<class T>
 void writeDataSetToGroup(H5::Group &g, const string &attr_name, const std::vector<T> &value);
 
 template<class T>
-void readDataSetFromGroup(H5::Group &g, const string &attr_name, DynArray<T> &placeToStore);
+void readDataSetFromGroup(const H5::Group &g, const string &attr_name, DynArray<T> &placeToStore);
 template<class T>
-void readDataSetFromGroup(H5::Group &g, const string &attr_name, boost::optional<DynArray<T>> &placeToStore);
+void readDataSetFromGroup(const H5::Group &g, const string &attr_name, boost::optional<DynArray<T>> &placeToStore);
 template<class T>
-void readDataSetFromGroup(H5::Group &g, const string &attr_name, std::vector<T> &placeToStore);
+void readDataSetFromGroup(const H5::Group &g, const string &attr_name, std::vector<T> &placeToStore);
 
 /** @brief
  * returns the location of a hdf object within the file

@@ -277,7 +277,7 @@ if __name__ == '__main__':
     fn = 'apj.h5'
     with h5py.File(fn,'w') as f3:
       vesselgrp = f3.create_group('vessels')
-      vesselgrp.attrs.create('CLASS', 'REALWORLD')
+      vesselgrp.attrs['CLASS']= 'REALWORLD'
       
       '''***** INPUT *****'''
       '''path to apj_network_546_segments.txt
@@ -296,4 +296,4 @@ if __name__ == '__main__':
     #dd = ku.calc_vessel_hydrodynamics(f3['vessels'], return_flags = True, bloodflowparams = adaptionParams['calcflow'],storeCalculationInHDF=True)
     dd = ku.calc_vessel_hydrodynamics_Ccode(fn, 'vessels', True, adaptionParams['calcflow'], False, True)
     #dd = ku.calc_vessel_hydrodynamics_Ccode('vessels-default-typeI-11x15L130-sample00.h5', 'vessels', True, adaptionParams['calcflow'], False, True)
-
+    #print(dd)

@@ -20,17 +20,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef CALCFLOW_H
 #define CALCFLOW_H
 
-#pragma once // include this file only once per compilation unit (see https://en.wikipedia.org/wiki/Pragma_once)
-
+#include "calcflow_linsys.h"
 #include "common.h"
-#include "mwlib/math_ext.h"
-#include "Epetra_CrsMatrix.h"
+#include "mwlib/compressed_row_undirected_graph.h"
+#include "mwlib/dynamicarray.h"
 #include <boost/unordered_map.hpp>
+#include <boost/property_tree/info_parser.hpp>
 
-#include <Epetra_ConfigDefs.h>
 
-
-typedef double FlReal;
 class VesselList3d;
 
 /*
@@ -39,7 +36,6 @@ class VesselList3d;
     space - micron
     pressure - kPa
 */
-
 
 enum Rheology
 {
@@ -78,6 +74,68 @@ struct BloodFlowParameters
 
 ostream& operator<<(ostream &os, const BloodFlowParameters &bfparams);
 
+//DA FUCK!!!! When did i ever think that global variables are a good thing ...
+//extern BloodFlowParameters bloodFlowParameters;
+
+// template<class T>
+// inline T getNAN() { return std::numeric_limits<T>::quiet_NaN(); }
+
+template<class T>
+inline bool isFinite(T x) { return std::isfinite(x); }
+
+struct CompressedFlowNetwork
+{
+  FlArray press;
+  FlArray len, rad, hema, flow;
+  FlBoundaryList bcs;
+
+  DynArray<my::eqpair<int> > edges;
+  /*
+   * This map is needed in order to get rid of the unperfused vessels 
+   * while mantaining the network structure.
+   * NB Matrix solver do not like gaps in indeces!
+   */
+  IntegerMap org2new_vertex;
+
+  int num_vertices() const { return org2new_vertex.num_added(); }
+  int num_edges() const { return edges.size(); }
+};
+
+
+template<class Map1, class Map2, class Keymap>
+static void remap_keys(const Map1 &src, Map2 &dst, const Keymap &keymap)
+{
+  typedef typename Map1::const_iterator Iter;
+  for (Iter it = src.begin(); it != src.end(); ++it)
+  {
+#if 0
+#ifdef DEBUG
+    cout<<format("first: %i, second: %i, keymap[first]: %i\n") % it->first->Index() % it->second.val % keymap(it->first);
+#endif
+#endif
+    dst[keymap(it->first)] = it->second;
+#if 0
+#ifdef DEBUG
+    cout<<format("dst[keymap(it->first)] %f\n") % dst[keymap(it->first)].val;
+#endif
+#endif
+  }
+}
+
+void CalcViscosities( const FlArray &rad, const FlArray &hema, const BloodFlowParameters &bloodFlowParameters, FlArray &visc);
+void CalcConductivities(const FlArray &rad, const FlArray &len, const FlArray &visc, FlArray &cond);
+
+void SetFlowValues( VesselList3d &vl,
+                    const CompressedFlowNetwork &fl,
+                    const FlArray &cond,
+                    const FlArray &press,
+                    const FlArray &hema
+		    );
+uint GetFlowNetwork(CompressedFlowNetwork &fl,
+                    const VesselList3d &vl,
+                    const BloodFlowParameters &bfparams,
+                    bool keepTheVesselHematocrit
+		    );
 
 FlReal CalcRelViscosity( FlReal r, FlReal h, Rheology rheology);
 //FlReal CalcRelViscosityByTable( FlReal r, FlReal h, Rheology rheology);
@@ -120,30 +178,11 @@ inline FlReal CalcVelocity( FlReal q, FlReal r )
   return q/(r*r*my::mconst::pi());
 }
 
-struct FlowBC
-{
-  enum Type{ PIN = 1, CURRENT = 2, RESIST = 3};
-  //enum Pin { PIN = 1 };  // set the node to a fixed blood pressure
-  //enum Current { CURRENT = 2 }; // a fixed blood flow rate into the node
-  //enum Resist { RESIST = 3 }; // a resistor between the node and a fixed blood pressure
-  FlowBC() : typeOfInstance(Type::PIN),w(0.),val(0.) {}
-  FlowBC(Type theType, double val_) : w(0),val(val_),typeOfInstance(theType) {}
-  FlowBC(Type theType, double cond_, double val_) : w(cond_), val(val_), typeOfInstance(theType) {}
-  //FlowBC_pin(double val) : w(0),val(val),typeOfInstance(Type::PIN) {}
-  //FlowBC_resit(double w, double val) : w(w),val(val),typeOfInstance(Type::RESIST) {}
-  Type typeOfInstance; // PIN, CURRENT or RESIST
-  double w,val; // w = flow conuctivity (?) of series "resistor", val = either blood pressure or flow rate
-//   friend class boost::serialization::access;
-//   template<class Archive>
-//   void serialize(Archive &ar, const unsigned int version)
-//   {
-//       // save/load base class information
-//       ar & type & w & val;
-//   }
-};
+
 
 
 void CalcFlowSimple(VesselList3d &vl, const BloodFlowParameters &params, bool keepTheVesselHematocrit); // Either override the vessel hematocrit with a constant or leave the vessel hematocrit values alone and just compute pressure, flow and force using the segments hematocrit
 void CalcFlow(VesselList3d &vl, const BloodFlowParameters &params);
 bool MarkFailingVesselHidden(VesselList3d &vl);
-#endif // CALCFLOW_H
+
+#endif

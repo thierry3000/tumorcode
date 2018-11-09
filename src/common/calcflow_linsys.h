@@ -24,19 +24,43 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "trilinos_linsys_construction.h"
 #include "mwlib/ptree_ext.h"
 
-// trilinos stuff
-//see trilinos_linsys_construction.h
-//#include <Epetra_SerialComm.h>
-// is include in trilinos_linsys_construction.h
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_LinearProblem.h>
 #include <ml_epetra_preconditioner.h>
 #include <EpetraExt_RowMatrixOut.h>
 #include <EpetraExt_VectorOut.h>
 #include <mwlib/timer.h>
+#include <boost/unordered_map.hpp>
 
 using boost::property_tree::ptree;
 using boost::property_tree::make_ptree;
+
+struct FlowBC
+{
+  enum Type{ PIN = 1, CURRENT = 2, RESIST = 3};
+  //enum Pin { PIN = 1 };  // set the node to a fixed blood pressure
+  //enum Current { CURRENT = 2 }; // a fixed blood flow rate into the node
+  //enum Resist { RESIST = 3 }; // a resistor between the node and a fixed blood pressure
+  FlowBC() : typeOfInstance(Type::PIN),w(0.),val(0.) {}
+  FlowBC(Type theType, double val_) : w(0),val(val_),typeOfInstance(theType) {}
+  FlowBC(Type theType, double cond_, double val_) : w(cond_), val(val_), typeOfInstance(theType) {}
+  //FlowBC_pin(double val) : w(0),val(val),typeOfInstance(Type::PIN) {}
+  //FlowBC_resit(double w, double val) : w(w),val(val),typeOfInstance(Type::RESIST) {}
+  Type typeOfInstance; // PIN, CURRENT or RESIST
+  double w,val; // w = flow conuctivity (?) of series "resistor", val = either blood pressure or flow rate
+//   friend class boost::serialization::access;
+//   template<class Archive>
+//   void serialize(Archive &ar, const unsigned int version)
+//   {
+//       // save/load base class information
+//       ar & type & w & val;
+//   }
+};
+
+typedef DynArray<FlReal> FlArray;
+typedef DynArray<my::eqpair<int> > FeArray;
+typedef DynArray<my::Bitfield<uchar> > FbArray;
+typedef boost::unordered_map<int, FlowBC> FlBoundaryList;
 
 struct Linsys
 {

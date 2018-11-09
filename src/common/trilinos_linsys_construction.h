@@ -32,13 +32,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wextra"
 #endif
+
 #include <Epetra_ConfigDefs.h> //knows if EPETRA_MPI is there!
 #ifdef EPETRA_MPI
-    #include <Epetra_MpiComm.h> //import mpi on its own!
+  /** somewhere down the line this includes mpi.h
+    * do not do that on our own, you will regret it
+    */
+  #include <Epetra_MpiComm.h> //import mpi on its own!
 #endif
 #ifndef EPETRA_MPI
   #include <Epetra_SerialComm.h>
 #endif
+
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_Map.h>
 #include <Epetra_Vector.h>

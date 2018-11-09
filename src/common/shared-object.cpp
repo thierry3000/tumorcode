@@ -469,51 +469,36 @@ int FindDistanceToJunction( const Vessel* vstart, int posOnVess, const VesselNod
 }
 
 
-std::shared_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptree &params)
+std::shared_ptr<VesselList3d> ReadVesselList3d(const H5::Group &vesselgroup, const ptree &params)
 {
   float grid_scale = params.get<float>("scale subdivide", -1.);
   bool filter_uncirculated = params.get<bool>("filter", false);
   
-  
   std::shared_ptr<VesselList3d> vl;
   typedef polymorphic_latticedata::LatticeData LatticeData;
   string type_of_vessel_network;
-  try
-  {
-    readAttrFromH5(vesselgroup, string("CLASS"), type_of_vessel_network);
-  }
-  catch(H5::Exception &e)
-  {
-    e.printErrorStack();
-  }
+  readAttrFromH5(vesselgroup, string("CLASS"), type_of_vessel_network);
+  
 
   if(type_of_vessel_network == "GRAPH")
   {
 #ifdef DEBUG
     cout << "read vl from: \n " << type_of_vessel_network << endl;
 #endif
-    //we have a lattice struture->get it, could also produce an error
-        /*
+    /*
      * Access "lattice" group .
      */
     H5::Group ldgroup;
-    ldgroup = vesselgroup.openGroup("lattice");
-//     try {  // to determine if the lattice group exists
-//       ldgroup = vesselgroup.openGroup("lattice");
-//     }
-//     catch( H5::GroupIException not_found_error ) {
-//         cout << " lattice group is not found." << endl;
-//     }
-    cout << "group lattice is open" << endl;
-    
-//     if(!vesselgroup.exists("lattice"))
-//     {
-//       string latticeIOError = str(format("No lattice group in hdf: %s\n") % vesselgroup.get_file_name());
-//       throw std::runtime_error(latticeIOError);
-//     }
-//     h5cpp::Group ldgroup = vesselgroup.open_group("lattice");//may not be there
+    try
+    {
+      ldgroup = vesselgroup.openGroup("lattice");
+    }
+    catch(H5::Exception &e)
+    {
+      e.printErrorStack();
+      cout << "could not find lattice group in ReadVesselList3d" << endl;
+    }
 
-    
     std::unique_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::ReadHdf(ldgroup);
 #ifdef DEBUG
     cout << "ReadVesselList3d read " << endl;
@@ -531,6 +516,7 @@ std::shared_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptr
 #endif
 
     ReadHdfGraph(vesselgroup, vl.get());
+    
     //this magic can only be done on a lattice
     float original_grid_scale_override = params.get<float>("scale override", -1.);
     if (original_grid_scale_override>0.)
@@ -555,12 +541,11 @@ std::shared_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptr
   }
   else
   {
-    //null!!!! 
-    //world no lattice data needed
-    std::unique_ptr<LatticeData> ldp;
-    std::unique_ptr<VesselList3d> vl_local(new VesselList3d());
-    vl_local->Init(ldp);
-    vl=std::move(vl_local);
+    //WORLD: no lattice data needed
+    //std::unique_ptr<LatticeData> ldp;
+    vl = std::shared_ptr<VesselList3d>(new VesselList3d());
+    //vl->Init(ldp);
+    //vl=std::move(vl_local);
     ReadHdfGraph(vesselgroup, vl.get());
   }
 
@@ -577,139 +562,37 @@ std::shared_ptr<VesselList3d> ReadVesselList3d(H5::Group &vesselgroup, const ptr
 #endif
   
   
-  {//hdf failscope
-    int ecnt = vl->GetECount();
-    int vcnt = vl->GetNCount();
-    
-    for( int i=0; i<ecnt; ++i )
-    {
-      Vessel* v = vl->GetEdge(i);
-      v->maturation = GetInitialThickness( v->r );
-      v->hematocrit = -1; // since i use hematocrit as a system parameter now i want things to fail hard if this is not properly set somewhere else
-      v->f = v->q = 0.;
-    }
-
-#if 0
-    DynArray<decltype(VNodeData::press)> pressure;
-    if (vesselgroup.exists("nodes/pressure"))
-    {
-      h5::read_dataset(vesselgroup.open_dataset("nodes/pressure"),pressure);
-    }
-
-    if (vesselgroup.exists("nodes/roots_pressure"))
-    {
-      pressure.resize(vcnt);
-      DynArray<decltype(VNodeData::press)> roots_pressure;
-      h5::read_dataset(vesselgroup.open_dataset("nodes/roots_pressure"),roots_pressure);
-      DynArray<int> idx;
-      h5::read_dataset(vesselgroup.open_dataset("nodes/roots"),idx);
-      for (int i=0; i<idx.size(); ++i)
-      {
-        pressure[idx[i]] = roots_pressure[i];
-      }
-    }
-
-    DynArray<decltype(VData::q)> flow;
-    if (vesselgroup.exists("edges/flow"))
-    {
-      h5::read_dataset(vesselgroup.open_dataset("edges/flow"),flow);
-    }
-    
-    DynArray<decltype(VData::f)> shearforce;
-    if (vesselgroup.exists("edges/shearforce"))
-    {
-      h5::read_dataset(vesselgroup.open_dataset("edges/shearforce"), shearforce);
-    }
-    
-    DynArray<int> flags;
-    if (vesselgroup.exists("edges/flags"))
-    {
-      h5::read_dataset(vesselgroup.open_dataset("edges/flags"), flags);
-    }
-
-    DynArray<decltype(VData::hematocrit)> hematocrit; // however, read hematocrit if available
-    if (vesselgroup.exists("edges/hematocrit"))
-    {
-      h5::read_dataset(vesselgroup.open_dataset("edges/hematocrit"),hematocrit);
-    }
-    //set back the read values
-    for(int i=0;i<vl->GetECount();++i)
-    {
-      Vessel* v=vl->GetEdge(i);
-      //I don't know why this is there, and therefore I keep it
-      v->NodeA()->flags.AddBits( v->flags.GetBits(ARTERY|VEIN) );
-      if (!flow.empty())
-        v->q = flow[i];
-      if (!hematocrit.empty())
-        v->hematocrit = hematocrit[i];
-      if (!shearforce.empty())
-	v->f = shearforce[i];
-      if (!flags.empty())
-	v->flags = flags[i];
-    }
-    //also set back the boundary conditions, if found
-    if(!vl->GetBCMap().empty())
-    {
-      //if we have the BCMap, we try to use it
-      //ReadHdfGraph executed before should provide that
-      for( auto bc: vl->GetBCMap())
-      {
-	const VesselNode* nodeFromBCMap = bc.first;
-	FlowBC theBC = bc.second;
-	switch(theBC.typeOfInstance)
-	{
-	  case FlowBC::PIN:
-	    vl->GetNode(nodeFromBCMap->Index())->press=theBC.val;
-	    break;
-	  case FlowBC::CURRENT:
-	    const Vessel* theEdgeToTheNode=nodeFromBCMap->GetEdge(0);
-	    vl->GetEdge(theEdgeToTheNode->Index())->q = theBC.val;
-	    //cout<<"not implemented yet"<<endl;
-	    break;
-	}
-      }
-    }
-    else
-    {
-      cout<<"Warning vl->GetBCMap().empty() "<<endl;
-      //go through complete list
-      for(int i=0; i<vcnt; ++i)
-      {
-	VesselNode* vc = vl->GetNode(i);
-	if (vc->flags.GetBits(BOUNDARY) && pressure.empty())
-	{
-	//guess pressure, so there is an reasonable value to compute pressure
-	  vc->press = PressureRadiusRelation(vc->GetEdge(0)->r,(vc->GetEdge(0)->IsArtery()));
-	}
-	else if (vc->flags.GetBits(BOUNDARY) && !pressure.empty())
-	{
-	  vc->press = pressure[vc->Index()];
-	}
-      }
-    }
-#endif
-  }//end hdf failscope
-    
+  int ecnt = vl->GetECount();
+  int ncnt = vl->GetNCount();
+  
+  for( int i=0; i<ecnt; ++i )
+  {
+    Vessel* v = vl->GetEdge(i);
+    v->maturation = GetInitialThickness( v->r );
+    v->hematocrit = -1; // since i use hematocrit as a system parameter now i want things to fail hard if this is not properly set somewhere else
+    v->f = v->q = 0.;
+  }
 
   if (filter_uncirculated)
   {
-    { DynArray<Vessel*> tokill(100, ConsTags::RESERVE);
+    DynArray<Vessel*> tokill_vessel(100, ConsTags::RESERVE);
     for (int i=0; i<vl->GetECount(); ++i)
     {
       Vessel* v = vl->GetEdge(i);
-      if (!v->IsCirculated()) tokill.push_back(v);
+      if (!v->IsCirculated()) tokill_vessel.push_back(v);
     }
-    for (int i=0; i<tokill.size(); ++i) vl->DeleteVessel(tokill[i]);
-    }
+    for (int i=0; i<tokill_vessel.size(); ++i) 
+      vl->DeleteVessel(tokill_vessel[i]);
+    
 
-    { DynArray<VesselNode*> tokill(100, ConsTags::RESERVE);
+    DynArray<VesselNode*> tokill_node(100, ConsTags::RESERVE);
     for (int i=0; i<vl->GetNCount(); ++i)
     {
       VesselNode* nd = vl->GetNode(i);
-      if (nd->Count() == 0) tokill.push_back(nd);
+      if (nd->Count() == 0) tokill_node.push_back(nd);
     }
-    for (int i=0; i<tokill.size(); ++i) vl->DeleteUnusedNode(tokill[i]);
-    }
+    for (int i=0; i<tokill_node.size(); ++i) 
+      vl->DeleteUnusedNode(tokill_node[i]);
   }
 
   VESSEL_INTEGRITY_CHECK_SWITCH(vl->IntegrityCheck();)

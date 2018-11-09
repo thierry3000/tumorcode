@@ -97,6 +97,7 @@ H5::DataType getH5TypeFromCpp()
   {
     cout << thisWritingType.fromClass() << endl;
     cout << "unsupported Template type in getH5TypeFromCpp!" << endl;
+    cout << "type: " << typeid(T).name() << endl;
     exit(1);
   }
   return thisWritingType;
@@ -106,12 +107,10 @@ H5::DataType getH5TypeFromCpp()
 template<class T>
 void readAttrFromH5(const H5::H5Object &g, const string &attr_name, T &output_buffer)
 {
-  H5::Attribute att_to_read;
-  H5::DataType type; 
   try
   {
-    att_to_read = g.openAttribute(attr_name);
-    type = att_to_read.getDataType();
+    H5::Attribute att_to_read = g.openAttribute(attr_name);
+    H5::DataType type = att_to_read.getDataType();
     att_to_read.read(type, &output_buffer);
   }
   catch(H5::Exception &e)
@@ -296,8 +295,8 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
   }
   catch(H5::Exception &e)
   {
-    //e.printErrorStack();
-    h5_nodes = g.openGroup("nodes");
+    e.printErrorStack();
+    //h5_nodes = g.openGroup("nodes");
   }
   writeAttrToH5(h5_nodes, string("COUNT"), ncnt);
 
@@ -334,15 +333,16 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
   {
     try
     {
-      string theType;
-      readAttrFromH5(g, string("CLASS"), theType);
+      writeAttrToH5(g,string("CLASS"), string("REALWORLD"));
+      //string theType;
+      //readAttrFromH5(g, string("CLASS"), theType);
       //myAssert(theType == "REALWORLD");
     }
     catch( H5::Exception &e )
     {
-      e.dontPrint();
-      cout << " CLASS type not found" << endl;
-      writeAttrToH5(g,string("CLASS"), string("REALWORLD"));
+      e.printErrorStack();
+      cout << " could not write CLASS" << endl;
+      //writeAttrToH5(g,string("CLASS"), string("REALWORLD"));
     }  
     // write the special world stuff
     //needs old school linearizing
@@ -364,22 +364,23 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
     }
     // due to creation of h5 files with python this could already be pressent
     
-    try
-    {
-      //DataSet dataset = file.openDataSet(DATASET_NAME);
-      H5::DataSet ds = h5_nodes.openDataSet("world_pos");
-      //grp=h5file.openGroup("A");
-    } 
-    catch(H5::Exception& e)
-    {
-      /* group does not exists, create it */
-      //grp=h5file.createGroup("A");
-      const int	 RANK = 2;
-      hsize_t dims[2] = {3, ncnt};
-      H5::DataSpace dataspace(RANK, dims);
-      H5::DataSet ds = h5_nodes.createDataSet("world_pos", H5::PredType::NATIVE_FLOAT, dataspace);
-      ds.write(&a, H5::PredType::NATIVE_FLOAT);
-    }
+    writeDataSetToGroup(h5_nodes, string("world_pos"), a);
+//     try
+//     {
+//       //DataSet dataset = file.openDataSet(DATASET_NAME);
+//       H5::DataSet ds = h5_nodes.openDataSet("world_pos");
+//       //grp=h5file.openGroup("A");
+//     } 
+//     catch(H5::Exception& e)
+//     {
+//       /* group does not exists, create it */
+//       //grp=h5file.createGroup("A");
+//       const int	 RANK = 2;
+//       hsize_t dims[2] = {3, ncnt};
+//       H5::DataSpace dataspace(RANK, dims);
+//       H5::DataSet ds = h5_nodes.createDataSet("world_pos", H5::PredType::NATIVE_FLOAT, dataspace);
+//       ds.write(&a, H5::PredType::NATIVE_FLOAT);
+//     }
 //     if(!gg.exists("world_pos"))
 //     {
 //       h5cpp::Dataset ds = h5cpp::create_dataset<float>(gg, "world_pos", h5cpp::Dataspace::simple_dims(a.size()/3,3), &a[0]);
@@ -473,166 +474,76 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
   }
 }
 
-void ReadHdfGraph( H5::Group &g, VesselList3d *vl )
+void ReadHdfGraph(const H5::Group &g, VesselList3d *vl )
 {
-  H5::Group gnodes;
-  H5::Group gedges;
+  std::unique_ptr<H5::Group> p_gnodes;
+  std::unique_ptr<H5::Group> p_gedges;
+  
   try
   {
-    gnodes = g.openGroup("nodes");
-    gedges = g.openGroup("edges");
+    p_gnodes=std::unique_ptr<H5::Group>(new H5::Group(g.openGroup("nodes")));
+    p_gedges=std::unique_ptr<H5::Group>(new H5::Group(g.openGroup("edges")));
   }
   catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
   
-  int ecnt=0,ncnt=0;
-  readAttrFromH5(gnodes, string("COUNT"), ncnt);
-  readAttrFromH5(gedges, string("COUNT"), ecnt);
-
+  int *p_ecnt = new int();
+  int *p_ncnt = new int();
+  readAttrFromH5(*p_gnodes, string("COUNT"), *p_ncnt);
+  readAttrFromH5(*p_gedges, string("COUNT"), *p_ecnt);
+  int ecnt = *p_ecnt;
+  int ncnt = *p_ncnt;
+  // I dont know why, but the stack variables do not work here? But they should?
+  delete p_ecnt;
+  delete p_ncnt;
+  
   if(vl->HasLattice())//LATTICE IS THERE
-  {//read lattice stuffe
+  {
+    //read lattice stuff
     const VesselList3d::LatticeData &ld = vl->Ld();
-    {//begin interrupt
-      
-      //node stuff
-//       std::vector<VesselList3d::SiteType> a;
-//       h5cpp::read_dataset<VesselList3d::SiteType>(gnodes.open_dataset("lattice_pos"),a);
-      DynArray<VesselList3d::SiteType> a;
-      readDataSetFromGroup(gnodes,string("lattice_pos"),a);
-      for(int i=0; i<ncnt; ++i)
-      {
-        vl->InsertNode(ld.SiteToLattice(a[i]));
-      }
-    }//end interrupt
-  }
-  else//no lattice pressent
-  {
-    {//begin interupt
-      // WARNING: UNTESTET
-//       DynArray<float> a;
-//       h5cpp::Dataset ds = gnodes.open_dataset("world_pos");
-//       h5cpp::Dataspace sp = ds.get_dataspace();
-//       hsize_t dims[H5S_MAX_RANK];
-//       int rank = sp.get_dims(dims);
-//       h5cpp::read_dataset<float>(ds,a);
-//       for(int i=0; i<ncnt; ++i)
-//       {
-// 	vl->InsertNode(
-// 	  Float3(
-// 	    a[3*i+0],a[3*i+1],a[3*i+2]
-// 	  )
-// 	);
-//       }
-      DynArray<Float3> a;
-      readDataSetFromGroup(gnodes,string("world_pos"), a);
-      for(int i=0; i<ncnt; ++i)
-      {
-	vl->InsertNode(a[i]); //now a[i] is a Float3
-      }
-    }//end interupt
-  }
-  /* Read all other stuff which is the same*/
-  {
-    //edge stuff
-    DynArray<int> va,vb;
-    va.resize(ncnt);
-    vb.resize(ncnt);
-//     h5cpp::read_dataset<int>(gedges.open_dataset("node_a_index"),va);
-//     h5cpp::read_dataset<int>(gedges.open_dataset("node_b_index"),vb);
-    readDataSetFromGroup(gedges, string("node_a_index"), va);
-    readDataSetFromGroup(gedges, string("node_b_index"), vb);
-    for(int i=0; i<ecnt; ++i)
+    //node stuff
+    DynArray<VesselList3d::SiteType> a;
+    readDataSetFromGroup(*p_gnodes,string("lattice_pos"),a);
+    for(int i=0; i<ncnt; ++i)
     {
-#ifndef NDEBUG
-      std::cout << "va[" << i << "]: " << va[i] << std::endl;
-      std::cout << "vb[" << i << "]: " << vb[i] << std::endl;
-#endif
-      Vessel* v = vl->InsertVessel(vl->GetNode(va[i]),vl->GetNode(vb[i]));
+      vl->InsertNode(ld.SiteToLattice(a[i]));
+    }
+    
+  }
+  else//no lattice pressent assume world
+  {
+    DynArray<Float3> a;
+    readDataSetFromGroup(*p_gnodes,string("world_pos"), a);
+    for(int i=0; i<ncnt; ++i)
+    {
+      vl->InsertNode(a[i]); //now a[i] is a Float3
     }
   }
+  
+  /* Read all other stuff which is hopefully the same*/
+  //edge stuff
+  DynArray<int> va,vb;
+  va.resize(ncnt);
+  vb.resize(ncnt);
+  
+  readDataSetFromGroup(*p_gedges, string("node_a_index"), va);
+  readDataSetFromGroup(*p_gedges, string("node_b_index"), vb);
+  for(int i=0; i<ecnt; ++i)
   {
-    DynArray<int> root_indices;
-    //h5cpp::read_dataset<int>(gnodes.open_dataset("roots"),root_indices);
-    readDataSetFromGroup(gnodes, string("roots"), root_indices);
-    for(int i=0; i<root_indices.size(); ++i)
-      vl->GetNode(root_indices[i])->flags.AddBits(BOUNDARY);
+#ifndef NDEBUG
+    std::cout << "va[" << i << "]: " << va[i] << std::endl;
+    std::cout << "vb[" << i << "]: " << vb[i] << std::endl;
+#endif
+    Vessel* v = vl->InsertVessel(vl->GetNode(va[i]),vl->GetNode(vb[i]));
   }
-    
-//   if(gnodes.exists("bc_node_index") && 
-//     gnodes.exists("bc_type") && 
-//     gnodes.exists("bc_value") && 
-//     gnodes.exists("bc_conductivity_value"))
-//   {
-//     DynArray <int> bc_node_index;
-//     DynArray <int> bctyp_index;
-//     DynArray <float> values_of_bcs;
-//     DynArray <float> bc_conductivity_value;
-//     h5cpp::read_dataset<int>(gnodes.open_dataset("bc_node_index")     ,bc_node_index);
-//     h5cpp::read_dataset<int>(gnodes.open_dataset("bc_type")           ,bctyp_index);
-//     h5cpp::read_dataset<float>(gnodes.open_dataset("bc_value")          ,values_of_bcs);
-//     h5cpp::read_dataset<float>(gnodes.open_dataset("bc_conductivity_value") ,bc_conductivity_value);
-//     for(int i=0; i<bc_node_index.size(); ++i)
-//     {
-//       #ifdef DEBUG
-//       cerr<<format("root index %i of #%i, bctype %i, value: %f, conductivity: %f\n") % bc_node_index[i] % bc_node_index.size() % bctyp_index[i] % values_of_bcs[i] % bc_conductivity_value[i];
-//       #endif
-//       VesselNode* nd = vl->GetNode(bc_node_index[i]);
-//       nd->flags.AddBits(BOUNDARY);
-//       FlowBC bc; 
-//       switch (bctyp_index[i])
-//       {
-//         case FlowBC::PIN:
-//           bc = FlowBC(FlowBC::PIN, values_of_bcs[i]);
-//           break;
-//         case FlowBC::CURRENT:
-//           bc = FlowBC(FlowBC::CURRENT, values_of_bcs[i]);
-//           break;
-//         case FlowBC::RESIST:
-//           bc = FlowBC(FlowBC::RESIST, bc_conductivity_value[i], values_of_bcs[i]);
-//           break;
-//       }
-//       vl->SetBC(nd, bc);
-//     }
-//   }
-
-//   if(gnodes.exists("bc_node_index") && 
-//     gnodes.exists("bc_type") && 
-//     gnodes.exists("bc_value") && 
-//     gnodes.exists("bc_conductivity_value"))
-//   {
-//     DynArray <int> bc_node_index;
-//     DynArray <int> bctyp_index;
-//     DynArray <float> values_of_bcs;
-//     DynArray <float> bc_conductivity_value;
-//     h5cpp::read_dataset<int>(gnodes.open_dataset("bc_node_index")     ,bc_node_index);
-//     h5cpp::read_dataset<int>(gnodes.open_dataset("bc_type")           ,bctyp_index);
-//     h5cpp::read_dataset<float>(gnodes.open_dataset("bc_value")          ,values_of_bcs);
-//     h5cpp::read_dataset<float>(gnodes.open_dataset("bc_conductivity_value") ,bc_conductivity_value);
-//     for(int i=0; i<bc_node_index.size(); ++i)
-//     {
-//       #ifdef DEBUG
-//       cerr<<format("root index %i of #%i, bctype %i, value: %f, conductivity: %f\n") % bc_node_index[i] % bc_node_index.size() % bctyp_index[i] % values_of_bcs[i] % bc_conductivity_value[i];
-//       #endif
-//       VesselNode* nd = vl->GetNode(bc_node_index[i]);
-//       nd->flags.AddBits(BOUNDARY);
-//       FlowBC bc; 
-//       switch (bctyp_index[i])
-//       {
-//         case FlowBC::PIN:
-//           bc = FlowBC(FlowBC::PIN, values_of_bcs[i]);
-//           break;
-//         case FlowBC::CURRENT:
-//           bc = FlowBC(FlowBC::CURRENT, values_of_bcs[i]);
-//           break;
-//         case FlowBC::RESIST:
-//           bc = FlowBC(FlowBC::RESIST, bc_conductivity_value[i], values_of_bcs[i]);
-//           break;
-//       }
-//       vl->SetBC(nd, bc);
-//     }
-//   }
+  
+  
+  DynArray<int> root_indices;
+  readDataSetFromGroup(*p_gnodes, string("roots"), root_indices);
+  for(int i=0; i<root_indices.size(); ++i)
+    vl->GetNode(root_indices[i])->flags.AddBits(BOUNDARY);
 
 /**
  * Error handling is now done inside the hdf5 interface
@@ -643,10 +554,11 @@ void ReadHdfGraph( H5::Group &g, VesselList3d *vl )
   DynArray <float> bc_conductivity_value;
   /* for old files the boundary arrays are not present
     */
-  readDataSetFromGroup(gnodes, string("bc_node_index"),bc_node_index );
-  readDataSetFromGroup(gnodes, string("bc_type"),bctyp_index );
-  readDataSetFromGroup(gnodes, string("bc_value"),values_of_bcs );
-  readDataSetFromGroup(gnodes, string("bc_conductivity_value"),bc_conductivity_value );
+  readDataSetFromGroup(*p_gnodes, string("bc_node_index"),bc_node_index );
+  readDataSetFromGroup(*p_gnodes, string("bc_type"),bctyp_index );
+  readDataSetFromGroup(*p_gnodes, string("bc_value"),values_of_bcs );
+  readDataSetFromGroup(*p_gnodes, string("bc_conductivity_value"),bc_conductivity_value );
+  
   for(int i=0; i<bc_node_index.size(); ++i)
   {
     #ifdef DEBUG
@@ -673,10 +585,9 @@ void ReadHdfGraph( H5::Group &g, VesselList3d *vl )
 
   DynArray<int> flags;
   DynArray<float> aflt;
-//   h5cpp::read_dataset<int>(gedges.open_dataset("flags"),flags);
-//   h5cpp::read_dataset<float>(gedges.open_dataset("radius"),aflt);
-  readDataSetFromGroup(gedges, string("flags"), flags);
-  readDataSetFromGroup(gedges, string("radius"), aflt);
+  readDataSetFromGroup(*p_gedges, string("flags"), flags);
+  readDataSetFromGroup(*p_gedges, string("radius"), aflt);
+  
   for(int i=0; i<ecnt; ++i)
   {
     Vessel* v = vl->GetEdge(i);
@@ -1010,7 +921,7 @@ void writeDataSetToGroup(H5::Group &g, const string &dataset_name, const std::ve
 }
 
 template <class T>
-void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> &readIn)
+void readDataSetFromGroup(const H5::Group &g, const string &dataset_name, DynArray<T> &readIn)
 {
   H5::DataSet dset;
   H5::DataSpace dataspace;
@@ -1045,13 +956,11 @@ void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> 
   {
     cout << "Error in : void readDataSetFromGroup(H5::Group &g, const string &dataset_name, DynArray<T> &readIn)" << endl;
     e.printErrorStack();
-    cout << "closed group" << endl;
-    g.close();
   }
 }
 
 template <class T>
-void readDataSetFromGroup(H5::Group &g, const string &dataset_name, boost::optional<DynArray<T>> &readIn)
+void readDataSetFromGroup(const H5::Group &g, const string &dataset_name, boost::optional<DynArray<T>> &readIn)
 {
   H5::DataSet dset;
   H5::DataSpace dataspace;
@@ -1094,14 +1003,12 @@ void readDataSetFromGroup(H5::Group &g, const string &dataset_name, boost::optio
   {
     cout << "Error in : H5::Group &g, const string &dataset_name, boost::optional<DynArray<T>> &readIn" << endl;
     e.printErrorStack();
-    cout << "closed group" << endl;
-    g.close();
   }
 }
 
 
 template <class T>
-void readDataSetFromGroup(H5::Group &g, const string &dataset_name, std::vector<T> &readIn)
+void readDataSetFromGroup(const H5::Group &g, const string &dataset_name, std::vector<T> &readIn)
 {
   H5::DataSet dset;
   H5::DataSpace dataspace;
@@ -1136,8 +1043,6 @@ void readDataSetFromGroup(H5::Group &g, const string &dataset_name, std::vector<
   {
     cout << "Error in : void readDataSetFromGroup(H5::Group &g, const string &dataset_name, std::vector<T> &readIn)" << endl;
     e.printErrorStack();
-    cout << "closed group" << endl;
-    g.close();
   }
 }
 
@@ -1239,9 +1144,9 @@ INSTANTIATE(char)
 #define INSTANTIATE2(T)\
   template H5::DataSet writeDataSetToGroup<T>(H5::Group &g, const string &name, DynArray<T> &value);\
   template void writeDataSetToGroup<T>(H5::Group &g, const string &name, const std::vector<T> &value);\
-  template void readDataSetFromGroup<T>(H5::Group &g, const string &name, std::vector<T> &value);\
-  template void readDataSetFromGroup<T>(H5::Group &g, const string &name, DynArray<T> &value);\
-  template void readDataSetFromGroup<T>(H5::Group &g, const string &name, boost::optional<DynArray<T>> &value);
+  template void readDataSetFromGroup<T>(const H5::Group &g, const string &name, std::vector<T> &value);\
+  template void readDataSetFromGroup<T>(const H5::Group &g, const string &name, DynArray<T> &value);\
+  template void readDataSetFromGroup<T>(const H5::Group &g, const string &name, boost::optional<DynArray<T>> &value);
 INSTANTIATE2(float)
 INSTANTIATE2(double)
 INSTANTIATE2(int)
