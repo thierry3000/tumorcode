@@ -291,39 +291,41 @@ void Model::DoStep(double dt, const BloodFlowParameters *bfparams)
   myAssert(dt == 1.);
   
 #ifndef USE_ADAPTION
-  {
-    GenerateSprouts();
+  GenerateSprouts();
 #ifndef NDEBUG
-    std::cout << "collapse called" << std::endl; std::cout.flush();
+  std::cout << "collapse called" << std::endl; std::cout.flush();
 #endif
-    CollapseVessels();
+  CollapseVessels();
 #ifndef NDEBUG
-    std::cout << "collapse ened" << std::endl; std::cout.flush();
+  std::cout << "collapse ened" << std::endl; std::cout.flush();
 #endif
-    if (IS_DEBUG) vl->IntegrityCheck();
+  if (IS_DEBUG) 
+    vl->IntegrityCheck();
 #ifndef NDEBUG
-    std::cout << "integrity ended" << std::endl; std::cout.flush();
+  std::cout << "integrity ended" << std::endl; std::cout.flush();
 #endif
-    EnlargeVessels();
+  EnlargeVessels();
 #ifndef NDEBUG
     std::cout << "enlarge ended" << std::endl; std::cout.flush();
 #endif
-    SmoothVessels();
+  SmoothVessels();
 #ifndef NDEBUG
-    std::cout << "smooth ended" << std::endl; std::cout.flush();
+  std::cout << "smooth ended" << std::endl; std::cout.flush();
 #endif
-    MaturateVessel();
+  MaturateVessel();
 #ifndef NDEBUG
-    std::cout << "maturate ended" << std::endl; std::cout.flush();
+  std::cout << "maturate ended" << std::endl; std::cout.flush();
 #endif
-  }
-#endif
+  
+#endif // #ifndef USE_ADAPTION
+  
   if(num_iteration%10 == 0)
   {
 #ifndef NDEBUG
     cout << "optimize called" << endl;
 #endif
-    Optimize(vl);
+    auto n_merge = Optimize(vl);
+    cout << "merged: " << n_merge << " vessels" << endl;
 #ifndef NDEBUG
     cout << "optimize finished" << endl;
 #endif

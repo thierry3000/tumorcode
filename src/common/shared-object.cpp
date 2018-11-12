@@ -529,10 +529,16 @@ std::shared_ptr<VesselList3d> ReadVesselList3d(const H5::Group &vesselgroup, con
     {
       // ldp is now bound to vl,  use vl->Ld().Scale() instead
       double scale_of_vessel_data = vl->Ld().Scale();
-      // check whether subdivision makes sense
+      cout << "scale_of_vessel_data: " << scale_of_vessel_data << "hope 130!!" << endl;
+      /** check whether subdivision makes sense
+       * example scale_of_vessel_data = 130
+       * grid_scale = 10
+       * 13.0 - 13 < 0.001  ---> yes
+       * 130.0 / 10.0 = 13 > 1.0 ---> yes
+       */
       myAssert(scale_of_vessel_data/grid_scale - int(scale_of_vessel_data/grid_scale) < 1.e-3  && scale_of_vessel_data/grid_scale > 1.);
       //vl = std::move(GetSubdivided( vl, grid_scale));
-      GetSubdivided( vl, grid_scale);
+      vl = std::move(GetSubdivided( *vl, grid_scale));
 
     #ifdef DEBUG
       VESSEL_INTEGRITY_CHECK_SWITCH(vl->IntegrityCheck();)

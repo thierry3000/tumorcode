@@ -619,40 +619,46 @@ void HemodynamicBounds::Add(const VesselList3d *vl, bool bClear)
 // }
 
 
-void GetSubdivided( std::shared_ptr<VesselList3d> &vl, int multi, float newscale, int safety_boundary)
+std::shared_ptr<VesselList3d> GetSubdivided( VesselList3d &vl, int multi, float newscale, int safety_boundary)
 {
   typedef VesselList3d::LatticeData LatticeData;
-  const LatticeData &ld = vl.get()->Ld();
+  const LatticeData &ld = vl.Ld();
   
 #ifndef NDEBUG
   std::cout << " in GetSubdivided" << std::endl;
 #endif
-  //if(multi == 1) return vl;
+  if(multi <= 1)
+  {
+    //nothing to do here
+    cout<<"stupid! you want to subdived a lattice at the same ratio?" << endl;std::cout.flush(); 
+    exit(EXIT_FAILURE);
+  }
 
-  int ecnt = vl->GetECount();
-  int ncnt = vl->GetNCount();
+  int ecnt = vl.GetECount();
+  int ncnt = vl.GetNCount();
   
   BBox3 newbox;
   DynArray<Int3> newpos(ncnt);
   for (int i=0; i<ncnt; ++i)
   {
-    newpos[i] = ld.GetLatticeIndexOnRefinedGrid(vl->GetNode(i)->lpos, multi-1);
+    newpos[i] = ld.GetLatticeIndexOnRefinedGrid(vl.GetNode(i)->lpos, multi-1);
     newbox.Add(newpos[i]);
   }
   newbox.Extend(safety_boundary);
 
-  std::unique_ptr<LatticeData> newldp = polymorphic_latticedata::Make_ld("FCC", vl->Ld().Box(), vl->Ld().Scale());
+  std::unique_ptr<LatticeData> newldp = polymorphic_latticedata::Make_ld("FCC", vl.Ld().Box(), vl.Ld().Scale());
   //std::unique_ptr<LatticeData> newldp(ld.Clone());
-  newldp.get()->Init(newbox,  newscale);
+  newldp->Init(newbox,  newscale);
 
-  std::shared_ptr<VesselList3d> vlnew( new VesselList3d() );
+  //heap allocation NOTE this is tricking boost::noncopyable!!!
+  std::shared_ptr<VesselList3d> vlnew( new VesselList3d());
   //vlnew->Init(*newldp);
   vlnew->Init(newldp);
 
   // insert new nodes into empty new vessellist
   for (int i=0; i<ncnt; ++i)
   {
-    VesselNode* vcold = vl->GetNode(i);
+    VesselNode* vcold = vl.GetNode(i);
     VesselNode* vc = vlnew->InsertNode(newpos[i]);
     *(VNodeData*)vc = *(VNodeData*)vcold;
     myAssert(vc->Index() == vcold->Index());
@@ -660,40 +666,42 @@ void GetSubdivided( std::shared_ptr<VesselList3d> &vl, int multi, float newscale
 
   for (int i=0; i<ecnt; ++i)
   {
-    const Vessel* v = vl->GetEdge(i);
+    const Vessel* v = vl.GetEdge(i);
     int a = v->NodeA()->Index(),
         b = v->NodeB()->Index();
     Vessel* newv = vlnew->InsertVessel(vlnew->GetNode(a), vlnew->GetNode(b));
     *(VData*)newv = *(VData*)v;
   }
 #ifndef NDEBUG
-  std::cout << "start adding vl->GetBCMap() : " << vl->GetBCMap().size() << std::endl;
+  std::cout << "start adding vl->GetBCMap() : " << vl.GetBCMap().size() << std::endl;
 #endif
-  for (auto it = vl->GetBCMap().begin(); it != vl->GetBCMap().end(); ++it)
+  for (auto it = vl.GetBCMap().begin(); it != vl.GetBCMap().end(); ++it)
   {
     FlowBC aCondition = FlowBC(it->second.typeOfInstance, it->second.val);
     vlnew->SetBC(vlnew->GetNode(it->first->Index()), aCondition);
     //std::cout << "added condition: " << aCondition.val << " at " << it->first->Index() << std::endl;
   }
   //vl->ClearLattice();
-  vl = std::move(vlnew);
+  //vl = std::move(vlnew);
+  //vl = vlnew;
 #ifndef NDEBUG
   std::cout << "moved pointer" << std::endl;
 #endif
-  //return vlnew;
+  return vlnew;
 }
 
 
-void GetSubdivided(std::shared_ptr<VesselList3d> &vl, float scale)
+std::shared_ptr<VesselList3d> GetSubdivided(VesselList3d &vl, float scale)
 {
-  const int multi = std::max(int( my::round( vl->Ld().Scale()/scale ) ),1);
-  if( multi == 1)
+  const int multi = std::max(int( my::round( vl.Ld().Scale()/scale ) ),1);
+  if( multi <= 1)
   {
-    //return vl;
+    cout << "please choose a decent scale" << endl; cout.flush();
+    exit(EXIT_FAILURE);
   }
   else
   {
-    GetSubdivided(vl, multi, scale);
+    return GetSubdivided(vl, multi, scale);
   }
 }
 
@@ -765,10 +773,26 @@ uint Optimize( VesselList3d *vl )
   {
     VesselNode* nd = vl->GetNode(i);
     uint num_perf_vess = 0;
-    for( int j=0; j<nd->Count(); ++j ) if(nd->GetEdge(j)->IsCirculated()) ++num_perf_vess;
-    if( num_perf_vess==2 ) ++num_nodes2;
-    else if( num_perf_vess>2 ) ++num_nodesgr2;
-    if( nd->Count()!=2 ) continue;
+    /** 
+     * count number of perfused vessels at nd
+     */
+    for( int j=0; j<nd->Count(); ++j ) 
+      if(nd->GetEdge(j)->IsCirculated()) 
+        ++num_perf_vess;
+    if( num_perf_vess==2 ) 
+      ++num_nodes2;
+    else if( num_perf_vess>2 ) 
+      ++num_nodesgr2;
+    /**
+     * a merge is only possible if 
+     * - exactly 2 vessel at one node
+     * - they are on a straigt line (180)
+     * - the vessel to be merge are at least LEN_THRES long
+     * - the share the same properties (flags)
+     * - the are about the same age
+     */
+    if( nd->Count()!=2 ) 
+      continue;
     Vessel* v1 = nd->GetEdge(0);
     Vessel* v2 = nd->GetEdge(1);
     if( v1->dir!=v2->dir && v1->dir!=reversedir[v2->dir]) continue;
