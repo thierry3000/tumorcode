@@ -78,7 +78,8 @@ default_o2 = dict(
   tissue_boundary_value = 0.0,
   haemoglobin_binding_capacity = 0.5, # /*mlO2/cm^3*/
   transvascular_ring_size = 0.5,
-  debug_fn = "none.h5"
+  debug_fn = "none.h5",
+  input_group_path = "vessels",
 )
 small_size = deepcopy(default_o2)
 small_size.update(
@@ -398,7 +399,15 @@ secombComparison2.update(
   mmcons_m0_norm = 13.2e-5,# with these parameters the tissue PO2 should decay over a lengthscale of 82 um!
   safety_layer_size = 400.,
 )
-
+secombComparison3 = deepcopy(default_o2)
+secombComparison3.update(
+    safety_layer_size = 50.,
+    convergence_tolerance = 0.03,
+    max_iter = 100, # some need more
+    grid_lattice_const = 10.,
+    po2init_cutoff = 66., # mmHg; maximal attained value
+    tissue_po2_boundary_condition = 'dirichlet_yz',
+    )
 #  Distribute consumption rate lognormally.
 #  In maple the distribution can be seen like so:
 #
@@ -471,19 +480,20 @@ mesentry = dict(
   po2init_dr = 1., #  mmHg / um, these values are from yaseen 2011 for rat brain
   po2init_cutoff = 100., # mmHg; maximal attained value; radius at cutoff is 45 um
   solubility_plasma = 3.1e-5,
+  sat_curve_exponent = 3.0,
+  sat_curve_p50 = 38.,
   c0 = 0.5,
-  S_n = 3.0,
-  S_p50 = 38.,
   D_plasma = 3000.,
-  solubility_tissue = 2.0e-5, # ml O2 / (ml tissue mmHg)
+  solubility_tissue = 2.8e-5, # ml O2 / (ml tissue mmHg)
   #dM = 0.05,
   rd_norm = 150.,
   rd_tum  = 50.,
   rd_necro = 150.,
-  max_iter = 70,
-  axial_integration_step_factor = 0.01,
+  max_iter = 10,
+  axial_integration_step_factor = 0.1,
+  tissue_po2_boundary_condition = 'neumann',
   debug_zero_o2field = False,
-  grid_lattice_const = 20.,
+  grid_lattice_const = 10.,
   michaelis_menten_uptake = True,
   mmcons_k_norm = 1.,
   mmcons_k_tum = 2.,
@@ -492,6 +502,7 @@ mesentry = dict(
   mmcons_m0_tum = 6.1e-5 * 4., # 4 times normal uptake
   mmcons_m0_necro = 0.,
   calcflow = dict(
+    viscosityPlasma = 1.2e-6,
     includePhaseSeparationEffect = True,
     rheology = 'RheologyForRats',
   ),
@@ -499,6 +510,16 @@ mesentry = dict(
   conductivity_coeff1 = 7.2,
   conductivity_coeff2 = 4.0,
   conductivity_coeff3 = c3_,
+  approximateInsignificantTransvascularFlux = True,
+  loglevel = 0,
+  convergence_tolerance = 0.01,
+  extra_tissue_source_const = 0.0,
+  extra_tissue_source_linear = 0.0,
+  tissue_boundary_value = 0.0,
+  haemoglobin_binding_capacity = 0.5, # /*mlO2/cm^3*/
+  transvascular_ring_size = 0.5,
+  debug_fn = "none.h5",
+  input_group_path = "vessels",
 )
 
 
