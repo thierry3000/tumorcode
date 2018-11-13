@@ -74,7 +74,7 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
     try
     {
       outFile = H5::H5File("recomputed_" +fn, H5F_ACC_TRUNC);
-      vess_recomp = H5::Group(outFile.createGroup("recomputed")); // groupname should end by vesselgroup
+      vess_recomp = H5::Group(outFile.createGroup("vessels")); // groupname should end by vesselgroup
     }
     catch(H5::Exception &e)
     {

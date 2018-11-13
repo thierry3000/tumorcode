@@ -423,10 +423,11 @@ def render_different_data_types( vesselgroup, options):
     
     cm, (datamin, datamax) = make_any_color_arrays(graph, data_name)
     fn = vesselgroup.file.filename
-    imagefn = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix+'.'+ options.format
+    options.imageFileName = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix+'.'+ options.format
+    print(options.imageFileName)
     with EasyPovRayRender(options) as epv:
-      CreateScene2(vesselgroup,epv, graph, imagefn, options)
+      CreateScene2(vesselgroup,epv, graph, options)
       if options.noOverlay:
         epv.render(imagefn)
       else:
-        RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options)
+        RenderImageWithOverlay(epv, cm, labels[data_name], options)

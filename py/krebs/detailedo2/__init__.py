@@ -336,8 +336,8 @@ def doit(fn, pattern, (parameters, parameters_name)):
     parameters['input_group_path'] = group_path
     parameters['output_file_name']='o2_' + fnbase+'_'+parameters_name+'.h5'
     #cachelocation = ('o2_' + fnbase+'_'+parameters_name+'.h5', group_path)
-    ref = computePO2(parameters)
-    print 'computed po2 stored in:', ref
+    computePO2(parameters)
+    print('computed po2 stored in: %s' % parameters['output_file_name'])
     #output_links.append(ref)
   #return output_links
   

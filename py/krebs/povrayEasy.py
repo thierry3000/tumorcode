@@ -842,7 +842,7 @@ def CreateScene2(vesselgroup, epv, graph, options):
       #epv.addLight(10*Vec3(1.7,1.2,2), 1., area=(4, 4, 3, 3), jitter=True)
       epv.addLight(10.*Vec3(1,0.5,2), 1.2)
       if cam == 'topdown_slice':
-        options.imageFileName += '_topdown_slice_'
+        options.imageFileName = 'topdown_slice_' +options.imageFileName
         if options.slice_pos:
           print(trafo.w)
           options.vessel_clip=('zslice', (options.slice_pos-200)*trafo.w, (options.slice_pos+200)*trafo.w)

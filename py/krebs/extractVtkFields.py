@@ -70,7 +70,9 @@ class Extractor(object):
     self.lattice_path = lattice_path
     self.recursive = recursive
     if paths is not None:
+      print('we will extract: %s' % paths)
       for p in paths:
+        print(obj)
         self.identifyObject(obj[p], permissive = recursive)
     else:
       self.identifyObject(obj, permissive = recursive)

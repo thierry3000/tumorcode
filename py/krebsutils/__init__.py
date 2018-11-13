@@ -23,9 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os, sys
 import numpy as np
 import h5py
-import extensions # for efficient asarray with h5py
-import posixpath
-import sys
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../lib'))
 '''overcomes some serious mpi issues!!!
