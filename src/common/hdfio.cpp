@@ -107,15 +107,18 @@ H5::DataType getH5TypeFromCpp()
 template<class T>
 void readAttrFromH5(const H5::H5Object &g, const string &attr_name, T &output_buffer)
 {
+  H5::Attribute att_to_read;
+  H5::DataType type;
   try
   {
-    H5::Attribute att_to_read = g.openAttribute(attr_name);
-    H5::DataType type = att_to_read.getDataType();
+    att_to_read = g.openAttribute(attr_name);
+    type = att_to_read.getDataType();
     att_to_read.read(type, &output_buffer);
   }
   catch(H5::Exception &e)
   {
     std::cout << "unable for read: " << attr_name << std::endl;
+    std::cout.flush();
     e.printErrorStack();
   }
 }
@@ -387,7 +390,6 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
 //     }
   }//end no lattice pressent
   
-  {//interrupt begin
   //write roots
   DynArray<int> roots(16,ConsTags::RESERVE);
   for(int i=0; i<ncnt; ++i) 
@@ -407,71 +409,61 @@ void WriteHdfGraph( H5::Group &g, const VesselList3d &vl )
     e.printErrorStack();
   }
 
+  
+  DynArray <int> bc_node_index;
+  DynArray <int> bctyp_index;
+  DynArray <float> values_of_bcs;
+  DynArray <float> bc_conductivity_value;
+  if(!vl.GetBCMap().empty())
   {
-    DynArray <int> bc_node_index;
-    DynArray <int> bctyp_index;
-    DynArray <float> values_of_bcs;
-    DynArray <float> bc_conductivity_value;
-    if(!vl.GetBCMap().empty())
+    for (auto it = vl.GetBCMap().begin(); it != vl.GetBCMap().end(); ++it)
     {
-      for (auto it = vl.GetBCMap().begin(); it != vl.GetBCMap().end(); ++it)
-      {
-        bc_node_index.push_back(it->first->Index());
-        bctyp_index.push_back(it->second.typeOfInstance);
-        values_of_bcs.push_back(it->second.val);
-        bc_conductivity_value.push_back(it->second.w);
-      }
+      bc_node_index.push_back(it->first->Index());
+      bctyp_index.push_back(it->second.typeOfInstance);
+      values_of_bcs.push_back(it->second.val);
+      bc_conductivity_value.push_back(it->second.w);
     }
-    else
-    {
-      //the map has not been used up to now,
-      //for the adaption it is good to have any way, so we write it.
-      //we assume all pressure boundary conditions
-      for( auto const &value: roots)
-      {
-	const VesselNode *nd = vl.GetNode(value);
-	bc_node_index.push_back(value);
-	bctyp_index.push_back(FlowBC::PIN);
-	values_of_bcs.push_back(nd->press);
-	bc_conductivity_value.push_back(0);
-      }
-    }
-    writeDataSetToGroup(h5_nodes, string("bc_node_index"), bc_node_index);
-    writeDataSetToGroup(h5_nodes, string("bc_type"), bctyp_index);
-    writeDataSetToGroup(h5_nodes, string("bc_value"), values_of_bcs);
-    writeDataSetToGroup(h5_nodes, string("bc_conductivity_value"), bc_conductivity_value);
-
   }
-  }//for interrupt 
+  else
+  {
+    //the map has not been used up to now,
+    //for the adaption it is good to have any way, so we write it.
+    //we assume all pressure boundary conditions
+    for( auto const &value: roots)
+    {
+      const VesselNode *nd = vl.GetNode(value);
+      bc_node_index.push_back(value);
+      bctyp_index.push_back(FlowBC::PIN);
+      values_of_bcs.push_back(nd->press);
+      bc_conductivity_value.push_back(0);
+    }
+  }
+  writeDataSetToGroup(h5_nodes, string("bc_node_index"), bc_node_index);
+  writeDataSetToGroup(h5_nodes, string("bc_type"), bctyp_index);
+  writeDataSetToGroup(h5_nodes, string("bc_value"), values_of_bcs);
+  writeDataSetToGroup(h5_nodes, string("bc_conductivity_value"), bc_conductivity_value);
+  
 
   H5::Group h5_edges = g.createGroup("edges");
   writeAttrToH5(h5_edges,string("COUNT"), ecnt);
   //gg.attrs().set("COUNT",ecnt);
   
-  {//Write edge stuff
-    DynArray<int> va(ecnt),vb(ecnt),flags(ecnt);
-    DynArray<float> float_radius(ecnt);
-    for(int i=0; i<ecnt; ++i) 
-    { 
-      const Vessel* v = vl.GetEdge(i);
-      va[i] = v->NodeA()->Index();
-      vb[i] = v->NodeB()->Index();
-      flags[i] = v->flags; 
-      float_radius[i] = v->r; 
-    }
-    writeDataSetToGroup(h5_edges, string("node_a_index"), va);
-    writeDataSetToGroup(h5_edges, string("node_b_index"), vb);
-    writeDataSetToGroup(h5_edges, string("flags"), flags);
-    writeDataSetToGroup(h5_edges, string("radius"), float_radius);
-    writeAttrToH5(h5_edges, string("MODE"), string("const"));
-    
-   
-//     h5cpp::create_dataset<int>( gg, "node_a_index", va);
-//     h5cpp::create_dataset<int>( gg, "node_b_index", vb );
-//     h5cpp::create_dataset<int>( gg, "flags", flags );
-//     h5cpp::Dataset ds = h5cpp::create_dataset<float>( gg, "radius", float_radius );
-//     ds.attrs().set("MODE","const");
+  //Write edge stuff
+  DynArray<int> va(ecnt),vb(ecnt),flags(ecnt);
+  DynArray<float> float_radius(ecnt);
+  for(int i=0; i<ecnt; ++i) 
+  { 
+    const Vessel* v = vl.GetEdge(i);
+    va[i] = v->NodeA()->Index();
+    vb[i] = v->NodeB()->Index();
+    flags[i] = v->flags; 
+    float_radius[i] = v->r; 
   }
+  writeDataSetToGroup(h5_edges, string("node_a_index"), va);
+  writeDataSetToGroup(h5_edges, string("node_b_index"), vb);
+  writeDataSetToGroup(h5_edges, string("flags"), flags);
+  writeDataSetToGroup(h5_edges, string("radius"), float_radius);
+  writeAttrToH5(h5_edges, string("MODE"), string("const"));
 }
 
 void ReadHdfGraph(const H5::Group &g, VesselList3d *vl )

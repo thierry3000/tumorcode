@@ -202,12 +202,25 @@ find_package(Trilinos REQUIRED COMPONENTS Epetra)
 
 #the find_package load some defaults, but they are too much
 #set(Trilinos_LIBRARIES "${Trilinos_LIBRARIES};belosepetra;ml")
-set(Trilinos_LIBRARIES "belos;belosepetra;ml")
+#under Ubuntu the library is named differently
+execute_process(COMMAND lsb_release -cs
+    OUTPUT_VARIABLE RELEASE_CODENAME
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+message(STATUS "running on sytem: ${RELEASE_CODENAME}")
+## 14.04 trusty
+## 16.04 xenial
+## 18.04 bionic
+if( "${RELEASE_CODENAME}" MATCHES "bionic" OR "${RELEASE_CODENAME}" MATCHES "trusty" OR "${RELEASE_CODENAME}" MATCHES "xenial")
+  set(Trilinos_LIBRARIES "trilinos_belos;trilinos_belosepetra;trilinos_ml")
+else()
+  set(Trilinos_LIBRARIES "belos;belosepetra;ml")
+endif()
 
 message(STATUS "Trilinos libs       	= ${Trilinos_LIBRARIES}")
 message(STATUS "Your Trilions depends on: ${Trilinos_TPL_LIST}")
 if (";${Trilinos_TPL_LIST};" MATCHES ";MPI;")
-  message(STATUS "your trilinos depends on MPI")
+  message(STATUS "your trilinos depends on MPI, use the wrapper")
   #set(MPI_NEEDED TRUE)
 endif()
 
@@ -381,31 +394,34 @@ if (USE_OPENMP)
 endif()
 
 
-GET_FILENAME_COMPONENT(compiler_name ${CMAKE_C_COMPILER} NAME)
-string(COMPARE EQUAL ${compiler_name} "icc" IS_INTEL_COMPILER)
-if (NOT IS_INTEL_COMPILER)
-  message("Set for gnu gxx")
-  set(Warnings "-Wall -Wextra -Wno-sign-compare -Wno-reorder -Wno-deprecated -Wuninitialized -Wno-unused-parameter -Wno-unused-variable -Wno-unused-result -Wno-unused-function -Wno-unused-local-typedefs") # -Wno-unknown-pragmas   -Wpointer-arith -Wwrite-strings -Woverloaded-virtual -Wno-long-long  -Wuninitialized ")
-  set(Warnings "${Warnings} -Wno-deprecated-declarations")  # -Wswitch -Wno-extra -Wsynth
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} -pthread -fPIC -ftemplate-depth-128")
-else()
-  #1478 is a deprecation warning for auto_ptr
-  #set(Warnings "-gcc -cxxlib -wd1478") #gnu++0x
-  #set(Warnings "-wd1478") #gnu++0x
-  message("Set for intel using:")
-  message("CMAKE_C_COMPILER: 	${CMAKE_C_COMPILER}")
-  message("CMAKE_CXX_COMPILER: 	${CMAKE_CXX_COMPILER}")
-endif()
+# GET_FILENAME_COMPONENT(compiler_name ${CMAKE_C_COMPILER} NAME)
+# string(COMPARE EQUAL ${compiler_name} "icc" IS_INTEL_COMPILER)
+# if (NOT IS_INTEL_COMPILER)
+#   message("Set for gnu gxx")
+#   set(Warnings "-Wall -Wextra -Wno-sign-compare -Wno-reorder -Wno-deprecated -Wuninitialized -Wno-unused-parameter -Wno-unused-variable -Wno-unused-result -Wno-unused-function -Wno-unused-local-typedefs") # -Wno-unknown-pragmas   -Wpointer-arith -Wwrite-strings -Woverloaded-virtual -Wno-long-long  -Wuninitialized ")
+#   set(Warnings "${Warnings} -Wno-deprecated-declarations")  # -Wswitch -Wno-extra -Wsynth
+#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} -pthread -fPIC -ftemplate-depth-128")
+# else()
+#   #1478 is a deprecation warning for auto_ptr
+#   #set(Warnings "-gcc -cxxlib -wd1478") #gnu++0x
+#   #set(Warnings "-wd1478") #gnu++0x
+#   message("Set for intel using:")
+#   message("CMAKE_C_COMPILER: 	${CMAKE_C_COMPILER}")
+#   message("CMAKE_CXX_COMPILER: 	${CMAKE_CXX_COMPILER}")
+# endif()
 
 #always use new c++11 standard
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
-if (IS_INTEL_COMPILER)
-    #1478 is a deprecation warning for auto_ptr
-    set(Warnings "${Warnings} -wd1478")
-endif()
+# if (IS_INTEL_COMPILER)
+#     #1478 is a deprecation warning for auto_ptr
+#     set(Warnings "${Warnings} -wd1478")
+# endif()
 
 #-fstrict-aliasing
+#[ 82%] Linking CXX shared library lib/libkrebs_.so
+#/usr/bin/ld: ../common/lib/libcommon.a(continuum-surfacetension.cpp.o): relocation R_X86_64_PC32 against symbol `_ZN12ConstArray3dI3VecIfLi3EEE12destructFuncEPvm' can not be used when making a shared object; recompile with -fPIC
+#/usr/bin/ld: final link failed: Ungültiger Wert
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} -pthread -fPIC -ftemplate-depth-128")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -g -Wno-unknown-pragmas" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O2 -g") # -funroll-all-loops
