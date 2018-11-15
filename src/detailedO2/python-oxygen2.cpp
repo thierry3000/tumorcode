@@ -78,6 +78,9 @@ void InitParameters(DetailedPO2::Parameters &params, const py::dict &py_paramete
   checkedExtractFromDict(py_parameters, "D_plasma",params.D_plasma);
   checkedExtractFromDict(py_parameters, "massTransferCoefficientModelNumber",params.massTransferCoefficientModelNumber);
   checkedExtractFromDict(py_parameters, "tissue_po2_boundary_condition",params.tissue_po2_boundary_condition);
+  
+  checkedExtractFromDict(py_parameters, "grid_lattice_const",params.grid_lattice_const);
+  checkedExtractFromDict(py_parameters, "safety_layer_size",params.safety_layer_size);
  
   
   // required parameters for transvascular transport
@@ -120,11 +123,12 @@ inline boost::optional<T> getOptional(const char* name, py::dict &d)
  */
 //static void PyComputePO2(py::object py_vesselgroup, py::object py_tumorgroup, py::dict py_parameters, py::object py_bfparams, py::object py_h5outputGroup)
 //static void PyComputePO2(string fn, string vesselgroup_path, string tumorgroup_path, py::dict py_parameters, py::object py_bfparams, string h5_out_path)
-static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
+static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
 {
   DetailedPO2::DetailedPO2Sim s;
+  s.params = py::extract<DetailedPO2::Parameters>(py_parameters);
   //Parameters params;
-  InitParameters(s.params, py_parameters);
+  //InitParameters(s.params, py_parameters);
   cout << "parameters initialized" << std::endl;
   
   //h5cpp::Group vesselgroup = PythonToCppGroup(py_vesselgroup);
@@ -171,8 +175,8 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
     
   // THIIIIRYYYYY, filter muss = false sein sonst stimmt in der Ausgabe in der Hdf5 Datei die Anzahl der Vessels nicht mehr mit den daten im recomputed_flow Verzeichnis ueberein!
   
-  double grid_lattice_const               = py::extract<double>(py_parameters.get("grid_lattice_const", 30.));
-  double safety_layer_size                = py::extract<double>(py_parameters.get("safety_layer_size", grid_lattice_const*3.));
+  //double grid_lattice_const               = py::extract<double>(py_parameters.get("grid_lattice_const", 30.));
+  //double safety_layer_size                = py::extract<double>(py_parameters.get("safety_layer_size", grid_lattice_const*3.));
   //boost::optional<Int3> grid_lattice_size = getOptional<Int3>("grid_lattice_size", py_parameters);
   
 
@@ -233,7 +237,7 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
       MPI_Init_thread(0, NULL, 1,&prov);
 #endif
     //DetailedP02Sim s;
-    s.init(bfparams,grid_lattice_const, safety_layer_size, tumorgroup, previous_po2field, previous_po2vessels,cell_based_o2_uptake);
+    s.init(bfparams, tumorgroup, previous_po2field, previous_po2vessels,cell_based_o2_uptake);
     s.run();
   }
   catch(std::exception &ex)
@@ -339,12 +343,12 @@ static void PyComputePO2(py::dict py_parameters, py::object py_bfparams)
 }
 
 #if BOOST_VERSION>106300
-static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters)
+static py::object PyComputeSaturation(np::ndarray &py_po2, const py::dict &py_parameters)
 {
   cout << "PyComputeSaturation called" << endl;
-  DetailedPO2::Parameters params;
-  InitParameters(params, py_parameters);
-  
+  DetailedPO2::Parameters params = py::extract<DetailedPO2::Parameters>(py_parameters);
+  //string buffer2 = py::extract<string>(py_parameters["po2init_r0"]);
+  //InitParameters(params, py_parameters);
   //np::arrayt<float> po2(py_po2);
 
   //if (!(py_po2.get_nd() == 1 && po2.isCContiguous())) throw std::invalid_argument("rank 1 and contiguous expected");
@@ -354,13 +358,17 @@ static py::object PyComputeSaturation(np::ndarray py_po2, py::dict py_parameters
 //   cout<< "nd: "<< py_po2.get_nd() << endl;
   if(!(py_po2.get_nd() == 1))
     throw std::invalid_argument("rank 1 and contiguous expected");
-  np::ndarray result = np::empty(py::make_tuple(py_po2.get_shape()[0]), np::dtype::get_builtin<float>());
+  //np::ndarray result = np::empty(py::make_tuple(py_po2.get_shape()[0]), np::dtype::get_builtin<float>());
+  py::tuple shape = py::make_tuple(161, 1);
+  //np::ndarray result = np::empty(shape, float);
+  np::dtype dtype = np::dtype::get_builtin<float>();
+  np::ndarray a = np::zeros(shape, dtype);
 
   for (int i=0; i<py_po2.get_shape()[0]; ++i)
   {
-    result[i] = params.Saturation(py::extract<float>(py_po2[i]));
+    //result[i][0] = params.Saturation(py::extract<float>(py_po2[i]));
   }
-  return result;
+  return a;
 }
 #else
 static py::object PyComputeSaturation(nm::array &py_po2, py::dict &py_parameters)
@@ -784,7 +792,168 @@ void TestLinearInterpolation()
 }
 
 
+struct DetailedO2ParamsFromPy
+{
+    static void Register()
+    {
+      boost::python::converter::registry::push_back(
+        &convertible,
+        &construct,
+        boost::python::type_id<Parameters>());
+    }
 
+    static void* convertible(PyObject* obj_ptr)
+    {
+      try
+      {
+        py::dict o(py::handle<>(py::borrowed(obj_ptr)));
+      }
+      catch (std::exception &e)
+      {
+        std::cerr << "Conversion to DetailedPO2::Parameters error: " << e.what();
+        return NULL;
+      }
+      return obj_ptr;
+    }
+
+    static void construct(
+      PyObject* obj_ptr,
+      boost::python::converter::rvalue_from_python_stage1_data* data)
+    {
+      py::dict o(py::handle<>(py::borrowed(obj_ptr)));
+      Parameters o2params; // use default values if no equivalent is found 
+      #define DOPT(name) checkedExtractFromDict(o, #name, o2params.name)
+      DOPT(po2init_r0);
+      DOPT(po2init_dr);
+      DOPT(po2init_cutoff);
+      DOPT(solubility_plasma); 
+      DOPT(sat_curve_exponent);
+      DOPT(sat_curve_p50);
+      DOPT(po2_mmcons_k_norm);
+      DOPT(po2_mmcons_k_tum);
+      DOPT(po2_mmcons_k_necro);
+      DOPT(po2_mmcons_m0_norm);
+      DOPT(po2_mmcons_m0_tum);
+      DOPT(po2_mmcons_m0_necro);
+      
+      DOPT(D_plasma);
+      DOPT(solubility_tissue);
+      DOPT(rd_norm);
+      DOPT(rd_tum);
+      DOPT(rd_necro);
+      DOPT(max_iter);
+      DOPT(num_threads);
+      DOPT(convergence_tolerance);
+      DOPT(axial_integration_step_factor);
+      DOPT(debug_zero_o2field);
+      
+      DOPT(michaelis_menten_uptake);
+      DOPT(useCellBasedUptake);
+      DOPT(massTransferCoefficientModelNumber);
+      DOPT(conductivity_coeff1);
+      DOPT(conductivity_coeff2);
+      DOPT(conductivity_coeff3);
+      DOPT(detailedO2name);
+      DOPT(loglevel);
+      DOPT(tissue_po2_boundary_condition);
+      DOPT(extra_tissue_source_const);
+      DOPT(extra_tissue_source_linear);
+      
+      DOPT(input_file_name);
+      DOPT(input_group_path);
+      DOPT(output_file_name);
+      DOPT(output_group_path);
+      DOPT(tumor_file_name);
+      DOPT(tumor_group_path);
+      DOPT(vessel_group_path);
+      
+      DOPT(debug_fn);
+      DOPT(transvascular_ring_size);
+      DOPT(haemoglobin_binding_capacity);
+      DOPT(tissue_boundary_value);
+      DOPT(approximateInsignificantTransvascularFlux);
+      
+      DOPT(grid_lattice_const);
+      DOPT(safety_layer_size);
+      
+      #undef DOPT
+
+      void* storage = ((boost::python::converter::rvalue_from_python_storage<Parameters>*)data)->storage.bytes;
+      new (storage) Parameters(o2params);
+      data->convertible = storage;
+    }
+};
+
+
+struct DetailedO2ParamsToPy
+{
+
+  static PyObject* convert(const Parameters& p)
+  {
+    #define DOPT(name) d[#name] = p.name
+    py::dict d;
+    DOPT(po2init_r0);
+      DOPT(po2init_dr);
+      DOPT(po2init_cutoff);
+      DOPT(solubility_plasma); 
+      DOPT(sat_curve_exponent);
+      DOPT(sat_curve_p50);
+      DOPT(po2_mmcons_k_norm);
+      DOPT(po2_mmcons_k_tum);
+      DOPT(po2_mmcons_k_necro);
+      DOPT(po2_mmcons_m0_norm);
+      DOPT(po2_mmcons_m0_tum);
+      DOPT(po2_mmcons_m0_necro);
+      
+      DOPT(D_plasma);
+      DOPT(solubility_tissue);
+      DOPT(rd_norm);
+      DOPT(rd_tum);
+      DOPT(rd_necro);
+      DOPT(max_iter);
+      DOPT(num_threads);
+      DOPT(convergence_tolerance);
+      DOPT(axial_integration_step_factor);
+      DOPT(debug_zero_o2field);
+      
+      DOPT(michaelis_menten_uptake);
+      DOPT(useCellBasedUptake);
+      DOPT(massTransferCoefficientModelNumber);
+      DOPT(conductivity_coeff1);
+      DOPT(conductivity_coeff2);
+      DOPT(conductivity_coeff3);
+      DOPT(detailedO2name);
+      DOPT(loglevel);
+      DOPT(tissue_po2_boundary_condition);
+      DOPT(extra_tissue_source_const);
+      DOPT(extra_tissue_source_linear);
+      
+      DOPT(input_file_name);
+      DOPT(input_group_path);
+      DOPT(output_file_name);
+      DOPT(output_group_path);
+      DOPT(tumor_file_name);
+      DOPT(tumor_group_path);
+      DOPT(vessel_group_path);
+      
+      DOPT(debug_fn);
+      DOPT(transvascular_ring_size);
+      DOPT(haemoglobin_binding_capacity);
+      DOPT(tissue_boundary_value);
+      DOPT(approximateInsignificantTransvascularFlux);
+      
+      DOPT(grid_lattice_const);
+      DOPT(safety_layer_size);
+    
+    #undef DOPT
+    return py::incref(d.ptr());
+  }
+
+  static void Register()
+  {
+    py::to_python_converter<Parameters, DetailedO2ParamsToPy>();
+  }
+};
 
 void export_oxygen_computation()
 {
@@ -808,7 +977,11 @@ void export_oxygen_computation()
   py::def("testCalcOxy2", TestSingleVesselPO2Integration);
 }
 
-
+void export_parameter_converters()
+{
+  DetailedO2ParamsFromPy::Register();
+  DetailedO2ParamsToPy::Register();
+}
 } // namespace
 
 
@@ -821,5 +994,6 @@ BOOST_PYTHON_MODULE(libdetailedo2_)
   PyEval_InitThreads();
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   DetailedPO2::export_oxygen_computation();
+  DetailedPO2::export_parameter_converters();
   //bla
 }

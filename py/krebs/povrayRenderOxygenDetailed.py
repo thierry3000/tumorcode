@@ -36,7 +36,7 @@ import posixpath
 from copy import deepcopy
 import math
 
-from krebs.povrayRenderVessels import  addVesselTree
+#from krebs.povrayRenderVessels import  addVesselTree
 from krebs.povrayEasy import *
 from krebs.detailedo2 import PO2ToSaturation, OpenVesselAndTumorGroups, chb_of_rbcs
 from krebs.detailedo2Analysis import DataDetailedPO2
@@ -240,6 +240,7 @@ def renderScene(po2group, imagefn, options):
   vessel_graph = dataman('vessel_graph', gvessels, ['position', 'flags', 'radius', 'hematocrit'])  
     
   vessel_graph.edges['po2vessels'] = po2vessels
+  print(parameters)
   vessel_graph.edges['saturation'] = PO2ToSaturation(po2vessels, parameters)
   vessel_graph.edges['hboconc'] = vessel_graph.edges['saturation']*vessel_graph.edges['hematocrit']*chb_of_rbcs*1.0e3
   vessel_graph = vessel_graph.get_filtered(edge_indices = myutils.bbitwise_and(vessel_graph['flags'], krebsutils.CIRCULATED))

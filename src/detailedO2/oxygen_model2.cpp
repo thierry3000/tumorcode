@@ -87,6 +87,14 @@ void Parameters::assign(const ptree &pt)
   DOPT(tumor_file_name);
   DOPT(tumor_group_path);
   DOPT(vessel_group_path);
+  DOPT(debug_fn);
+  DOPT(transvascular_ring_size);
+  DOPT(haemoglobin_binding_capacity);
+  DOPT(tissue_boundary_value);
+  DOPT(approximateInsignificantTransvascularFlux);
+  
+  DOPT(grid_lattice_const);
+  DOPT(safety_layer_size);
   #undef DOPT
 }
 ptree Parameters::as_ptree() const
@@ -148,6 +156,15 @@ ptree Parameters::as_ptree() const
   DOPT(tumor_file_name);
   DOPT(tumor_group_path);
   DOPT(vessel_group_path);
+  
+  DOPT(debug_fn);
+  DOPT(transvascular_ring_size);
+  DOPT(haemoglobin_binding_capacity);
+  DOPT(tissue_boundary_value);
+  DOPT(approximateInsignificantTransvascularFlux);
+  
+  DOPT(grid_lattice_const);
+  DOPT(safety_layer_size);
   #undef DOPT
   return pt;
 }
@@ -303,6 +320,9 @@ Parameters::Parameters()
   tumor_file_name= "none";
   tumor_group_path= "none";
   vessel_group_path= "none";
+  
+  grid_lattice_const = 100.;
+  safety_layer_size = 20.;
   
   UpdateInternalValues();
 }
@@ -1523,8 +1543,8 @@ void DetailedPO2Sim::ComputePo2Field(
 void DetailedPO2Sim::init( 
                           BloodFlowParameters &bfparams_,
                           //VesselList3d &vl, 
-                          double grid_lattice_const, 
-                          double safety_layer_size, 
+                          //double grid_lattice_const, 
+                          //double safety_layer_size, 
                           //boost::optional<Int3> grid_lattice_size,
                           boost::optional<H5::Group> tumorgroup,
                           boost::optional<Array3df> previous_po2field,
@@ -1569,11 +1589,11 @@ void DetailedPO2Sim::init(
   //added safety space to reduce boundary errors
   if (world)
   {
-    SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
+    SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, params.grid_lattice_const, params.safety_layer_size, ld);
   }
   else
   {
-    SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
+    SetupFieldLattice(vl->Ld().GetWorldBox(), dim, params.grid_lattice_const, params.safety_layer_size, ld);
   }
   //}
   //grid.init(ld, dim);
@@ -2079,12 +2099,11 @@ void DetailedPO2Sim::WriteParametersToHDF(H5::Group &out_params)
     e.printErrorStack();
   }
   
-  //grid.ld.WriteHdfLd(h5_o2_lattice);
+  
   
   WriteHdfPtree(h5_meta_data, metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
-  WriteHdfPtree(h5_o2_params, params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
-  //params.writeParametersToHDF(h5_o2_params);
-  //WriteHdfPtree(h5_o2_params, s.params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  //WriteHdfPtree(h5_o2_params, params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  params.WriteToHDF5(h5_o2_params);
   WriteHdfPtree(h5_bf_params, bfparams.as_ptree());
     
   //po2_out_group.close();
@@ -2318,6 +2337,64 @@ Array3df DetailedPO2Sim::getPo2field()
 DetailedPO2::VesselPO2Storage DetailedPO2Sim::getVesselPO2Storrage()
 {
   return po2vessels;
+}
+void Parameters::WriteToHDF5(H5::Group &paramOutGroup)
+{
+  #define DOPT(name) writeAttrToH5(paramOutGroup, #name, name)
+  DOPT(po2init_r0);
+  DOPT(po2init_dr);
+  DOPT(po2init_cutoff);
+  DOPT(solubility_plasma); 
+  DOPT(sat_curve_exponent);
+  DOPT(sat_curve_p50);
+  DOPT(po2_mmcons_k_norm);
+  DOPT(po2_mmcons_k_tum);
+  DOPT(po2_mmcons_k_necro);
+  DOPT(po2_mmcons_m0_norm);
+  DOPT(po2_mmcons_m0_tum);
+  DOPT(po2_mmcons_m0_necro);
+  
+  DOPT(D_plasma);
+  DOPT(solubility_tissue);
+  DOPT(rd_norm);
+  DOPT(rd_tum);
+  DOPT(rd_necro);
+  DOPT(max_iter);
+  DOPT(num_threads);
+  DOPT(convergence_tolerance);
+  DOPT(axial_integration_step_factor);
+  DOPT(debug_zero_o2field);
+  
+  DOPT(michaelis_menten_uptake);
+  DOPT(useCellBasedUptake);
+  DOPT(massTransferCoefficientModelNumber);
+  DOPT(conductivity_coeff1);
+  DOPT(conductivity_coeff2);
+  DOPT(conductivity_coeff3);
+  DOPT(detailedO2name);
+  DOPT(loglevel);
+  DOPT(tissue_po2_boundary_condition);
+  DOPT(extra_tissue_source_const);
+  DOPT(extra_tissue_source_linear);
+  
+  DOPT(input_file_name);
+  DOPT(input_group_path);
+  DOPT(output_file_name);
+  DOPT(output_group_path);
+  DOPT(tumor_file_name);
+  DOPT(tumor_group_path);
+  DOPT(vessel_group_path);
+  
+  DOPT(debug_fn);
+  DOPT(transvascular_ring_size);
+  DOPT(haemoglobin_binding_capacity);
+  DOPT(tissue_boundary_value);
+  DOPT(approximateInsignificantTransvascularFlux);
+  
+  DOPT(grid_lattice_const);
+  DOPT(safety_layer_size);
+  
+  #undef DOPT
 }
 
 }//namespace DetailedPO2

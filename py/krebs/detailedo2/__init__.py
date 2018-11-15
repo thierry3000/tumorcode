@@ -154,8 +154,8 @@ def readParameters(po2group):
       #p=myutils.hdf_read_dict_hierarchy_attr(po2group.parent.parent['parameters/o2_params'])
   else:
     p = dict()
-    for aKey in po2group['parameters/o2'].attrs.keys():
-      temp = po2group['parameters/o2'].attrs.get(aKey)
+    for aKey in po2group.parent.parent['parameters/o2'].attrs.keys():
+      temp = po2group.parent.parent['parameters/o2'].attrs[aKey]
       if (type(temp) == type(str())):
         p[aKey] = temp
       else:
