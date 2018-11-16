@@ -451,7 +451,14 @@ secombComparison2018 = dict(
   input_group_path = "vessels",
   safety_layer_size = 500.0,
 )
-
+secombComparison2018b = deepcopy(secombComparison2018)
+secombComparison2018b.update(
+    safety_layer_size = 100.0,
+    grid_lattice_const = 5.0,
+    convergence_tolerance = 0.0001,
+    axial_integration_step_factor = .1,
+    max_iter = 400,
+    )
 #  Distribute consumption rate lognormally.
 #  In maple the distribution can be seen like so:
 #
