@@ -66,11 +66,11 @@ def getPovrayVersion():
   minor = err[len(label) + posOfLabel+2]
   return major, minor
   
-def CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, options):
+def CallPovrayAndOptionallyMakeMPLPlot(epv, cm, label, options):
     if options.noOverlay:
-      epv.render(imagefn)
+      epv.render(options.imageFileName)
     else:
-      RenderImageWithOverlay(epv, imagefn, cm, label, options)
+      RenderImageWithOverlay(epv, cm, label, options)
 
 class Colormap(object):
   def __init__(self, name, limits, colors):
@@ -343,7 +343,7 @@ class EasyPovRayRender(object):
       pos = vesselgraph['position']
       rad = vesselgraph.edges['radius']
       #print 'positions = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
-      pos = trafo.transform_position(pos)
+      pos = trafo.transform_position(np.asarray(pos).transpose())
       rad = trafo.transform_scalar(rad)
       #print 'positions after trafo = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
       

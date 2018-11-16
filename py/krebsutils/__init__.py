@@ -359,7 +359,15 @@ def filter_graph_byedge2( edges, edge_data, node_data, indices, return_indices=F
     np.put(invmap,map,np.arange(map.shape[0],dtype=edges.dtype))
     newedges = np.asarray(np.take(invmap,tmpedges), dtype=edges.dtype)
     new_edge_data = tuple( q[indices,...] for q in edge_data )
-    new_node_data = tuple( q[map,...] for q in node_data )
+    new_node_data = list()
+    for q in node_data:
+      q_list = list()
+      for p in q:
+        q_list.append(np.asarray(p)[map])
+        
+      new_node_data.append(tuple(q_list))
+    new_node_data=tuple(new_node_data)
+    #new_node_data = tuple( q[map,...] for q in node_data )
     ''' difficult with position which is dict with 3 entries'''
     #new_node_data = node_data
     

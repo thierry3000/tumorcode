@@ -58,7 +58,10 @@ cm_po2 = matplotlib.cm.jet
 
 def InsertGraphColors(vesselgraph, po2field, data_name):
   edges = vesselgraph.edgelist
-  num_nodes = len(vesselgraph.nodes['position'])
+  if type(vesselgraph.nodes['position']) is tuple:
+    num_nodes = len(vesselgraph.nodes['position'][0])
+  else: 
+    num_nodes = len(vesselgraph.nodes['position'])
 
   if data_name in vesselgraph.edges:
     edgedata = data = vesselgraph.edges[data_name]
@@ -107,12 +110,15 @@ def InsertGraphColors(vesselgraph, po2field, data_name):
 
   flags = vesselgraph.edges['flags']
   nflags = krebsutils.edge_to_node_property(num_nodes, edges, flags, 'or')
-  is_not_set = lambda flags_,flag: np.bitwise_not(np.asarray(np.bitwise_and(flags_, flag), np.bool))
+  #is_not_set = lambda flags_,flag: np.bitwise_not(np.asarray(np.bitwise_and(flags_, flag), np.bool))
   gray = np.asarray((0.3,0.3,0.3))
-  uncirculated = is_not_set(flags,krebsutils.CIRCULATED)
-  nuncirculated = is_not_set(nflags,krebsutils.CIRCULATED)
+  circulated = myutils.bbitwise_and(flags, krebsutils.CIRCULATED)
+  uncirculated = np.logical_not(circulated)
+  node_circulated = myutils.bbitwise_and(nflags, krebsutils.CIRCULATED)
+  node_uncirculated = np.logical_not( node_circulated )
+  #nuncirculated = is_not_set(nflags,krebsutils.CIRCULATED)
   edgecolors[uncirculated] = gray
-  nodecolors[nuncirculated] = gray
+  nodecolors[node_uncirculated] = gray
 
   print 'colormap range ', cm.get_clim()
 
@@ -121,15 +127,15 @@ def InsertGraphColors(vesselgraph, po2field, data_name):
   return cm
 
 
-def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, options):
+def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), label, options):
   wbbox = volume_ld.worldBox
   options.wbbox = wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
-  volume_ld = transform_ld(trafo, volume_ld)
-  vessel_ld = transform_ld(trafo, vessel_ld)
+  volume_ld = trafo.transform_ld( volume_ld)
+  vessel_ld = trafo.transform_ld( vessel_ld)
   cm = InsertGraphColors(vessel_graph, volumedata, data_name)  
 
-  def DoTheRendering(fn, options):
+  def DoTheRendering(options):
     with EasyPovRayRender(options) as epv:
       epv.setBackground(options.background)
   
@@ -145,15 +151,15 @@ def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld
         epvvol = epv.declareVolumeData(volumedata, volume_ld.GetWorldBox())
         epv.addVolumeDataSlice(epvvol, (0,0,planeZCoord), (0, 0, 1.), pvcm)
       if not options.not_render_vessels:
-        addVesselTree(epv, vessel_graph, trafo = trafo, options=options)
+        epv.addVesselTree2(epv, vessel_graph, trafo = trafo, options=options)
         
-      CallPovrayAndOptionallyMakeMPLPlot(epv, fn, cm, label, options)
+      CallPovrayAndOptionallyMakeMPLPlot(epv, cm, label, options)
   
   planeZCoord = 0.
-  DoTheRendering(imagefn, options)
+  DoTheRendering( options)
 
 
-def renderSlice((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, options):
+def renderSlice((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), label, options):
   wbbox = vessel_ld.worldBox
   options.wbbox = wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
@@ -168,9 +174,9 @@ def renderSlice((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), i
     if (wbbox[1]-wbbox[0]) < (wbbox[5]-wbbox[4])*2.:
       options.vessel_clip=('zslice', -300*trafo.w, +300*trafo.w)
 
-    addVesselTree(epv, vessel_graph, trafo = trafo, options=options)  
+    epv.addVesselTree2(epv, vessel_graph, trafo = trafo, options=options)  
     
-    CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, options)
+    CallPovrayAndOptionallyMakeMPLPlot(epv, cm, label, options)
 
 
 def renderVasculatureWTumor((vessel_ld, vessel_graph, data_name), gtumor, imagefn, label, kwargs):
@@ -255,6 +261,9 @@ def renderScene(po2group, imagefn, options):
   #renderSlice((vessel_ld, vessel_graph, 'hboconc'), (None, None), imagefn+'_hboconc'+ext, 'HbO [mmol/l blood]', options)
 
   #try world
-  renderSliceWithDistribution((po2field_ld, vessel_graph, 'po2vessels'), (po2field_ld, po2field), imagefn+'_po2vessels'+ext, '', options)
-  renderSlice((po2field_ld, vessel_graph, 'saturation'), (None, None), imagefn+'_saturation'+ext, '', options)
-  renderSlice((po2field_ld, vessel_graph, 'hboconc'), (None, None), imagefn+'_hboconc'+ext, 'HbO [mmol/l blood]', options)
+  options.imageFileName = imagefn+'_po2vessels'+ext
+  renderSliceWithDistribution((po2field_ld, vessel_graph, 'po2vessels'), (po2field_ld, po2field), '', options)
+  options.imageFileName = imagefn+'_saturation'+ext
+  renderSlice((po2field_ld, vessel_graph, 'saturation'), (None, None), '', options)
+  options.imageFileName = imagefn+'_hboconc'+ext
+  renderSlice((po2field_ld, vessel_graph, 'hboconc'), (None, None), 'HbO [mmol/l blood]', options)

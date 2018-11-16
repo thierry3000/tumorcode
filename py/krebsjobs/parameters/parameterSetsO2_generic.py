@@ -58,13 +58,13 @@ default_o2 = dict(
     includePhaseSeparationEffect = 1,
   ),
   michaelis_menten_uptake = 1,
-  mmcons_k_norm = 4.,
-  mmcons_k_tum = 2.,
-  mmcons_k_necro = 2.,
+  po2_mmcons_k_norm = 4.,
+  po2_mmcons_k_tum = 2.,
+  po2_mmcons_k_necro = 2.,
   # = 3.7e-3 ml O2 / ml / min; # fairly low like estimates by rinneberg and beany
-  mmcons_m0_norm = 6.1e-5, # value for breast (ml O2 / ml Tissue / s)
-  mmcons_m0_tum = 6.1e-5 * 4., # 4 times normal uptake
-  mmcons_m0_necro = 0.,
+  po2_mmcons_m0_norm = 6.1e-5, # value for breast (ml O2 / ml Tissue / s)
+  po2_mmcons_m0_tum = 6.1e-5 * 4., # 4 times normal uptake
+  po2_mmcons_m0_necro = 0.,
   massTransferCoefficientModelNumber = 1,
   conductivity_coeff1 = c1_,
   conductivity_coeff2 = c2_,
@@ -80,6 +80,7 @@ default_o2 = dict(
   transvascular_ring_size = 0.5,
   debug_fn = "none.h5",
   input_group_path = "vessels",
+  safety_layer_size = 50.0,
 )
 small_size = deepcopy(default_o2)
 small_size.update(
