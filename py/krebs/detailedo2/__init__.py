@@ -70,8 +70,10 @@ def HandleNdimensions(*argsToRavel):
 @HandleNdimensions(0)
 def PO2ToSaturation(po2, parameters):
   '''call c++ also convert arrays to the expected format'''
-  return detailedo2current.computeSaturation_(po2, parameters)
-
+  sat = detailedo2current.computeSaturation_(po2, parameters)
+  print('calculated saturation:')
+  print(sat)
+  return sat
 @HandleNdimensions(0, 1)
 def ConcentrationToPO2(conc, hema, parameters):
   return pickDetailedO2Library(parameters).computePO2FromConc_(conc, hema, parameters)

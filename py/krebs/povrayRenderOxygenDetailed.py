@@ -143,19 +143,18 @@ def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld
       cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
       epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
       epv.addLight(10.*Vec3(1,0.5,2), 1.2)
-      options.vessel_clip=('zslice', -150*trafo.w, +150*trafo.w)
+      options.vessel_clip=('zslice', -1500*trafo.w, +1500*trafo.w)
   
       pvcm = matplotlibColormapToPovray('DATACOLORMAP', cm)
       epv.declareColorMap(pvcm)
       if not options.not_render_volume:
         epvvol = epv.declareVolumeData(volumedata, volume_ld.GetWorldBox())
-        epv.addVolumeDataSlice(epvvol, (0,0,planeZCoord), (0, 0, 1.), pvcm)
+        epv.addVolumeDataSlice(epvvol, (0,0,options.planeZCoord), (0, 0, 1.), pvcm)
       if not options.not_render_vessels:
         epv.addVesselTree2(epv, vessel_graph, trafo = trafo, options=options)
         
       CallPovrayAndOptionallyMakeMPLPlot(epv, cm, label, options)
   
-  planeZCoord = 0.
   DoTheRendering( options)
 
 
@@ -171,8 +170,8 @@ def renderSlice((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), l
     cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
     epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
     epv.addLight(10.*Vec3(1,0.5,2), 1.2)
-    if (wbbox[1]-wbbox[0]) < (wbbox[5]-wbbox[4])*2.:
-      options.vessel_clip=('zslice', -300*trafo.w, +300*trafo.w)
+    #if (wbbox[1]-wbbox[0]) < (wbbox[5]-wbbox[4])*2.:
+    #options.vessel_clip=('zslice', -500*trafo.w, +500*trafo.w)
 
     epv.addVesselTree2(epv, vessel_graph, trafo = trafo, options=options)  
     

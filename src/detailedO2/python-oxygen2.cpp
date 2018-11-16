@@ -343,21 +343,28 @@ static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
 }
 
 #if BOOST_VERSION>106300
-static np::ndarray PyComputeSaturation(np::ndarray &py_po2, const py::dict &py_parameters)
+np::ndarray PyComputeSaturation(const np::ndarray &py_po2, const py::dict &py_parameters)
 {
   cout << "PyComputeSaturation called" << endl;
   DetailedPO2::Parameters params = py::extract<DetailedPO2::Parameters>(py_parameters);
+  const int return_length = py_po2.get_shape()[0];
+  cout << "shape of py_po2: " << endl
+  << py_po2.get_shape()[0] << endl 
+  <<py_po2.get_shape()[1] << endl;
   if(!(py_po2.get_nd() == 1))
     throw std::invalid_argument("rank 1 and contiguous expected");
 #ifndef NDEBUG
-  cout << "make empty in PyComputeSaturation: " << py_po2.get_shape()[0] << endl;
+  cout << "make empty in PyComputeSaturation: " << return_length << endl;
 #endif
-  np::ndarray result = np::empty(py::make_tuple(py_po2.get_shape()[0]), np::dtype::get_builtin<float>());
+  np::ndarray result = np::zeros(py::make_tuple(return_length), np::dtype::get_builtin<float>());
 
-  for (int i=0; i<py_po2.get_shape()[0]; ++i)
+  for (int i=0; i<return_length; i++)
   {
-    result[i] = params.Saturation(py::extract<float>(py_po2[i]));
+    //data[i] = params.Saturation(py::extract<float>(py_po2[i]));
+    auto bla = params.Saturation(py::extract<float>(py_po2[i]));
+    result[i] = bla;
   }
+  
   return result;
 }
 #else

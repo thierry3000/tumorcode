@@ -165,6 +165,7 @@ if __name__ == '__main__':
   parser.add_argument("--out_alpha", help=" ", default=False, action="store_true")
   parser.add_argument("--cam_distance_multiplier", help=" ", type=float, default=1.0 )
   parser.add_argument("--colored_slice", help=" ", default=True)
+  parser.add_argument("--planeZCoord", help='in case your render a data slice, this allows you to choose the position, should vary from -0.5 to +0.5', type=float, default=0.0)
   #parser.add_argument("--projection_plot", help=" ", default=True)
   parser.add_argument("--not_render_volume", help="For combined images", default=False, action="store_true")
   parser.add_argument("--not_render_vessels", help="For combined images", default=False, action="store_true")
