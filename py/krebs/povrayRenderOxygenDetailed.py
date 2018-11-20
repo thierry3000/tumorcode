@@ -90,7 +90,7 @@ def InsertGraphColors(vesselgraph, po2field, data_name):
     value_range = (p0, p1)
     cm = matplotlib.cm.ScalarMappable(cmap = cm_po2)
   elif data_name == 'saturation':
-    cm = matplotlib.cm.ScalarMappable(cmap = matplotlib.cm.spectral)
+    cm = matplotlib.cm.ScalarMappable(cmap = matplotlib.cm.Spectral)
     vesselgraph.edges['saturation']
     value_range = (np.min(vesselgraph.edges['saturation']),np.max(vesselgraph.edges['saturation']))
     #value_range = (0,1.)

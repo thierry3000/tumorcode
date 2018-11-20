@@ -862,22 +862,51 @@ void CenterVesselListAndSetupFieldLattice(VesselList3d &vl, int dim, float spaci
 void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float safety_spacing, LatticeDataQuad3d &ld)
 {
   Float3 vessel_domain_size = wbbox.max - wbbox.min;
-  Float3 domain_size(0.); 
+  Float3 center_vessel_domain;
+  Float3 diff_vector(0.);
+  Float3 domain_size(0.);
+  Float3 domain_size_lattice(0.);
+  Float3 domain_center(0.);
   Bool3 cell_centering(false);
   Int3 num_cells(1);
   Float3 world_offset(0.);
   
+  cout << "bbox: " << wbbox << endl;
+  
   for (int i=0; i<dim; ++i) 
   {
+    center_vessel_domain[i] = wbbox.min[i] + 0.5*vessel_domain_size[i];
     domain_size[i] = vessel_domain_size[i] + 2.*safety_spacing;
+    //domain_center[i] = wbbox.min[i] + 0.5*domain_size[i];
     cell_centering[i] = true;
     num_cells[i] = std::max<int>(1, my::iceil(domain_size[i]/spacing));
+    cout << "i: " << i << "num: " << num_cells[i] << endl;
+    if(num_cells[i] % 2 == 0 )
+    {
+      cout << "lattice domain is dividable" << endl;
+      //domain_center[i] = wbbox.min[i] + 0.5 * num_cells[i] * spacing;
+      domain_center[i] = 0.5 * num_cells[i] * spacing;
+    }
+    else
+    {
+      cout << "lattice domain is not dividable" << endl;
+      auto buff = std::floor(num_cells[i]/2);
+      domain_center[i] = buff * spacing+0.5*spacing;
+    }
+    //diff_vector[i] = domain_center
+    //domain_size_lattice[i] = num_cells[i]*spacing;
     /** this transforms the cell in to 0,0,0 
      *  world_offset[i] = domain_size[i]*0.5 + wbbox.min[i];
      */
-    world_offset[i] = -domain_size[i]*0.5 + wbbox.min[i] + num_cells[i]*spacing*0.5;
+    //world_offset[i] = -domain_size[i]*0.5 + wbbox.min[i] + num_cells[i]*spacing*0.5; --> before
+    //world_offset[i] = -domain_size[i] + wbbox.min[i]+ num_cells[i]*spacing*0.5;
     //printf("i: %i  vessel_domain_size: %f, domain_size: %f, world_offset: %f \n", i, vessel_domain_size[i], domain_size[i], world_offset[i]);
   }
+  cout << "center vessel domain: " << center_vessel_domain << endl;
+  cout << "domain_center: " << domain_center << endl;
+  cout << "spacing: " << spacing << endl;
+  diff_vector = center_vessel_domain - domain_center;
+  world_offset =  diff_vector;
   ld.Init(num_cells, spacing);
   ld.SetOriginPosition(world_offset);
   ld.SetCellCentering(cell_centering);

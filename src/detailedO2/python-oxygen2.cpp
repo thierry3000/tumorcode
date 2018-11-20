@@ -150,28 +150,15 @@ static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
   H5::H5File vesselInputFile;
   try
   {
-    
     vesselInputFile = H5::H5File( s.params.input_file_name , H5F_ACC_RDONLY);
     H5::Group vesselgroup = vesselInputFile.openGroup(string("/") + s.params.input_group_path);
     s.vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
-      /*
-       * Turn off the auto-printing when failure occurs so that we can
-       * handle the errors appropriately
-       */
-      //H5::Exception::dontPrint();
-      /*
-       * Open the specified file and the specified dataset in the file.
-       */
-      o2File = H5::H5File( output_file_name, H5F_ACC_TRUNC );
-      
-//       H5::Group vesselgroup = o2File.openGroup(vesselgroup_path);
-//       vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
-   }  // end of try block
-      // catch failure caused by the H5File operations
-   catch( H5::FileIException &error )
-   {
-      error.printErrorStack();
-   }
+    o2File = H5::H5File( output_file_name, H5F_ACC_TRUNC );
+  }  
+  catch( H5::FileIException &error )
+  {
+    error.printErrorStack();
+  }
     
   // THIIIIRYYYYY, filter muss = false sein sonst stimmt in der Ausgabe in der Hdf5 Datei die Anzahl der Vessels nicht mehr mit den daten im recomputed_flow Verzeichnis ueberein!
   
@@ -182,16 +169,34 @@ static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
 
   //if (!py_bfparams.is_none())
   BloodFlowParameters bfparams;
-  if (py_bfparams)
+  try
   {
     bfparams = py::extract<BloodFlowParameters>(py_bfparams);
-    //CalcFlow(*vl, bfparams);
   }
-  else
+  catch(H5::Exception &e)
   {
-    std::cout << "Warning: no blood flow params given. falling back to default value. " << std::endl;
-    //bfparams=nullptr;
+    e.printErrorStack();
+    cerr << "could not extract blood flow parameters from python... using default values from constructor" << endl;
   }
+  
+  CalcFlow(*s.vl, bfparams);
+  
+  try //create recomputed_flow in hdf
+  {
+    H5::Group vess_recomp = H5::Group(o2File.createGroup("recomputed_flow").createGroup("vessels")); // groupname should end by vesselgroup
+    ptree getEverytingPossible = make_ptree("w_adaption", false);
+    WriteVesselList3d(*s.vl, vess_recomp, getEverytingPossible);
+    vess_recomp.close();
+  }
+  catch(H5::Exception &e)
+  {
+    e.printErrorStack();
+    cerr << "could not create vess_recomp " << endl;
+  }
+  
+  
+  
+  
   //cout << format("in c++: %.20f %.20f %.20f\n") % params.conductivity_coeff1 % params.conductivity_coeff2 % params.conductivity_coeff_gamma;
   boost::optional<H5::H5File> h5_tumor_file;
   boost::optional<H5::Group> tumorgroup;

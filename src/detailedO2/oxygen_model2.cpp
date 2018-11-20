@@ -1804,51 +1804,51 @@ int DetailedPO2Sim::run()
     /*
      * From here on the results are handled
      */
-    {//interupt
-      // dampening: new values are a linear combination of previous and currently computed values. 
-      // f is the fractional share of the previous value.
-      const double f = 0.3; 
-      delta_fieldM = delta_vessM = ConvergenceCriteriumAccumulatorMaxNorm<double>();
-      delta_field2 = delta_vess2 = ConvergenceCriteriumAccumulator2Norm<double>();
-      //save the changes to prior run
-      for (int i=0; i<po2vessels.size(); ++i)
-      {
-        delta_vessM.Add(po2vessels[i][0]-last_vessel_po2[i][0]);
-        delta_vessM.Add(po2vessels[i][1]-last_vessel_po2[i][1]);
-        delta_vess2.Add(po2vessels[i][0]-last_vessel_po2[i][0]);
-        delta_vess2.Add(po2vessels[i][1]-last_vessel_po2[i][1]);
-        po2vessels[i] = po2vessels[i]*(1.-f)+f*last_vessel_po2[i];
-        last_vessel_po2[i] = po2vessels[i];
-      }
-      //loop over all points in the ContinuumGrid
-      FOR_BBOX3(p, grid.Box())
-      {
-        float &current = po2field(p);
-        float &last    = last_po2field(p);
-        // michaelis menten solution with large zero-order term can undershoot the po2 field in negative values
-        // which the vessel po2 inegration routine cannot stand. Therefor the po2 field is limited here from below.
-        // Realistic solutions should have positive values without cutoff ofc.
-        current = std::max(0.f, current);
-        delta_fieldM.Add(last-current);
-        delta_field2.Add(last-current);
-        current = current*(1.-f) + last*f;
-        last = current;
-      }
-      if (params.loglevel > 0)
-        cout << format("iteration %i: dvM=%f, dfM=%f, dv2=%f, df2=%f") %  iteration_num % delta_vessM() % delta_fieldM() % delta_vess2() % delta_field2() << endl;
-      else
-        cout << ".";
-      {
-        ptree node;
-        node.put("iteration", iteration_num);
-        node.put("delta_vessM", delta_vessM());
-        node.put("delta_fieldM", delta_fieldM());
-        node.put("delta_vess2", delta_vess2());
-        node.put("delta_field2", delta_field2());
-        node.put("dampening", f);
-        metadata.get_child("iterations").add_child(str(format("iteration%04i") % iteration_num), node);
-      }
-    }//end interupt
+    
+    // dampening: new values are a linear combination of previous and currently computed values. 
+    // f is the fractional share of the previous value.
+    const double f = 0.3; 
+    delta_fieldM = delta_vessM = ConvergenceCriteriumAccumulatorMaxNorm<double>();
+    delta_field2 = delta_vess2 = ConvergenceCriteriumAccumulator2Norm<double>();
+    //save the changes to prior run
+    for (int i=0; i<po2vessels.size(); ++i)
+    {
+      delta_vessM.Add(po2vessels[i][0]-last_vessel_po2[i][0]);
+      delta_vessM.Add(po2vessels[i][1]-last_vessel_po2[i][1]);
+      delta_vess2.Add(po2vessels[i][0]-last_vessel_po2[i][0]);
+      delta_vess2.Add(po2vessels[i][1]-last_vessel_po2[i][1]);
+      po2vessels[i] = po2vessels[i]*(1.-f)+f*last_vessel_po2[i];
+      last_vessel_po2[i] = po2vessels[i];
+    }
+    //loop over all points in the ContinuumGrid
+    FOR_BBOX3(p, grid.Box())
+    {
+      float &current = po2field(p);
+      float &last    = last_po2field(p);
+      // michaelis menten solution with large zero-order term can undershoot the po2 field in negative values
+      // which the vessel po2 inegration routine cannot stand. Therefor the po2 field is limited here from below.
+      // Realistic solutions should have positive values without cutoff ofc.
+      current = std::max(0.f, current);
+      delta_fieldM.Add(last-current);
+      delta_field2.Add(last-current);
+      current = current*(1.-f) + last*f;
+      last = current;
+    }
+    if (params.loglevel > 0)
+      cout << format("iteration %i: dvM=%f, dfM=%f, dv2=%f, df2=%f") %  iteration_num % delta_vessM() % delta_fieldM() % delta_vess2() % delta_field2() << endl;
+    else
+      cout << ".";
+    
+    ptree node;
+    node.put("iteration", iteration_num);
+    node.put("delta_vessM", delta_vessM());
+    node.put("delta_fieldM", delta_fieldM());
+    node.put("delta_vess2", delta_vess2());
+    node.put("delta_field2", delta_field2());
+    node.put("dampening", f);
+    metadata.get_child("iterations").add_child(str(format("iteration%04i") % iteration_num), node);
+    
+    
     last_po2field.initCopy(po2field);
     //last_vessel_po2 = vesselpo2;
     last_vessel_po2 = po2vessels;
