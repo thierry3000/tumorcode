@@ -614,7 +614,6 @@ def vessels_require_(vesselgroup, g, name):
       ''' usualy the case for deatailed o2 calculation '''
       ''' vesselgroup.parent.parent is po2 group'''
       po2_vessels = np.asarray(vesselgroup.parent.parent['po2/vessels/po2vessels'])
-      po2_vessels = po2_vessels*7.5
     else:
       ''' if we have the mts tumor things are slightly different'''
       po2_vessels = np.asarray(vesselgroup.parent['po2/po2vessels'])
@@ -638,7 +637,6 @@ def vessels_require_(vesselgroup, g, name):
       ''' usualy the case for deatailed o2 calculation '''
       ''' vesselgroup.parent.parent is po2 group'''
       po2_vessels = np.asarray(vesselgroup.parent.parent['po2/vessels/po2vessels'])
-      po2_vessels = po2_vessels*7.5
     else:
       po2_vessels = np.asarray(vesselgroup.parent['detailedPo2/po2_vessels'])
     po2AtVessel = np.average(po2_vessels,1)

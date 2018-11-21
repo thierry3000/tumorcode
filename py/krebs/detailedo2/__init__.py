@@ -204,10 +204,13 @@ def OpenVesselAndTumorGroups(po2group):
       gvessels = po2group.parent['vessels']
       gtumor = None
   else:
-    #fakeTumor
-    vessel_input_file = h5py.File(po2group.attrs['SOURCE_VESSELS_FILE'],'r')
-    gvessels = vessel_input_file[po2group.attrs['SOURCE_VESSELS_PATH']]
-    gtumor = None
+    if 'po2' in po2group.name: #pure o2 sim
+      gvessels = po2group.parent.parent['recomputed_flow/vessels']
+      gtumor = None
+    else: #fakeTumor??
+      vessel_input_file = h5py.File(po2group.attrs['SOURCE_VESSELS_FILE'],'r')
+      gvessels = vessel_input_file[po2group.attrs['SOURCE_VESSELS_PATH']]
+      gtumor = None
 #    refVessels, refTumor = getSourceRefs_(po2group)
 #    if refVessels.fn:
 #      gvessels = h5files.open(refVessels.fn, 'r+', relatedObjectForSearch = po2group)[refVessels.path]

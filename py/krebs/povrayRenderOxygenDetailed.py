@@ -70,7 +70,7 @@ def InsertGraphColors(vesselgraph, po2field, data_name):
     nodedata = data = vesselgraph.nodes[data_name]
     edgedata = np.average((data[edges[:,0]], data[edges[:,1]]), axis=0)
 
-  if data_name == 'po2vessels':
+  if data_name == 'po2_vessels':
     try:
       p1 = np.amax(data)
     except ValueError:
@@ -244,7 +244,7 @@ def renderScene(po2group, imagefn, options):
   #vessel_ld = krebsutils.read_lattice_data_from_hdf(gvessels['lattice'])
   vessel_graph = dataman('vessel_graph', gvessels, ['position', 'flags', 'radius', 'hematocrit'])  
     
-  vessel_graph.edges['po2vessels'] = po2vessels
+  vessel_graph.edges['po2_vessels'] = po2vessels
   print(parameters)
   vessel_graph.edges['saturation'] = PO2ToSaturation(po2vessels, parameters)
   vessel_graph.edges['hboconc'] = vessel_graph.edges['saturation']*vessel_graph.edges['hematocrit']*chb_of_rbcs*1.0e3
@@ -261,7 +261,7 @@ def renderScene(po2group, imagefn, options):
 
   #try world
   options.imageFileName = imagefn+'_po2vessels'+ext
-  renderSliceWithDistribution((po2field_ld, vessel_graph, 'po2vessels'), (po2field_ld, po2field), '', options)
+  renderSliceWithDistribution((po2field_ld, vessel_graph, 'po2_vessels'), (po2field_ld, po2field), '', options)
   options.imageFileName = imagefn+'_saturation'+ext
   renderSlice((po2field_ld, vessel_graph, 'saturation'), (None, None), '', options)
   options.imageFileName = imagefn+'_hboconc'+ext

@@ -343,7 +343,7 @@ class EasyPovRayRender(object):
       pos = vesselgraph['position']
       rad = vesselgraph.edges['radius']
       #print 'positions = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
-      pos = trafo.transform_position(np.asarray(pos).transpose())
+      pos = trafo.transform_position(np.asarray(pos))
       rad = trafo.transform_scalar(rad)
       #print 'positions after trafo = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
       
