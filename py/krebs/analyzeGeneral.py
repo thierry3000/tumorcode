@@ -466,7 +466,7 @@ class DataBasicVessel(object):
         if   property_name in vesselgroup['edges']: association = 'edges'
         elif property_name in vesselgroup['nodes']: association = 'nodes'
       if property_name == 'position':
-        return krebsutils.read_vessel_positions_from_hdf_by_filename(str(vesselgroup.file.filename),str(vesselgroup.name)), 'nodes'
+        return np.asarray(krebsutils.read_vessel_positions_from_hdf_by_filename(str(vesselgroup.file.filename),str(vesselgroup.name))), 'nodes'
       elif property_name == 'length':
         graph = dataman.obtain_data('vessel_graph', vesselgroup, ['position'])
         pos = graph.nodes['position']

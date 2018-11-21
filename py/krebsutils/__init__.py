@@ -361,15 +361,14 @@ def filter_graph_byedge2( edges, edge_data, node_data, indices, return_indices=F
     new_edge_data = tuple( q[indices,...] for q in edge_data )
     new_node_data = list()
     for q in node_data:
-      q_list = list()
-      for p in q:
-        q_list.append(np.asarray(p)[map])
-        
-      new_node_data.append(tuple(q_list))
+      if q.ndim == 1:
+        new_node_data.append(q[map,...])
+      elif q.ndim == 2:
+        new_node_data.append(q[map,:])
+      else:
+        print('dimension of data is to high')
     new_node_data=tuple(new_node_data)
-    #new_node_data = tuple( q[map,...] for q in node_data )
-    ''' difficult with position which is dict with 3 entries'''
-    #new_node_data = node_data
+#    new_node_data = tuple( q[map,...] for q in node_data )
     
     ret = (newedges, new_edge_data, new_node_data)
     if return_indices:
@@ -615,6 +614,7 @@ def vessels_require_(vesselgroup, g, name):
       ''' usualy the case for deatailed o2 calculation '''
       ''' vesselgroup.parent.parent is po2 group'''
       po2_vessels = np.asarray(vesselgroup.parent.parent['po2/vessels/po2vessels'])
+      po2_vessels = po2_vessels*7.5
     else:
       ''' if we have the mts tumor things are slightly different'''
       po2_vessels = np.asarray(vesselgroup.parent['po2/po2vessels'])
@@ -638,6 +638,7 @@ def vessels_require_(vesselgroup, g, name):
       ''' usualy the case for deatailed o2 calculation '''
       ''' vesselgroup.parent.parent is po2 group'''
       po2_vessels = np.asarray(vesselgroup.parent.parent['po2/vessels/po2vessels'])
+      po2_vessels = po2_vessels*7.5
     else:
       po2_vessels = np.asarray(vesselgroup.parent['detailedPo2/po2_vessels'])
     po2AtVessel = np.average(po2_vessels,1)

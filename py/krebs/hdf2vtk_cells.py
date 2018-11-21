@@ -101,7 +101,7 @@ def ConvertMyHdfVesselsToVTKPolydata(graph, newflag_for_backward_compatibility, 
     
   if 1:
       #pressure
-      pressure=pressure*7.5 #to mmHg
+      #pressure=pressure*7.5 #to mmHg
       polydata.GetPointData().AddArray(asVtkArray(pressure, "pressure_at_node", vtkFloatArray))
       #isnodeboundary = np.asarray(np.bitwise_and(nodeflags,krebsutils.BOUNDARY) > 0, dtype=np.int32)
       #polydata.GetPointData().AddArray(asVtkArray(isnodeboundary, "isNodeBoundary", vtkFloatArray))
@@ -425,7 +425,7 @@ if __name__ == '__main__':
           if new:
             graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
           else:
-            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
+            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['po2_vessel','po2_node','position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
           if goodArguments.filteruncirculated:
             graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
           #amazing, out of the box this works for the o2 simulation as well.
