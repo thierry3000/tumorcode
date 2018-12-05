@@ -402,9 +402,9 @@ secombComparison2.update(
 )
 secombComparison2018 = dict(
   num_threads = cluster_threads,
-  po2init_r0 = 55.0, #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
+  po2init_r0 = 42.0, #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
   po2init_dr = 1.0, #  mmHg / um, these values are from yaseen 2011 for rat brain
-  po2init_cutoff = 100.0, # mmHg; maximal attained value
+  po2init_cutoff = 60.0, # mmHg; maximal attained value
   solubility_plasma = 3.1e-5,
   c0 = 0.5,
   sat_curve_exponent = 2.7,
@@ -415,8 +415,71 @@ secombComparison2018 = dict(
   rd_tum  = 50.0,
   rd_necro = 150.0,
   max_iter = 400,
+  convergence_tolerance = 0.1,
+  axial_integration_step_factor = .25,
+  debug_zero_o2field = False,
+  useCellBasedUptake = False,
+  grid_lattice_const = 50.0,
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6,
+    rheology = 'RheologyForHuman',
+    inletHematocrit = 0.37,
+    includePhaseSeparationEffect = 1,
+  ),
+  michaelis_menten_uptake = True,
+  po2_mmcons_k_norm = 4.0,
+  po2_mmcons_k_tum = 2.0,
+  po2_mmcons_k_necro = 2.0,
+  # = 3.7e-3 ml O2 / ml / min; # fairly low like estimates by rinneberg and beany
+  po2_mmcons_m0_norm = 6.2e-6, # value for breast (ml O2 / ml Tissue / s)
+  po2_mmcons_m0_tum = 2.48e-4, # 4 times normal uptake
+  po2_mmcons_m0_necro = 0.0,
+  massTransferCoefficientModelNumber = 1,
+  conductivity_coeff1 = 5.1037,
+  conductivity_coeff2 = 4.78847,
+  conductivity_coeff3 = 0.026479,
+  detailedO2name = 'secombComarison2018',
+  tissue_po2_boundary_condition = 'neumann',
+  approximateInsignificantTransvascularFlux = False,
+  loglevel = 1,
+  extra_tissue_source_const = 0.0,
+  extra_tissue_source_linear = 0.0,
+  tissue_boundary_value = 0.0,
+  haemoglobin_binding_capacity = 0.5, # /*mlO2/cm^3*/
+  transvascular_ring_size = 0.5,
+  debug_fn = "none.h5",
+  input_group_path = "vessels",
+  safety_layer_size = 100.0,
+)
+secombComparison2018b = deepcopy(secombComparison2018)
+secombComparison2018b.update(
+    detailedO2name = 'secombComarison2018b',
+    #mmcons_m0_norm = 13.2e-5,# with these parameters the tissue PO2 should decay over a lengthscale of 82 um!
+    #solubility_tissue = 2.8e-4,
+    #safety_layer_size = 100.0,
+    #grid_lattice_const = 20.0,
+    convergence_tolerance = 0.0001,
+    axial_integration_step_factor = .25,
+    #max_iter = 400,
+    #approximateInsignificantTransvascularFlux = True,
+    )
+Mesent28_10_subset = dict(
+  num_threads = cluster_threads,
+  po2init_r0 = 162.0, #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
+  po2init_dr = 1.0, #  mmHg / um, these values are from yaseen 2011 for rat brain
+  po2init_cutoff = 90.0, # mmHg; maximal attained value
+  solubility_plasma = 3.1e-5,
+  c0 = 0.5,
+  sat_curve_exponent = 2.7,
+  sat_curve_p50 = 27.0,
+  D_plasma = 2000.0,
+  solubility_tissue = 2.8e-5,
+  rd_norm = 150.0,
+  rd_tum  = 50.0,
+  rd_necro = 150.0,
+  max_iter = 100,
   convergence_tolerance = 0.03,
-  axial_integration_step_factor = .1,
+  axial_integration_step_factor = .25,
   debug_zero_o2field = False,
   useCellBasedUptake = False,
   grid_lattice_const = 40.0,
@@ -438,9 +501,60 @@ secombComparison2018 = dict(
   conductivity_coeff1 = 5.1037,
   conductivity_coeff2 = 4.78847,
   conductivity_coeff3 = 0.026479,
-  detailedO2name = 'secombComarison2018',
-  tissue_po2_boundary_condition = 'neumann',
-  approximateInsignificantTransvascularFlux = True,
+  detailedO2name = 'Artificial_tumorcode',
+  tissue_po2_boundary_condition = 'dirichlet',
+  approximateInsignificantTransvascularFlux = False,
+  loglevel = 1,
+  extra_tissue_source_const = 0.0,
+  extra_tissue_source_linear = 0.0,
+  tissue_boundary_value = 25.0,
+  haemoglobin_binding_capacity = 0.5, # /*mlO2/cm^3*/
+  transvascular_ring_size = 0.5,
+  debug_fn = "none.h5",
+  input_group_path = "vessels",
+  safety_layer_size = 100.0,
+)
+Artificial_tumorcode = dict(
+  num_threads = cluster_threads,
+  po2init_r0 = 55.0, #  mmHg;  po2_init = min(po2init_cutoff, po2_init_r0 + v->r * po2_init_dr)
+  po2init_dr = 3.0, #  mmHg / um, these values are from yaseen 2011 for rat brain
+  po2init_cutoff = 90.0, # mmHg; maximal attained value
+  solubility_plasma = 3.1e-5,
+  c0 = 0.5,
+  sat_curve_exponent = 2.7,
+  sat_curve_p50 = 27.0,
+  D_plasma = 2000.0,
+  solubility_tissue = 2.8e-5,
+  rd_norm = 150.0,
+  rd_tum  = 50.0,
+  rd_necro = 150.0,
+  max_iter = 500,
+  convergence_tolerance = 0.1,
+  axial_integration_step_factor = .25,
+  debug_zero_o2field = False,
+  useCellBasedUptake = False,
+  grid_lattice_const = 40.0,
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6,
+    rheology = 'RheologyForHuman',
+    inletHematocrit = 0.37,
+    includePhaseSeparationEffect = 1,
+  ),
+  michaelis_menten_uptake = True,
+  po2_mmcons_k_norm = 4.0,
+  po2_mmcons_k_tum = 2.0,
+  po2_mmcons_k_necro = 2.0,
+  # = 3.7e-3 ml O2 / ml / min; # fairly low like estimates by rinneberg and beany
+  po2_mmcons_m0_norm = 6.2e-6, # value for breast (ml O2 / ml Tissue / s)
+  po2_mmcons_m0_tum = 2.48e-4, # 4 times normal uptake
+  po2_mmcons_m0_necro = 0.0,
+  massTransferCoefficientModelNumber = 1,
+  conductivity_coeff1 = 5.1037,
+  conductivity_coeff2 = 4.78847,
+  conductivity_coeff3 = 0.026479,
+  detailedO2name = 'Artificial_tumorcode',
+  tissue_po2_boundary_condition = 'dirichlet',
+  approximateInsignificantTransvascularFlux = False,
   loglevel = 1,
   extra_tissue_source_const = 0.0,
   extra_tissue_source_linear = 0.0,
@@ -449,16 +563,9 @@ secombComparison2018 = dict(
   transvascular_ring_size = 0.5,
   debug_fn = "none.h5",
   input_group_path = "vessels",
-  safety_layer_size = 500.0,
+  safety_layer_size = 50.0,
 )
-secombComparison2018b = deepcopy(secombComparison2018)
-secombComparison2018b.update(
-    safety_layer_size = 100.0,
-    grid_lattice_const = 5.0,
-    convergence_tolerance = 0.0001,
-    axial_integration_step_factor = .1,
-    max_iter = 400,
-    )
+
 #  Distribute consumption rate lognormally.
 #  In maple the distribution can be seen like so:
 #

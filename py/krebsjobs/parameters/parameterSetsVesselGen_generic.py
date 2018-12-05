@@ -527,4 +527,21 @@ plos_one_oxygen = dict(
   generate_more_capillaries=0,
   
 )
-
+asymmetric = dict(
+  tip_radius_arterial = 7.5,
+  tip_radius_capi = 5.5,
+  tip_radius_vein = 10.8,
+  murray_alpha_vein = 3.,
+  murray_alpha_artery = 3.,
+  scale = 130.,
+  max_sprout_radius_artery = 8.,
+  max_sprout_radius_vein = 8.,
+  calcflow = dict(
+    viscosityPlasma = 1.2e-6,
+    rheology = 'RheologyForRats',
+    inletHematocrit = 0.37,
+    includePhaseSeparationEffect = 1,
+  ),
+  generate_more_capillaries = True,
+  changeRateThreshold = 0.1,
+)

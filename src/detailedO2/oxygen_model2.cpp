@@ -329,6 +329,7 @@ Parameters::Parameters()
 
 void Parameters::UpdateInternalValues()
 {
+  cout << "Updating internals!" << endl;
   const double n = sat_curve_exponent;
   double t1 = 2.*n*n-2.;
   double t2 = std::sqrt(3.*n*n*n*n-3.*n*n);
@@ -352,6 +353,21 @@ void Parameters::UpdateInternalValues()
   }
   conc_neglect_s  = BloodPO2ToConc(p, 1.);
   //SetTissueParamsByDiffusionRadius(D_plasma, solubility_tissue, rd_norm, rd_tum, rd_necro);
+  
+  // required parameters for transvascular transport
+  if (tissue_po2_boundary_condition == "dirichlet_x") 
+    tissue_boundary_condition_flags = 1; //FiniteVolumeMatrixBuilder;
+  else if (tissue_po2_boundary_condition == "dirichlet_yz") 
+    tissue_boundary_condition_flags = 2;
+  else if (tissue_po2_boundary_condition == "dirichlet") 
+    tissue_boundary_condition_flags = 3;
+  else if (tissue_po2_boundary_condition == "neumann") 
+    tissue_boundary_condition_flags = 0;
+  else
+  {
+    std::cout << "bc_type: " << tissue_po2_boundary_condition << std::endl;
+    throw std::invalid_argument("tissue_po2_boundary_condition must be 'dirichlet','dirichlet_x', 'dirichlet_yz' or 'neumann'");
+  }
 }
 
 // void Parameters::writeParametersToHDF(H5::Group& parameter_out_group)
@@ -1573,6 +1589,7 @@ void DetailedPO2Sim::init(
   else
   {
     dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
+    cout << "dimension of o2 grid is: " << dim << endl;
   }
     
 //   if (grid_lattice_size)

@@ -42,7 +42,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace DetailedPO2
 {
-  
+enum BoundaryConditionsIDs
+{
+  neumann = 0,
+  dirichlet_x  = 1,
+  dirichlet_yz  = 2,
+  dirichlet = 3
+};
 // enum TissueIDs
 // {
 //   NORMAL = 0,

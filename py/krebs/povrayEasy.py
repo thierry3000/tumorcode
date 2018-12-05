@@ -350,7 +350,7 @@ class EasyPovRayRender(object):
       print("addVesselTree2")
       if options.clip_box is None and options.clip_ball is None:
         if options.vessel_clip is not None:
-          
+          print("options.vessel_clip:")
           print(options.vessel_clip)
           clip = clipFactory(options.vessel_clip)
         else:
@@ -424,6 +424,8 @@ class EasyPovRayRender(object):
     tempfile = self.makeTmpFile()
     print(clip_style_object)
     print(clip_object)
+    if( rad.ndim == 2):
+      rad=rad[:,0]
     krebsutils.export_network_for_povray(
       edges, pos, rad, style_object, clip_style_object, clip_object, tempfile.filename)
     self.pvfile.write("#include \"%s\"" % tempfile.filename)

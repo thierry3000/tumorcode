@@ -27,10 +27,10 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.mplot3d import Axes3D
 
-if __name__ == '__main__':
-  import os.path, sys
-  sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
-  sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
+
+import os.path, sys
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 
 import povrayRenderCells
 import myutils

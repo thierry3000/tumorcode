@@ -84,7 +84,6 @@ void InitParameters(DetailedPO2::Parameters &params, const py::dict &py_paramete
  
   
   // required parameters for transvascular transport
-  
   if (params.tissue_po2_boundary_condition == "dirichlet_x") 
     params.tissue_boundary_condition_flags = 1; //FiniteVolumeMatrixBuilder;
   else if (params.tissue_po2_boundary_condition == "dirichlet_yz") 
@@ -127,6 +126,11 @@ static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
 {
   DetailedPO2::DetailedPO2Sim s;
   s.params = py::extract<DetailedPO2::Parameters>(py_parameters);
+  //calculate stuff parameters dependent on the given parameters
+  s.params.UpdateInternalValues();
+  
+  
+  
   //Parameters params;
   //InitParameters(s.params, py_parameters);
   cout << "parameters initialized" << std::endl;

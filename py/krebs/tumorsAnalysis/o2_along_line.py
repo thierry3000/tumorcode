@@ -745,88 +745,6 @@ def plot_averages_at_arterial_bifurcation_for_all_times(pp ):
   pp.savefig(fig1)
   if infos:
     pp.savefig(meta_data_fig)
-  
-
-#def plot_averages_along_outward_line(pp, **keywords):
-#  result_string = ''
-#  print('plotting in outward dir')
-#  starting_pos=artery_p3
-#  end_pos=artery_p4
-#  
-#  sample_pos, factors = get_sample_points_along_line(starting_pos,end_pos,metadata_dict['number_of_sampling_points'])
-#  print('found sample positions')
-#
-#  lists = list(scoop.futures.map(is_index_good, sample_pos))
-#  for (aList, aSamplePos) in zip(lists,sample_pos):
-#    print('for pos: %s found %i points in eps range' % (aSamplePos,len(aList)))
-#    
-#  ''' average '''
-#  average_value = []
-#  errors = []
-#  if addpH:
-#    average_value_pH=[]
-#    errors_pH = []
-#  
-#  for (aList, aSamplePos) in zip(lists,sample_pos):
-#    this_avg = np.average(quantity_to_average[aList])
-#    average_value.append(this_avg)
-#    errors.append(np.std(quantity_to_average[aList]))
-#    if addpH:
-#      this_avg_pH = np.average(quantity_to_average_2[aList])
-#      average_value_pH.append(this_avg_pH)
-#      errors_pH.append(np.std(quantity_to_average_2[aList]))
-#    
-#      
-#  print('finished sample line artery')
-#  avg_values= np.asarray(average_value)
-#  errors_avg = np.asarray(errors)
-#  distances = np.asarray(factors)
-#  if addpH:
-#    avg_values_pH = np.asarray(average_value_pH)
-#    errors_pH = np.asarray(errors_pH)
-#  #avg_values, errors_avg, distances = sample_line_vein_parallel_bifurcation()
-#  fig1, ax1 = plt.subplots(1)
-#  ax1.errorbar(distances,avg_values, yerr=errors_avg, marker='o', color='k', linestyle='None')
-#  if infos:
-#    ax1.set(title = 'Cell based oxygen along parallel line \n at venous bifurcation')
-#  ax1.set_xlabel(r'distance along line/ $\mu m$')
-#  ax1.set_ylabel('pO2/mmHg')
-#  if addpH:
-#    ax2= ax1.twinx()
-#    ax2.set_ylabel('pH')
-#    distances = distances+2.0
-#    ax2.errorbar(distances,avg_values_pH, yerr=errors_pH, marker='x', color='b', linestyle='None')
-#  
-#  #ax1.grid(color='k', linestyle=':', linewidth=0.5)
-#  
-#  for entry in metadata_dict:
-#    #print(entry)
-#    result_string+= '%s:\t%s\n' % (entry, metadata_dict[entry])
-#  meta_data_fig.text(0.1,0.1,result_string, transform=meta_data_fig.transFigure, size=14, ha="left")
-#  pp.savefig(fig1)
-#  if infos:
-#    pp.savefig(meta_data_fig)
-#  meta_data_fig.clf()
-#  
-#def getuuid_(h5grp):
-#  try:
-#    return h5grp.attrs['UUID']
-#  except KeyError:
-#    return ''
-
-#@myutils.UsesDataManager
-class Human(object):
-  keywords = ['leg']
-  def obtain_data(self, dataman, dataname, *args):
-    if dataname == 'leg':
-      def read(hdf_cache_grp_name, data_name):
-        the_data= hdf_cache_grp_name[data_name]
-        return the_data
-      def write(hdf_cache_grp_name, data_name):
-        hdf_data_grp = hdf_cache_grp_name.create_group(data_name)
-        hdf_data_grp.create_dataset(dataname, data=np.random.randn(100))
-    #version_id = myutils.checksum(getuuid_(h5_out_grp))
-      return myutils.hdf_data_caching(read, write, f_cache, 'blub')
     
     
 class DataArterialBifurcation(object):
@@ -1001,7 +919,7 @@ if __name__ == '__main__':
   ''' begin of code '''
   '''register a clases at data manager'''
   f_cache = h5py.File('cache_'+ goodArguments.vbl_simulation_file_name, 'a')
-  dataman = myutils.DataManager(20, [Human(), DataArterialBifurcation(), DataVenousBifurcation()])
+  dataman = myutils.DataManager(20, [ DataArterialBifurcation(), DataVenousBifurcation()])
   
   ''' pdf output '''
   meta_data_fig = plt.figure(figsize=(11.69,8.27))

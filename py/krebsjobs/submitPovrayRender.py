@@ -171,7 +171,7 @@ if __name__ == '__main__':
   parser.add_argument("--not_render_vessels", help="For combined images", default=False, action="store_true")
   parser.add_argument("--timepoint", help="timepoint for tumor overlay", default=None)
   # maybe we need that in future?
-  parser.add_argument("--vessel_clip", help="???", default=None)
+  parser.add_argument("--vessel_clip", help="type of clip uasage: 'zslice' -0.1 0.1", nargs=3,metavar=('type', 'arg1', 'arg2'), type=str,default=None)
   parser.add_argument("--tumor_clip", help="origin of tumor clipping", nargs=3, metavar=('x', 'y', 'z'),type=float,default=None)
   parser.add_argument("--clip_box", help="clip a box from vessels", nargs=6, metavar=('box_center_x', 'box_center_y', 'box_center_z', 'x_extent', 'y_extent', 'z_extent'),type=float, default=None)
   parser.add_argument("--clip_ball", help="clip a ball from vessels", nargs=4, metavar=('ball_x', 'ball_y', 'ball_z', 'radius'),type=float, default=None)
@@ -189,6 +189,9 @@ if __name__ == '__main__':
     goodArguments.datalist= goodArguments.datalist.split(',')
   if not parser.get_default('res') == goodArguments.res:
     goodArguments.res= tuple(goodArguments.res.split(','))
+  if goodArguments.vessel_clip is not None:
+    goodArguments.vessel_clip[1] = float(goodArguments.vessel_clip[1])
+    goodArguments.vessel_clip[2] = float(goodArguments.vessel_clip[2])
   """ read parameters from file """
   #create filename due to former standards
   filenames=[]

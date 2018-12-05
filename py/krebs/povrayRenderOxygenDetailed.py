@@ -140,10 +140,11 @@ def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld
       epv.setBackground(options.background)
   
       cam_fov = 60.
-      cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
+      cam_distance_factor = options.cam_distance_multiplier * ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
       epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
       epv.addLight(10.*Vec3(1,0.5,2), 1.2)
-      options.vessel_clip=('zslice', -1500*trafo.w, +1500*trafo.w)
+      if options.vessel_clip is None:
+        options.vessel_clip=('zslice', -150*trafo.w, +150*trafo.w)
   
       pvcm = matplotlibColormapToPovray('DATACOLORMAP', cm)
       epv.declareColorMap(pvcm)

@@ -582,6 +582,7 @@ if __name__ == '__main__':
   go_right = go_down[::-1]
   go_right = np.arange(340, 541, 80)
   go_right = np.arange(540, 219, -80)
+  go_right = np.arange(580, 279, -100)
   go_right = go_right[::-1]
   
   out_groups_to_consider= ['out0%i' % aentry for aentry in go_right]
@@ -625,6 +626,6 @@ if __name__ == '__main__':
         with PdfPages(thisOutFn) as pp:
           #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
           plot_cell_endity_vs_distances_to_next_vessel_multiple_times(out_groups_to_consider,cell_endity,no_bins,pp)
-    with PdfPages('analysisMTS_dev_from_sphere_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], grop_string_for_multiple)) as pp:
-      #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
-      plot_dev_from_sphere_multiple_times(out_groups_to_consider,no_bins,pp)
+#    with PdfPages('analysisMTS_dev_from_sphere_%s_%s.pdf' % (os.path.splitext(os.path.basename(goodArguments.vbl_simulation_output_filename))[0], grop_string_for_multiple)) as pp:
+#      #plot_cell_endity_vs_distances_to_next_vessel(goodArguments.output_grp_name,cell_endity, no_bins,pp)
+#      plot_dev_from_sphere_multiple_times(out_groups_to_consider,no_bins,pp)
