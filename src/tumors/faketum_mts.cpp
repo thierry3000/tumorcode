@@ -588,7 +588,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       */
       o2_sim.vl = vl;
       //o2_sim.init(bfparams,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
-      o2_sim.init(bfparams,grid_lattice_const, safety_layer_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
+      o2_sim.init(bfparams,lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
       cout << "\nInit O2 completed" << endl;
       o2_sim.run();
       cout << "\n mts run finished" << endl;

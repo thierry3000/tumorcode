@@ -1022,11 +1022,12 @@ def plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall,g2_by_intervall,
       ax1.bar(ind, proportion_dead, width=0.8, label='dead', color=dead_phase_color)
   ax1.set_xticks(ind)
   lgd=ax1.legend(bbox_to_anchor=(1.04,0.8), loc="center left", borderaxespad=0)
-  ax1.set_xlabel('distance to nearest vessel')
+  #ax1.set_xlabel(r'distance to nearest vessel/ $\mu$m')
   niceTags = []
   for aBoundary in intervalls:
     niceTags.append('%i-%i' %(aBoundary, aBoundary+20))
-  ax1.set_xticklabels(niceTags,rotation=75)
+  ax1.set_xticklabels(niceTags,rotation=45, fontsize=18)
+  ax1.yaxis.set_tick_params(labelsize=18)
   pp.savefig(fig1, bbox_extra_artists=(lgd,))
 
 if __name__ == '__main__':
@@ -1056,28 +1057,28 @@ if __name__ == '__main__':
   '''register a clases at data manager'''
   print(os.path.basename(goodArguments.vbl_simulation_output_filename))
   
-    
-  with PdfPages('analysisCell_phase_dist_from_nearestvessel_%s.pdf' % goodArguments.output_grp_name ) as pp:
-    s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_nearest_vessels(list_of_filenames)
-    plot_cell_phases(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
+  s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_nearest_vessels(list_of_filenames)
+  
+#  with PdfPages('analysisCell_phase_dist_from_nearestvessel_%s.pdf' % goodArguments.output_grp_name ) as pp:
+#    plot_cell_phases(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
   outname = 'analysisCell_phase_stackedbar_from_nearest_%s.pdf' % goodArguments.output_grp_name
   with PdfPages(outname ) as pp:
     plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp,outname=outname)
   with PdfPages('analysisCell_phase_stackedbar_from_nearest_only_alive_%s.pdf' % goodArguments.output_grp_name ) as pp:
     plot_stacked_bar_from_nearest(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead=True)
-  with PdfPages('analysisCell_phase_dist_from_center_%s.pdf' % goodArguments.output_grp_name ) as pp:
-    s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_center(list_of_filenames, max_distance_to_center=422.0)
-    plot_cell_phases(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)  
-  with PdfPages('analysisCell_phase_stackedbar_from_center_%s.pdf' % goodArguments.output_grp_name ) as pp:
-    plot_stacked_bar_from_center(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
-  with PdfPages('analysisCell_phase_stackedbar_from_center_only_alive_%s.pdf' % goodArguments.output_grp_name ) as pp:
-    plot_stacked_bar_from_center(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead= True)
-  s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_slices(list_of_filenames)
-  #s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_slices(list_of_filenames, min_max_of_slice=[-100, 100])
-  with PdfPages('analysisCell_phase_slices_with_dead_%s.pdf' % goodArguments.output_grp_name ) as pp:
-    plot_stacked_bar_slice(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead=False) 
-  with PdfPages('analysisCell_phase_slices_no_dead_%s.pdf' % goodArguments.output_grp_name ) as pp:
-    plot_stacked_bar_slice(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead=True)
+#  with PdfPages('analysisCell_phase_dist_from_center_%s.pdf' % goodArguments.output_grp_name ) as pp:
+#    s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_center(list_of_filenames, max_distance_to_center=422.0)
+#    plot_cell_phases(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)  
+#  with PdfPages('analysisCell_phase_stackedbar_from_center_%s.pdf' % goodArguments.output_grp_name ) as pp:
+#    plot_stacked_bar_from_center(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp)
+#  with PdfPages('analysisCell_phase_stackedbar_from_center_only_alive_%s.pdf' % goodArguments.output_grp_name ) as pp:
+#    plot_stacked_bar_from_center(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead= True)
+#  s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_slices(list_of_filenames)
+#  #s_by_intervall, g_by_intervall, g2_by_intervall, dead_by_intervall, intervalls = create_matrix_slices(list_of_filenames, min_max_of_slice=[-100, 100])
+#  with PdfPages('analysisCell_phase_slices_with_dead_%s.pdf' % goodArguments.output_grp_name ) as pp:
+#    plot_stacked_bar_slice(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead=False) 
+#  with PdfPages('analysisCell_phase_slices_no_dead_%s.pdf' % goodArguments.output_grp_name ) as pp:
+#    plot_stacked_bar_slice(s_by_intervall,g_by_intervall, g2_by_intervall,dead_by_intervall,intervalls,pp, noDead=True)
     
     
     
