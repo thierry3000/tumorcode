@@ -110,39 +110,6 @@ void Params::assign(const ptree& pt)
 }
 
 
-void Params::WriteH5(H5::Group g) const
-{
-//#define SETP(id) g.attrs().set(#id,id)
-//#define SETP(id) writeAttrToH5<string>(g, #id, id)
-//#define SETP2(id,val) g.attrs().set(#id,val)
-  switch(inject_mode)
-  {
-  case Params::DF_INJECT_MODE_EXP:
-    writeAttrToH5(g, string("DF_INJECT_MODE"),string("DF_INJECT_MODE_EXP")); 
-    //SETP2(DF_INJECT_MODE,"DF_INJECT_MODE_EXP");
-    break;
-  case Params::DF_INJECT_MODE_JUMP:
-    //SETP2(DF_INJECT_MODE,"DF_INJECT_MODE_JUMP");
-    writeAttrToH5(g, string("DF_INJECT_MODE"),string("DF_INJECT_MODE_JUMP"));
-    break;
-  }
-  writeAttrToH5(g, string("inject_t"),inject_t);
-  writeAttrToH5(g, string("kdiff"),kdiff);
-  writeAttrToH5(g, string("comprates_k12"),comprates_k12);
-  writeAttrToH5(g, string("comprates_k21"),comprates_k21);
-  writeAttrToH5(g, string("capillary_permeability_normal"),capillary_permeability_normal);
-  writeAttrToH5(g, string("capillary_permeability_tumor"),capillary_permeability_tumor);
-
-  writeAttrToH5(g, string("stepper"),stepper);
-  writeAttrToH5(g, string("stepper_compartments"),stepper_compartments);
-  
-  writeAttrToH5(g, string("convective_transport_enabled"),convective_transport_enabled);
- 
-  
-
-}
-
-
 static const PdeReal maturation_at_r5 = GetInitialThickness(5.0f);
 static const PdeReal maturation_at_r20= GetInitialThickness(20.0f);
 
@@ -786,7 +753,7 @@ void Calculator::CalculateSources(int boxindex, const BBox3& bbox, const State &
 #endif
 
 
-void Calculator::writeH5(H5::H5File f, H5::Group g, const State& state, double t, H5::Group ld_group) const
+void Calculator::writeH5(H5::Group &g, const State& state, double t, H5::Group &ld_group) const
 {
   const Calculator& drugcalc = *this;
   

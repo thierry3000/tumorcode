@@ -1766,8 +1766,11 @@ int DetailedPO2Sim::run()
    * ****** MAIN LOOP **********
    */
   bool keep_preconditioner = true;
-  for (int iteration_num = 0;; ++iteration_num)
+  int iteration_num = -1;
+  while ( not PyCheckAbort())
+  //for (int iteration_num = 0;; ++iteration_num)
   {
+    iteration_num++;
 //     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
 //     {
 //       //h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");

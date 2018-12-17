@@ -430,13 +430,6 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   vessel_model.Init(vl.get(), this->vessel_model.params, callbacks);
   
   
-  
-  
-
-  
-  double grid_lattice_const = 30;
-  double safety_layer_size = 2*grid_lattice_const;
-  //boost::optional<Int3> grid_lattice_size;
   /* continum lattice stuff
    * set up grid for calculating diffusion equations
    * needed for solving diffusion equations, here Growthfactors
@@ -452,7 +445,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   printf("params.lattice_scale: %f\n" , params.lattice_scale);
 #endif
   
-  SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, field_ld);
+  SetupFieldLattice(vl->Ld().GetWorldBox(), dim, o2_sim.params.grid_lattice_const, o2_sim.params.safety_layer_size, field_ld);
   grid.init(field_ld, dim);
   mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(8, 8, 8)));
   //mtboxes.init(MakeMtBoxGridLarge(grid.Box(), 128));

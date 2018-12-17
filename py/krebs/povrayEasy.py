@@ -845,15 +845,35 @@ def CreateScene2(vesselgroup, epv, graph, options):
       epv.addLight(10.*Vec3(1,0.5,2), 1.2)
       if cam == 'topdown_slice':
         options.imageFileName = 'topdown_slice_' +options.imageFileName
-        if options.slice_pos:
-          print(trafo.w)
-          options.vessel_clip=('zslice', (options.slice_pos-200)*trafo.w, (options.slice_pos+200)*trafo.w)
-          #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
-          epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
-        else:
-          options.vessel_clip=('zslice', -301*trafo.w, 301*trafo.w)
-          options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
-          epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
+        epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
+        if options.vessel_clip is not None:
+          if options.slice_pos is not None:
+          #print(trafo.w)
+            options.vessel_clip=(options.vessel_clip[0], (options.slice_pos+options.vessel_clip[1])*trafo.w, (options.slice_pos+options.vessel_clip[2])*trafo.w)
+            #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+            
+        if options.vessel_clip is not None:
+          if options.slice_pos is None:
+            print(trafo.w)
+            options.vessel_clip=(options.vessel_clip[0], (0+options.vessel_clip[1])*trafo.w, (0+options.vessel_clip[2])*trafo.w)
+            #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+        if options.vessel_clip is None:
+          if options.slice_pos is not None:
+            print(trafo.w)
+            options.vessel_clip=('zslice', (options.slice_pos-100)*trafo.w, (options.slice_pos+100)*trafo.w)
+            #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+        if options.vessel_clip is None:
+          if options.slice_pos is None:
+            print(trafo.w)
+            options.vessel_clip=('zslice', (0-100)*trafo.w, (0+100)*trafo.w)
+            #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+            
+          
+#          else:
+#            
+#          options.vessel_clip=('zslice', -301*trafo.w, 301*trafo.w)
+#          options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+#          epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
       else:
         options.imageFileName += '_topdown_'
         epv.setCamera((0,0,cam_distance_factor*0.5*(zsize*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')

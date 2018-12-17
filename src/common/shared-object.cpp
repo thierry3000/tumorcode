@@ -871,7 +871,9 @@ void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float sa
   Int3 num_cells(1);
   Float3 world_offset(0.);
   
+#ifndef NDEBUG
   cout << "bbox: " << wbbox << endl;
+#endif
   
   for (int i=0; i<dim; ++i) 
   {
@@ -880,16 +882,22 @@ void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float sa
     //domain_center[i] = wbbox.min[i] + 0.5*domain_size[i];
     cell_centering[i] = true;
     num_cells[i] = std::max<int>(1, my::iceil(domain_size[i]/spacing));
+#ifndef NDEBUG
     cout << "i: " << i << "num: " << num_cells[i] << endl;
+#endif
     if(num_cells[i] % 2 == 0 )
     {
+#ifndef NDEBUG
       cout << "lattice domain is dividable" << endl;
+#endif
       //domain_center[i] = wbbox.min[i] + 0.5 * num_cells[i] * spacing;
       domain_center[i] = 0.5 * num_cells[i] * spacing;
     }
     else
     {
+#ifndef NDEBUG
       cout << "lattice domain is not dividable" << endl;
+#endif
       auto buff = std::floor(num_cells[i]/2);
       domain_center[i] = buff * spacing+0.5*spacing;
     }
@@ -902,9 +910,11 @@ void SetupFieldLattice(const FloatBBox3 &wbbox, int dim, float spacing, float sa
     //world_offset[i] = -domain_size[i] + wbbox.min[i]+ num_cells[i]*spacing*0.5;
     //printf("i: %i  vessel_domain_size: %f, domain_size: %f, world_offset: %f \n", i, vessel_domain_size[i], domain_size[i], world_offset[i]);
   }
+#ifndef NDEBUG
   cout << "center vessel domain: " << center_vessel_domain << endl;
   cout << "domain_center: " << domain_center << endl;
   cout << "spacing: " << spacing << endl;
+#endif
   diff_vector = center_vessel_domain - domain_center;
   world_offset =  diff_vector;
   ld.Init(num_cells, spacing);

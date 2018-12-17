@@ -421,7 +421,7 @@ default.update(
     num_threads = 6,
     lattice_scale  = 50,
     out_intervall = 60, #1 min
-    tend = 600., #5 min
+    tend = 300., #5 min
 )
 default['tumor'].update(
     tumor_diameter = 250,

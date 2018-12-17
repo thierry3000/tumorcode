@@ -33,7 +33,6 @@ namespace IfDrug
 struct Params
 {
   Params();
-  void WriteH5(H5::Group g) const;
   void assign(const ptree &pt);
   ptree as_ptree() const;
 
@@ -186,7 +185,7 @@ class Calculator
     
     Steppers::StepControl doStep(State &state, const Steppers::StepControl &ctrl);
 
-    void writeH5(H5::H5File f, H5::Group g, const State &state, double t, H5::Group ld_group) const;
+    void writeH5(H5::Group &g, const State &state, double t, H5::Group &ld_group) const;
 
     enum {
       FLAG_UPTAKE = 1<<0,
@@ -259,9 +258,9 @@ class Calculator
      * invertImplicitOperator = invertImplicitOperatorDefault;
      */ 
     typedef Steppers::Stepper<Steppers::Callback<State>, Steppers::STORAGE_COPY>  StepperType2;
-    std::auto_ptr<StepperType2> stepper_interaction;//interaction with drug!
+    std::unique_ptr<StepperType2> stepper_interaction;//interaction with drug!
     typedef Steppers::Stepper<Steppers::Callback<State1>, Steppers::STORAGE_COPY> StepperType1;
-    std::auto_ptr<StepperType1> stepper_interstitial;// interstitial fluid flow
+    std::unique_ptr<StepperType1> stepper_interstitial;// interstitial fluid flow
 
     // for operator splitting
     // num=0 computes interstitial compartment,

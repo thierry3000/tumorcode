@@ -64,7 +64,7 @@ struct IFVesselSeg
 struct IffParams
 {
   IffParams();
-  void WriteH5(H5::Group g) const;
+  //void WriteH5(H5::Group &g) const;
   void assign(const ptree &pt);
   ptree as_ptree() const;
   

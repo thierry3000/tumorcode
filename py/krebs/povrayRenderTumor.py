@@ -157,6 +157,7 @@ def render_different_data_types( vesselgroup, tumorgroup, imagefn, options, cell
     'S_tot' : 'Adaption Signal',
     'conductivitySignal' : 'Conductivity Signal',
     'metabolicSignal' : 'Metabolic Signal',
+    'radius': 'Vesselradius $\mu$m',
   }
   graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'nodeflags'] + options.datalist, return_graph=True)
   
@@ -176,7 +177,7 @@ def render_different_data_types( vesselgroup, tumorgroup, imagefn, options, cell
       colors_factory = options.colorfactory
       colors_factory(graph)
     
-    cm, (datamin, datamax) = povrayRenderVessels.make_any_color_arrays(graph, data_name)
+    cm, (datamin, datamax) = povrayRenderVessels.make_any_color_arrays(graph, data_name,options)
     fn = vesselgroup.file.filename
     if cell_group is not None and options.cells:
       options.imageFileName = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+'_cell_'+ options.cellsProperty +'_'+filenamepostfix #+'.'+ options.format

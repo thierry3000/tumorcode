@@ -78,7 +78,7 @@ struct TissueCompositionCallback
 class IffDrugApp3d
 {
   enum { dim = 3 };
-  float out_intervall;
+  float out_intervall,tend;
   DynArray<float> out_times;
   string fn_out,
          fn_tumor,
@@ -96,25 +96,26 @@ class IffDrugApp3d
   //LatticeDataQuad3d field_ld;
 
   ptree all_pt_params;
+  H5::Group h5_field_ld_grp;
   my::Time real_start_time;
 
-  std::auto_ptr<VesselFluidExavasationModel> vessel_sources_f;
-  std::auto_ptr<VirtualGridFunctions<double,2> > lymph_sources_f;
-  std::auto_ptr<VirtualGridFunctions<double,2> > tissue_f;
-  std::auto_ptr<VirtualGridFunctions<float,1> > phi_cells_f;
-  std::auto_ptr<VirtualGridFunctions<float,1> > phi_cells_wo_necro_f;
-  std::auto_ptr<VirtualGridFunctions<float,1> > phi_water_f;
+  std::unique_ptr<VesselFluidExavasationModel> vessel_sources_f;
+  std::unique_ptr<VirtualGridFunctions<double,2> > lymph_sources_f;
+  std::unique_ptr<VirtualGridFunctions<double,2> > tissue_f;
+  std::unique_ptr<VirtualGridFunctions<float,1> > phi_cells_f;
+  std::unique_ptr<VirtualGridFunctions<float,1> > phi_cells_wo_necro_f;
+  std::unique_ptr<VirtualGridFunctions<float,1> > phi_water_f;
   TissueCompositionCallback tissueCompositionCallback;
 
   IffParams iff_params;
   IfDrug::Params ift_params;
   ContinuumGrid grid;
   DynArray<BBox3> mtboxes;
-  std::auto_ptr<VesselList3d> vl;
+  std::shared_ptr<VesselList3d> vl;
   VesselsInBoxes vesselsInBoxes;
   Array3d<float> theta_tumor, theta_necro, phi_cells, phi_water;
 
-  std::auto_ptr<IfFlowState> iffstate;
+  std::unique_ptr<IfFlowState> iffstate;
 
   DynArray<double> org_press, org_flow;
 
@@ -122,7 +123,7 @@ class IffDrugApp3d
   void InitAsSimpleModels(Array3d< float > theta_tumor, Array3d< float > theta_necro, Array3d< float > phi_water, Array3d< float > phi_cells);
 
   void DoIffCalc();
-  void MeasureIfFlowState(H5::Group g);
+  void MeasureIfFlowState();
 
 #ifdef USE_IFDRUGSIM
   void WriteDrugOutput(double t, const IfDrug::Calculator::State &conc_field, const IfDrug::Calculator& model, const ptree& params);

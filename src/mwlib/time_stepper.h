@@ -241,7 +241,7 @@ public:
 
   Model& model() { return m_model; }
   typedef Stepper<STEPPER_TEMPLATE_ARGS2> Base;
-  typedef std::auto_ptr<Base> BasePointer;
+  typedef std::unique_ptr<Base> BasePointer;
   static BasePointer create(const std::string &name)
   {
     BasePointer p = create(name, boost::mpl::bool_<Model::stepperFlags & CAN_SOLVE_IMPLICIT>());
@@ -417,9 +417,9 @@ class VSImExBdf2 : public Stepper<STEPPER_TEMPLATE_ARGS2>
   STEPPER_DERIVED_SETUP
   bool needs_init;
 
-  std::auto_ptr<State> var_u[2];
-  std::auto_ptr<State> var_f[2];
-  std::auto_ptr<State> var_g[2];
+  std::unique_ptr<State> var_u[2];
+  std::unique_ptr<State> var_f[2];
+  std::unique_ptr<State> var_g[2];
   double step_sizes[2];
   double alpha[3], beta[3], gamma[3];
 
@@ -510,9 +510,9 @@ public:
 
     model().invertImplicitOperator(*u, rhs, alpha[2], -step_sizes[1]*gamma[2], ctrl(), *extrapolation);
 
-    var_u[0] = var_u[1];
-    var_f[0] = var_f[1];
-    var_g[0] = var_g[1];
+    var_u[0] = std::move(var_u[1]);
+    var_f[0] = std::move(var_f[1]);
+    var_g[0] = std::move(var_g[1]);
     step_sizes[0] = step_sizes[1];
 
     //Ops::setId(*u, last_state_id);

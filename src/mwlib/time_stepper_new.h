@@ -419,9 +419,9 @@ class VSImExBdf2 : public Stepper<STEPPER_TEMPLATE_ARGS2>
   STEPPER_DERIVED_SETUP
   bool needs_init;
 
-  std::auto_ptr<State> var_u[2];
-  std::auto_ptr<State> var_f[2];
-  std::auto_ptr<State> var_g[2];
+  std::unique_ptr<State> var_u[2];
+  std::unique_ptr<State> var_f[2];
+  std::unique_ptr<State> var_g[2];
   double step_sizes[2];
   double alpha[3], beta[3], gamma[3];
 
@@ -509,9 +509,9 @@ public:
 
     model().invertImplicitOperator(u, rhs, alpha[2], -step_sizes[1]*gamma[2], ctrl(), *extrapolation);
 
-    var_u[0] = var_u[1];
-    var_f[0] = var_f[1];
-    var_g[0] = var_g[1];
+    var_u[0] = std::move(var_u[1]);
+    var_f[0] = std::move(var_f[1]);
+    var_g[0] = std::move(var_g[1]);
     step_sizes[0] = step_sizes[1];
   }
 
@@ -627,7 +627,7 @@ template<STEPPER_TEMPLATE_ARGS, int flags = 0>
 struct StepperFactory
 {
   typedef Stepper<STEPPER_TEMPLATE_ARGS2> StepperType;
-  typedef std::auto_ptr<StepperType> PointerType;
+  typedef std::unique_ptr<StepperType> PointerType;
 
 private:
   static PointerType create_(const std::string &name, boost::mpl::false_)

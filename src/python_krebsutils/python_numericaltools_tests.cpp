@@ -427,7 +427,7 @@ public:
   Ops ops;
   DomainDecomposition mtboxes;
   typedef NewSteppers::Stepper<Model*, Ops*> MyStepper;
-  std::auto_ptr<MyStepper> stepper;
+  std::unique_ptr<MyStepper> stepper;
 };
 
 
@@ -741,7 +741,7 @@ void run(H5::Group g, const ptree &params, int id, double lambda)
   typedef NewSteppers::StepperFactory<Model*, NewSteppers::Operations<double> > Factory;
   typedef Factory::StepperType MyStepper;
   
-  std::auto_ptr<MyStepper> stepper(Factory::create(name));
+  std::unique_ptr<MyStepper> stepper(Factory::create(name));
   stepper->set_model(&model);
 
   auto doStep = [&](StepControl& ctrl) -> bool {
