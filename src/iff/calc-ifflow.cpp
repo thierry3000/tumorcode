@@ -173,34 +173,9 @@ ptree IffParams::as_ptree() const
   DOPT(osmotic_reflection_coeff);
   DOPT(better_permeability_model);
   DOPT(osmotic_reflection_coeff_tumor);
-  //DOPT(coupled_flow);
+  DOPT(coupled_flow);
 #undef DOPT
   return pt;
-}
-
-void IffParams::WriteH5(H5::Group g) const
-{
-// #define SETP(id) g.attrs().set(#id,id)
-// #define SETP2(id,val) g.attrs().set(#id,val)
-//   SETP(ecm_friction);
-//   SETP(cell_friction);
-//   SETP(iff_cond_tissue);
-//   SETP(iff_cond_tumor);
-//   SETP(iff_cond_necro);
-//   SETP(iff_capillary_permeability_tissue);
-//   SETP(iff_capillary_permeability_tumor);
-//   SETP(lymph_surf_per_vol);
-//   SETP(lymph_surf_per_vol_tumor);
-//   SETP(lymph_press);
-//   SETP(lymph_permeability);
-//   SETP(coupled_flow);
-//   SETP(capillary_oncotic_pressure);
-//   SETP(interstitial_oncotic_pressure);
-//   SETP(osmotic_reflection_coeff);
-//   SETP(better_permeability_model);
-//   SETP(osmotic_reflection_coeff_tumor);
-// #undef SETP
-// #undef SETP2
 }
 
 

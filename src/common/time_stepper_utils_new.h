@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "common.h"
 #include "hdfio.h"
+#include "python_krebsutils/python_helpers.h" //for PyCheckAbort
 
 using boost::property_tree::ptree;
 
@@ -157,7 +158,7 @@ static bool run(DoStep &doStep, Observer &observer, const ptree &params)
   StepControl ctrl;
   double next_time = 0;
   bool cont = true;
-  while (cont)
+  while (cont and not PyCheckAbort())
   {
     if (ctrl.t >= next_time - 0.1 * ctrl.dt)
     {

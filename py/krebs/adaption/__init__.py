@@ -230,13 +230,13 @@ def doit_optimize_deap(individual):
 
 
 def doit(parameters):
-  _ku.set_num_threads(1)
+  #_ku.set_num_threads(1)
   if sys.flags.debug:
     print(parameters)
 #  fn = parameters['adaption']['vesselFileName']
 #  pattern = parameters['adaption']['vesselGroupName']
   
-  print('starting doit in python ... paramset :%s' % parameters['name'])
+  print('starting doit in python ... paramset :%s' % parameters['adaption']['name'])
 
 #  f_ = h5files.open(fn, 'r')
 #  dirs = myutils.walkh5(f_['.'], pattern)

@@ -33,30 +33,23 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
   
   const BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
 
-  H5::H5File readInFile;
-  H5::Group g_vess;
-  try{
-    readInFile = H5::H5File(fn, H5F_ACC_RDONLY);
-    g_vess = readInFile.openGroup(vesselgroup_path); // groupname should end by vesselgroup
+  std::unique_ptr<H5::H5File> readInFile;
+  std::unique_ptr<H5::Group> g_vess;
+  std::shared_ptr<VesselList3d> vl;
+  try
+  {
+    readInFile = std::unique_ptr<H5::H5File>(new H5::H5File(fn, H5F_ACC_RDONLY));
+    g_vess = std::unique_ptr<H5::Group>(new H5::Group(readInFile->openGroup(vesselgroup_path))); // groupname should end by vesselgroup
   }
   catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
-  //h5cpp::Group g_vess = h5cpp::Group(readInFile->root().open_group(vesselgroup_path)); // groupname should end by vesselgroup
   
-  std::shared_ptr<VesselList3d> vl = ReadVesselList3d(g_vess, make_ptree("filter", false));
+  vl = ReadVesselList3d(*g_vess, make_ptree("filter", false));
 
-  Py_ssize_t num_nodes = vl->GetNCount();
-  Py_ssize_t num_edges = vl->GetECount();
-
-  //for some reasons this was needed before calcflow,
-  //however for secomb2hdf.py this is bad.
-  //ComputeCirculatedComponents(vl.get());
-//   if (simple)
-//     CalcFlowSimple(*vl, bfparams, true);
-//   else
-  try{
+  try
+  {
 #ifdef EPETRA_MPI
     std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
     int mpi_is_initialized = 0;
@@ -66,41 +59,42 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
       //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
       MPI_Init_thread(0, NULL, 1,&prov);
 #endif
-  CalcFlow(*vl, bfparams);
+    CalcFlow(*vl, bfparams);
   }
   catch(std::exception &ex)
   {
     std::cout << ex.what();
+    std::cout << "Execption at Calcflow" << std::endl;
   }
   
   if( storeCalculationInHDF )
   {
+    H5::H5File outFile;
+    H5::Group vess_recomp;
     try
     {
-      g_vess.openGroup("recomputed");
+      outFile = H5::H5File("recomputed_" +fn, H5F_ACC_TRUNC);
+      vess_recomp = H5::Group(outFile.createGroup("vessels")); // groupname should end by vesselgroup
     }
     catch(H5::Exception &e)
     {
-      H5::Group recomp = g_vess.createGroup("recomputed");
-      ptree getEverytingPossible = make_ptree("w_adaption", false);
-      WriteVesselList3d(*vl, recomp, getEverytingPossible);
+      e.printErrorStack();
     }
-//     if( not g_vess.exists("recomputed") )
-//     {
-//       h5::Group grp_temp;
-//       grp_temp = g_vess.create_group("recomputed");
-//       ptree getEverytingPossible = make_ptree("w_adaption", false);
-//       WriteVesselList3d(*vl, grp_temp, getEverytingPossible);
-//     }
+    ptree getEverytingPossible = make_ptree("w_adaption", false);
+    WriteVesselList3d(*vl, vess_recomp, getEverytingPossible);
   }
 
+  Py_ssize_t num_nodes = vl->GetNCount();
+  Py_ssize_t num_edges = vl->GetECount();
+  
 #if BOOST_VERSION>106300
 // boost::numpy
-  py::tuple shape = py::make_tuple(num_edges);
+  py::tuple e_shape = py::make_tuple(num_edges);
+  py::tuple n_shape = py::make_tuple(num_nodes);
   np::dtype dtype = np::dtype::get_builtin<double>();
-  np::ndarray pya_flow = np::empty(shape, dtype);
-  np::ndarray pya_force = np::empty(shape, dtype);
-  np::ndarray pya_press = np::empty(shape, dtype);
+  np::ndarray pya_flow = np::empty(e_shape, dtype);
+  np::ndarray pya_force = np::empty(e_shape, dtype);
+  np::ndarray pya_press = np::empty(n_shape, dtype);
 
   for (int i=0; i<num_edges; ++i)
   {
@@ -118,7 +112,7 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
   l.append(pya_force);
   if (!simple)
   {
-    np::ndarray pya_hema = np::empty(shape, dtype);
+    np::ndarray pya_hema = np::empty(e_shape, dtype);
     for (int i=0; i<num_edges; ++i)
     {
       const Vessel* v = vl->GetEdge(i);
@@ -128,7 +122,7 @@ py::list calc_vessel_hydrodynamics(const string fn, const string vesselgroup_pat
   }
   if (return_flags)
   {
-    np::ndarray pya_flags = np::empty(shape, np::dtype::get_builtin<int>());
+    np::ndarray pya_flags = np::empty(e_shape, np::dtype::get_builtin<int>());
     for (int i=0; i<num_edges; ++i)
     {
       const Vessel* v = vl->GetEdge(i);

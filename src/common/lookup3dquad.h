@@ -82,7 +82,7 @@ DEBUG_BondLookup(
       Map::iterator it = map.find(make_key(site, nbsite));
       if (it == map.end()) continue;
       V val = it->second;
-      map.quick_erase(it);
+      map.erase(it);
 DEBUG_BondLookup(
       myAssert(found == false || val == ret);
       found = true;
@@ -169,7 +169,7 @@ public:
     Map::iterator i = map.find(s);
     if(i == map.end()) return default_value;
     V q = i->second;
-    map.quick_erase(i);
+    map.erase(i);
     return q;
   }
   V FindAtSite(S s )

@@ -52,7 +52,7 @@ def estimateRuntimeAndMemory(g):
   if 'po2vessels' in g:
     N = g['po2vessels'].shape[1]
   elif 'conc' in g:
-    N = len(g.parent['iff/vessels/edges/node_a_index'])
+    N = len(g.parent['vessels/edges/node_a_index'])
   else:
     if 'vessels' in g: g = g['vessels']
     N = len(g['edges/node_a_index'])
@@ -104,7 +104,14 @@ class RenderJob(object):
       elif 'tumor' in f[self.group_name]:
         from krebs.povrayRenderTumor import render_different_data_types
         self.params.timepoint = f[self.group_name].attrs.get('time')
-        render_different_data_types(f[self.group_name]['vessels'],
+        ''' check if we have cell '''
+        if 'cells' in f[self.group_name]:
+          render_different_data_types(f[self.group_name]['vessels'],
+                    f[self.group_name]['tumor'],
+                    self.imageFilename,
+                    self.params, cell_group = f[self.group_name]['cells'])
+        else:
+          render_different_data_types(f[self.group_name]['vessels'],
                     f[self.group_name]['tumor'],
                     self.imageFilename,
                     self.params)
@@ -144,25 +151,37 @@ if __name__ == '__main__':
   #parser.add_argument("--only_overlay", default = False, action="store_true")  
   parser.add_argument("--dpi", help='dpi for the rendering', default=300.)
   parser.add_argument("--format", help='output format of image', default='png', action="store")
-  parser.add_argument("-c","--cam", help="camera mode: topdown, pie, topdown_slice", default='topdown_slice', action="store", type=str)
+  parser.add_argument("-c","--cam", help="camera mode: topdown, pie, topdown_slice, pie_only_cells, pie_only_vessels", default='topdown_slice', action="store", type=str)
   parser.add_argument("-u","--plot_auc", help="for area under curve, we have only a single timepoint", default=False, action="store_true")
   parser.add_argument("-a","--auto_colorscale", help=" ", default=False, action="store_true")  
   parser.add_argument("--fontcolor", help='fontcolor in overlay, use mpl style colors', default='black')  
   parser.add_argument("--temp_file_dir", help='dir for temp povray scene', default=None)
   parser.add_argument("--keep_files", help='keep tmp file?', default=False, action="store_true")
   parser.add_argument("--assumed_gamma", help=" ", default=1.0)
-  parser.add_argument("--background", help=" ", default=1.0)
+  parser.add_argument("--background", help="backgroundcolor matplotlib style", default = 'white')
   parser.add_argument("--ambient_color", help=" ", default=(0.1, 0, 0))
   parser.add_argument("--res", help="use comma seperated list of resx,resy ", default=(2048,2048))
-  parser.add_argument("--num_threads", help=" ", default=7)
+  parser.add_argument("--num_threads", help=" ", type=int, default=7)
   parser.add_argument("--out_alpha", help=" ", default=False, action="store_true")
-  parser.add_argument("--cam_distance_multiplier", help=" ", default=1.0 )
+  parser.add_argument("--cam_distance_multiplier", help=" ", type=float, default=1.0 )
   parser.add_argument("--colored_slice", help=" ", default=True)
+  parser.add_argument("--planeZCoord", help='in case your render a data slice, this allows you to choose the position, should vary from -0.5 to +0.5', type=float, default=0.0)
   #parser.add_argument("--projection_plot", help=" ", default=True)
   parser.add_argument("--not_render_volume", help="For combined images", default=False, action="store_true")
   parser.add_argument("--not_render_vessels", help="For combined images", default=False, action="store_true")
   parser.add_argument("--timepoint", help="timepoint for tumor overlay", default=None)
-  
+  # maybe we need that in future?
+  parser.add_argument("--logcolor", help="if set, the colorscale will be logarithmic", default=False, action="store_true")
+  parser.add_argument("--vessel_clip", help="arguments are height above and below type of clip uasage (no =): 'zslice' -0.1 0.1", nargs=3,metavar=('type', 'arg1', 'arg2'), type=str,default=None)
+  parser.add_argument("--tumor_clip", help="origin of tumor clipping", nargs=3, metavar=('x', 'y', 'z'),type=float,default=None)
+  parser.add_argument("--clip_box", help="clip a box from vessels", nargs=6, metavar=('box_center_x', 'box_center_y', 'box_center_z', 'x_extent', 'y_extent', 'z_extent'),type=float, default=None)
+  parser.add_argument("--clip_ball", help="clip a ball from vessels", nargs=4, metavar=('ball_x', 'ball_y', 'ball_z', 'radius'),type=float, default=None)
+  parser.add_argument("--slice_pos", help="slice position on z axis in mu m", default=None, type=int)
+  parser.add_argument("--cells", help="if activated, the VBL cells will be rendered", default=False, action="store_true")
+  parser.add_argument("--cellsProperty", help="property of the cells to plot", default= "o2", type=str)
+  parser.add_argument("--cellsColorLimits", help = "set border of visible data usage: simply name followed by 2 number no, bracket or quotations", nargs=2, metavar=('a', 'b'),type=float, default=None)
+  parser.add_argument("--imageFileName", help="name of output file", default='foo', type=str)
+  parser.add_argument("--noLabel", help="if activated, the labels in the overlay will not be displayed", default=False, action='store_true')
   goodArguments, otherArguments = parser.parse_known_args()
   qsub.parse_args(otherArguments)
   
@@ -171,6 +190,9 @@ if __name__ == '__main__':
     goodArguments.datalist= goodArguments.datalist.split(',')
   if not parser.get_default('res') == goodArguments.res:
     goodArguments.res= tuple(goodArguments.res.split(','))
+  if goodArguments.vessel_clip is not None:
+    goodArguments.vessel_clip[1] = float(goodArguments.vessel_clip[1])
+    goodArguments.vessel_clip[2] = float(goodArguments.vessel_clip[2])
   """ read parameters from file """
   #create filename due to former standards
   filenames=[]

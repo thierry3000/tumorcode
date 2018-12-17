@@ -70,8 +70,10 @@ def HandleNdimensions(*argsToRavel):
 @HandleNdimensions(0)
 def PO2ToSaturation(po2, parameters):
   '''call c++ also convert arrays to the expected format'''
-  return detailedo2current.computeSaturation_(po2, parameters)
-
+  sat = detailedo2current.computeSaturation_(po2, parameters)
+  print('calculated saturation:')
+  print(sat)
+  return sat
 @HandleNdimensions(0, 1)
 def ConcentrationToPO2(conc, hema, parameters):
   return pickDetailedO2Library(parameters).computePO2FromConc_(conc, hema, parameters)
@@ -154,8 +156,8 @@ def readParameters(po2group):
       #p=myutils.hdf_read_dict_hierarchy_attr(po2group.parent.parent['parameters/o2_params'])
   else:
     p = dict()
-    for aKey in po2group['parameters/o2'].attrs.keys():
-      temp = po2group['parameters/o2'].attrs.get(aKey)
+    for aKey in po2group.parent.parent['parameters/o2'].attrs.keys():
+      temp = po2group.parent.parent['parameters/o2'].attrs[aKey]
       if (type(temp) == type(str())):
         p[aKey] = temp
       else:
@@ -202,10 +204,13 @@ def OpenVesselAndTumorGroups(po2group):
       gvessels = po2group.parent['vessels']
       gtumor = None
   else:
-    #fakeTumor
-    vessel_input_file = h5py.File(po2group.attrs['SOURCE_VESSELS_FILE'],'r')
-    gvessels = vessel_input_file[po2group.attrs['SOURCE_VESSELS_PATH']]
-    gtumor = None
+    if 'po2' in po2group.name: #pure o2 sim
+      gvessels = po2group.parent.parent['recomputed_flow/vessels']
+      gtumor = None
+    else: #fakeTumor??
+      vessel_input_file = h5py.File(po2group.attrs['SOURCE_VESSELS_FILE'],'r')
+      gvessels = vessel_input_file[po2group.attrs['SOURCE_VESSELS_PATH']]
+      gtumor = None
 #    refVessels, refTumor = getSourceRefs_(po2group)
 #    if refVessels.fn:
 #      gvessels = h5files.open(refVessels.fn, 'r+', relatedObjectForSearch = po2group)[refVessels.path]
@@ -336,8 +341,8 @@ def doit(fn, pattern, (parameters, parameters_name)):
     parameters['input_group_path'] = group_path
     parameters['output_file_name']='o2_' + fnbase+'_'+parameters_name+'.h5'
     #cachelocation = ('o2_' + fnbase+'_'+parameters_name+'.h5', group_path)
-    ref = computePO2(parameters)
-    print 'computed po2 stored in:', ref
+    computePO2(parameters)
+    print('computed po2 stored in: %s' % parameters['output_file_name'])
     #output_links.append(ref)
   #return output_links
   

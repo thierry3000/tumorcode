@@ -430,13 +430,6 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   vessel_model.Init(vl.get(), this->vessel_model.params, callbacks);
   
   
-  
-  
-
-  
-  double grid_lattice_const = 15;
-  double safety_layer_size = 30;
-  //boost::optional<Int3> grid_lattice_size;
   /* continum lattice stuff
    * set up grid for calculating diffusion equations
    * needed for solving diffusion equations, here Growthfactors
@@ -452,7 +445,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   printf("params.lattice_scale: %f\n" , params.lattice_scale);
 #endif
   
-  SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, field_ld);
+  SetupFieldLattice(vl->Ld().GetWorldBox(), dim, o2_sim.params.grid_lattice_const, o2_sim.params.safety_layer_size, field_ld);
   grid.init(field_ld, dim);
   mtboxes.init(MakeMtBoxGrid(grid.Box(), Int3(8, 8, 8)));
   //mtboxes.init(MakeMtBoxGridLarge(grid.Box(), 128));
@@ -588,7 +581,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       */
       o2_sim.vl = vl;
       //o2_sim.init(bfparams,grid_lattice_const, safety_layer_size, grid_lattice_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
-      o2_sim.init(bfparams,grid_lattice_const, safety_layer_size, lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
+      o2_sim.init(bfparams,lastTumorGroupWrittenByFakeTum, state.previous_po2field,state.previous_po2vessels,state.cell_O2_consumption);
       cout << "\nInit O2 completed" << endl;
       o2_sim.run();
       cout << "\n mts run finished" << endl;
@@ -603,17 +596,24 @@ int FakeTumMTS::FakeTumorSimMTS::run()
       currentTiming.run_o2 = currentTiming.run_o2 + currentTiming.time_diff.count();
 #endif
     }
-
+    else 
+    {
+      state.previous_po2field = boost::none;
+      state.previous_po2vessels = boost::none;
+    }
+    
 #ifdef W_timing
     currentTiming.begin_ann = std::chrono::steady_clock::now();
 #endif
-    /** 
-      * vessel o2 data is feed back to the cell,
-      * ALSO
-      * the milotti vessel structure is initialize with the current configuration 
-      * of the tumorcode vessel list
-      */
-    findNearestVessel(o2_sim.po2vessels);// to have the information for the first output
+    findNearestVessel(state.previous_po2vessels);// to have the information for the first output
+#ifdef W_timing
+    currentTiming.end_ann = std::chrono::steady_clock::now();
+    currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
+    currentTiming.run_ann = currentTiming.run_ann + currentTiming.time_diff.count();
+#endif
+
+
+    
     
     if (time >= next_output_time - params.dt*1.0)
     {
@@ -628,14 +628,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     //lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
     currentTiming.reset();
 
-#ifndef NDEBUG
-    std::cout << " findNearestVessel finished " << std::endl;std::cout.flush();
-#endif
-#ifdef W_timing
-    currentTiming.end_ann = std::chrono::steady_clock::now();
-    currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
-    currentTiming.run_ann = currentTiming.run_ann + currentTiming.time_diff.count();
-#endif
+
     /**
       * milotti vessel structure is initialized with tumorcodes vessels
       */
@@ -686,17 +679,25 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   return 0;
 }
 
-
-
 void FakeTumMTS::FakeTumorSimMTS::doStep(double dt)
 {
+  auto start_here = std::chrono::steady_clock::now();
   cout << format("step %i, t=%f") % num_iteration % time << endl;
   CalcFlow(*vl, bfparams);
   /* do not use adaptation stuff for mts*/
   vessel_model.DoStep(dt, &bfparams);
-  
+  auto end_here = std::chrono::steady_clock::now();
+  std::cout << "timing 1: " << (end_here-start_here).count() << endl;
   /* this calculates the simple diffusion of substances */
-  calcChemFields();
+  
+  if(isFirstIterationInRerun or num_iteration%21 == 0)
+  {
+    isFirstIterationInRerun = false;
+    calcChemFields();
+  }
+  auto end_here_2 = std::chrono::steady_clock::now();
+  std::cout << "timing 2: " << (end_here_2-end_here).count() << endl;
+  
   /* maybe not the best estimate, but first approach */
   tumor_radius = estimateTumorRadiusFromCells();
 }
@@ -810,6 +811,8 @@ void FakeTumMTS::FakeTumorSimMTS::writeVBLDataToHDF(H5::Group &h5_vbl)
   writeDataSetToGroup(h5_vbl, string("cyclinX"), tumorcode_pointer_to_currentCellsSystem->Get_cyclinX());
   writeDataSetToGroup(h5_vbl, string("NpRbk"), tumorcode_pointer_to_currentCellsSystem->Get_NpRbk());
   
+  writeDataSetToGroup(h5_vbl, string("isonAS"),tumorcode_pointer_to_currentCellsSystem->Get_isonAS());
+  writeDataSetToGroup(h5_vbl, string("isonCH"),tumorcode_pointer_to_currentCellsSystem->Get_isonCH());
   //writeDataSetToGroup(h5_vbl, string("DNA_spread"), tumorcode_pointer_to_currentCellsSystem->Get_DNA_spread());
   std::cout << "finished writeVBLDataToHDF" << std::endl;
 }
@@ -1235,6 +1238,25 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   return tumOutName;
 }
 
+//This checks if value is in the range [low, high)
+template <typename T>
+    bool IsInBounds(const T& value, const T& low, const T& high) {
+    return !(value < low) && (value < high);
+}
+
+//This checks if value is in the range [low, high]
+// template <typename T>
+//     bool IsInBounds(const T& value, const T& low, const T& high) {
+//     return !(value < low) && !(high < value);
+// }
+
+
+/** 
+ *          - origin
+ *      VBL  ----> tumorcode
+ *  tumorcode <---- VBL 
+ *              + origin
+ */
 void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
 {
   /** needs to calculate, before output-> any field operation!
@@ -1244,12 +1266,236 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
   //*********** gf ****************
   
   my::log().push("gf:");
+  
+  /** identify boxes containing cells
+   */
+  Float3 origin_of_tum = grid.ld.GetOriginPosition();
+  //cout << "origin_of_tum:\t" << origin_of_tum << endl;
+  
+  const long ncells = tumorcode_pointer_to_currentCellsSystem->Get_ncells();
+
+  float max_cell_distance_to_seeding = 0.0;
+  std::array<float, 3> seeding_pos_in_vbl_coordinates = tumorcode_pointer_to_currentCellsSystem->get_seeding_position();
+  std::array<float, 3> seeding_pos_in_vessel_coordinates= tumorcode_pointer_to_currentCellsSystem->get_seeding_position();
+  for(int i=0;i<3;i++)
+  {
+    seeding_pos_in_vessel_coordinates[i] = seeding_pos_in_vbl_coordinates[i]-origin_of_tum[i];
+#ifndef NDEBUG
+    cout << "seeding_pos_in_vbl_coordinates " << i << ":\t" << seeding_pos_in_vbl_coordinates[i] << endl;
+    cout << "seeding_pos_in_vessel_coordinates " << i << ":\t" << seeding_pos_in_vessel_coordinates[i] << endl;
+#endif
+  }
+  
+  //seeding_pos[0]=seeding_pos[1]=seeding_pos[2] = 0.0;
+#pragma omp parallel for reduction( max: max_cell_distance_to_seeding)
+  for(uint k=0;k<ncells; ++k)
+  {
+    float x = tumorcode_pointer_to_currentCellsSystem->Get_x(k);
+    x= x-seeding_pos_in_vbl_coordinates[0];
+    x=x*x;
+    float y = tumorcode_pointer_to_currentCellsSystem->Get_y(k);
+    y= y-seeding_pos_in_vbl_coordinates[1];
+    y=y*y;
+    float z = tumorcode_pointer_to_currentCellsSystem->Get_z(k);
+    z= z-seeding_pos_in_vbl_coordinates[2];
+    z=z*z;
+    float distance_this_cell = x+y+z;
     
-    
+    if( distance_this_cell > max_cell_distance_to_seeding)
+    {
+      max_cell_distance_to_seeding = distance_this_cell;
+    }
+  }
+  max_cell_distance_to_seeding = std::sqrt(max_cell_distance_to_seeding);
+  //DynArray<DomainDecomposition::ThreadBox> thread_boxes_with_cells;
+  std::vector<DomainDecomposition::ThreadBox> thread_boxes_with_cells;
+  
+#if 0  // this is the maximum norm case!
+  float max_cell_x = tumorcode_pointer_to_currentCellsSystem->Get_max_x()-origin_of_tum[0];
+  float max_cell_y = tumorcode_pointer_to_currentCellsSystem->Get_max_y()-origin_of_tum[1];
+  float max_cell_z = tumorcode_pointer_to_currentCellsSystem->Get_max_z()-origin_of_tum[2];
+  float min_cell_x = tumorcode_pointer_to_currentCellsSystem->Get_min_x()-origin_of_tum[0];
+  float min_cell_y = tumorcode_pointer_to_currentCellsSystem->Get_min_y()-origin_of_tum[1];
+  float min_cell_z = tumorcode_pointer_to_currentCellsSystem->Get_min_z()-origin_of_tum[2];
+  
+#if 0
+  //an example
+  float extention=30.;
+  max_cell_x = extention-origin[0];
+  min_cell_x =  -1.*extention -origin[0];
+  max_cell_y = extention-origin[1];
+  min_cell_y =  -1.*extention-origin[1];
+  max_cell_z = extention-origin[2];
+  min_cell_z =  -1.*extention -origin[2];
+#endif
+  
+#ifndef NDEBUG
+  cout  << "x: [ " << min_cell_x << "," << max_cell_x << " ] \t"
+        << "y: [ " << min_cell_y << "," << max_cell_y << " ] \t"
+        << "z: [ " << min_cell_z << "," << max_cell_z << " ]" << endl;
+#endif
+  
+  //push back is not thread safe!
+  //#pragma omp parallel
+  //{
+    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.boxes)
+    {
+      float multi_box_x_min = bbox[0][0]*grid.ld.Scale();
+      float multi_box_x_max = bbox[1][0]*grid.ld.Scale();
+      float multi_box_y_min = bbox[0][1]*grid.ld.Scale();
+      float multi_box_y_max = bbox[1][1]*grid.ld.Scale();
+      float multi_box_z_min = bbox[0][2]*grid.ld.Scale();
+      float multi_box_z_max = bbox[1][2]*grid.ld.Scale();
+      
+      /** in principal all those cases can overlap in 
+       * each dimension, but this would be a mess 
+       */
+      if
+	(
+	  (
+          IsInBounds(min_cell_x, multi_box_x_min, multi_box_x_max)
+          &&
+          IsInBounds(min_cell_y, multi_box_y_min,multi_box_y_max)
+          &&
+          IsInBounds(min_cell_z,multi_box_z_min,multi_box_z_max)
+	  )
+	or
+	  (
+          IsInBounds(max_cell_x, multi_box_x_min, multi_box_x_max)
+          &&
+          IsInBounds(max_cell_y, multi_box_y_min,multi_box_y_max)
+          &&
+          IsInBounds(max_cell_z,multi_box_z_min,multi_box_z_max)
+	  )
+	or
+	  (
+          IsInBounds(multi_box_x_min,min_cell_x, max_cell_x)
+          &&
+          IsInBounds(multi_box_y_min, min_cell_y, max_cell_y)
+          &&
+          IsInBounds(multi_box_z_min,min_cell_z, max_cell_z)
+	  )
+	or
+	  (
+          IsInBounds(multi_box_x_max,min_cell_x, max_cell_x)
+          &&
+          IsInBounds(multi_box_y_max, min_cell_y, max_cell_y)
+          &&
+          IsInBounds(multi_box_z_max,min_cell_z, max_cell_z)
+	  )
+	)
+        {
+#ifndef NDEBUG
+          cout << "bbox: " << bbox << endl;
+          cout << "bbox[0]: " << bbox[0] << endl;
+          cout << "bbox[1]: " << bbox[1] << endl;
+          cout << "multi_box_x_min" << multi_box_x_min<< endl;
+          cout << "multi_box_x_max" << multi_box_x_max<< endl;
+          cout << "multi_box_y_min" << multi_box_y_min<< endl;
+          cout << "multi_box_y_max" << multi_box_y_max<< endl;
+          cout << "multi_box_z_min" << multi_box_z_min<< endl;
+          cout << "multi_box_z_max" << multi_box_z_max<< endl;
+#endif
+          thread_boxes_with_cells.push_back(bbox);
+        }
+    }
+  //}
+
+  cout << "found:\t " << thread_boxes_with_cells.size() << " boxes." << endl;
+  thread_boxes_with_cells.erase(std::unique( thread_boxes_with_cells.begin(), thread_boxes_with_cells.end() ), thread_boxes_with_cells.end() );
+  cout << "found:\t " << thread_boxes_with_cells.size() << " unique boxes." << endl;
+  for(int i=0;i<thread_boxes_with_cells.size();i++)
+  {
+    cout << "i: " << i << " " << thread_boxes_with_cells[i] << endl;
+  }
+  
+#else // this is the radial case
+  
+    auto bbox = mtboxes.boxes[0];
+    //cout <<"found mtboxes" << mtboxes.boxes.size() << " boxes" << endl;
+    float multi_box_x_length = (bbox[1][0]-bbox[0][0])*grid.ld.Scale();
+    float multi_box_y_length = (bbox[1][1]-bbox[0][1])*grid.ld.Scale();
+    float multi_box_z_length = (bbox[1][2]-bbox[0][2])*grid.ld.Scale();
+    float diagonal_of_multi = multi_box_x_length*multi_box_x_length+multi_box_y_length*multi_box_y_length+multi_box_z_length*multi_box_z_length;
+    diagonal_of_multi = std::sqrt(diagonal_of_multi);
+#ifndef NDEBUG
+    cout << "multi_box_x_length" << multi_box_x_length<< endl;
+    cout << "multi_box_y_length" << multi_box_y_length<< endl;
+    cout << "multi_box_z_length" << multi_box_z_length<< endl;
+    cout << "diagonal_of_multi" << diagonal_of_multi << endl;
+    cout << "max_cell_distance_to_seeding:\t" << max_cell_distance_to_seeding << endl;
+#endif
+
+    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.boxes)
+    {
+      //get center of multibox
+      float multi_box_x_center = (bbox[0][0]*grid.ld.Scale()+0.5*grid.ld.Scale())+origin_of_tum[0];//in vbl coordinates
+      float multi_box_y_center = (bbox[0][1]*grid.ld.Scale()+0.5*grid.ld.Scale())+origin_of_tum[1];//in vbl coordinates
+      float multi_box_z_center = (bbox[0][2]*grid.ld.Scale()+0.5*grid.ld.Scale())+origin_of_tum[2];//in vbl coordinates
+      //get distance from a multibox center to the vbl seeding point
+      float radial_distance_of_multibox_to_seeding_point =
+                    (multi_box_x_center-seeding_pos_in_vbl_coordinates[0])*(multi_box_x_center-seeding_pos_in_vbl_coordinates[0])+
+                    (multi_box_y_center-seeding_pos_in_vbl_coordinates[1])*(multi_box_y_center-seeding_pos_in_vbl_coordinates[1])+
+                    (multi_box_z_center-seeding_pos_in_vbl_coordinates[2])*(multi_box_z_center-seeding_pos_in_vbl_coordinates[2]);
+        
+      radial_distance_of_multibox_to_seeding_point = std::sqrt(radial_distance_of_multibox_to_seeding_point);
+
+#if 0
+      cout << "radial_distance_of_multibox_to_seeding_point: \t" << radial_distance_of_multibox_to_seeding_point << endl;
+      cout << "multi_box_x_center: " << multi_box_x_center<< endl;
+      cout << "multi_box_y_center: " << multi_box_y_center<< endl;
+      cout << "multi_box_z_center: " << multi_box_z_center<< endl;
+#endif
+      //if the discrete box is within the limit of the maximal cell extention, we add the box to the list
+      if ( IsInBounds(radial_distance_of_multibox_to_seeding_point, (float)(max_cell_distance_to_seeding-0.5*diagonal_of_multi) ,(float)(max_cell_distance_to_seeding+0.5*diagonal_of_multi)))
+        {
+          
+#ifndef NDEBUG
+          
+          cout << "bbox: " << bbox << endl;
+          cout << "bbox[0]: " << bbox[0] << endl;
+          cout << "bbox[1]: " << bbox[1] << endl;
+//           cout << "multi_box_x_min" << multi_box_x_min<< endl;
+//           cout << "multi_box_x_max" << multi_box_x_max<< endl;
+//           cout << "multi_box_y_min" << multi_box_y_min<< endl;
+//           cout << "multi_box_y_max" << multi_box_y_max<< endl;
+//           cout << "multi_box_z_min" << multi_box_z_min<< endl;
+//           cout << "multi_box_z_max" << multi_box_z_max<< endl;
+#endif
+
+          thread_boxes_with_cells.push_back(bbox);
+        }
+    }
+  //}
+
+  cout << "found:\t " << thread_boxes_with_cells.size() << " boxes." << endl;
+  thread_boxes_with_cells.erase(std::unique( thread_boxes_with_cells.begin(), thread_boxes_with_cells.end() ), thread_boxes_with_cells.end() );
+  cout << "found:\t " << thread_boxes_with_cells.size() << " unique boxes." << endl;
+  for(int i=0;i<thread_boxes_with_cells.size();i++)
+  {
+    cout << "i: " << i << " " << thread_boxes_with_cells[i] << endl;
+  }
+#endif
+  
+  
+  //from continuum-grid.cpp at 263
+//   typedef boost::iterator_range<DynArray<DomainDecomposition::ThreadBox>::const_iterator> range_type;
+//   boost::array<DynArray<ThreadBox>, 48> by_thread;
+//   const DynArray<ThreadBox> &ar = by_thread[omp_get_thread_num()];
+  //return range_type(ar.begin(), ar.end());
+  
+  /** if   loop over cell 
+   *            loop over boxes
+   * than 
+   * when two cell live in the save box--> multiple thread access the same memory
+   */
+#if 0
   #pragma omp parallel
   {
-    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
+    //BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, mtboxes.getCurrentThreadRange())
+    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, thread_boxes_with_cells)
     {
+      //cout << omp_get_thread_num() << " / " << omp_get_max_threads() << endl;
       for(int i=0; i<tumorcode_pointer_to_currentCellsSystem->Get_ncells();++i)
       {
         Float3 pos(tumorcode_pointer_to_currentCellsSystem->Get_x()[i],tumorcode_pointer_to_currentCellsSystem->Get_y()[i],tumorcode_pointer_to_currentCellsSystem->Get_z()[i]);
@@ -1260,6 +1506,21 @@ void FakeTumMTS::FakeTumorSimMTS::calcChemFields()
       }
     }
   }
+#else 
+  for(int i=0; i<tumorcode_pointer_to_currentCellsSystem->Get_ncells();++i)
+  {
+    //cout << omp_get_thread_num() << " / " << omp_get_max_threads() << endl;
+    BOOST_FOREACH(const DomainDecomposition::ThreadBox &bbox, thread_boxes_with_cells)
+    {
+      Float3 pos(tumorcode_pointer_to_currentCellsSystem->Get_x()[i],tumorcode_pointer_to_currentCellsSystem->Get_y()[i],tumorcode_pointer_to_currentCellsSystem->Get_z()[i]);
+      AddSmoothDelta(cell_GFsrc, bbox, grid.ld, grid.dim, pos, (float)(tumorcode_pointer_to_currentCellsSystem->Get_r()[i]/tumorcode_pointer_to_currentCellsSystem->Get_ncells()));
+      
+      auto this_o2_rate = tumorcode_pointer_to_currentCellsSystem->Get_O2Rate()[i];
+      AddSmoothDelta(cell_O2src, bbox, grid.ld, grid.dim, pos, (float) this_o2_rate );
+    }
+  }
+  
+#endif
   gf_model.update(state.gffield, cell_GFsrc);
   o2_uptake_model.update(state.cell_O2_consumption, cell_O2src);
   
@@ -1279,8 +1540,9 @@ void FakeTumMTS::FakeTumorSimMTS::UpdateVesselVolumeFraction()
   // update only when the vessel system state has changed since last update 
   if (!vessel_volume_fraction.empty() && last_vessels_checksum==state.vessels_checksum)
     return;
-
+#ifndef TOTAL_SILENCE
   cout << "volume fraction and o2 sources update!" << endl;
+#endif
   
   VesselsInBoxes vessboxes;
   SortVesselsIntoMtBoxGrid(grid.ld, *vl, 2, mtboxes, vessboxes);
@@ -1513,7 +1775,7 @@ float to_vbl_o2_units(float pressure_in_mmhg)
   return pressure_in_mmhg * 0.0013157895567935 * k_h;
 }
 
-void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Storage &po2Store)
+void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels)
 {
   /* we will fill the ann structure contnouslsy, so we need that map to restore the 
    * index within the the vessel list
@@ -1655,10 +1917,13 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
       std::array<double,3> bufferToFill;
   #ifndef NDEBUG
       //printf("ecnt: %i, po2Store.size(): %i,  cell_i: %i, ann_to_vl[i]: %i", ecnt, po2Store.size(), i, ann_to_vl[i]);
-      if(ann_to_vl[i]<po2Store.size())
+      if(previous_po2vessels)
       {
-        printf("ann_to_vl[i]: %i, po2Store.size(): %i \n", ann_to_vl[i], po2Store.size());
-        myAssert(ann_to_vl[i]<po2Store.size());
+        if(ann_to_vl[i]<previous_po2vessels->size())
+        {
+          printf("ann_to_vl[i]: %i, po2Store.size(): %i \n", ann_to_vl[i], previous_po2vessels->size());
+          myAssert(ann_to_vl[i]<previous_po2vessels->size());
+        }
       }
   #endif
       const Vessel* v= vl->GetEdge(ann_to_vl[i]);
@@ -1691,9 +1956,9 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
       }
       else
       {
-        float o2_a = to_vbl_o2_units(po2Store[v->Index()][0]);
+        float o2_a = to_vbl_o2_units((*previous_po2vessels)[v->Index()][0]);
         suggestion.SetBloodVesselO2start( o2_a );
-        float o2_b = to_vbl_o2_units(po2Store[v->Index()][1]);
+        float o2_b = to_vbl_o2_units((*previous_po2vessels)[v->Index()][1]);
         suggestion.SetBloodVesselO2end( o2_b );
       }
 
@@ -1715,6 +1980,8 @@ void FakeTumMTS::FakeTumorSimMTS::findNearestVessel( DetailedPO2::VesselPO2Stora
   {
     //tumorcode vessels not used
   }
+#ifndef NDEBUG
   cout << "exit find nearest" << endl;cout.flush();
+#endif
 }
 

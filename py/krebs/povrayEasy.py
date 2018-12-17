@@ -44,6 +44,7 @@ import identifycluster
 if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
   matplotlib.use('agg')
 import matplotlib.pyplot
+import matplotlib.colors
 import mpl_utils
 
 ##############################################################################
@@ -65,11 +66,11 @@ def getPovrayVersion():
   minor = err[len(label) + posOfLabel+2]
   return major, minor
   
-def CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, options):
+def CallPovrayAndOptionallyMakeMPLPlot(epv, cm, label, options):
     if options.noOverlay:
-      epv.render(imagefn)
+      epv.render(options.imageFileName)
     else:
-      RenderImageWithOverlay(epv, imagefn, cm, label, options)
+      RenderImageWithOverlay(epv, cm, label, options)
 
 class Colormap(object):
   def __init__(self, name, limits, colors):
@@ -99,22 +100,23 @@ class Transform(object):
     self.center, self.w = np.asarray(center, dtype=float), w
 
 
-def transform_scalar(trafo, s):
-  return trafo.w * s
+  def transform_scalar(self, s):
+    return self.w * s
 
-def transform_position(trafo, p):
-  return (p - trafo.center) * trafo.w
 
-def transform_ld(trafo, ld):
-  ld = ld.Copy()
-  #arrange bounding box in 3by 2 manner
-  bbox = ld.worldBox.reshape(3,2)
-  #move bbox
-  moved_bbox = bbox[:,0] - trafo.center
-  
-  ld.SetOriginPosition(moved_bbox)
-  ld.Rescale(trafo.w)
-  return ld
+  def transform_position(self, p):
+    return (p - self.center) * self.w
+
+  def transform_ld(self, ld):
+    ld = ld.Copy()
+    #arrange bounding box in 3by 2 manner
+    bbox = ld.worldBox.reshape(3,2)
+    #move bbox
+    moved_bbox = bbox[:,0] - self.center
+    
+    ld.SetOriginPosition(moved_bbox)
+    ld.Rescale(self.w)
+    return ld
 
 def calc_centering_normalization_trafo(bbox_xxyyzz):
     '''
@@ -235,7 +237,7 @@ class EasyPovRayRender(object):
             ).write(self.pvfile)
     #self.pvfile.write("""sky_sphere { pigment {color rgb <1,1,1> } }""")
 
-
+  ''' calls the povray binary in the terminal '''
   def render(self, imgfn):
     # write
     #tf = mkstemp.File(suffix='.pov',prefix='mwpov_main',dir='.',text=True)
@@ -271,7 +273,7 @@ class EasyPovRayRender(object):
     self.clear()
     return imgfn
 
-
+  ''' deletes the temp files'''
   def clear(self):
     for tf in self.tempfiles:
       tf.remove()
@@ -316,6 +318,10 @@ class EasyPovRayRender(object):
     pv.LightSource(*ls_args).write(self.pvfile)
 
   def setBackground(self, color):
+    '''color come with matplotlib text style
+        we have to transform to RGB here
+    '''
+    color = matplotlib.colors.to_rgb(color)
     pv.Background(color=Vec3(color)).write(self.pvfile)
 
   def addPlane(self, pos, normal, color):
@@ -337,16 +343,35 @@ class EasyPovRayRender(object):
       pos = vesselgraph['position']
       rad = vesselgraph.edges['radius']
       #print 'positions = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
-      pos = transform_position(trafo, pos)
-      rad = transform_scalar(trafo, rad)
+      pos = trafo.transform_position(np.asarray(pos))
+      rad = trafo.transform_scalar(rad)
       #print 'positions after trafo = ', np.amin(pos, axis=0), np.amax(pos, axis=0)
       
-      if 'vessel_clip' in options:
-        clip = clipFactory(options.vessel_clip)
+      print("addVesselTree2")
+      if options.clip_box is None and options.clip_ball is None:
+        if options.vessel_clip is not None:
+          print("options.vessel_clip:")
+          print(options.vessel_clip)
+          clip = clipFactory(options.vessel_clip)
+        else:
+          clip = clipFactory(None)
       else:
-        clip = clipFactory(None)
-      #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
-  
+        print("apply vessel_clip")
+        print(options.vessel_clip)
+        clip = clipFactory(options.vessel_clip)
+#        if not options.clip_box is None:
+#          #relativeWorld = [trafo.transform_scalar(x) for x in options.clip_box]
+#          print("relative world")
+#          #print(relativeWorld)
+#          #clip = clipFactory(['clip_box', options.clip_box])
+#          clip = clipFactory(['clip_box', relativeWorld])
+#        if not options.clip_ball is None:
+#      #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
+#          relativeWorld = [trafo.transform_scalar(x) for x in options.clip_ball]
+#          print("bla")
+#          print(options.vessel_clip)
+#          #clip = clipFactory(['clip_box', options.clip_box])
+#          clip = clipFactory(options.vessel_clip)
       edgecolors = vesselgraph.edges['colors']
       nodecolors = vesselgraph.nodes['colors']
   
@@ -396,10 +421,14 @@ class EasyPovRayRender(object):
       #print 'write time: ', time.time(
 
   def addVesselTree(self, edges, pos, rad, style_object, clip_object, clip_style_object):
-    tf = self.makeTmpFile()
+    tempfile = self.makeTmpFile()
+    print(clip_style_object)
+    print(clip_object)
+    if( rad.ndim == 2):
+      rad=rad[:,0]
     krebsutils.export_network_for_povray(
-      edges, pos, rad, style_object, clip_style_object, clip_object, tf.filename)
-    self.pvfile.write("#include \"%s\"" % tf.filename)
+      edges, pos, rad, style_object, clip_style_object, clip_object, tempfile.filename)
+    self.pvfile.write("#include \"%s\"" % tempfile.filename)
 
 
   def declareVolumeData(self, data, worldbox, ld = None):
@@ -449,6 +478,84 @@ class EasyPovRayRender(object):
       pv.String('color_map\n{\n%s\n}' % s)
     ).write(self.pvfile)
 
+  
+                      
+  def addVBLCells(self, trafo, position, radius, colors_in_rgb , options):
+    
+    def addVBLCells_intern(self,position, radius, colors_in_rgb, style_object, clip_object, clip_style_object):
+      tempfile = self.makeTmpFile()
+      position = np.asarray(position, dtype=np.float32)
+      radius = np.asarray(radius, dtype=np.float32)
+      colors_in_rgb = np.asarray(colors_in_rgb, dtype=np.float32)
+      krebsutils.export_VBL_Cells_for_povray(
+      position, radius, colors_in_rgb, style_object, clip_style_object, clip_object, tempfile.filename)
+      self.pvfile.write("#include \"%s\"" % tempfile.filename)
+    print("print")
+    print(options.tumor_clip)
+    print(options.clip_ball)
+    if options.clip_box is not None:
+      if options.tumor_clip is not None:
+        #print(options.tumor_clip)
+        clip = clipFactory(options.tumor_clip)
+        #clip = clipFactory(['pie', np.asarray(options.tumor_clip)])
+        #options.vessel_clip = ('pie', 20*trafo.w)
+        #options.tumor_clip = ('pie', 0)
+      else:
+        clip = clipFactory(None)
+    else:
+      if options.tumor_clip is not None:
+        print('found tumor_clip at')
+        print(options.tumor_clip)
+        clip = clipFactory(options.tumor_clip)
+      else:
+        clip = clipFactory(None)
+        #clip_vessels = [clipFactory(clips) for clips in kwargs.pop('vessel_clip', None)]
+  
+    #edgecolors = vesselgraph.edges['colors']
+    #nodecolors = vesselgraph.nodes['colors']
+    
+    class Styler(object):
+#      @staticmethod
+#      def cell_style(i, a, b):
+#        #c = edgecolors[i]
+#        c = [1,0,0] #red
+#        return "MkStyle(<%0.2f,%0.2f,%0.2f>)" % tuple(c)
+      @staticmethod
+      def cell_style(i):
+        #print(data_color)
+        c = colors_in_rgb[i]
+        #c = [1,0,0] #red
+        return "MkStyleCell(<%0.2f,%0.2f,%0.2f>)" % tuple(c)
+    
+    if 'colored_slice' in options:
+      ClipStyler = Styler
+    else:
+      class ClipStyler(object):
+        styleString = "pigment { color rgb<%0.2f,%0.2f,%0.2f> }" % defaultCrossSectionColor
+#        @staticmethod
+#        def edge_style(i, a, b):
+#          return ClipStyler.styleString
+        @staticmethod
+        def cell_style(i):
+          return ClipStyler.styleString
+  #	  ambient 0.05 * c
+    self.pvfile.write("""
+      #macro MkStyleCell(c)
+      texture {
+  	pigment {
+  	  color rgb c
+  	}
+  	finish {
+  	  specular 0.1
+        ambient 1.
+  	}
+      }
+      #end
+      """)
+    position = trafo.transform_position(position)
+    radius = trafo.transform_scalar(radius)
+    
+    addVBLCells_intern(self,position, radius, colors_in_rgb, Styler, clip, ClipStyler)
 
   def addIsosurface(self, volumedata, level, style_object, clip_object, clip_style_object):
     vb = volumedata.value_bounds
@@ -528,6 +635,12 @@ def ClipKuchen(v0, v1, o):
 def ClipSlice(v0, v1, o0, o1):
   return (krebsutils.ClipShape.slice, v3_(v0), v3_(v1), v3_(o0), v3_(o1))
 
+def ClipBox(center, extents):
+  return (krebsutils.ClipShape.box, v3_(center), v3_(extents))
+
+def ClipBall(center, radius):
+  return (krebsutils.ClipShape.ball, v3_(center), radius)
+
 def ClipNone():
   return (krebsutils.ClipShape.none,)
 
@@ -535,7 +648,7 @@ def clipFactory(args):
   if not args or not args[0]: return ClipNone()
   if 'pie' == args[0]:
     a = args[1]
-    a = np.asarray([a,a,0])
+    #a = np.asarray([a,a,0])
     clip = ClipKuchen((1,0,0),(0,1,0),a)
   elif 'zslice' == args[0]:
     a, b = args[1:]
@@ -551,7 +664,21 @@ def clipFactory(args):
     a, b = args[1:]
     a = np.asarray([a,0,0])
     b = np.asarray([b,0,0])
-    clip = ClipSlice((1,0,0),(-1,0,0),b,a)   
+    clip = ClipSlice((1,0,0),(-1,0,0),b,a)
+  elif 'clip_box' == args[0]:
+    center_and_extent = args[1]
+    center = center_and_extent[0:3]
+    extents = center_and_extent[3:6]
+    print(center)
+    print(extents)
+    clip = ClipBox(center, extents)
+  elif 'clip_ball' == args[0]:
+    print(args)
+    center = args[1]
+    radius = args[2]
+    clip = ClipBall(center, radius)
+  else:
+    print('no fiiting clip found to %s' % args)
   return clip
 
 
@@ -560,7 +687,7 @@ def clipFactory(args):
 ##############################################################################
 ''' if cm=None, we only plot a sizebar'''
 #def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, wbbox, fontcolor = 'black', dpi = 90.):  
-def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename): 
+def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, colormap_cells=None): 
   '''
     overlays a small colorbar and adds a label on top of the image and writes it over the original location
   '''
@@ -573,9 +700,11 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename):
   rc('axes', edgecolor = fontcolor, labelcolor = fontcolor)
   rc('xtick', color = fontcolor)
   rc('ytick', color = fontcolor)
-  rc('axes', facecolor = 'none')
+  rc('axes', facecolor = fontcolor)
+  rc('savefig', facecolor = options.background, edgecolor = 'none')
   #rc('font', size = 10.)
-  rc('savefig', facecolor = 'none', edgecolor = 'none') # no background so transparency is preserved no matter what the config file settings are
+  if options.out_alpha:
+    rc('savefig', facecolor = 'none', edgecolor = 'none') # no background so transparency is preserved no matter what the config file settings are
   img = matplotlib.image.imread(image_fn)
   resy, resx, _ = img.shape
   mytextsize=resx/float(dpi)*4
@@ -608,10 +737,41 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename):
     
     ax2.set(xticks = xticks)
     ax2.set(xticklabels=xticklabels)
-    ax2.tick_params(labelsize=mytextsize/4, colors='black')
+    ax2.tick_params(labelsize=mytextsize/4, colors=fontcolor)
     #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
+    if not options.noLabel:
+      ax2.text(0.4,-0.09,label,
+             horizontalalignment='left',
+             verticalalignment='bottom',
+             transform=ax.transAxes,
+             size=mytextsize*0.7,
+             fontweight='bold')
+  if not colormap_cells==None:
+    if options.cellsColorLimits is not None:
+      print('setting colors limits')
+      print(options.cellsColorLimits[0])
+      print(options.cellsColorLimits[1])
+      colormap_cells.set_clim(vmin=options.cellsColorLimits[0], vmax=options.cellsColorLimits[1])
+    ax3 = fig.add_axes([0.65, 0.05, 0.26, 0.018]) # left bottom width height
+    c2 = np.linspace(0, 1, 256).reshape(1,-1)
+    c2 = np.vstack((c2,c2))
+    ax3.imshow(c2, aspect='auto', cmap = colormap_cells.get_cmap(), vmin = 0, vmax = 1)
+    ax3.yaxis.set_visible(False)
+    xticks = np.linspace(0., 256., 5)
     
-    ax2.text(0.4,-0.09,label,
+    #xticklabels = [ myutils.f2s(v,prec=1) for v in np.linspace(*cm.get_clim(), num = 5) ]
+    ''' TODO:
+        border of colorbar 
+        still not resolution independent
+    '''
+    xticklabels = [ '%0.1f'%v for v in np.linspace(*colormap_cells.get_clim(), num = 5) ] 
+    
+    ax3.set(xticks = xticks)
+    ax3.set(xticklabels=xticklabels)
+    ax3.tick_params(labelsize=mytextsize/4, colors=fontcolor)
+    #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
+    if not options.noLabel:
+      ax3.text(0.4,-0.09,label,
              horizontalalignment='left',
              verticalalignment='bottom',
              transform=ax.transAxes,
@@ -625,8 +785,8 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename):
     #haven't thought about adjustion the sizebar for rotated systems
     '''resx units = x_length_in_mum
     '''
-    x_length_in_mum = abs(wbbox[1]-wbbox[0])
-    y_length_in_mum = abs(wbbox[3]-wbbox[2])
+    x_length_in_mum = options.cam_distance_multiplier*abs(wbbox[1]-wbbox[0])
+    y_length_in_mum = options.cam_distance_multiplier*abs(wbbox[3]-wbbox[2])
     length_of_size_bar_in_mum = 250;
     length_in_data_space = float(resx)*length_of_size_bar_in_mum/x_length_in_mum
     length_in_data_spaceY = float(resy)*length_of_size_bar_in_mum/y_length_in_mum    
@@ -654,44 +814,115 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename):
              transform=ax.transAxes,
              size=mytextsize*0.4,
              fontweight='bold')
-  fig.savefig(output_filename, dpi=dpi, bbox_inches=None ) # overwrite the original
+  fig.savefig(output_filename, dpi=dpi, bbox_inches=None) # overwrite the original
 
 
-def RenderImageWithOverlay(epv, imagefn, colormap, label, options):
+def RenderImageWithOverlay(epv, colormap, label, options, colormap_cells=None):
   tf = mkstemp.File(suffix='.png', prefix='mwpov_', text=False, keep=True) 
   epv.render(tf.filename)
   #plotsettings = dict(myutils.iterate_items(kwargs, ['dpi','fontcolor','wbbox'], skip=True))    
-  OverwriteImageWithColorbar(options,tf.filename, colormap, label, output_filename = imagefn)
+  OverwriteImageWithColorbar(options,tf.filename, colormap, label, output_filename = options.imageFileName, colormap_cells=colormap_cells)
 
 ''' try an common interface for data plotting '''
-def CreateScene2(vesselgroup, epv, graph, imagefn, options):
+def CreateScene2(vesselgroup, epv, graph, options):
   #wbbox = ComputeBoundingBox(vesselgroup, graph)
   wbbox = options.wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
   zsize = (wbbox[5]-wbbox[4])
   epv.setBackground(options.background)
   cam = options.cam
-  if cam in ('topdown', 'topdown_slice'):
-    cam_fov = 60.
-    cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
-    #epv.addLight(10*Vec3(1.7,1.2,2), 1., area=(4, 4, 3, 3), jitter=True)
-    epv.addLight(10.*Vec3(1,0.5,2), 1.2)
-    if cam == 'topdown_slice':
-      options.vessel_clip=('zslice', -301*trafo.w, 301*trafo.w)
-      options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
-      epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
-    else:
-      epv.setCamera((0,0,cam_distance_factor*0.5*(zsize*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
+  cam_distance_factor = options.cam_distance_multiplier
+  
+  
+  if options.clip_box is None and options.clip_ball is None:
+    if cam in ('topdown', 'topdown_slice'):
+      cam_fov = 60.
+      if not options.cam_distance_multiplier == 1.0:
+        cam_distance_factor = options.cam_distance_multiplier
+      else:
+        cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
+      #epv.addLight(10*Vec3(1.7,1.2,2), 1., area=(4, 4, 3, 3), jitter=True)
+      epv.addLight(10.*Vec3(1,0.5,2), 1.2)
+      if cam == 'topdown_slice':
+        options.imageFileName = 'topdown_slice_' +options.imageFileName
+        epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
+        if options.vessel_clip is not None:
+          if options.slice_pos is not None:
+          #print(trafo.w)
+            options.vessel_clip=(options.vessel_clip[0], (options.slice_pos+options.vessel_clip[1])*trafo.w, (options.slice_pos+options.vessel_clip[2])*trafo.w)
+            #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+            
+        if options.vessel_clip is not None:
+          if options.slice_pos is None:
+            print(trafo.w)
+            options.vessel_clip=(options.vessel_clip[0], (0+options.vessel_clip[1])*trafo.w, (0+options.vessel_clip[2])*trafo.w)
+            #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+        if options.vessel_clip is None:
+          if options.slice_pos is not None:
+            print(trafo.w)
+            options.vessel_clip=('zslice', (options.slice_pos-100)*trafo.w, (options.slice_pos+100)*trafo.w)
+            #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+        if options.vessel_clip is None:
+          if options.slice_pos is None:
+            print(trafo.w)
+            options.vessel_clip=('zslice', (0-100)*trafo.w, (0+100)*trafo.w)
+            #options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+            
+          
+#          else:
+#            
+#          options.vessel_clip=('zslice', -301*trafo.w, 301*trafo.w)
+#          options.tumor_clip=('zslice', -100*trafo.w, 100*trafo.w)
+#          epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
+      else:
+        options.imageFileName += '_topdown_'
+        epv.setCamera((0,0,cam_distance_factor*0.5*(zsize*trafo.w+2.)), (0,0,0), cam_fov, up = 'y')
+    elif cam in ('pie_only_cells', 'pie_only_vessels'):
+      options.imageFileName += '_pie_vbl_'
+      basepos = np.asarray((0.6,0.7,0.7))*(1./1.4)
+      epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
+      num_samples_large_light = 10
+      num_samples_small_light = 3
+      epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
+      epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
+      options.vessel_clip = ('pie', 100*trafo.w)
+      options.tumor_clip = ('pie', 0)
+    else: #this is the pie case!!!
+      options.imageFileName += '_pie_'
+      basepos = cam_distance_factor * np.asarray((0.6,0.7,0.7))*(1./1.4)
+      epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
+      num_samples_large_light = 10
+      num_samples_small_light = 3
+      epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
+      epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
+      #options.vessel_clip = ('pie', 200*trafo.w)
+      options.vessel_clip = ('pie', np.zeros(3))
+      options.tumor_clip = ('pie', 0)
   else:
-    basepos = np.asarray((0.6,0.7,0.7))*(1./1.4)
-    epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
-    num_samples_large_light = 10
-    num_samples_small_light = 3
-    epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
-    epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
-    kwargs.update(vessel_clip = ('pie', 0.),
-                  tumor_clip = ('pie', -20*trafo.w))
-  #epv.addVesselTree2(epv, graph, trafo = trafo, options=options )
+    if options.clip_box is not None:
+      options.imageFileName += '_box_at_%i_%i_%i' % ( options.clip_box[0],options.clip_box[1],options.clip_box[2]  )
+      center_of_box = trafo.transform_position(np.asarray(options.clip_box[0:3]))
+      extent = trafo.transform_position(np.asarray(options.clip_box[3:6]))
+      basepos = cam_distance_factor * ( center_of_box + extent)
+      epv.setCamera(basepos, center_of_box, 90, up = (0,0,1))
+      num_samples_large_light = 10
+      num_samples_small_light = 3
+      epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
+      epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
+      options.vessel_clip = ('pie', 20*trafo.w)
+      options.tumor_clip = ('pie', center_of_box)
+    if options.clip_ball is not None:
+      options.imageFileName += '_ball_at_%i_%i_%i' % ( options.clip_ball[0],options.clip_ball[1],options.clip_ball[2]  )
+      center_of_ball = trafo.transform_position(np.asarray(options.clip_ball[0:3]))
+      radius = trafo.transform_scalar(options.clip_ball[3])
+      basepos = cam_distance_factor * ( center_of_ball + radius)
+      epv.setCamera(basepos, center_of_ball, 90, up = (0,0,1))
+      num_samples_large_light = 10
+      num_samples_small_light = 3
+      epv.addLight(10*Vec3(0.7,1.,0.9), 0.8, area=(1., 1., num_samples_small_light, num_samples_small_light), jitter=True)
+      epv.addLight(10*Vec3(0.5,0.5,0.5), 0.6, area=(5., 5., num_samples_large_light, num_samples_large_light), jitter=True)
+      options.vessel_clip = ('clip_ball', center_of_ball, radius)
+      options.tumor_clip = ('pie', center_of_ball)
   epv.addVesselTree2(epv, graph, trafo = trafo, options=options )
 
 

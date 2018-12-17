@@ -87,6 +87,14 @@ void Parameters::assign(const ptree &pt)
   DOPT(tumor_file_name);
   DOPT(tumor_group_path);
   DOPT(vessel_group_path);
+  DOPT(debug_fn);
+  DOPT(transvascular_ring_size);
+  DOPT(haemoglobin_binding_capacity);
+  DOPT(tissue_boundary_value);
+  DOPT(approximateInsignificantTransvascularFlux);
+  
+  DOPT(grid_lattice_const);
+  DOPT(safety_layer_size);
   #undef DOPT
 }
 ptree Parameters::as_ptree() const
@@ -148,6 +156,15 @@ ptree Parameters::as_ptree() const
   DOPT(tumor_file_name);
   DOPT(tumor_group_path);
   DOPT(vessel_group_path);
+  
+  DOPT(debug_fn);
+  DOPT(transvascular_ring_size);
+  DOPT(haemoglobin_binding_capacity);
+  DOPT(tissue_boundary_value);
+  DOPT(approximateInsignificantTransvascularFlux);
+  
+  DOPT(grid_lattice_const);
+  DOPT(safety_layer_size);
   #undef DOPT
   return pt;
 }
@@ -304,11 +321,15 @@ Parameters::Parameters()
   tumor_group_path= "none";
   vessel_group_path= "none";
   
+  grid_lattice_const = 100.;
+  safety_layer_size = 20.;
+  
   UpdateInternalValues();
 }
 
 void Parameters::UpdateInternalValues()
 {
+  cout << "Updating internals!" << endl;
   const double n = sat_curve_exponent;
   double t1 = 2.*n*n-2.;
   double t2 = std::sqrt(3.*n*n*n*n-3.*n*n);
@@ -332,6 +353,21 @@ void Parameters::UpdateInternalValues()
   }
   conc_neglect_s  = BloodPO2ToConc(p, 1.);
   //SetTissueParamsByDiffusionRadius(D_plasma, solubility_tissue, rd_norm, rd_tum, rd_necro);
+  
+  // required parameters for transvascular transport
+  if (tissue_po2_boundary_condition == "dirichlet_x") 
+    tissue_boundary_condition_flags = 1; //FiniteVolumeMatrixBuilder;
+  else if (tissue_po2_boundary_condition == "dirichlet_yz") 
+    tissue_boundary_condition_flags = 2;
+  else if (tissue_po2_boundary_condition == "dirichlet") 
+    tissue_boundary_condition_flags = 3;
+  else if (tissue_po2_boundary_condition == "neumann") 
+    tissue_boundary_condition_flags = 0;
+  else
+  {
+    std::cout << "bc_type: " << tissue_po2_boundary_condition << std::endl;
+    throw std::invalid_argument("tissue_po2_boundary_condition must be 'dirichlet','dirichlet_x', 'dirichlet_yz' or 'neumann'");
+  }
 }
 
 // void Parameters::writeParametersToHDF(H5::Group& parameter_out_group)
@@ -1523,8 +1559,8 @@ void DetailedPO2Sim::ComputePo2Field(
 void DetailedPO2Sim::init( 
                           BloodFlowParameters &bfparams_,
                           //VesselList3d &vl, 
-                          double grid_lattice_const, 
-                          double safety_layer_size, 
+                          //double grid_lattice_const, 
+                          //double safety_layer_size, 
                           //boost::optional<Int3> grid_lattice_size,
                           boost::optional<H5::Group> tumorgroup,
                           boost::optional<Array3df> previous_po2field,
@@ -1553,6 +1589,7 @@ void DetailedPO2Sim::init(
   else
   {
     dim = (::Size(vl->Ld().Box())[2]<=1) ? 2 : 3;
+    cout << "dimension of o2 grid is: " << dim << endl;
   }
     
 //   if (grid_lattice_size)
@@ -1569,11 +1606,11 @@ void DetailedPO2Sim::init(
   //added safety space to reduce boundary errors
   if (world)
   {
-    SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, grid_lattice_const, safety_layer_size, ld);
+    SetupFieldLattice(vl->GetWorldBoxFromVesselsOnly(), dim, params.grid_lattice_const, params.safety_layer_size, ld);
   }
   else
   {
-    SetupFieldLattice(vl->Ld().GetWorldBox(), dim, grid_lattice_const, safety_layer_size, ld);
+    SetupFieldLattice(vl->Ld().GetWorldBox(), dim, params.grid_lattice_const, params.safety_layer_size, ld);
   }
   //}
   //grid.init(ld, dim);
@@ -1729,8 +1766,11 @@ int DetailedPO2Sim::run()
    * ****** MAIN LOOP **********
    */
   bool keep_preconditioner = true;
-  for (int iteration_num = 0;; ++iteration_num)
+  int iteration_num = -1;
+  while ( not PyCheckAbort())
+  //for (int iteration_num = 0;; ++iteration_num)
   {
+    iteration_num++;
 //     if (!params.debug_fn.empty() && ((iteration_num % 1) == 0) && iteration_num>0)
 //     {
 //       //h5cpp::File f(params.debug_fn, iteration_num==0 ? "w" : "a");
@@ -1784,51 +1824,51 @@ int DetailedPO2Sim::run()
     /*
      * From here on the results are handled
      */
-    {//interupt
-      // dampening: new values are a linear combination of previous and currently computed values. 
-      // f is the fractional share of the previous value.
-      const double f = 0.3; 
-      delta_fieldM = delta_vessM = ConvergenceCriteriumAccumulatorMaxNorm<double>();
-      delta_field2 = delta_vess2 = ConvergenceCriteriumAccumulator2Norm<double>();
-      //save the changes to prior run
-      for (int i=0; i<po2vessels.size(); ++i)
-      {
-        delta_vessM.Add(po2vessels[i][0]-last_vessel_po2[i][0]);
-        delta_vessM.Add(po2vessels[i][1]-last_vessel_po2[i][1]);
-        delta_vess2.Add(po2vessels[i][0]-last_vessel_po2[i][0]);
-        delta_vess2.Add(po2vessels[i][1]-last_vessel_po2[i][1]);
-        po2vessels[i] = po2vessels[i]*(1.-f)+f*last_vessel_po2[i];
-        last_vessel_po2[i] = po2vessels[i];
-      }
-      //loop over all points in the ContinuumGrid
-      FOR_BBOX3(p, grid.Box())
-      {
-        float &current = po2field(p);
-        float &last    = last_po2field(p);
-        // michaelis menten solution with large zero-order term can undershoot the po2 field in negative values
-        // which the vessel po2 inegration routine cannot stand. Therefor the po2 field is limited here from below.
-        // Realistic solutions should have positive values without cutoff ofc.
-        current = std::max(0.f, current);
-        delta_fieldM.Add(last-current);
-        delta_field2.Add(last-current);
-        current = current*(1.-f) + last*f;
-        last = current;
-      }
-      if (params.loglevel > 0)
-        cout << format("iteration %i: dvM=%f, dfM=%f, dv2=%f, df2=%f") %  iteration_num % delta_vessM() % delta_fieldM() % delta_vess2() % delta_field2() << endl;
-      else
-        cout << ".";
-      {
-        ptree node;
-        node.put("iteration", iteration_num);
-        node.put("delta_vessM", delta_vessM());
-        node.put("delta_fieldM", delta_fieldM());
-        node.put("delta_vess2", delta_vess2());
-        node.put("delta_field2", delta_field2());
-        node.put("dampening", f);
-        metadata.get_child("iterations").add_child(str(format("iteration%04i") % iteration_num), node);
-      }
-    }//end interupt
+    
+    // dampening: new values are a linear combination of previous and currently computed values. 
+    // f is the fractional share of the previous value.
+    const double f = 0.3; 
+    delta_fieldM = delta_vessM = ConvergenceCriteriumAccumulatorMaxNorm<double>();
+    delta_field2 = delta_vess2 = ConvergenceCriteriumAccumulator2Norm<double>();
+    //save the changes to prior run
+    for (int i=0; i<po2vessels.size(); ++i)
+    {
+      delta_vessM.Add(po2vessels[i][0]-last_vessel_po2[i][0]);
+      delta_vessM.Add(po2vessels[i][1]-last_vessel_po2[i][1]);
+      delta_vess2.Add(po2vessels[i][0]-last_vessel_po2[i][0]);
+      delta_vess2.Add(po2vessels[i][1]-last_vessel_po2[i][1]);
+      po2vessels[i] = po2vessels[i]*(1.-f)+f*last_vessel_po2[i];
+      last_vessel_po2[i] = po2vessels[i];
+    }
+    //loop over all points in the ContinuumGrid
+    FOR_BBOX3(p, grid.Box())
+    {
+      float &current = po2field(p);
+      float &last    = last_po2field(p);
+      // michaelis menten solution with large zero-order term can undershoot the po2 field in negative values
+      // which the vessel po2 inegration routine cannot stand. Therefor the po2 field is limited here from below.
+      // Realistic solutions should have positive values without cutoff ofc.
+      current = std::max(0.f, current);
+      delta_fieldM.Add(last-current);
+      delta_field2.Add(last-current);
+      current = current*(1.-f) + last*f;
+      last = current;
+    }
+    if (params.loglevel > 0)
+      cout << format("iteration %i: dvM=%f, dfM=%f, dv2=%f, df2=%f") %  iteration_num % delta_vessM() % delta_fieldM() % delta_vess2() % delta_field2() << endl;
+    else
+      cout << ".";
+    
+    ptree node;
+    node.put("iteration", iteration_num);
+    node.put("delta_vessM", delta_vessM());
+    node.put("delta_fieldM", delta_fieldM());
+    node.put("delta_vess2", delta_vess2());
+    node.put("delta_field2", delta_field2());
+    node.put("dampening", f);
+    metadata.get_child("iterations").add_child(str(format("iteration%04i") % iteration_num), node);
+    
+    
     last_po2field.initCopy(po2field);
     //last_vessel_po2 = vesselpo2;
     last_vessel_po2 = po2vessels;
@@ -2079,12 +2119,11 @@ void DetailedPO2Sim::WriteParametersToHDF(H5::Group &out_params)
     e.printErrorStack();
   }
   
-  //grid.ld.WriteHdfLd(h5_o2_lattice);
+  
   
   WriteHdfPtree(h5_meta_data, metadata, HDF_WRITE_PTREE_AS_ATTRIBUTE);
-  WriteHdfPtree(h5_o2_params, params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
-  //params.writeParametersToHDF(h5_o2_params);
-  //WriteHdfPtree(h5_o2_params, s.params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  //WriteHdfPtree(h5_o2_params, params.as_ptree(), HDF_WRITE_PTREE_AS_ATTRIBUTE);
+  params.WriteToHDF5(h5_o2_params);
   WriteHdfPtree(h5_bf_params, bfparams.as_ptree());
     
   //po2_out_group.close();
@@ -2318,6 +2357,64 @@ Array3df DetailedPO2Sim::getPo2field()
 DetailedPO2::VesselPO2Storage DetailedPO2Sim::getVesselPO2Storrage()
 {
   return po2vessels;
+}
+void Parameters::WriteToHDF5(H5::Group &paramOutGroup)
+{
+  #define DOPT(name) writeAttrToH5(paramOutGroup, #name, name)
+  DOPT(po2init_r0);
+  DOPT(po2init_dr);
+  DOPT(po2init_cutoff);
+  DOPT(solubility_plasma); 
+  DOPT(sat_curve_exponent);
+  DOPT(sat_curve_p50);
+  DOPT(po2_mmcons_k_norm);
+  DOPT(po2_mmcons_k_tum);
+  DOPT(po2_mmcons_k_necro);
+  DOPT(po2_mmcons_m0_norm);
+  DOPT(po2_mmcons_m0_tum);
+  DOPT(po2_mmcons_m0_necro);
+  
+  DOPT(D_plasma);
+  DOPT(solubility_tissue);
+  DOPT(rd_norm);
+  DOPT(rd_tum);
+  DOPT(rd_necro);
+  DOPT(max_iter);
+  DOPT(num_threads);
+  DOPT(convergence_tolerance);
+  DOPT(axial_integration_step_factor);
+  DOPT(debug_zero_o2field);
+  
+  DOPT(michaelis_menten_uptake);
+  DOPT(useCellBasedUptake);
+  DOPT(massTransferCoefficientModelNumber);
+  DOPT(conductivity_coeff1);
+  DOPT(conductivity_coeff2);
+  DOPT(conductivity_coeff3);
+  DOPT(detailedO2name);
+  DOPT(loglevel);
+  DOPT(tissue_po2_boundary_condition);
+  DOPT(extra_tissue_source_const);
+  DOPT(extra_tissue_source_linear);
+  
+  DOPT(input_file_name);
+  DOPT(input_group_path);
+  DOPT(output_file_name);
+  DOPT(output_group_path);
+  DOPT(tumor_file_name);
+  DOPT(tumor_group_path);
+  DOPT(vessel_group_path);
+  
+  DOPT(debug_fn);
+  DOPT(transvascular_ring_size);
+  DOPT(haemoglobin_binding_capacity);
+  DOPT(tissue_boundary_value);
+  DOPT(approximateInsignificantTransvascularFlux);
+  
+  DOPT(grid_lattice_const);
+  DOPT(safety_layer_size);
+  
+  #undef DOPT
 }
 
 }//namespace DetailedPO2

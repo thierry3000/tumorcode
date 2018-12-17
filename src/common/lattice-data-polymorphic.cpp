@@ -61,7 +61,7 @@ std::unique_ptr<LatticeData> ReadHdfLdGeneric(H5::Group &g)
   LD ld;
   ReadHdfLd(g, ld);
   //auto returner = std::unique_ptr<Derived<LD>>(new Derived<LD>(ld));// works on g++ > 5
-  auto returner = std::unique_ptr<LatticeData>(new Derived<LD>(ld));
+  std::unique_ptr<LatticeData> returner = std::unique_ptr<LatticeData>(new Derived<LD>(ld));
   returner->print(std::cout);
   return returner;
 }

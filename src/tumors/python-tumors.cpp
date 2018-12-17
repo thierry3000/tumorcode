@@ -53,15 +53,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <unistd.h>
 //#ifdef MILOTTI_MTS
-H5::H5File file;
+//H5::H5File file;
 //#endif
 //https://stackoverflow.com/questions/77005/how-to-automatically-generate-a-stacktrace-when-my-gcc-c-program-crashes
 void handler(int sig) 
 {
   //printf("%s", file.getFileName());
-  std::cout << "handler close of file: " << std::endl;
-  file.flush(H5F_SCOPE_GLOBAL);
-  file.close();
+  //std::cout << "handler close of file: " << std::endl;
+  //file.flush(H5F_SCOPE_GLOBAL);
+  //file.close();
   void *array[42];
   size_t size;
 
@@ -90,7 +90,7 @@ namespace Tumors{
  * here a growing sphere of tumor cells is assumed, no tumor model is used for
  * that. One needs a growing speed
  */
-H5::H5File file;
+//H5::H5File file;
 void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isRerun)
 {
   //******GLOBALS
@@ -185,9 +185,10 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     {
       //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
       //storing current system information needs write permissions
-      file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR);
-      last_state = file.openGroup("/last_state");
-      h5_params_of_previous_run = file.openGroup("/parameters");
+      std::unique_ptr<H5::H5File> file = std::unique_ptr<H5::H5File>(new H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR));
+      //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR);
+      last_state = file->openGroup("/last_state");
+      h5_params_of_previous_run = file->openGroup("/parameters");
       h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
       h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
       h5_system_of_first_run = h5_params_of_previous_run.openGroup("system");
@@ -202,13 +203,11 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     {
       cout << "Error opening the parameters" << endl;
       e.printErrorStack();
-      cout << "emergency close called 1" << endl;
-      file.close();
+      cout << "emergency close called I hope unique_ptr close the file handler" << endl;
     }
     catch(std::exception &ex)
     {
       cout << "emergency close called 2" << endl;
-      file.close();
     }
     ReadHdfPtree(vesselSettings, h5_vessel_params_of_previous_run);
     ReadHdfPtree(bfSettings, h5_calcflow_of_previous_run);
@@ -261,21 +260,13 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
       cout << "error assigning vblSettings" << endl;
       cout << e.what() << endl;
       cout << "emergency close called 3" << endl;
-      file.close();
     }
     //s.tumorcode_pointer_to_currentCellsSystem->assign(vblSettings);
     //s.set_CellTypeFromIndexVector();
     //s.get_CellTypeIndexVector();
     
-    try 
-    {
-      s.readVBLDataFromHDF(h5_vbl_param);
-    }
-    catch(std::runtime_error &e)
-    {
-      cout << "emergency close called 4" << endl;
-      file.close();
-    }
+    s.readVBLDataFromHDF(h5_vbl_param);
+    
 #ifndef NDEBUG
       std::cout << "found vbl Settings: " << std::endl;
       printPtree(vblSettings);
@@ -285,19 +276,20 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     fakeTumMTSSettings.put("vessel_path", "last_state/vessels");
     fakeTumMTSSettings.put("fn_vessel", fn_of_previous_sim_c_str);
     systemSettings.put("isRerun", true);
+    
+    readAttrFromH5(last_state, "CURRENT_RERUN_NUMBER", reRunNumber);
+    reRunNumber++;
+    systemSettings.put("reRunNumber", reRunNumber);
     try
     {
-      readAttrFromH5(last_state, "CURRENT_RERUN_NUMBER", reRunNumber);
-      reRunNumber++;
-      systemSettings.put("reRunNumber", reRunNumber);
       h5_system_of_current_run = h5_params_of_previous_run.createGroup(str(format("system_rerun_%02i") % reRunNumber));
-      WriteHdfPtree(h5_system_of_current_run, systemSettings);
     }
     catch(H5::Exception &e)
     {
       cout << "error: creating system_rerun parameters group" << endl;
       e.printErrorStack();
     }
+    WriteHdfPtree(h5_system_of_current_run, systemSettings);
     //run time variables NO parameters
     readAttrFromH5(last_state, string("OUTPUT_NUM"), s.output_num);
     readAttrFromH5(last_state, string("NUM_ITERATION"), s.num_iteration);
@@ -305,7 +297,6 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     readAttrFromH5(last_state, string("NEXT_OUTPUT_TIME"), s.next_output_time);
     readAttrFromH5(last_state, string("NEXT_ADAPTION_TIME"), s.next_adaption_time);
     
-    file.close();
     h5_params_of_previous_run.close();
     h5_vessel_params_of_previous_run.close();
     h5_calcflow_of_previous_run.close();
@@ -388,7 +379,6 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     std::cout << "either SIGFPE or SIGFPE occured" << std::endl;
     std::cout << ex.what();
     std::cout << "emergency close of hdf5 file!!!!" << std::endl;
-    file.close();
   }
 
   if (PyErr_Occurred() != NULL) return; // don't save stuff
@@ -470,6 +460,7 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
   {
     //update with params of previous run
     //H5::H5File file;
+    std::unique_ptr<H5::H5File> file;
     H5::Group h5_params_of_previous_run;
     H5::Group h5_vessel_params_of_previous_run;
     H5::Group h5_calcflow_of_previous_run;
@@ -480,8 +471,9 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
     try{
       //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
       //storing current system information needs write permissions
-      file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR);
-      h5_params_of_previous_run = file.openGroup("/parameters");
+      file = std::unique_ptr<H5::H5File>(new H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR));
+      //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR);
+      h5_params_of_previous_run = file->openGroup("/parameters");
       h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
       h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
       h5_system_of_first_run = h5_params_of_previous_run.openGroup("system");
@@ -501,7 +493,7 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
     systemSettings.put("isRerun", true);
     try
     {
-      last_state = file.openGroup("/last_state");
+      last_state = file->openGroup("/last_state");
       readAttrFromH5(last_state, "CURRENT_RERUN_NUMBER", reRunNumber);
       reRunNumber++;
       systemSettings.put("reRunNumber", reRunNumber);
@@ -519,7 +511,6 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
     readAttrFromH5(last_state, string("NEXT_OUTPUT_TIME"), s.next_output_time);
     readAttrFromH5(last_state, string("NEXT_ADAPTION_TIME"), s.next_adaption_time);
     
-    file.close();
     h5_params_of_previous_run.close();
     h5_vessel_params_of_previous_run.close();
     h5_calcflow_of_previous_run.close();

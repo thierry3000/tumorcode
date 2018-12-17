@@ -42,7 +42,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace DetailedPO2
 {
-  
+enum BoundaryConditionsIDs
+{
+  neumann = 0,
+  dirichlet_x  = 1,
+  dirichlet_yz  = 2,
+  dirichlet = 3
+};
 // enum TissueIDs
 // {
 //   NORMAL = 0,
@@ -79,6 +85,7 @@ public:
   ptree as_ptree() const;
   
   void UpdateInternalValues();
+  void WriteToHDF5(H5::Group &paramOutGroup);
 
   // Note: mlO2/ml = mlO2/cm^3 = um^3 O2 / um^3!
 
@@ -148,6 +155,8 @@ public:
   int num_threads;
   string detailedO2name;
   double convergence_tolerance; // field and vessel po2 differences from iteration to iteration must both be lower than this for the iteration to stop
+  double grid_lattice_const;
+  double safety_layer_size;
   string tissue_po2_boundary_condition;
   string input_file_name;
   string input_group_path;
@@ -234,8 +243,8 @@ struct DetailedPO2Sim : public boost::noncopyable
   void init(
             BloodFlowParameters &bfparams, 
             //VesselList3d &vl, 
-            double grid_lattice_const, 
-            double safety_layer_size, 
+            //double grid_lattice_const, 
+            //double safety_layer_size, 
             //boost::optional<Int3> grid_lattice_size, 
             boost::optional<H5::Group> tumorgroup,
             boost::optional<Array3df> previous_po2field,

@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.3)
-project(tumorcode C CXX)
+project(tumorcode CXX)
+
+# I try to follow the tutorial at:
+# https://cmake.org/cmake-tutorial/
+set(TUMORCODE_VERSION_MAJOR 2)
+set(TUMORCODE_VERSION_MINOR 1)
 
 # I try to follow the tutorial at:
 # https://cmake.org/cmake-tutorial/
@@ -112,8 +117,10 @@ message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/;")
 message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 message("CMAKE_EXE_LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
-message("TrilinosDIR: ${TrilinosDIR}")
 
+set (HDF5_DIR CACHE PATH "Provided module path for HDF5" )
+set (Trilinos_DIR CACHE PATH "Provided module path for Trilinos" )
+set (CGAL_DIR CACHE PATH "Provided module path for CGAL" )
 
 include(${CMAKE_ROOT}/Modules/CMakeDependentOption.cmake)
 option(BUILD_TESTS "build test directory" ON)
@@ -188,45 +195,65 @@ find_package(Eigen3 3.2 QUIET)
 #find_package(HDF5 1.8.10 REQUIRED)
 find_package(HDF5 REQUIRED COMPONENTS CXX)
 if(HDF5_IS_PARALLEL)
-  message(WARNING "your hdf5 is parallel, you probably need mpi")
+  message(WARNING "your hdf5 is parallel, you probably need to compile with mpic++")
 endif()
 find_package(LAPACK REQUIRED)
 find_package(BLAS REQUIRED)
 
 find_package(PNG REQUIRED)
 find_package(TBB REQUIRED)
-find_package(Trilinos REQUIRED)
-message(STATUS "Your Trilions depends on: ${Trilinos_TPL_LIST}")
-if (";${Trilinos_TPL_LIST};" MATCHES ";MPI;")
-  message(STATUS "MPI is NEEDED")
-  set(MPI_NEEDED TRUE)
+find_package(Trilinos REQUIRED COMPONENTS Belos)
+find_package(Trilinos REQUIRED COMPONENTS Epetra)
+
+#the find_package load some defaults, but they are too much
+#set(Trilinos_LIBRARIES "${Trilinos_LIBRARIES};belosepetra;ml")
+#under Ubuntu the library is named differently
+execute_process(COMMAND lsb_release -cs
+    OUTPUT_VARIABLE RELEASE_CODENAME
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+message(STATUS "running on sytem: ${RELEASE_CODENAME}")
+## 14.04 trusty
+## 16.04 xenial
+## 18.04 bionic
+if( "${RELEASE_CODENAME}" MATCHES "bionic" OR "${RELEASE_CODENAME}" MATCHES "trusty" OR "${RELEASE_CODENAME}" MATCHES "xenial")
+  set(Trilinos_LIBRARIES "trilinos_belos;trilinos_belosepetra;trilinos_ml")
+else()
+  set(Trilinos_LIBRARIES "belos;belosepetra;ml")
 endif()
 
-if (MPI_NEEDED)
-  #set(MPI_CXX_COMPILER "/usr/bin/mpic++.openmpi") --> system dependent, move to do configure
-  find_package(MPI REQUIRED)
-  add_definitions(-DMPI_NEEDED)
-  message(STATUS "Including MPI")
-  message(STATUS "MPI cxx libs         = ${MPI_CXX_LIBRARIES}")
-  #message(STATUS "MPI libs         = ${MPI_LIBRARIES}") # depricated
-  message(STATUS "MPI include dirs = ${MPI_CXX_INCLUDE_PATH}")
-  #message(STATUS "MPI_LIBRARY = ${MPI_LIBRARY}") #depricated
-  message(STATUS "MPI_CXX_COMPILER_FLAGS = ${MPI_CXX_COMPILER_FLAGS}")
-  message(STATUS "MPI_CXX_LINK_FLAGS = ${MPI_CXX_LINK_FLAGS}")
-  #message(STATUS "MPI_COMPILE_FLAGS = ${MPI_COMPILE_FLAGS}") #depricated
-  #message(STATUS "MPI_LINK_FLAGS = ${MPI_LINK_FLAGS}") #depricated
-  SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${MPI_CXX_COMPILER_FLAGS}" )
-  set( CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${MPI_CXX_LINK_FLAGS}")
-  include_directories(${MPI_CXX_INCLUDE_PATH})
-  #include_directories(${MPI_INCLUDE_PATH})
-  #set(myLibs ${MPI_CXX_LIBRARIES})
-  set(myLibs "${myLibs};${MPI_LIBRARIES};${MPI_CXX_LIBRARY}")
-  if (HDF5_IS_PARALLEL) #good here
-  message(WARNING "good choice here")
-  else()
-  message(WARNING "You are using trilinos with mpi support and hdf5 without, do you know what you are doing?")
-  endif()
+message(STATUS "Trilinos libs       	= ${Trilinos_LIBRARIES}")
+message(STATUS "Your Trilions depends on: ${Trilinos_TPL_LIST}")
+if (";${Trilinos_TPL_LIST};" MATCHES ";MPI;")
+  message(STATUS "your trilinos depends on MPI, use the wrapper")
+  #set(MPI_NEEDED TRUE)
 endif()
+
+# if (MPI_NEEDED)
+#   #set(MPI_CXX_COMPILER "/usr/bin/mpic++.openmpi") --> system dependent, move to do configure
+#   find_package(MPI REQUIRED)
+#   add_definitions(-DMPI_NEEDED)
+#   message(STATUS "Including MPI")
+#   message(STATUS "MPI cxx libs         = ${MPI_CXX_LIBRARIES}")
+#   #message(STATUS "MPI libs         = ${MPI_LIBRARIES}") # depricated
+#   message(STATUS "MPI include dirs = ${MPI_CXX_INCLUDE_PATH}")
+#   #message(STATUS "MPI_LIBRARY = ${MPI_LIBRARY}") #depricated
+#   message(STATUS "MPI_CXX_COMPILER_FLAGS = ${MPI_CXX_COMPILER_FLAGS}")
+#   message(STATUS "MPI_CXX_LINK_FLAGS = ${MPI_CXX_LINK_FLAGS}")
+#   #message(STATUS "MPI_COMPILE_FLAGS = ${MPI_COMPILE_FLAGS}") #depricated
+#   #message(STATUS "MPI_LINK_FLAGS = ${MPI_LINK_FLAGS}") #depricated
+#   SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${MPI_CXX_COMPILER_FLAGS}" )
+#   set( CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${MPI_CXX_LINK_FLAGS}")
+#   include_directories(${MPI_CXX_INCLUDE_PATH})
+#   #include_directories(${MPI_INCLUDE_PATH})
+#   #set(myLibs ${MPI_CXX_LIBRARIES})
+#   set(myLibs "${myLibs};${MPI_LIBRARIES};${MPI_CXX_LIBRARY}")
+#   if (HDF5_IS_PARALLEL) #good here
+#   message(WARNING "good choice here")
+#   else()
+#   message(WARNING "You are using trilinos with mpi support and hdf5 without, do you know what you are doing?")
+#   endif()
+# endif()
 
 #from cmake 2.8 module documentation:
 #The Python_ADDITIONAL_VERSIONS variable can be used to specify a list of version numbers that should be # taken into account when searching for Python. You need to set this variable before calling find_package(PythonLibs).
@@ -300,7 +327,7 @@ message(STATUS "Trilinos include dirs 	= ${Trilinos_INCLUDE_DIRS}")
 
 include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${Trilinos_INCLUDE_DIRS})
-link_directories(${Trilinos_LIBRARY_DIRS})
+#link_directories(${Trilinos_LIBRARY_DIRS})
 include_directories(${HDF5_INCLUDE_DIRS})
 link_directories(${HDF5_LIBRARY_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
@@ -372,31 +399,34 @@ if (USE_OPENMP)
 endif()
 
 
-GET_FILENAME_COMPONENT(compiler_name ${CMAKE_C_COMPILER} NAME)
-string(COMPARE EQUAL ${compiler_name} "icc" IS_INTEL_COMPILER)
-if (NOT IS_INTEL_COMPILER)
-  message("Set for gnu gxx")
-  set(Warnings "-Wall -Wextra -Wno-sign-compare -Wno-reorder -Wno-deprecated -Wuninitialized -Wno-unused-parameter -Wno-unused-variable -Wno-unused-result -Wno-unused-function -Wno-unused-local-typedefs") # -Wno-unknown-pragmas   -Wpointer-arith -Wwrite-strings -Woverloaded-virtual -Wno-long-long  -Wuninitialized ")
-  set(Warnings "${Warnings} -Wno-deprecated-declarations")  # -Wswitch -Wno-extra -Wsynth
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} -pthread -fPIC -ftemplate-depth-128")
-else()
-  #1478 is a deprecation warning for auto_ptr
-  #set(Warnings "-gcc -cxxlib -wd1478") #gnu++0x
-  #set(Warnings "-wd1478") #gnu++0x
-  message("Set for intel using:")
-  message("CMAKE_C_COMPILER: 	${CMAKE_C_COMPILER}")
-  message("CMAKE_CXX_COMPILER: 	${CMAKE_CXX_COMPILER}")
-endif()
+# GET_FILENAME_COMPONENT(compiler_name ${CMAKE_C_COMPILER} NAME)
+# string(COMPARE EQUAL ${compiler_name} "icc" IS_INTEL_COMPILER)
+# if (NOT IS_INTEL_COMPILER)
+#   message("Set for gnu gxx")
+#   set(Warnings "-Wall -Wextra -Wno-sign-compare -Wno-reorder -Wno-deprecated -Wuninitialized -Wno-unused-parameter -Wno-unused-variable -Wno-unused-result -Wno-unused-function -Wno-unused-local-typedefs") # -Wno-unknown-pragmas   -Wpointer-arith -Wwrite-strings -Woverloaded-virtual -Wno-long-long  -Wuninitialized ")
+#   set(Warnings "${Warnings} -Wno-deprecated-declarations")  # -Wswitch -Wno-extra -Wsynth
+#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} -pthread -fPIC -ftemplate-depth-128")
+# else()
+#   #1478 is a deprecation warning for auto_ptr
+#   #set(Warnings "-gcc -cxxlib -wd1478") #gnu++0x
+#   #set(Warnings "-wd1478") #gnu++0x
+#   message("Set for intel using:")
+#   message("CMAKE_C_COMPILER: 	${CMAKE_C_COMPILER}")
+#   message("CMAKE_CXX_COMPILER: 	${CMAKE_CXX_COMPILER}")
+# endif()
 
 #always use new c++11 standard
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
-if (IS_INTEL_COMPILER)
-    #1478 is a deprecation warning for auto_ptr
-    set(Warnings "${Warnings} -wd1478")
-endif()
+# if (IS_INTEL_COMPILER)
+#     #1478 is a deprecation warning for auto_ptr
+#     set(Warnings "${Warnings} -wd1478")
+# endif()
 
 #-fstrict-aliasing
+#[ 82%] Linking CXX shared library lib/libkrebs_.so
+#/usr/bin/ld: ../common/lib/libcommon.a(continuum-surfacetension.cpp.o): relocation R_X86_64_PC32 against symbol `_ZN12ConstArray3dI3VecIfLi3EEE12destructFuncEPvm' can not be used when making a shared object; recompile with -fPIC
+#/usr/bin/ld: final link failed: Ungültiger Wert
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Warnings} -pthread -fPIC -ftemplate-depth-128")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -g -Wno-unknown-pragmas" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O2 -g") # -funroll-all-loops

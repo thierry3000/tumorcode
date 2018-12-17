@@ -39,9 +39,8 @@ if __name__ == '__main__':
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 
 import krebsutils as ku
-import math
+import h5py
 import numpy as np
-import scipy.spatial.distance as sdist
 import sys
 import os
 
@@ -276,24 +275,25 @@ def delete_double_edges(vesselgrp):
 if __name__ == '__main__':
     #write the data to a h5 file
     fn = 'apj.h5'
-    f3 = h5files.open(fn,'w')
-    vesselgrp = f3.create_group('vessels')
-    vesselgrp.attrs.create('CLASS','REALWORLD')
-    
-    '''***** INPUT *****'''
-    '''path to apj_network_546_segments.txt
-    this might change during your installation'''
-    path_to_txt = '/home/usersHR/thierry/tumorcode/py/krebs/adaption'
-    get_network_from_file(vesselgrp, path_to_txt)
-    node_label2index = get_nodes_from_file(vesselgrp, path_to_txt)
-    delete_double_edges(vesselgrp)
-    correct_vessel_indeces(node_label2index, vesselgrp)
-    
-    '''***** tumorcode stuff *****'''
-    import krebsjobs.parameters.parameterSetsAdaption
-    adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, 'apj')
-    ##CALCULATE!!!!
-    #pressure, flow, force, hema, flags = ku.calc_vessel_hydrodynamics(f3['vessels'], False, False, None, adaptionParams['calcflow'],storeCalculationInHDF=True)
-    dd = ku.calc_vessel_hydrodynamics(f3['vessels'], return_flags = True, bloodflowparams = adaptionParams['calcflow'],storeCalculationInHDF=True)
-    f3.close
-
+    with h5py.File(fn,'w') as f3:
+      vesselgrp = f3.create_group('vessels')
+      vesselgrp.attrs['CLASS']= 'REALWORLD'
+      
+      '''***** INPUT *****'''
+      '''path to apj_network_546_segments.txt
+      this might change during your installation'''
+      path_to_txt = '/home/usersHR/thierry/tumorcode/py/krebs/adaption'
+      get_network_from_file(vesselgrp, path_to_txt)
+      node_label2index = get_nodes_from_file(vesselgrp, path_to_txt)
+      delete_double_edges(vesselgrp)
+      correct_vessel_indeces(node_label2index, vesselgrp)
+      
+      '''***** tumorcode stuff *****'''
+      import krebsjobs.parameters.parameterSetsAdaption
+      adaptionParams = getattr(krebsjobs.parameters.parameterSetsAdaption, 'apj')
+      ##CALCULATE!!!!
+      #pressure, flow, force, hema, flags = ku.calc_vessel_hydrodynamics(f3['vessels'], False, False, None, adaptionParams['calcflow'],storeCalculationInHDF=True)
+    #dd = ku.calc_vessel_hydrodynamics(f3['vessels'], return_flags = True, bloodflowparams = adaptionParams['calcflow'],storeCalculationInHDF=True)
+    dd = ku.calc_vessel_hydrodynamics_Ccode(fn, 'vessels', True, adaptionParams['calcflow'], False, True)
+    #dd = ku.calc_vessel_hydrodynamics_Ccode('vessels-default-typeI-11x15L130-sample00.h5', 'vessels', True, adaptionParams['calcflow'], False, True)
+    #print(dd)

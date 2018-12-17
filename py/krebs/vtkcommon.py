@@ -256,20 +256,29 @@ def vtkImageData(**kwargs):
 
 def vtkImageDataFromLd(ld, scalefactor=1.):
   import krebsutils
-  if type(ld) == krebsutils.LatticeDataQuad3d:
-    o = scalefactor * np.asarray(ld.worldBox[[0, 2, 4]])
+  if type(ld) == krebsutils.libkrebs.LatticeData:
+    min_pos = np.asarray(ld.worldBox[[0, 2, 4]])
+    max_pos = np.asarray(ld.worldBox[[1, 3, 5]])
+    size_of_box = max_pos-min_pos
+    o = scalefactor * np.asarray(ld.GetOriginPosition())
     h = scalefactor * np.asarray((ld.scale,)*3)
     s = ld.shape
   else:
-    #depricated
-#    s = np.asarray((ld['SIZEX'], ld['SIZEY'], ld['SIZEZ']))
-#    h = scalefactor * np.asarray((ld['SCALE'],)*3)
-#    o = scalefactor*(np.asarray(ld['WORLD_OFFSET']))
-#    cc = ld['CENTERING']
-#    o -= cc * h * 0.5
-    s = np.asarray(ld.shape)
-    o = np.asarray(ld.GetOriginPosition())
-    h = scalefactor * np.asarray((ld.GetScale(),)*3)
+    raise RuntimeError("bad lattice data: %s" % ld)
+#  if type(ld) == krebsutils.LatticeDataQuad3d:
+#    o = scalefactor * np.asarray(ld.worldBox[[0, 2, 4]])
+#    h = scalefactor * np.asarray((ld.scale,)*3)
+#    s = ld.shape
+#  else:
+#    #depricated
+##    s = np.asarray((ld['SIZEX'], ld['SIZEY'], ld['SIZEZ']))
+##    h = scalefactor * np.asarray((ld['SCALE'],)*3)
+##    o = scalefactor*(np.asarray(ld['WORLD_OFFSET']))
+##    cc = ld['CENTERING']
+##    o -= cc * h * 0.5
+#    s = np.asarray(ld.shape)
+#    o = np.asarray(ld.GetOriginPosition())
+#    h = scalefactor * np.asarray((ld.GetScale(),)*3)
     #h = 30.
   return vtkImageData(origin=o, spacing=h, cell_shape=s)
 

@@ -18,7 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "calcflow_common.h"
 #include "trilinos_linsys_construction.h"
 #include "mwlib/ptree_ext.h"
 

@@ -347,7 +347,7 @@ void export_network_for_povray(const np::ndarray edges,
 //     noderad[edges[i]] = std::max(noderad[edges[i]], rad[i]);
     int a = py::extract<int>(edges[i][0]);
     int b = py::extract<int>(edges[i][1]);
-    double radius = py::extract<float>(rad[i][0]);
+    double radius = py::extract<float>(rad[i]);
     //this needs to be changed for vbl
 //     double radius = py::extract<float>(rad[i]);//required for the hdf5 format < 1.10
     noderad[a] = std::fmax(noderad[a], radius);
@@ -376,7 +376,7 @@ void export_network_for_povray(const np::ndarray edges,
     Float3 pb(pos_b_0,pos_b_1,pos_b_2);
 
     //double radius = py::extract<float>(rad[i]); //required for the hdf5 format < 1.10
-    double radius = py::extract<float>(rad[i][0]);
+    double radius = py::extract<float>(rad[i]);
     
     //if cp is definede cp->clipCylinder is executed
     //cp->print_type();

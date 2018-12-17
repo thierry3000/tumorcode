@@ -35,7 +35,7 @@ from copy import deepcopy
 import math
 #from mpl_utils import *
 
-from krebs.povrayRenderVessels import  addVesselTree
+#from krebs.povrayRenderVessels import  addVesselTree
 from krebs.povrayEasy import *
 from krebs.detailedo2 import PO2ToSaturation, OpenVesselAndTumorGroups, chb_of_rbcs
 from krebs.detailedo2Analysis import DataDetailedPO2
@@ -92,7 +92,7 @@ def InsertGraphColors(vesselgraph, ifffield, data_name, automatic_scale=False, m
     value_range = (np.amin(ifffield), np.amax(ifffield))
     cm.set_clim(*value_range)
   elif data_name == 'drug_conc':
-    cm = matplotlib.cm.ScalarMappable(cmap = matplotlib.cm.spectral, norm=matplotlib.colors.LogNorm())
+    cm = matplotlib.cm.ScalarMappable(cmap = matplotlib.cm.Spectral, norm=matplotlib.colors.LogNorm())
     if automatic_scale:
       value_range = (np.amin(ifffield), np.amax(ifffield))
     else:
@@ -159,8 +159,8 @@ def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld
   wbbox = volume_ld.worldBox
   options.wbbox=wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
-  volume_ld = transform_ld(trafo, volume_ld)
-  vessel_ld = transform_ld(trafo, vessel_ld)
+  volume_ld = trafo.transform_ld( volume_ld)
+  vessel_ld = trafo.transform_ld( vessel_ld)
   cm = InsertGraphColors(vessel_graph, volumedata, data_name, automatic_scale = options.auto_colorscale, max_conc=max_conc)  
 
   def DoTheRendering(fn, options):
@@ -184,8 +184,8 @@ def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld
         epv.addVolumeDataSlice(epvvol, (0,0,planeZCoord), (0, 0, 1), pvcm)        
         
       if not options.not_render_vessels:
-        addVesselTree(epv, vessel_graph, trafo = trafo, options=options)   
-      CallPovrayAndOptionallyMakeMPLPlot(epv, fn, cm, label, options)
+        epv.addVesselTree2(epv, vessel_graph, trafo = trafo, options=options)   
+      CallPovrayAndOptionallyMakeMPLPlot(epv, cm, label, options)
   
   planeZCoord = 0
   DoTheRendering('slice_at_%0.1f_percent'%planeZCoord+imagefn, options)
@@ -208,7 +208,7 @@ def renderSlice((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), i
     if (wbbox[1]-wbbox[0]) < (wbbox[5]-wbbox[4])*2.:
       kwargs.update(vessel_clip =('zslice', -300*trafo.w, +300*trafo.w))
 
-    addVesselTree(epv, vessel_graph, trafo = trafo, **kwargs)  
+    addVesselTree2(epv, vessel_graph, trafo = trafo, **kwargs)  
     
     CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, **kwargs)
 
@@ -231,7 +231,7 @@ def renderVasculatureWTumor((vessel_ld, vessel_graph, data_name), gtumor, imagef
       kwargs.update(vessel_clip =('zslice', -500*trafo.w, +500*trafo.w))
       kwargs.update(tumor_clip =('zslice', -250*trafo.w, 250*trafo.w))
 
-    addVesselTree(epv, vessel_graph, trafo = trafo, **kwargs)
+    epv.addVesselTree2(epv, vessel_graph, trafo = trafo, **kwargs)
     
     # totally ad-hoc BS
     # only for simple sphere model for now
@@ -267,12 +267,18 @@ def renderVasculatureWTumor((vessel_ld, vessel_graph, data_name), gtumor, imagef
 
 
 def renderScene(drug_grp, imagefn, options): 
+  imagefn, ext = splitext(imagefn)
+  ext = '.' + options.format
+  
+  options.imageFileName = imagefn+'_iff_drug'+ext
+  
   max_conc = getMaxConcentration(drug_grp.file)    
   dataman = myutils.DataManager(2, [DataBasicVessel()])
   
   timepoint = drug_grp.attrs['time'] #comes in seconds
   timepoint = timepoint/3600.
-  gvessels = drug_grp.parent['iff/vessels']
+  #gvessels = drug_grp.parent['iff/vessels']
+  gvessels = drug_grp.parent['vessels']
   iff_pressure_field = drug_grp.parent['iff/iff_pressure']
   drug_conc_field = drug_grp['conc']
   cell_drug_conc_field = drug_grp['conc_cell']
@@ -281,7 +287,8 @@ def renderScene(drug_grp, imagefn, options):
   #ex_drug_auc_field = drug_grp.parent['measurements/drug_local_integral']['auc_ex']
   #in_drug_auc_field = drug_grp.parent['measurements/drug_local_integral']['auc_in']
   
-  iff_ld  = krebsutils.read_lattice_data_from_hdf(drug_grp.parent['field_ld'])
+  #iff_ld  = krebsutils.read_lattice_data_from_hdf_by_filename(drug_grp.parent['field_ld'])
+  iff_ld  = krebsutils.read_lattice_data_from_hdf_by_filename(str(drug_grp.file.filename),str(drug_grp.parent.name)+'field_ld')
   
   #ld = iffgroup['lattice']
 
@@ -291,7 +298,8 @@ def renderScene(drug_grp, imagefn, options):
   print 'ifpfield:', np.amin(iff_pressure_field), np.amax(iff_pressure_field)
   print 'drug_conc_field:', np.amin(drug_conc_field), np.amax(drug_conc_field)
 
-  vessel_ld = krebsutils.read_lattice_data_from_hdf(gvessels['lattice'])
+  #vessel_ld = krebsutils.read_lattice_data_from_hdf(gvessels['lattice'])
+  vessel_ld = krebsutils.read_lattice_data_from_hdf_by_filename(str(gvessels.file.filename),str(gvessels.name)+'/lattice')
   vessel_graph = dataman('vessel_graph', gvessels, ['position', 'flags', 'radius'])  
     
   #vessel_graph.edges['po2vessels'] = po2vessels
@@ -334,8 +342,8 @@ def getMaxConcentration(f):
         if current_max > max_conc:
           max_conc=current_max
     print('found max conc over time: %f'%max_conc)
-    f.attrs.create('max_conc',max_conc)
-  return f.attrs['max_conc']
+    #f.attrs.create('max_conc',max_conc)
+  return max_conc
     
   
 

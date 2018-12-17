@@ -79,6 +79,7 @@ class Measure(object):
     # this code is for recording integral and other metrics at short intervalls
     dt = t - self.lastt
     self.lastt = t
+    print("try to open: %s" % self.outfilename)
     with h5py.File(self.outfilename, 'r+') as f:
       shape = conc[0].shape
       g = f.require_group('measurements').require_group('drug_local_integral')
@@ -119,7 +120,8 @@ def runs_on_client(name,config):
   outfilename = params.pop('fn_out')
   measure_params = params.pop('ift_measure', dict())
 
-  krebsutils.set_num_threads(params.pop('num_threads', 1))
+  #set_num_treads is DEPRECATED we use the environment setting now
+  #krebsutils.set_num_threads(params.pop('num_threads', 1))
   #krebsutils.run_iffsim(dicttoinfo.dicttoinfo(params), str(outfilename.encode('utf-8')), Measure(outfilename, measure_params))
   iff_cpp.run_iffsim(dicttoinfo.dicttoinfo(params), str(outfilename.encode('utf-8')), Measure(outfilename, measure_params))
   if __debug__:
@@ -131,7 +133,7 @@ def run_simple(name, config):
     days = 10. if config['ift'] else 0.5
     qsub.submit(qsub.func(runs_on_client, name, config),
                 name = 'job_iff'+name,
-                num_cpus = config['num_threads'],
+                num_cpus = 2,#not used on c++ side anymore
                 days = days,
                 change_cwd = True,)
   else:

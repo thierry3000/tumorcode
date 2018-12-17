@@ -26,9 +26,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // //it is good to know the epetra settings before we set up mpi and multithreading
 #include <Epetra_ConfigDefs.h>
-#ifdef EPETRA_MPI
-  #include "mpi.h"
-#endif
 
 #include "mwlib/log.h"
 

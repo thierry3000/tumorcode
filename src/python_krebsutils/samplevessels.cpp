@@ -349,7 +349,7 @@ np::ndarray sample_field(const np::ndarray py_pos, const np::ndarray field, cons
     float pos_3 = py::extract<float>(py_pos[i][2]);
     Float3 p(pos_1, pos_2, pos_3);
     T r = interpolate(p);
-    res[i] = r;
+    res[0][i] = r;
   }
 
   return res;

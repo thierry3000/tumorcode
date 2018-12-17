@@ -23,9 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os, sys
 import numpy as np
 import h5py
-import extensions # for efficient asarray with h5py
-import posixpath
-import sys
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../lib'))
 '''overcomes some serious mpi issues!!!
@@ -362,9 +359,16 @@ def filter_graph_byedge2( edges, edge_data, node_data, indices, return_indices=F
     np.put(invmap,map,np.arange(map.shape[0],dtype=edges.dtype))
     newedges = np.asarray(np.take(invmap,tmpedges), dtype=edges.dtype)
     new_edge_data = tuple( q[indices,...] for q in edge_data )
-    new_node_data = tuple( q[map,...] for q in node_data )
-    ''' difficult with position which is dict with 3 entries'''
-    #new_node_data = node_data
+    new_node_data = list()
+    for q in node_data:
+      if q.ndim == 1:
+        new_node_data.append(q[map,...])
+      elif q.ndim == 2:
+        new_node_data.append(q[map,:])
+      else:
+        print('dimension of data is to high')
+    new_node_data=tuple(new_node_data)
+#    new_node_data = tuple( q[map,...] for q in node_data )
     
     ret = (newedges, new_edge_data, new_node_data)
     if return_indices:

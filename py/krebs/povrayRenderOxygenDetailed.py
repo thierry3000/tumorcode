@@ -36,7 +36,7 @@ import posixpath
 from copy import deepcopy
 import math
 
-from krebs.povrayRenderVessels import  addVesselTree
+#from krebs.povrayRenderVessels import  addVesselTree
 from krebs.povrayEasy import *
 from krebs.detailedo2 import PO2ToSaturation, OpenVesselAndTumorGroups, chb_of_rbcs
 from krebs.detailedo2Analysis import DataDetailedPO2
@@ -58,7 +58,10 @@ cm_po2 = matplotlib.cm.jet
 
 def InsertGraphColors(vesselgraph, po2field, data_name):
   edges = vesselgraph.edgelist
-  num_nodes = len(vesselgraph.nodes['position'])
+  if type(vesselgraph.nodes['position']) is tuple:
+    num_nodes = len(vesselgraph.nodes['position'][0])
+  else: 
+    num_nodes = len(vesselgraph.nodes['position'])
 
   if data_name in vesselgraph.edges:
     edgedata = data = vesselgraph.edges[data_name]
@@ -67,7 +70,7 @@ def InsertGraphColors(vesselgraph, po2field, data_name):
     nodedata = data = vesselgraph.nodes[data_name]
     edgedata = np.average((data[edges[:,0]], data[edges[:,1]]), axis=0)
 
-  if data_name == 'po2vessels':
+  if data_name == 'po2_vessels':
     try:
       p1 = np.amax(data)
     except ValueError:
@@ -87,7 +90,7 @@ def InsertGraphColors(vesselgraph, po2field, data_name):
     value_range = (p0, p1)
     cm = matplotlib.cm.ScalarMappable(cmap = cm_po2)
   elif data_name == 'saturation':
-    cm = matplotlib.cm.ScalarMappable(cmap = matplotlib.cm.spectral)
+    cm = matplotlib.cm.ScalarMappable(cmap = matplotlib.cm.Spectral)
     vesselgraph.edges['saturation']
     value_range = (np.min(vesselgraph.edges['saturation']),np.max(vesselgraph.edges['saturation']))
     #value_range = (0,1.)
@@ -107,12 +110,15 @@ def InsertGraphColors(vesselgraph, po2field, data_name):
 
   flags = vesselgraph.edges['flags']
   nflags = krebsutils.edge_to_node_property(num_nodes, edges, flags, 'or')
-  is_not_set = lambda flags_,flag: np.bitwise_not(np.asarray(np.bitwise_and(flags_, flag), np.bool))
+  #is_not_set = lambda flags_,flag: np.bitwise_not(np.asarray(np.bitwise_and(flags_, flag), np.bool))
   gray = np.asarray((0.3,0.3,0.3))
-  uncirculated = is_not_set(flags,krebsutils.CIRCULATED)
-  nuncirculated = is_not_set(nflags,krebsutils.CIRCULATED)
+  circulated = myutils.bbitwise_and(flags, krebsutils.CIRCULATED)
+  uncirculated = np.logical_not(circulated)
+  node_circulated = myutils.bbitwise_and(nflags, krebsutils.CIRCULATED)
+  node_uncirculated = np.logical_not( node_circulated )
+  #nuncirculated = is_not_set(nflags,krebsutils.CIRCULATED)
   edgecolors[uncirculated] = gray
-  nodecolors[nuncirculated] = gray
+  nodecolors[node_uncirculated] = gray
 
   print 'colormap range ', cm.get_clim()
 
@@ -121,39 +127,39 @@ def InsertGraphColors(vesselgraph, po2field, data_name):
   return cm
 
 
-def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, options):
+def renderSliceWithDistribution((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), label, options):
   wbbox = volume_ld.worldBox
   options.wbbox = wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
-  volume_ld = transform_ld(trafo, volume_ld)
-  vessel_ld = transform_ld(trafo, vessel_ld)
+  volume_ld = trafo.transform_ld( volume_ld)
+  vessel_ld = trafo.transform_ld( vessel_ld)
   cm = InsertGraphColors(vessel_graph, volumedata, data_name)  
 
-  def DoTheRendering(fn, options):
+  def DoTheRendering(options):
     with EasyPovRayRender(options) as epv:
       epv.setBackground(options.background)
   
       cam_fov = 60.
-      cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
+      cam_distance_factor = options.cam_distance_multiplier * ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
       epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
       epv.addLight(10.*Vec3(1,0.5,2), 1.2)
-      options.vessel_clip=('zslice', -150*trafo.w, +150*trafo.w)
+      if options.vessel_clip is None:
+        options.vessel_clip=('zslice', -150*trafo.w, +150*trafo.w)
   
       pvcm = matplotlibColormapToPovray('DATACOLORMAP', cm)
       epv.declareColorMap(pvcm)
       if not options.not_render_volume:
         epvvol = epv.declareVolumeData(volumedata, volume_ld.GetWorldBox())
-        epv.addVolumeDataSlice(epvvol, (0,0,planeZCoord), (0, 0, 1.), pvcm)
+        epv.addVolumeDataSlice(epvvol, (0,0,options.planeZCoord), (0, 0, 1.), pvcm)
       if not options.not_render_vessels:
-        addVesselTree(epv, vessel_graph, trafo = trafo, options=options)
+        epv.addVesselTree2(epv, vessel_graph, trafo = trafo, options=options)
         
-      CallPovrayAndOptionallyMakeMPLPlot(epv, fn, cm, label, options)
+      CallPovrayAndOptionallyMakeMPLPlot(epv, cm, label, options)
   
-  planeZCoord = 0.
-  DoTheRendering(imagefn, options)
+  DoTheRendering( options)
 
 
-def renderSlice((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), imagefn, label, options):
+def renderSlice((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), label, options):
   wbbox = vessel_ld.worldBox
   options.wbbox = wbbox
   trafo = calc_centering_normalization_trafo(wbbox)
@@ -165,12 +171,12 @@ def renderSlice((vessel_ld, vessel_graph, data_name), (volume_ld, volumedata), i
     cam_distance_factor = ComputeCameraDistanceFactor(cam_fov, options.res, wbbox)
     epv.setCamera((0,0,cam_distance_factor*1.05), lookat = (0,0,0), fov = cam_fov, up = 'y')
     epv.addLight(10.*Vec3(1,0.5,2), 1.2)
-    if (wbbox[1]-wbbox[0]) < (wbbox[5]-wbbox[4])*2.:
-      options.vessel_clip=('zslice', -300*trafo.w, +300*trafo.w)
+    #if (wbbox[1]-wbbox[0]) < (wbbox[5]-wbbox[4])*2.:
+    #options.vessel_clip=('zslice', -500*trafo.w, +500*trafo.w)
 
-    addVesselTree(epv, vessel_graph, trafo = trafo, options=options)  
+    epv.addVesselTree2(epv, vessel_graph, trafo = trafo, options=options)  
     
-    CallPovrayAndOptionallyMakeMPLPlot(epv, imagefn, cm, label, options)
+    CallPovrayAndOptionallyMakeMPLPlot(epv, cm, label, options)
 
 
 def renderVasculatureWTumor((vessel_ld, vessel_graph, data_name), gtumor, imagefn, label, kwargs):
@@ -239,7 +245,8 @@ def renderScene(po2group, imagefn, options):
   #vessel_ld = krebsutils.read_lattice_data_from_hdf(gvessels['lattice'])
   vessel_graph = dataman('vessel_graph', gvessels, ['position', 'flags', 'radius', 'hematocrit'])  
     
-  vessel_graph.edges['po2vessels'] = po2vessels
+  vessel_graph.edges['po2_vessels'] = po2vessels
+  print(parameters)
   vessel_graph.edges['saturation'] = PO2ToSaturation(po2vessels, parameters)
   vessel_graph.edges['hboconc'] = vessel_graph.edges['saturation']*vessel_graph.edges['hematocrit']*chb_of_rbcs*1.0e3
   vessel_graph = vessel_graph.get_filtered(edge_indices = myutils.bbitwise_and(vessel_graph['flags'], krebsutils.CIRCULATED))
@@ -254,6 +261,9 @@ def renderScene(po2group, imagefn, options):
   #renderSlice((vessel_ld, vessel_graph, 'hboconc'), (None, None), imagefn+'_hboconc'+ext, 'HbO [mmol/l blood]', options)
 
   #try world
-  renderSliceWithDistribution((po2field_ld, vessel_graph, 'po2vessels'), (po2field_ld, po2field), imagefn+'_po2vessels'+ext, '', options)
-  renderSlice((po2field_ld, vessel_graph, 'saturation'), (None, None), imagefn+'_saturation'+ext, '', options)
-  renderSlice((po2field_ld, vessel_graph, 'hboconc'), (None, None), imagefn+'_hboconc'+ext, 'HbO [mmol/l blood]', options)
+  options.imageFileName = imagefn+'_po2vessels'+ext
+  renderSliceWithDistribution((po2field_ld, vessel_graph, 'po2_vessels'), (po2field_ld, po2field), '', options)
+  options.imageFileName = imagefn+'_saturation'+ext
+  renderSlice((po2field_ld, vessel_graph, 'saturation'), (None, None), '', options)
+  options.imageFileName = imagefn+'_hboconc'+ext
+  renderSlice((po2field_ld, vessel_graph, 'hboconc'), (None, None), 'HbO [mmol/l blood]', options)

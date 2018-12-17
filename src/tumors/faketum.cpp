@@ -41,6 +41,7 @@ FakeTum::Parameters::Parameters()
   paramset_name = "aname";
   message = "";
   max_iteration_per_rerun = -1;
+  vessel_lattice_subdivide = 13.0;
   //isRerun = false;
   vessel_path = "vesesls";
 #ifdef USE_ADAPTION
@@ -63,6 +64,7 @@ void FakeTum::Parameters::assign(const ptree &pt)
   DOPT(rGf);
   DOPT(tumor_radius);
   DOPT(tumor_speed);
+  DOPT(vessel_lattice_subdivide);
   DOPT(stopping_radius_fraction);
   DOPT(tissuePressureWidth);
   DOPT(tissuePressureCenterFraction);
@@ -124,6 +126,7 @@ ptree FakeTum::Parameters::as_ptree() const
   DOPT(rGf);
   DOPT(tumor_radius);
   DOPT(tumor_speed);
+  DOPT(vessel_lattice_subdivide);
   //DOPT(isRerun);
   DOPT(stopping_radius_fraction);
   if (tissuePressureDistribution == TISSUE_PRESSURE_SPHERE) pt.put("tissuePressureDistribution", "sphere");
@@ -214,8 +217,8 @@ int FakeTum::FakeTumorSim::run()
   ptree pt;
   if( ! mySystemParameters.isRerun)
   {
-    cout << "scale is subdivided" << endl;
-    pt.put("scale subdivide", 10.);
+    cout << "scale will be subdivided to: " << params.vessel_lattice_subdivide << endl;
+    pt.put("scale subdivide", params.vessel_lattice_subdivide);
   }
   vl = ReadVesselList3d(h5_vessels, pt);
   

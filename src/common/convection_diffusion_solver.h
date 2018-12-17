@@ -54,7 +54,7 @@ class ConvectionReactionDiffusionModel
     const DynArray<BBox3> *mtboxes;
 
     typedef Steppers::Stepper<ThisType> Stepper;
-    std::auto_ptr<Stepper> stepper;
+    std::unique_ptr<Stepper> stepper;
     
   public:
     void calcSlope(const State &state,

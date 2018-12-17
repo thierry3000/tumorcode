@@ -28,3 +28,10 @@ add_subdirectory(mwlib_tests)
 
 add_subdirectory(iff)
 add_subdirectory(tumors)
+
+# configure a header file to pass some of the CMake settings
+# to the source code
+configure_file (
+  "${PROJECT_SOURCE_DIR}/src/tumorcode_build_info.h.in"
+  "${PROJECT_BINARY_DIR}/include/tumorcode_build_info.h"
+  )

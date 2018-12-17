@@ -103,11 +103,11 @@ def plot_no_cells_over_time_since_epoch(goodArguments,pp):
     pp.savefig()
 def plot_runtime_from_h5(goodArguments, pp):
   myH5Keys = [
-              #'run_ann',
+              'run_ann',
               'run_doMilottiStep',
-              #'run_doStep',
+              'run_doStep',
               'run_o2',
-              #'run_vbl_cellEvents',
+              'run_vbl_cellEvents',
               'run_vbl_diff',
               'run_vbl_diff_loop_1',
               'run_vbl_diff_loop_2',
@@ -126,9 +126,9 @@ def plot_runtime_from_h5(goodArguments, pp):
   no_of_threads = 42
   print("filename: %s" % str(goodArguments.vbl_simulation_output_filename))
   with h5py.File(str(goodArguments.vbl_simulation_output_filename), 'r') as f:
-    initialTime = f['out0000/timing'].attrs.get('secondsSinceEpoch')
-    no_of_threads=f.attrs.get('detectedNumberOfThreads')
-    lastKey = 'out0000'
+    #initialTime = f['out0001/timing'].attrs.get('secondsSinceEpoch')
+    #no_of_threads=f.attrs.get('detectedNumberOfThreads')
+    #lastKey = 'out0001'
 #    def isKeyGood(key):
 #      if 'out' in key:
 #        return str(key)
@@ -156,8 +156,9 @@ def plot_runtime_from_h5(goodArguments, pp):
     b_sytem_parameters_exist = '/parameters/system' in f
     if b_sytem_parameters_exist:
       no_of_threads = f['/parameters/system'].attrs.get('num_threads')
+
   
-  plotVsCells = True;
+  plotVsCells = False;
   fig, ax = plt.subplots()
   for mykey in myH5Keys:
     print("mykey: %s" % mykey)
@@ -219,9 +220,9 @@ def plot_memory_from_h5(goodArguments, pp):
   no_of_threads=0
   print("filename: %s" % str(goodArguments.vbl_simulation_output_filename))
   with h5py.File(str(goodArguments.vbl_simulation_output_filename), 'r') as f:
-    initialTime = f['out0000/timing'].attrs.get('secondsSinceEpoch')
+    #initialTime = f['out0000/timing'].attrs.get('secondsSinceEpoch')
     no_of_threads=f.attrs.get('detectedNumberOfThreads')
-    lastKey = 'out0000'
+    #lastKey = 'out0000'
 #    def isKeyGood(key):
 #      if 'out' in key:
 #        return str(key)

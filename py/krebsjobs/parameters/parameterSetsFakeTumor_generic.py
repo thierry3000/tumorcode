@@ -34,6 +34,7 @@ default = dict(
   tissuePressureDistribution = 'shell',
   tissuePressureWidth = 500.,
   tissuePressureCenterFraction = 0.,
+  vessel_lattice_subdivide = 13.,
   vessels = dict(
     gfVessProl = 0.0005,
     timeProlEcSprout = 2,

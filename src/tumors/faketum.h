@@ -40,7 +40,6 @@ struct Parameters
   double dt;
   double latest_executed_timepoint;
   
-  double apply_adaption_intervall;
   string message;
   string fn_out, fn_vessel, vessel_path, vesselfile_message;
   string paramset_name;
@@ -51,6 +50,7 @@ struct Parameters
   int tissuePressureDistribution;
   double tissuePressureWidth;
   double tissuePressureCenterFraction;
+  double vessel_lattice_subdivide;
   BloodFlowParameters bfparams;
   int max_iteration_per_rerun;
 #ifdef USE_ADAPTION

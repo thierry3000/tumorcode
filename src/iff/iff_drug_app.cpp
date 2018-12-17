@@ -81,50 +81,34 @@ bool IffDrugApp3d::InitNewState()
   cout << "--- starting new iff run ---\n";
   cout << "--- input tum file: " << fn_tumor <<endl;
   cout << "--- output iff file: " << fn_out <<endl;
-  {
+  
   iff_params.assign(all_pt_params.get_child("iff"));
   boost::optional<ptree&> pt_drug = all_pt_params.get_child_optional("drugflow");
   if (pt_drug)
     ift_params.assign(*pt_drug);
-  }
+  
 
-  {
   H5::H5File file(fn_tumor, H5F_ACC_RDONLY);
   H5::Group root = file.openGroup("/");
   H5::Group tum_grp;
+  H5::Group vesselgroup;
   bool tumorIsPresent = true;
   try
   {
     tum_grp = root.openGroup(h5_path_tumor);
+    readAttrFromH5(tum_grp, string("TYPE"), tumor_type_string);
+    vesselgroup = root.openGroup(h5_path_vessel);
   }
   catch( H5::Exception &e)
   {
+    e.printErrorStack();
     tumorIsPresent=false;
   }
   
-//   if (root.exists(h5_path_tumor))
-//   {
-//     tum_grp = root.open_group(h5_path_tumor);
-//     h5::Attributes tum_attrs = tum_grp.attrs();
-//     if (tumor_type_string.empty())
-//       tumor_type_string = tum_attrs.get<string>("TYPE");
-//   }
-//   else
-//   {
-//     tumorIsPresent=false;
-//   }
+  vl = ReadVesselList3d(vesselgroup,make_ptree("filter",false));
   
-  H5::Group h5_lattice = root.openGroup(h5_path_lattice);
-  std::unique_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::ReadHdf(h5_lattice);
-  //vl.reset(new VesselList3d(ldp));
-  vl->Init(ldp);
-  H5::Group vesselgroup = root.openGroup(h5_path_vessel);
-  //ReadHdfGraph(vesselgroup, *vesselList);
-  ReadHdfGraph(vesselgroup, vl.get());
-  { // read node pressure values
+  // read node pressure values
   DynArray<float> press;
-  //h5::read_dataset(vesselgroup.open_dataset("nodes/pressure"), press);
-  //readDataSetFromGroup<DynArray<float>>(vesselgroup.openGroup("nodes"),string("pressure"), &press);
   H5::Group h5_nodes = vesselgroup.openGroup("nodes");
   readDataSetFromGroup(h5_nodes,string("pressure"), press);
   int ncnt = vl->GetNCount();
@@ -134,8 +118,6 @@ bool IffDrugApp3d::InitNewState()
   }
   // read edge flow values
   DynArray<double> a;
-  //h5::read_dataset(vesselgroup.open_dataset("edges/flow"), a);
-  //readDataSetFromGroup<DynArray<double>>(vesselgroup.openGroup("edges"),string("flow"), &a);
   H5::Group h5_edges = vesselgroup.openGroup("edges");
   readDataSetFromGroup(h5_edges,string("flow"), a);
   int ecnt = vl->GetECount();
@@ -143,11 +125,9 @@ bool IffDrugApp3d::InitNewState()
   {
     vl->GetEdge(i)->q = a[i];
   }
-  //h5::read_dataset(vesselgroup.open_dataset("edges/maturation"), a);
-  //readDataSetFromGroup<DynArray<double>>(vesselgroup.openGroup("edges"),string("maturation"), &a);
   readDataSetFromGroup(h5_edges,string("maturation"), a );
   for(int i=0; i<ecnt; ++i) vl->GetEdge(i)->maturation = a[i];
-  }
+  
 
 #if 0
   if (tumor_type_string == "3 Phase crystal")
@@ -205,17 +185,14 @@ bool IffDrugApp3d::InitNewState()
   }
   else if ((tumor_type_string == "BulkTissue" || tumor_type_string == "BulkTissueFormat1") and tumorIsPresent)
   {
-//     h5::Dataset ds_theta_tumor = tum_grp.open_dataset("ptc");
-//     h5::Group ld_group = root.open_group(ds_theta_tumor.attrs().get<string>("LATTICE_PATH"));
     H5::DataSet ds_theta_tumor = tum_grp.openDataSet("ptc");
     string lattice_path;
     readAttrFromH5(ds_theta_tumor, "LATTICE_PATH", lattice_path);
     H5::Group ld_group = root.openGroup(lattice_path);
-    { 
-      LatticeDataQuad3d ld;
-      ReadHdfLd(ld_group, ld);
-      grid = ContinuumGrid(ld, dim); 
-    }
+    LatticeDataQuad3d ld;
+    ReadHdfLd(ld_group, ld);
+    grid = ContinuumGrid(ld, dim); 
+    
     Array3d<float> phi_obstacle(MakeArray3dWithBorder<float>(grid.ld.Box(), dim, 1));
     phi_water = MakeArray3dWithBorder<float>(grid.ld.Box(), dim, 3);
     phi_cells = MakeArray3dWithBorder<float>(grid.ld.Box(), dim, 1);
@@ -225,17 +202,17 @@ bool IffDrugApp3d::InitNewState()
     ReadInto(grid.ld.Box(), ds_theta_tumor, theta_tumor);
     ReadInto(grid.ld.Box(), tum_grp.openDataSet("conc"), phi_cells);
     ReadInto(grid.ld.Box(), tum_grp.openDataSet("obstacle"), phi_obstacle);
-//     if (tum_grp.exists("necro"))
-//       ReadInto(grid.ld.Box(), tum_grp.open_dataset("necro"), theta_necro);
+
+    H5::DataSet necro;
     try
     {
-      H5::DataSet necro = tum_grp.openDataSet("necro");
-      ReadInto(grid.ld.Box(), necro, theta_necro);
+      necro = tum_grp.openDataSet("necro");
     }
     catch(H5::Exception &e)
     {
-      //std::cout << error.printErrorStack();
+      e.printErrorStack();
     }
+    ReadInto(grid.ld.Box(), necro, theta_necro);
 
     FOR_BBOX3(p, grid.ld.Box())
     {
@@ -259,7 +236,7 @@ bool IffDrugApp3d::InitNewState()
   VesselFluidExavasationModel *tmp = new VesselFluidExavasationModel();
   tmp->Init(*vl, grid, vesselsInBoxes, iff_params);
   vessel_sources_f.reset(tmp);
-  }
+  
 
 #ifdef ANALYZE_FLOW_CHANGE
 // compute pressure and flow without IF coupling
@@ -287,45 +264,50 @@ bool IffDrugApp3d::InitNewState()
 }
 
 
-void IffDrugApp3d::MeasureIfFlowState(H5::Group g)
+void IffDrugApp3d::MeasureIfFlowState()
 {
-#if 0
-  g.attrs().set("MESSAGE",message);
-  g.attrs().set("INPUTFILE",fn_tumor);
-  g.create_group("parameters");
-  iff_params.WriteH5(g.create_group("parameters/iff"));
-  h5cpp::Datatype disktype = h5cpp::get_disktype<float>();
+  H5::H5File h5_iff_out_file;
+  h5_iff_out_file = H5::H5File(fn_out, H5F_ACC_TRUNC);
+  H5::Group g = h5_iff_out_file.openGroup("/");
+  
+  writeAttrToH5(g, string("MESSAGE"), message);
+  writeAttrToH5(g, string("INPUTFILE"), fn_tumor);
+  
+  g.createGroup("parameters");
+  H5::Group h5_params_iff = g.createGroup("parameters/iff");
+  WriteHdfPtree(h5_params_iff, iff_params.as_ptree());
 
   const LatticeDataQuad3d &ld = grid.ld;
 
-  h5::Group field_ld_grp = g.create_group("field_ld");
-  WriteHdfLd(field_ld_grp, ld);
+  h5_field_ld_grp = g.createGroup("field_ld");
+  ld.WriteHdfLd(h5_field_ld_grp);
 
-  h5::Dataset ds;
+  H5::DataSet ds;
+  H5::Group h5_iff_out;
   Array3d<Float3> flowvel;
 
-  g = g.create_group("iff");
+  h5_iff_out = g.createGroup("iff");
 
-  {
-    Array3d<double> cond = MakeArray3dWithBorder<double>(ld.Box(), dim, 1);
-    Array3d<double> phi_water = MakeArray3dWithBorder<double>(ld.Box(), dim, 1);
-    VirtualGridFunctions<double, 2>::List l1 = {{ cond, phi_water }};
-    tissue_f->GetValues(-1, ld.Box(), l1);
+  
+  Array3d<double> cond = MakeArray3dWithBorder<double>(ld.Box(), dim, 1);
+  Array3d<double> phi_water = MakeArray3dWithBorder<double>(ld.Box(), dim, 1);
+  VirtualGridFunctions<double, 2>::List l1 = {{ cond, phi_water }};
+  tissue_f->GetValues(-1, ld.Box(), l1);
 
-    CopyBorder(cond, dim, 1);
-    CopyBorder(phi_water, dim, 1);
+  CopyBorder(cond, dim, 1);
+  CopyBorder(phi_water, dim, 1);
 
-    WriteScalarField(g, "iff_sources", iffstate->source_field, ld, field_ld_grp, disktype);
-    WriteScalarField(g, "iff_sources_vess_out", iffstate->vessel_outflow_field, ld, field_ld_grp, disktype); // this is uptake
-    WriteScalarField(g, "iff_sources_vess_in", iffstate->vessel_inflow_field, ld, field_ld_grp, disktype);
-    WriteScalarField(g, "iff_sources_lymph_out", iffstate->lymph_outflow_field, ld, field_ld_grp, disktype);
-    WriteScalarField(g, "phi_water", phi_water, ld, field_ld_grp, disktype);
-    WriteScalarField(g, "phi_cells", phi_cells, ld, field_ld_grp, disktype);
-    WriteScalarField(g, "cond", cond, ld, field_ld_grp, disktype);
+  ds = WriteScalarField(h5_iff_out, "iff_sources", iffstate->source_field, ld, h5_field_ld_grp);
+  ds = WriteScalarField(h5_iff_out, "iff_sources_vess_out", iffstate->vessel_outflow_field, ld, h5_field_ld_grp);// this is uptake
+  ds = WriteScalarField(h5_iff_out, "iff_sources_vess_in", iffstate->vessel_inflow_field, ld, h5_field_ld_grp);
+  ds = WriteScalarField(h5_iff_out, "iff_sources_lymph_out", iffstate->lymph_outflow_field, ld, h5_field_ld_grp);
+  ds = WriteScalarField(h5_iff_out, "phi_water", phi_water, ld, h5_field_ld_grp);
+  ds = WriteScalarField(h5_iff_out, "phi_cells", phi_cells, ld, h5_field_ld_grp);
+  ds = WriteScalarField(h5_iff_out, "cond", cond, ld, h5_field_ld_grp);
+  ds = WriteScalarField(h5_iff_out, "iff_pressure", iffstate->pfield, ld, h5_field_ld_grp);
+  ds = WriteScalarField(h5_iff_out, "theta_tumor", theta_tumor, ld, h5_field_ld_grp);
+  ds = WriteScalarField(h5_iff_out, "theta_necro", theta_necro, ld, h5_field_ld_grp);
 
-    WriteScalarField( g,"iff_pressure", iffstate->pfield, ld, field_ld_grp, disktype);
-    WriteScalarField(g,"theta_tumor", theta_tumor, ld, field_ld_grp, disktype);
-    WriteScalarField(g,"theta_necro", theta_necro, ld, field_ld_grp, disktype);
 
 #if 0
     {
@@ -361,46 +343,46 @@ void IffDrugApp3d::MeasureIfFlowState(H5::Group g)
       }
       flowvel(p) = u;
     }
-    ds = WriteVectorField(g, "iff_velocity", flowvel, ld, field_ld_grp);
+    ds = WriteVectorField(g, "iff_velocity", flowvel, ld, h5_field_ld_grp);
 
     //if (iff_params.debugOut)
 //     {
 //       CalcFlowField(iffstate->pfield, cond, ld, flowvel);
 //       ds = WriteVectorField(g, "iff_velocity_check", flowvel, ld, field_ld_grp);
 //     }
-  }
+  
 
-  h5::Group vessel_group = g.create_group("vessels");
+  H5::Group vessel_group = g.createGroup("vessels");
   WriteHdfGraph(vessel_group, *vl);
-  vl->Ld().WriteHdf(g.create_group("lattice"));
+  //vl->Ld().WriteHdf(g.create_group("lattice"));
 
 
-  { 
-    int ecnt = vl->GetECount();
-    DynArray<float> tmp1(ecnt);
-    for (int i=0; i<ecnt; ++i)
-    {
-      double coeffa, coeffb, vala, valb;
-      vessel_sources_f->GetVesselInfo(vl->GetEdge(i), coeffa, coeffb, vala, valb);
-      tmp1[i] = 0.5*(coeffa+coeffb);
-    }
-    h5::create_dataset(vessel_group, "edges/wall_conductivity", tmp1); 
+  
+  int ecnt = vl->GetECount();
+  DynArray<float> tmp1(ecnt);
+  for (int i=0; i<ecnt; ++i)
+  {
+    double coeffa, coeffb, vala, valb;
+    vessel_sources_f->GetVesselInfo(vl->GetEdge(i), coeffa, coeffb, vala, valb);
+    tmp1[i] = 0.5*(coeffa+coeffb);
   }
+  H5::Group h5_edges = vessel_group.openGroup("edges");
+  ds = writeDataSetToGroup(h5_edges, string("wall_conductivity"), tmp1);
+  
 
 #ifdef ANALYZE_FLOW_CHANGE
-  {
-    int ecnt = vl->GetECount();
-    int ncnt = vl->GetNCount();
-    for (int i=0; i<ecnt; ++i)
-      org_flow[i] = vl->GetEdge(i)->q - org_flow[i];
-    for (int i=0; i<ncnt; ++i)
-      org_press[i] = vl->GetNode(i)->press - org_press[i];
-    h5::create_dataset_range(vessel_group,"edges/flow_if_delta", org_flow);
-    h5::create_dataset_range(vessel_group,"nodes/pressure_if_delta", org_press);
-    org_flow.clear();
-    org_press.clear();
-  }
-#endif
+  
+  int ecnt = vl->GetECount();
+  int ncnt = vl->GetNCount();
+  for (int i=0; i<ecnt; ++i)
+    org_flow[i] = vl->GetEdge(i)->q - org_flow[i];
+  for (int i=0; i<ncnt; ++i)
+    org_press[i] = vl->GetNode(i)->press - org_press[i];
+  h5::create_dataset_range(vessel_group,"edges/flow_if_delta", org_flow);
+  h5::create_dataset_range(vessel_group,"nodes/pressure_if_delta", org_press);
+  org_flow.clear();
+  org_press.clear();
+  
 #endif
 }
 
@@ -422,30 +404,29 @@ void IffDrugApp3d::DoIffCalc()
 
 void IffDrugApp3d::WriteDrugOutput(double t, const IfDrug::Calculator::State &conc_field, const IfDrug::Calculator& model, const ptree& params)
 {
-  H5::H5File f(params.get<string>("fn_out"), H5F_ACC_TRUNC);
-  try
+  H5::H5File h5_iff_out_file;
+  h5_iff_out_file = H5::H5File(fn_out, H5F_ACC_RDWR);
+  if( output_number == 0)
   {
-    H5::Group ift = f.openGroup("parameters/ift");
+    try
+    {
+      H5::Group ift = h5_iff_out_file.createGroup("parameters/ift");
+      WriteHdfPtree(ift, ift_params.as_ptree());
+    }
+    catch(H5::Exception &e)
+    {
+      e.printErrorStack();
+    }
   }
-  catch(H5::Exception &e)
-  {
-    H5::Group out =f.createGroup("parameters/ift");
-    ift_params.WriteH5(out);
-  }
-//   if (output_number == 0 && !f.root().exists("parameters/ift"))
-//     ift_params.WriteH5(f.root().create_group("parameters/ift"));
+  cout << format("drug hdf output t=%f -> %s") % t % h5_iff_out_file.getFileName() << endl;
+  H5::Group g = h5_iff_out_file.createGroup((format("out%04i") % output_number).str());
+  writeAttrToH5(g, "time", t);
+  writeAttrToH5(g, "real_time", (my::Time() - real_start_time).to_s());
+  MemUsage memusage = GetMemoryUsage();
+  writeAttrToH5(g, "mem_vsize", (uint64) memusage.vmem_peak);
+  writeAttrToH5(g, "mem_rss", (uint64) memusage.rss_peak);
 
-  cout << format("drug hdf output t=%f -> %s") % t % f.getFileName() << endl;
-  H5::Group g = f.createGroup((format("out%04i") % output_number).str());
-
-//   g.attrs().set("time", t);
-// 
-//   g.attrs().set("real_time", (my::Time() - real_start_time).to_s());
-//   MemUsage memusage = GetMemoryUsage();
-//   g.attrs().set<uint64>("mem_vsize", memusage.vmem_peak);
-//   g.attrs().set<uint64>("mem_rss", memusage.rss_peak);
-
-  model.writeH5(f, g, conc_field, t, f.openGroup("field_ld"));
+  model.writeH5(g, conc_field, t, h5_field_ld_grp);
 
   ++output_number;
 }
@@ -454,75 +435,75 @@ void IffDrugApp3d::WriteDrugOutput(double t, const IfDrug::Calculator::State &co
  */
 int  IffDrugApp3d::Main(const ptree &read_params, const string &outfilename, py::object &drug_measurement_function)
 {
-  { //****** read in parameters *******
-    fn_out = outfilename;
-    all_pt_params.put_child("iff", IffParams().as_ptree());
-    all_pt_params.put_child("ift", IfDrug::Params().as_ptree());
-    all_pt_params.put_child("vessels", VesselModel1::Params().as_ptree());
-    all_pt_params.put_child("calcflow", BloodFlowParameters().as_ptree());
-    all_pt_params.put_child("tumor", NewBulkTissueModel::Params().as_ptree());
-    #define DOPT(name) all_pt_params.put(#name, name)
-    DOPT(out_intervall);
-    DOPT(fn_out);
-    DOPT(fn_tumor);
-    //DOPT(tend);
-    DOPT(message);
-    DOPT(h5_path_vessel);
-    DOPT(h5_path_lattice);
-    DOPT(h5_path_tumor);
-    DOPT(parameterset_name);
-    #undef DOPT
-    //all_pt_params.put("num_threads", 1);
+  //****** read in parameters *******
+  fn_out = outfilename;
+  all_pt_params.put_child("iff", IffParams().as_ptree());
+  all_pt_params.put_child("ift", IfDrug::Params().as_ptree());
+  all_pt_params.put_child("vessels", VesselModel1::Params().as_ptree());
+  all_pt_params.put_child("calcflow", BloodFlowParameters().as_ptree());
+  all_pt_params.put_child("tumor", NewBulkTissueModel::Params().as_ptree());
+  #define DOPT(name) all_pt_params.put(#name, name)
+  DOPT(out_intervall);
+  DOPT(fn_out);
+  DOPT(fn_tumor);
+  DOPT(tend);
+  DOPT(message);
+  DOPT(h5_path_vessel);
+  DOPT(h5_path_lattice);
+  DOPT(h5_path_tumor);
+  DOPT(parameterset_name);
+  #undef DOPT
+  //all_pt_params.put("num_threads", 1);
 
-    ptree default_params = all_pt_params;
-    { 
-      boost::property_tree::ptree p, &iter_array = boost::property_tree::require_child(default_params, "out_times");
-      for (float t = 0.; t <= 5.; t += 1.)  // put some default output times in there
-      { // i can't have them in the all_pt_params, or they will be mixed up with the read values
-	p.put_value(t);
-	iter_array.push_back(std::make_pair("", p));
-      }
-    }
-    ptree vararg_params = boost::property_tree::make_ptree("out_times","");
-
-    // copy & pasted from HandleSimulationProgramArguments
-    ptree unknown_params = boost::property_tree::subtract(read_params, default_params);
-    unknown_params = boost::property_tree::remove(unknown_params, vararg_params);
-    // fail if a parameter is not in the default list
-    if (unknown_params.begin() != unknown_params.end())
-    {
-      std::cerr << "--- WARNING: Unknown input parameters detected ---" << endl;
-      boost::property_tree::write_info(std::cerr, unknown_params);
-      std::cerr << "-------------------------------------------------" << endl;
-      throw std::invalid_argument("parameter fail!");
-    }
-    // update defaults
-    boost::property_tree::update(all_pt_params, read_params);
-
-    // read parameters from ptree into variables
-    #define DOPT(name) boost::property_tree::get(name, #name, all_pt_params)
-    DOPT(out_intervall);
-    DOPT(fn_out);
-    DOPT(fn_tumor);
-    //DOPT(tend);
-    DOPT(message);
-    DOPT(h5_path_vessel);
-    DOPT(h5_path_lattice);
-    DOPT(h5_path_tumor);
-    DOPT(parameterset_name);
-    #undef DOPT
-    iff_params.assign(all_pt_params.get_child("iff"));
-    ift_params.assign(all_pt_params.get_child("ift"));
-    // obtain list of output times
-    out_times.clear();
-    {  const boost::property_tree::ptree &iter_array = boost::property_tree::require_child(all_pt_params,"out_times");
-      BOOST_FOREACH(const ptree::value_type &p, iter_array)
-      {
-        out_times.push_back(p.second.get_value<float>());
-      }
-    }
-    std::sort(out_times.begin(), out_times.end());
+  ptree default_params = all_pt_params;
+   
+  boost::property_tree::ptree p, &iter_array = boost::property_tree::require_child(default_params, "out_times");
+  for (float t = 0.; t <= 5.; t += 1.)  // put some default output times in there
+  { // i can't have them in the all_pt_params, or they will be mixed up with the read values
+    p.put_value(t);
+    iter_array.push_back(std::make_pair("", p));
   }
+
+  ptree vararg_params = boost::property_tree::make_ptree("out_times","");
+
+  // copy & pasted from HandleSimulationProgramArguments
+  ptree unknown_params = boost::property_tree::subtract(read_params, default_params);
+  unknown_params = boost::property_tree::remove(unknown_params, vararg_params);
+  // fail if a parameter is not in the default list
+  if (unknown_params.begin() != unknown_params.end())
+  {
+    std::cerr << "--- WARNING: Unknown input parameters detected ---" << endl;
+    boost::property_tree::write_info(std::cerr, unknown_params);
+    std::cerr << "-------------------------------------------------" << endl;
+    throw std::invalid_argument("parameter fail!");
+  }
+  // update defaults
+  boost::property_tree::update(all_pt_params, read_params);
+
+  // read parameters from ptree into variables
+  #define DOPT(name) boost::property_tree::get(name, #name, all_pt_params)
+  DOPT(out_intervall);
+  DOPT(fn_out);
+  DOPT(fn_tumor);
+  DOPT(tend);
+  DOPT(message);
+  DOPT(h5_path_vessel);
+  DOPT(h5_path_lattice);
+  DOPT(h5_path_tumor);
+  DOPT(parameterset_name);
+  #undef DOPT
+  iff_params.assign(all_pt_params.get_child("iff"));
+  ift_params.assign(all_pt_params.get_child("ift"));
+  // obtain list of output times
+  out_times.clear();
+  {  const boost::property_tree::ptree &iter_array = boost::property_tree::require_child(all_pt_params,"out_times");
+    BOOST_FOREACH(const ptree::value_type &p, iter_array)
+    {
+      out_times.push_back(p.second.get_value<float>());
+    }
+  }
+  std::sort(out_times.begin(), out_times.end());
+  
 
   if(fn_tumor.empty() ) {
     cerr << "Error: no file specified" << endl;
@@ -554,11 +535,11 @@ int  IffDrugApp3d::Main(const ptree &read_params, const string &outfilename, py:
   /** @brief calculating the pressure and flow field
    */
   DoIffCalc();
-  {
-    //write some output
-    H5::H5File file(fn_out, H5F_ACC_RDWR);
-    MeasureIfFlowState(file.openGroup("/")); 
-  } // don't keep file
+  
+  //write some output
+  MeasureIfFlowState();
+  
+  // don't keep file
   
 #ifdef USE_IFDRUGSIM
   /** from here on we calculate drug related stuff */
@@ -579,12 +560,12 @@ int  IffDrugApp3d::Main(const ptree &read_params, const string &outfilename, py:
     ptree pt;
     pt.put("fn_out", fn_out);
     pt.put("out_intervall", out_intervall);
-    //pt.put("tend", tend);
+    pt.put("tend", tend);
     pt.put("save_hdf", true);
     pt.put("hdf_clear_file", false);
 
-    //boost::function4<void, double, const IfDrug::Calculator::State&, const IfDrug::Calculator&, const ptree&> observer = boost::bind(&IffDrugApp3d::WriteDrugOutput, this, _1, _2, _3, _4);
-    //::run_model(state, drugcalc, observer, pt);
+    boost::function4<void, double, const IfDrug::Calculator::State&, const IfDrug::Calculator&, const ptree&> observer = boost::bind(&IffDrugApp3d::WriteDrugOutput, this, _1, _2, _3, _4);
+    ::run_model(state, drugcalc, observer, pt);
 
     // manual loop for variable output time step
     Steppers::StepControl ctrl;

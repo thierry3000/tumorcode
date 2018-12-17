@@ -211,6 +211,7 @@ const int ANN_dim = 3;            // space dimension
   double next_adaption_time;
   int num_iteration;
   int output_num;
+  bool isFirstIterationInRerun= true;
 
   /**
    * interface functions for VBL
@@ -227,7 +228,7 @@ const int ANN_dim = 3;            // space dimension
 /** @brief core interface for vbl BloodVesselVector
  * calculates the distances to the nearest vessels by means of the ANN library.
  */
-  void findNearestVessel( DetailedPO2::VesselPO2Storage &po2Store);
+  void findNearestVessel(boost::optional<DetailedPO2::VesselPO2Storage> previous_po2vessels);
 
   
   /** 

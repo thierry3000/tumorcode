@@ -69,6 +69,7 @@ def make_pressure_color_arrays(vesselgraph):
     flags = flags[:,0]
     data = vesselgraph.nodes['pressure']
     data = data[:,0]
+    data = data * 7.5 # to mmHg
     num_nodes = len(vesselgraph.nodes['position'])
     nflags = krebsutils.edge_to_node_property(num_nodes, edges, flags, 'or')
 
@@ -112,11 +113,12 @@ cm_hematocrit = matplotlib.colors.LinearSegmentedColormap('', {
 }, N = 256, gamma = 1.)
 
 
-def make_any_color_arrays(vesselgraph, data_name):
+def make_any_color_arrays(vesselgraph, data_name,options):
   edges = vesselgraph.edgelist
   num_nodes = len(vesselgraph.nodes['position'])
   flags = vesselgraph.edges['flags']
-  flags = np.asarray(flags,dtype='uint32')
+  #flags = flags[:,0]
+  #flags = np.asarray(flags,dtype='uint32')
   nflags = krebsutils.edge_to_node_property(num_nodes, edges, flags, 'or')
 
   mask = myutils.bbitwise_and(flags,krebsutils.CIRCULATED)
@@ -132,15 +134,24 @@ def make_any_color_arrays(vesselgraph, data_name):
   gray = np.asarray((0.1,0.1,0.1))
   edgecolors = np.repeat(gray.reshape(1,-1), len(edgedata), axis=0)
   nodecolors = np.repeat(gray.reshape(1,-1), len(nodedata), axis=0)
-  #colors = lambda arr: cm.to_rgba(arr)[:,:3]
+ # colors = lambda arr: cm.to_rgba(arr)[:,:3]
   colors = lambda arr: np.power(cm.to_rgba(arr)[:,:3], 2.4)
 
   if data_name == 'hematocrit':
-    cm = matplotlib.cm.ScalarMappable(cmap = cm_hematocrit)
-    cm.set_clim(0, 1)
-    unmapped_range = (0.,1.)
-    edgecolors[mask] = colors(edgedata[mask])
-    nodecolors[nmask] = colors(nodedata[nmask])
+    h0 = np.min(edgedata[np.nonzero(edgedata)])
+    if h0<0.1:
+      print("Minimal hematocrit is: %f" % h0)
+      print("using 0.1 instead")
+      h0 = 0.1
+    h1 = np.max(edgedata[np.nonzero(edgedata)])
+    unmapped_range = (h0, h1)
+    cm = matplotlib.cm.ScalarMappable(cmap = matplotlib.cm.hsv)
+    cm.set_clim(h0, h1)
+    edgecolors[mask[:,0]] = colors(edgedata[mask])
+    nodecolors[nmask[:,0]] = colors(nodedata[nmask])
+    #unmapped_range = (0.,1.)
+    #edgecolors[mask] = colors(edgedata[mask])
+    #nodecolors[nmask] = colors(nodedata[nmask])
   elif data_name == 'pressure':
     #this looks really ugly if there is a zero pressure node
     #p0 = np.amin(nodedata)
@@ -151,6 +162,8 @@ def make_any_color_arrays(vesselgraph, data_name):
     cm.set_clim(p0, p1)
     edgecolors[mask[:,0]] = colors(edgedata[mask])
     nodecolors[nmask[:,0]] = colors(nodedata[nmask])
+    #edgecolors[mask] = colors(edgedata[mask])
+    #nodecolors[nmask] = colors(nodedata[nmask])
   elif data_name == 'shearforce':
     mask = mask & (edgedata>0)
     nmask = nmask & (nodedata>0)
@@ -159,9 +172,25 @@ def make_any_color_arrays(vesselgraph, data_name):
     unmapped_range = edgedata.min(), edgedata.max()
     edgedata = np.log10(edgedata)
     nodedata = np.log10(nodedata)
-    p0 = -4#np.amin(edgedata)
-    p1 = -1#np.amax(edgedata)
-    cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.spectral)
+    #p0 = -4
+    #p1 = -1
+    p0 = np.amin(edgedata)
+    p1 = np.amax(edgedata)
+    cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.Spectral)
+    cm.set_clim(p0, p1)
+    edgecolors[mask[:,0]] = colors(edgedata)
+    nodecolors[nmask[:,0]] = colors(nodedata)
+  elif data_name == 'radius':
+    mask = mask & (edgedata>0)
+    nmask = nmask & (nodedata>0)
+    edgedata = edgedata[mask]
+    nodedata = nodedata[nmask]
+    edgedata = np.log10(edgedata)
+    nodedata = np.log10(nodedata)
+    unmapped_range = edgedata.min(), edgedata.max()
+    cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.copper)
+    p0 = np.amin(edgedata)
+    p1 = np.amax(edgedata)
     cm.set_clim(p0, p1)
     edgecolors[mask[:,0]] = colors(edgedata)
     nodecolors[nmask[:,0]] = colors(nodedata)
@@ -207,8 +236,8 @@ def make_any_color_arrays(vesselgraph, data_name):
     p1 = np.amax(edgedata)
     cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.jet)
     cm.set_clim(p0, p1)
-    edgecolors[mask] = colors(edgedata)
-    nodecolors[nmask] = colors(nodedata)
+    edgecolors[mask[:,0]] = colors(edgedata)
+    nodecolors[nmask[:,0]] = colors(nodedata)
   elif data_name == 'metabolicSignal':
     edgedata = edgedata[mask]
     nodedata = nodedata[nmask]
@@ -217,8 +246,8 @@ def make_any_color_arrays(vesselgraph, data_name):
     p1 = np.amax(edgedata)
     cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.jet)
     cm.set_clim(p0, p1)
-    edgecolors[mask] = colors(edgedata)
-    nodecolors[nmask] = colors(nodedata)
+    edgecolors[mask[:,0]] = colors(edgedata)
+    nodecolors[nmask[:,0]] = colors(nodedata)
   elif data_name == 'flags':
     edgecolors[mask & (flags & krebsutils.ARTERY).astype(np.bool)] = np.asarray((1., 0., 0.))
     nodecolors[nmask & (nflags & krebsutils.ARTERY).astype(np.bool)] = np.asarray((1., 0., 0.))
@@ -377,6 +406,7 @@ def render_different_data_types( vesselgroup, options):
     'S_tot' : 'Adaption Signal',
     'conductivitySignal' : 'Conductivity Signal',
     'metabolicSignal' : 'Metabolic Signal',
+    'radius': 'Vesselradius $\mu$m',
   }
   graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'nodeflags'] + options.datalist, return_graph=True)
   #nodeflags not good for apj.h5
@@ -402,12 +432,13 @@ def render_different_data_types( vesselgroup, options):
       colors_factory = options.colorfactory
       colors_factory(graph)
     
-    cm, (datamin, datamax) = make_any_color_arrays(graph, data_name)
+    cm, (datamin, datamax) = make_any_color_arrays(graph, data_name, options)
     fn = vesselgroup.file.filename
-    imagefn = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix+'.'+ options.format
+    options.imageFileName = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix+'.'+ options.format
+    print(options.imageFileName)
     with EasyPovRayRender(options) as epv:
-      CreateScene2(vesselgroup,epv, graph, imagefn, options)
+      CreateScene2(vesselgroup,epv, graph, options)
       if options.noOverlay:
         epv.render(imagefn)
       else:
-        RenderImageWithOverlay(epv, imagefn, cm, labels[data_name], options)
+        RenderImageWithOverlay(epv, cm, labels[data_name], options)

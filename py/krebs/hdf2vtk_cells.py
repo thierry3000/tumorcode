@@ -101,7 +101,7 @@ def ConvertMyHdfVesselsToVTKPolydata(graph, newflag_for_backward_compatibility, 
     
   if 1:
       #pressure
-      pressure=pressure*7.5 #to mmHg
+      #pressure=pressure*7.5 #to mmHg
       polydata.GetPointData().AddArray(asVtkArray(pressure, "pressure_at_node", vtkFloatArray))
       #isnodeboundary = np.asarray(np.bitwise_and(nodeflags,krebsutils.BOUNDARY) > 0, dtype=np.int32)
       #polydata.GetPointData().AddArray(asVtkArray(isnodeboundary, "isNodeBoundary", vtkFloatArray))
@@ -315,7 +315,7 @@ def writeCells_(graph, options):
 
 def hdftumor2vtk(graph, options ):
   print("begin hdftumor2vtk")
-  if True:# could be like write cells
+  if options.c:
     writeCells_(graph, options)
   if options.writeFields:
     writeFields_(graph, options)
@@ -339,7 +339,8 @@ if __name__ == '__main__':
   parser.add_argument("--outFilename", dest="outfn", default= None, type=str)
   '''this option come from the tumor side'''
   parser.add_argument("--writeVessels", help="when doing the tumor, export vesesls", default=True, action="store_true")  
-  parser.add_argument("--writeFields", help="when doing the tumor, export Fields", default=None)  
+  parser.add_argument("--writeFields", help="when doing the tumor, export Fields", default=None)
+  parser.add_argument("-c", help="if specified, VBL Cells will be exported", default=False)
   goodArguments, otherArguments = parser.parse_known_args()
   #create filename due to former standards
   filenames=[]
@@ -372,6 +373,7 @@ if __name__ == '__main__':
     if goodArguments.outfn:
       goodArguments.outfn = goodArguments.outfn + '_%s.vtk'
     else:
+      pattern = pattern.replace('/', '_')
       goodArguments.outfn = outfn = "%s-%%s.vtk" % (os.path.splitext(os.path.basename(fn))[0]+('_%s'%pattern))
     print("you chose: %s as outfilename" % goodArguments.outfn)
     for d in dirs:
@@ -418,12 +420,12 @@ if __name__ == '__main__':
           hdftumor2vtk(graph, goodArguments)
           print('bla2')
         else:
-          vesselgroup = f['/recomputed_flow']
+          vesselgroup = f['/recomputed_flow/vessels']
           new = False
           if new:
             graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce','nodeflags','edge_boundary'] + datalist, return_graph=True)
           else:
-            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
+            graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['po2_vessel','po2_node','position', 'radius', 'hematocrit', 'pressure', 'flow', 'flags','shearforce'] + datalist, return_graph=True)
           if goodArguments.filteruncirculated:
             graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))
           #amazing, out of the box this works for the o2 simulation as well.

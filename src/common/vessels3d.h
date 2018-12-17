@@ -162,7 +162,10 @@ struct HemodynamicBounds
   HemodynamicBounds( const VesselList3d *g ) { Add(g,false); }
   void Add( const VesselList3d *g, bool bClear=true );
 };
-
+/** NOTE 
+ * this is a bottle neck for all simulations and should be 
+ * parallized. Maybe with boost graph.
+ */
 void ComputeCirculatedComponents( VesselList3d *list );
 
 
@@ -281,8 +284,8 @@ uint Optimize( VesselList3d *vl );
 // void GetSubdivided(std::unique_ptr< VesselList3d > &vl, int multi, float newscale, int safety_boundary = 1);
 // void GetSubdivided(std::unique_ptr<VesselList3d> &vl, float scale);
 
-void GetSubdivided(std::shared_ptr< VesselList3d > &vl, int multi, float newscale, int safety_boundary = 1);
-void GetSubdivided(std::shared_ptr<VesselList3d> &vl, float scale);
+std::shared_ptr<VesselList3d> GetSubdivided(VesselList3d &vl, int multi, float newscale, int safety_boundary = 1);
+std::shared_ptr<VesselList3d> GetSubdivided(VesselList3d &vl, float scale);
 
 //std::unique_ptr< VesselList3d >& GetSubdivided( VesselList3d  &vl, int multi, float newscale, int safety_boundary = 1);
 //std::unique_ptr<VesselList3d>& GetSubdivided( VesselList3d &vl, float scale);

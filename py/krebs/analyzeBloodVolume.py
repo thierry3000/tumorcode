@@ -244,6 +244,7 @@ if __name__ == '__main__':
     keys = filter(lambda k: k.startswith('out'), f.keys())
     for k in keys:
       allgroups[k].append(f[k])
+  #allgroups.append('vessels')
   allgroups = [ (k, allgroups[k]) for k in sorted(allgroups.keys()) ]
   groupslist = [allgroups[-1], allgroups[len(allgroups)/2]]
   outfn = 'bloodVolume-%s.pdf' % splitext(basename(filenames[0]))[0]

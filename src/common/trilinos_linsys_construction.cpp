@@ -18,27 +18,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "trilinos_linsys_construction.h"
-#include "shared-objects.h"
-#include "mwlib/timer.h"
-
-//it is good to know the epetra settings before we set up mpi and multithreading
-//#include <Epetra_ConfigDefs.h>
-//everything done in trilinos_linsys_construction.h like it is ususal
-
-#include <Epetra_Map.h>
-#include <Epetra_Vector.h>
-#include <Epetra_CrsMatrix.h>
-#include <Epetra_LinearProblem.h>
-#include <Tpetra_DefaultPlatform.hpp>
-#include <Tpetra_CrsMatrix.hpp>
-#include <Tpetra_Version.hpp>
-#include <BelosTpetraAdapter.hpp>
-//#include <Ifpack2_Factory.hpp>
-#include <EpetraExt_RowMatrixOut.h>
-#include <EpetraExt_VectorOut.h>
-#include <Ifpack.h>
-#include <Ifpack_IC.h>
-#include <Ifpack_ILU.h>
 
 /**
  * @brief Set up system with 7 point stencil

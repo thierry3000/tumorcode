@@ -103,5 +103,5 @@ struct SystemParameters
 };
 
 void readSystemParameters(SystemParameters &sysParamsToFill);
-
+typedef double FlReal;
 #endif

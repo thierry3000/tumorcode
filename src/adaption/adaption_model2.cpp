@@ -326,6 +326,7 @@ Parameters::Parameters()
   radMin_for_kill = 2.5;
   write2File = true;
   outputFileName = "empty";
+  parameterSetName = "";
   boundary_Condition_handling = KEEP;
   a_pressure = 1.8;
   a_flow = 200000.;
@@ -362,6 +363,7 @@ void Parameters::assign(const ptree& pt)
   a_pressure = pt.get<double>("a_pressure", 42.);
   a_flow = pt.get<double>("a_flow", 42.);
   write2File = pt.get<bool>("write2File", true);
+  parameterSetName = pt.get<string>("name", "parameterSetName");
   outputFileName = pt.get<string>("outputFileName", "empty");
   pop = pt.get<int>("pop",5);
   individuals = pt.get<int>("individuals",42);
@@ -397,6 +399,7 @@ ptree Parameters::as_ptree() const
 		   ("a_flow", a_flow)
 		   ("write2File", write2File)
        ("outputFileName", outputFileName)
+       ("parameterSetName", parameterSetName)
 		   ("pop", pop)
 		   ("individuals", individuals)
 		   ("opt_iter", opt_iter)
@@ -1361,10 +1364,13 @@ bool check_while_break( int no_vessels, double min_error, double nqdev, double m
 
 std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( Parameters params, BloodFlowParameters bfparams, bool doDebugOutput)
 {
-  h5cpp::File *readInFile = new h5cpp::File(params.vesselFileName,"r");
-  h5cpp::Group vl_grp = h5cpp::Group(readInFile->root().open_group(params.vesselGroupName));
+  H5::H5File *readInFile = new H5::H5File(params.vesselFileName, H5F_ACC_RDONLY);
+  H5::Group vl_grp = readInFile->openGroup(params.vesselGroupName);
 
-  std::auto_ptr<VesselList3d> vl = ReadVesselList3d(vl_grp, make_ptree("filter", false));
+  std::shared_ptr<VesselList3d> vl = ReadVesselList3d(vl_grp, make_ptree("filter", false));
+  vl_grp.close();
+  readInFile->close();
+  delete readInFile;
   return runAdaption_Loop( *vl, params, bfparams, doDebugOutput);
 }
   
@@ -1718,27 +1724,39 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Param
 #endif
   if(doDebugOutput)//this needs improvements, skipped for now
   {
-    h5cpp::File f;
-    //write vessel list to file
-    if( params.outputFileName.compare("empty") !=0 )
+    try 
     {
-      f= h5cpp::File( params.outputFileName ,"w");
+      H5::H5File f;
+      //write vessel list to file
+      if( params.outputFileName.compare("empty") !=0 )
+      {
+        f= H5::H5File( params.outputFileName , H5F_ACC_RDWR);
+      }
+      else
+      {
+        cout << " no outputFileName found!!! --> creating one" << endl;
+        string stripped = RemoveAllExtensions(params.vesselFileName);
+        stripped = RemovePath(stripped);
+        f= H5::H5File( "adaption_" + params.parameterSetName +"_" + stripped +".h5", H5F_ACC_TRUNC);
+      }
+      H5::Group out_ = f.openGroup("/");
+      H5::Group params_;
+      H5::Group grp_temp = out_.createGroup("vessels_after_adaption");
+      ptree getEverytingPossible = make_ptree("w_adaption", true);
+      WriteVesselList3d(vl, grp_temp, getEverytingPossible);
+      params_ = grp_temp.createGroup("parameters");
+      ptree outputPtree = params.as_ptree();
+      outputPtree.put("cwd", boost::filesystem::current_path().string());
+      WriteHdfPtree(params_, outputPtree);
+      grp_temp.close();
+      params_.close();
+      out_.close();
+      f.close();
     }
-    else
+    catch(H5::Exception &e)
     {
-      string stripped = RemoveAllExtensions(params.vesselFileName);
-      stripped = RemovePath(stripped);
-      f= h5cpp::File( "adaption_" + stripped +".h5","w");
+      e.printErrorStack();
     }
-    h5cpp::Group out_ = f.root();
-    h5cpp::Group params_;
-    h5cpp::Group grp_temp = out_.create_group("vessels_after_adaption");
-    ptree getEverytingPossible = make_ptree("w_adaption", true);
-    WriteVesselList3d(vl, grp_temp, getEverytingPossible);
-    params_ = grp_temp.create_group("parameters");
-    ptree outputPtree = params.as_ptree();
-    outputPtree.put("cwd", boost::filesystem::current_path().string());
-    WriteHdfPtree(params_, outputPtree);
   }
     //calculate mean and std
     using namespace boost::accumulators;

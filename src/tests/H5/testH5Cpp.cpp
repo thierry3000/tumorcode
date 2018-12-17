@@ -105,6 +105,10 @@ H5::DataType getH5TypeFromCpp()
   {
     thisWritingType = H5::PredType::NATIVE_DOUBLE;
   }
+  else if(typeid(T) == typeid(Double2))
+  {
+    thisWritingType = H5::PredType::NATIVE_DOUBLE;
+  }
   else if(typeid(T) == typeid(Double3))
   {
     thisWritingType = H5::PredType::NATIVE_DOUBLE;
@@ -152,6 +156,7 @@ H5::DataType getH5TypeFromCpp()
   else
   {
     cout << "unsupported Template type in writeDataSetToGroup!" << endl;
+    cout << "type: " << typeid(T).name() << endl;
     exit(1);
   }
   return thisWritingType;

@@ -12,19 +12,9 @@ add_library(krebs_ SHARED
             python_vesselgen.cpp
             python_calcflow.cpp python_interpolate_between_vessels.cpp
             python_murray.cpp)
-#I have to take care of python_elliptic_solver_test.cpp
-if (False)
-  find_package(MPI REQUIRED)
-  message(STATUS "Including MPI for libkrebs")
-  message(STATUS "MPI libs         = ${MPI_CXX_LIBRARIES}")
-  message(STATUS "MPI include dirs = ${MPI_CXX_INCLUDE_PATH}")
-  message(STATUS "MPI_LIBRARY = ${MPI_LIBRARY}")#-->DEPRECATED
-  message(STATUS "MPI_CXX_COMPILER_FLAGS = ${MPI_CXX_COMPILER_FLAGS}")
-  message(STATUS "MPI_CXX_LINK_FLAGS = ${MPI_CXX_LINK_FLAGS}")
-  target_link_libraries(krebs_ common vesselgenlib ${myLibs} ${MPI_CXX_LIBRARIES})
-else()
-  target_link_libraries(krebs_ common vesselgenlib ${myLibs} )
-endif()
+
+target_link_libraries(krebs_ common vesselgenlib ${myLibs} )
+
 #set_target_properties(krebs_ PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 install(TARGETS krebs_

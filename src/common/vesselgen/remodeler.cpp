@@ -1268,7 +1268,7 @@ void Grower::UpscaleTrees()
   
   std::unique_ptr<LatticeData> oldld = polymorphic_latticedata::Make_ld(former_lattice_type.c_str(), vl->Ld().Box(), vl->Ld().Scale());
 
-  GetSubdivided(vl, 2, vl->Ld().Scale(), 0);
+  vl = std::move(GetSubdivided(*vl, 2, vl->Ld().Scale(), 0));
 #ifndef NDEBUG
   std::cout << " Ld after subdividing" << std::endl;
   vl->Ld().print(std::cout);
