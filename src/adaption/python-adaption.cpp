@@ -201,14 +201,18 @@ static py::object PyComputeAdaption(const py::dict py_parameters, const py::dict
   cout<<" PyComputeAdaption is called "<<endl;
 #endif
 #if 1
-  //BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
-  BloodFlowParameters bfparams;
-  InitBFParameters(&bfparams, &py_bfparams);
+  BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);
+  //BloodFlowParameters bfparams;
+  //InitBFParameters(&bfparams, &py_bfparams);
   Adaption::Parameters params;
   InitParameters(&params, &py_parameters);
 
 #ifndef TOTAL_SILENCE
   cout<<" Parameters initialized "<<endl;
+  if (bfparams.includePhaseSeparationEffect)
+  {
+    cout<<" phase separation activated"<<endl;
+  }
 #endif
   
 

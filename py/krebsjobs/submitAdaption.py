@@ -142,7 +142,7 @@ if not qsub.is_client and __name__=='__main__':
   
   try:
     if not goodArguments.AdaptionParamSetName in dir(parameterSetsAdaption):
-      raise AssertionError('Unknown parameter set %s!' % goodArguments.AdaptionParamSet)
+      raise AssertionError('Unknown parameter set %s!' % goodArguments.AdaptionParamSetName)
     dirs = set()
     for fn in goodArguments.vesselFileNames:
       if not os.path.isfile(fn.name):
@@ -164,7 +164,9 @@ if not qsub.is_client and __name__=='__main__':
   for fn in goodArguments.vesselFileNames:
     filenames.append(fn.name)
   
+  print('getting parameter set with name: %s' %goodArguments.AdaptionParamSetName )
   factory = getattr(parameterSetsAdaption, goodArguments.AdaptionParamSetName)
+  
   if factory.__class__ == list:
     factory=factory[7]
     print("warning: you are using several parameter sets")

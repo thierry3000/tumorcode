@@ -131,7 +131,6 @@ def computeAdaption_(gdst, vesselgroup, parameters):
   #myutils.hdf_write_dict_hierarchy(gdst, 'parameters', parameters)
   #gdst.file.flush()
   # now we can compute Adaption. The c++ routine can a.t.m. only read from hdf so it has to use our new file
-  
   r = adaption_cpp.computeAdaption(vesselgroup, parameters['adaption'], parameters['calcflow'], gdst)
   myutils.hdf_write_dict_hierarchy(gdst, 'parameters', parameters)
   gdst.file.flush()
@@ -231,6 +230,7 @@ def doit_optimize_deap(individual):
 
 def doit(parameters):
   #_ku.set_num_threads(1)
+  
   if sys.flags.debug:
     print(parameters)
 #  fn = parameters['adaption']['vesselFileName']

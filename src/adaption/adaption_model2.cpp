@@ -17,12 +17,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "common/shared-objects.h"
-#include "common/continuum-flow.h"
-#include "common/time_stepper_utils_new.h"
-#include "common/trilinos_linsys_construction.h"
-#include "common/vessels3d.h"
-#include "common/calcflow_common.h" //at least for remap_keys
 
 #include "mwlib/math_ext.h"
 

@@ -340,7 +340,7 @@ if __name__ == '__main__':
   '''this option come from the tumor side'''
   parser.add_argument("--writeVessels", help="when doing the tumor, export vesesls", default=True, action="store_true")  
   parser.add_argument("--writeFields", help="when doing the tumor, export Fields", default=None)
-  parser.add_argument("-c", help="if specified, VBL Cells will be exported", default=False)
+  parser.add_argument("-c", help="if specified, VBL Cells will be exported", default=False, action="store_true")
   goodArguments, otherArguments = parser.parse_known_args()
   #create filename due to former standards
   filenames=[]

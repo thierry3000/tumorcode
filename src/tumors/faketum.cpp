@@ -102,7 +102,8 @@ void FakeTum::Parameters::assign(const ptree &pt)
   if (bfparamsPtree) bfparams.assign(*bfparamsPtree);
 #ifdef USE_ADAPTION
   const auto adapt_paramsPtree = pt.get_child_optional("adaption");
-  if (adapt_paramsPtree) adap_params.assign(*adapt_paramsPtree);
+  if (adapt_paramsPtree) 
+    adap_params.assign(*adapt_paramsPtree);
   DOPT(apply_adaption_intervall);
 #endif
   #undef DOPT

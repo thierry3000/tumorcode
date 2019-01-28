@@ -85,8 +85,12 @@ struct Parameters
   double out_intervall, tend;
   double dt;
   double latest_executed_timepoint;
-  
+
+#ifdef USE_ADAPTION
+  Adaption::Parameters adap_params;
   double apply_adaption_intervall;
+#endif
+
   string message;
   string fn_out, fn_vessel, vessel_path, vesselfile_message;
   string paramset_name;

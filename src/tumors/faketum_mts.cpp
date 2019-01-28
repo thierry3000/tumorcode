@@ -157,8 +157,9 @@ FakeTumMTS::Parameters::Parameters()
   tend = 1000;
   dt = 1;
   latest_executed_timepoint = 0;
-  
+#if USE_ADAPTION
   apply_adaption_intervall = 1;// earlier adaption was done in each step, so for backward compatibility, default in 1
+#endif
   message = "";
   max_iteration_per_rerun = -1;
   fn_out = "";
@@ -237,7 +238,9 @@ ptree FakeTumMTS::Parameters::as_ptree() const
   DOPT(useTumorcodeVessels);
   DOPT(paramset_name);
   DOPT(out_intervall);
+#if USE_ADAPTION
   DOPT(apply_adaption_intervall);
+#endif
   DOPT(tend);
   DOPT(time);
   DOPT(latest_executed_timepoint);
