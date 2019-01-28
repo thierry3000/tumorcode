@@ -177,14 +177,14 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
       print >>f, '#SBATCH --nodes=1'
       print >>f, '#SBATCH --ntasks-per-node=1'
       
-    if goodArgumentsQueue.cinecaDebug:
-      print('cinecaDebug chosen time below 2 hours')
-      print >>f, '#SBATCH --partition=bdw_usr_dbg'
+    #if goodArgumentsQueue.cinecaDebug:
+      #print('cinecaDebug chosen time below 2 hours')
+      #print >>f, '#SBATCH --partition=bdw_usr_dbg'
       #print >>f, '#SBATCH --time=0-00:10:00'
-    else:
-      print >>f, '#SBATCH --partition=bdw_usr_prod'
-      if goodArgumentsQueue.cinecaSpecial:
-        print >>f, '#SBATCH --qos=bdw_qos_special'
+    #else:
+      #print >>f, '#SBATCH --partition=bdw_usr_prod'
+      #if goodArgumentsQueue.cinecaSpecial:
+      #  print >>f, '#SBATCH --qos=bdw_qos_special'
     if days or hours:
       days, hours = fmtDate_(days, hours)#not used on cinceca
       days=0 #needs to be guaranteed in cineca
@@ -260,8 +260,20 @@ def submit_(interpreter, submission_program, script):
       exec script in dict(), dict()
     else: # all the other cases go like so!
       print("calling subprocess:")
-      subprocess.call("%s <<EOFQSUB\n%s\nEOFQSUB" % (submission_program, script), shell=True)
+      #return_from_queuing_system = subprocess.call("%s <<EOFQSUB\n%s\nEOFQSUB" % (submission_program, script), shell=True)
+      p1 = subprocess.Popen("%s <<EOFQSUB\n%s\nEOFQSUB" % (submission_program, script), stdout=subprocess.PIPE,shell=True)
+      return_from_queuing_system = p1.communicate()[0]
+      prog = determine_submission_program_()
+      jobID = 0
+      if prog == 'sbatch':
+        ''' expect return of form "Submitted batch job 3522973'''
+	jobID= int(return_from_queuing_system.split()[-1])
+        #print(return_from_queuing_system.split()[-1])
+      else:
+      	print("Error, no queuing system identified")
+      #print(return_from_queuing_system)
       #subprocess.check_output("%s <<EOFQSUB\n%s\nEOFQSUB" % (submission_program, script), shell=True)
+  return jobID
 
 pyfuncscript_ = """\
 import imp as imp__
@@ -352,6 +364,8 @@ class Exe(object):
     lines = [
       ' '.join(list(str(q) for q in cmd)) for cmd in self.cmds
       ]
+    '''add OpenMP setting from slurm '''
+    lines = ['export OMP_NUM_THREADS=%i'% os.environ.get('SLURM_JOB_CPUS_PER_NODE',0)] + lines
     if qsubopts.get('change_cwd', False):
       lines = [ 'cd %s' % os.getcwd() ] + lines
     return '\n'.join(lines)
@@ -444,9 +458,9 @@ def submit_slurm(obj, submission_program, **slurmopts):
   f = cStringIO.StringIO()
   print >>f, first_line
   write_directives_slurm_(f, **slurmopts)
-  print >>f, 'import os'
-  print >>f, 'os.environ["OMP_NUM_THREADS"]=os.environ["SLURM_JOB_CPUS_PER_NODE"]'
-  print >>f, 'print(os.environ["OMP_NUM_THREADS"])'
+  #print >>f, 'import os'
+  #print >>f, 'os.environ[''OMP_NUM_THREADS'']=os.environ[''SLURM_JOB_CPUS_PER_NODE'']'
+  #print >>f, 'print(os.environ[''OMP_NUM_THREADS''])'
   old=True
   if old:
     print >>f,obj.generate_script(slurmopts)
@@ -536,11 +550,13 @@ def submit(obj, **qsubopts):
     print("determined program: %s" %prog)
     
     if prog == 'sbatch':
-      submit_slurm(obj, prog, **qsubopts)
+      jobID = submit_slurm(obj, prog, **qsubopts)
     elif prog == 'qsub':
       submit_qsub(obj, prog, **qsubopts)
     elif prog == 'run_locally':
       submit_qsub(obj, prog, **qsubopts)
     else:
+      jobID = 0
       print("unknow submission sytem")
+    return jobID
       

@@ -36,7 +36,7 @@ def ClientWorker(*args, **kwargs):
 if not qsub.is_client and __name__=='__main__':
   argv = qsub.parse_args(sys.argv)
 
-  qsub.submit(qsub.func(ClientWorker, 'Test Argument', a_kw_arg = 9001),
+  jobIDinPy = qsub.submit(qsub.func(ClientWorker, 'Test Argument', a_kw_arg = 9001),
                 name = 'qsub-script-python-test',
                 num_cpus = 1,
                 days = 0,
@@ -50,6 +50,7 @@ if not qsub.is_client and __name__=='__main__':
     f.write('''echo "hello, i'm running on the cluster"\n''')
     f.write('''echo "my cwd is:"\n''')
     f.write('''pwd\n''')
+    f.write('''echo "my job id was %i"''' %jobIDinPy)
   os.chmod(test_program_name, stat.S_IXUSR | stat.S_IWUSR | stat.S_IRUSR)
   
   qsub.submit(qsub.exe(['ulimit -c unlimited'],
