@@ -479,11 +479,6 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   }
   else
   {
-    //this is store before the increment in the last run
-    num_iteration++;
-    output_num++;
-    time = time+params.dt;
-    
     if( !params.useConstO2 )
     {
       //read detailed o2 from previous run
@@ -676,6 +671,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     ++output_num;
     ++num_iteration;
     ++iteration_in_this_rerun;
+    //time = time+params.dt;
   }
 
   tumorcode_pointer_to_currentCellsSystem->CloseOutputFiles();						// Closing output files

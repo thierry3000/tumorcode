@@ -121,13 +121,12 @@ def fmtDate_(days, hours):
         days = 0
     if hours is None:
         hours = 0
-    i_days = int(days)
-    h_days = (days-i_days)*24.0
-    d_hours = int(hours/24)
-    h_hours = hours - d_hours*24.0
-    days  = i_days + d_hours
-    hours = int(math.ceil(h_days + h_hours))
-    return days, hours
+        
+    int_hours = math.floor(hours)
+    broken_hours = hours-int_hours
+    minutes = broken_hours*60
+    print('days: %i, hours: %i, minutes: %i' %(days,hours,minutes))
+    return int(days), int(int_hours), int(minutes)
     
 
 def write_directives_qsub_(f,name=None, mem=None, num_cpus=None, days=None, hours=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False, dependsOnJob = None):
@@ -157,11 +156,14 @@ def write_directives_qsub_(f,name=None, mem=None, num_cpus=None, days=None, hour
     print >>f, '#PBS -W depend=afterok:%s' % dependsOnJob
     
     
-def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, hours=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False):
+def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, hours=None, outdir=None, export_env=False, jobfiledir=None, change_cwd=False, dependOn=None):
   hpc_system = os.environ.get('HPC_SYSTEM', None)
   if goodArgumentsQueue.exclude:
     print >>f, '#SBATCH --exclude=%s' % goodArgumentsQueue.exclude
-  
+    
+  if dependOn is not None:
+    print >>f, '#SBATCH --dependency=afterok:%i' % dependOn
+    
   if hpc_system == 'marconi':
     print >>f, '#SBATCH --account=uTS18_Milotti'
     if name:
@@ -186,10 +188,9 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
       #if goodArgumentsQueue.cinecaSpecial:
       #  print >>f, '#SBATCH --qos=bdw_qos_special'
     if days or hours:
-      days, hours = fmtDate_(days, hours)#not used on cinceca
+      days, hours, minutes = fmtDate_(days, hours)#not used on cinceca
       days=0 #needs to be guaranteed in cineca
-      print('hours: %i' %hours)
-      print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)
+      print >>f, '#SBATCH --time=%i-%i:%i:00' % (days, hours,minutes)
       
     if mem:
       print('cineca chosen mem below 110 GB')
@@ -228,8 +229,8 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
   #    print >>f, '#SBATCH --resv-ports'
   #    print >>f, '#SBATCH --ntasks-per-node=8'
     if days or hours:
-      days, hours = fmtDate_(days, hours)
-      print >>f, '#SBATCH --time=%i-%i:00:00' % (days, hours)
+      days, hours, minutes = fmtDate_(days, hours)
+      print >>f, '#SBATCH --time=%i-%i:%i:00' % (days, hours, minutes)
     if mem:
       if re.match(r'^\d+(kB|MB|GB)$', mem) is None:
         raise RuntimeError('mem argument needs integer number plus one of kB, MB, GB')
@@ -561,3 +562,6 @@ def submit(obj, **qsubopts):
     print("submitting with jobID: %i" % jobID)
     return jobID
       
+if __name__ == '__main__':
+  print(fmtDate_(0, 3.5))
+  

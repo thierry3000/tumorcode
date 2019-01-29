@@ -76,7 +76,61 @@ def MakeVesselFilenamePart(fn):
   name = '%s-sample%02i' % (msg, ensemble_index)
   return name
 
-
+''' returns estimated runtime in hours'''
+def estimateMTS_runtime(runTimeIndex):
+#    with h5py.File(fn_of_previous_run, 'r') as previousFile:
+#      last_out_num = int(previousFile['last_state'].attrs['OUTPUT_NUM'][0])
+#      print(last_out_num)
+#    if last_out_num < 100:
+#      return 1
+#    if last_out_num >=100 and last_out_num < 200:
+#      return 2
+  hours = 0.5
+  print('estimate hours for %i: %i' % (runTimeIndex, hours))
+  return hours
+''' returns estimated memory in MB'''
+def estimateMTS_memory(runTimeIndex):
+#    with h5py.File(fn_of_previous_run, 'r') as previousFile:
+#      last_out_num = int(previousFile['last_state'].attrs['OUTPUT_NUM'][0])
+#      print(last_out_num)
+#    if last_out_num < 100:
+#      return 1
+#    if last_out_num >=100 and last_out_num < 200:
+#      return 2
+  if runTimeIndex < 100:
+    return '1GB'
+  if runTimeIndex < 200:
+    return '2GB'
+  if runTimeIndex < 300:
+    return '4GB'
+#  memoryInMB = 100
+#  print('estimate memory for %i: %iMB' % (runTimeIndex, memoryInMB))
+#  return '%iMB' % memoryInMB
+    
+def run_pipeline(vessel_fn, name, paramSet, mem, days):
+  ''' initial job'''
+  name, paramSet = krebsjobs.PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTumMTS', paramSet)
+  print("name: %s" %name)
+  configstr = dicttoinfo(paramSet)
+  config_file_name = '%s.info' % paramSet['fn_out']
+  with open(config_file_name, 'w') as f:
+    f.write(configstr)
+  jobID_to_continue=qsub.submit(qsub.func(krebs.tumors.run_faketum_mts, config_file_name),
+                            name = 'job_'+name,
+                            mem = mem,
+                            hours = 1,
+                            change_cwd = True)
+  fn_of_previous_run = '%i/%s.h5' % (jobID_to_continue,name)
+  
+  for i in range(10):
+    jobID_to_continue = qsub.submit(qsub.func(krebs.tumors.rerun_faketum_mts, fn_of_previous_run),
+                            name = 'job_'+ name,
+                            mem = estimateMTS_memory(i),
+                            hours = estimateMTS_runtime(i),
+                            change_cwd = True,
+                            dependOn = jobID_to_continue)
+  
+  
 def run(vessel_fn, name, paramSet, mem, days):
   
   name, paramSet = krebsjobs.PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTumMTS', paramSet)
@@ -100,14 +154,7 @@ def rerun(fn_of_previous_run, job_name, mem, days):
   #config_file_name = '%s.info' % c['fn_out']
   #with open(config_file_name, 'w') as f:
   #  f.write(configstr)
-  def estimateMTS_runtime(fn_of_previous_run):
-    with h5py.File(fn_of_previous_run, 'r') as previousFile:
-      last_out_num = int(previousFile['last_state'].attrs['OUTPUT_NUM'][0])
-      print(last_out_num)
-    if last_out_num < 100:
-      return 1
-    if last_out_num >=100 and last_out_num < 200:
-      return 2
+  
   estimateMTS_runtime(fn_of_previous_run)
   qsub.submit(qsub.func(krebs.tumors.rerun_faketum_mts, fn_of_previous_run),
                             name = 'job_'+ job_name,
@@ -149,7 +196,8 @@ if __name__ == '__main__':
     factory = getattr(parameterSets, tumorParameterName)
     for fn in filenames:
       #run(fn, tumorParameterName, factory, '4GB', 2.)
-      run(fn, tumorParameterName, factory, '2GB', 5.)
+      #run(fn, tumorParameterName, factory, '2GB', 5.)
+      run_pipeline(fn, tumorParameterName, factory, '2GB', 5.)
   else:
     print('starting rerun with file: %s' % goodArgumentsMTS.vesselFileNames[0].name)
     if not os.path.isfile(goodArgumentsMTS.vesselFileNames[0].name):
