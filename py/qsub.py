@@ -558,5 +558,6 @@ def submit(obj, **qsubopts):
     else:
       jobID = 0
       print("unknow submission sytem")
+    print("submitting with jobID: %i" % jobID)
     return jobID
       

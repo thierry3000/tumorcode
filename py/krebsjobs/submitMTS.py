@@ -100,10 +100,20 @@ def rerun(fn_of_previous_run, job_name, mem, days):
   #config_file_name = '%s.info' % c['fn_out']
   #with open(config_file_name, 'w') as f:
   #  f.write(configstr)
+  def estimateMTS_runtime(fn_of_previous_run):
+    with h5py.File(fn_of_previous_run, 'r') as previousFile:
+      last_out_num = int(previousFile['last_state'].attrs['OUTPUT_NUM'][0])
+      print(last_out_num)
+    if last_out_num < 100:
+      return 1
+    if last_out_num >=100 and last_out_num < 200:
+      return 2
+  estimateMTS_runtime(fn_of_previous_run)
   qsub.submit(qsub.func(krebs.tumors.rerun_faketum_mts, fn_of_previous_run),
                             name = 'job_'+ job_name,
                             mem = mem,
-                            days = days,
+                            hours = estimateMTS_runtime(fn_of_previous_run),
+			    #days = days,
                             #num_cpus = 2,
 			    #set by slurm
                             change_cwd = True)
