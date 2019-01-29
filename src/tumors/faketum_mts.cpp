@@ -473,7 +473,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
   {
     time = 0.;
     num_iteration = 0.;
-    output_num = 0;
+    output_num = -1;
     next_output_time = 0;
     next_adaption_time = 0;
   }
@@ -611,16 +611,19 @@ int FakeTumMTS::FakeTumorSimMTS::run()
 #endif
 
 
-    
+    /* increment tumor time */
+    time += params.dt;
     
     if (time >= next_output_time - params.dt*1.0)
     {
       //this happens only for fixed instances of time
+      //this saves only a small instance of vbl data
       lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
       next_output_time += params.out_intervall;
     }
     //for a rerun we need to access the latest instant of time
     params.latest_executed_timepoint = time;
+    //this save all vbl data --> rerun
     writeOutput(false);
   
     //lastTumorGroupWrittenByFakeTumName = writeOutput(true);//detailedO2 should be calculated prior to this call
@@ -630,8 +633,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     /**
       * milotti vessel structure is initialized with tumorcodes vessels
       */
-    /* increment tumor time */
-    time += params.dt;
+    
     
     /* propergate cells in time until current fake tumor time */
     cout << boost::format("advance milotti until: %f\n") % time;
@@ -668,7 +670,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
 #endif
   
     cout << boost::format("finished vessel remodel step! \n");
-    ++output_num;
+    //++output_num;
     ++num_iteration;
     ++iteration_in_this_rerun;
     //time = time+params.dt;
@@ -1021,38 +1023,48 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
 {
   if( doPermanentSafe )
   {
+    ++output_num;
     cout << format("permanent output %i -> %s") % output_num % params.fn_out << endl;
   }
   else
   {
-    cout << format("buffer output %i -> %s") % output_num % params.fn_out << endl;
+    cout << format("buffer output %i -> %s") % output_num % "last_state.h5" << endl;
   }
-  H5::H5File f_out;
+  H5::H5File f_out,f_buffer_out;
   H5::Group root, gout, h5_tum, h5_cells_out, h5_ld_last_state, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_calcflow_parameters, h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup,
   h5_vbl,h5_memory;
   
   std::string tumOutName = "nothing";
   try
   {
-    if( !mySystemParameters.isRerun )
+    if( doPermanentSafe )
     {
-      f_out = H5::H5File(params.fn_out, output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
+      if( !mySystemParameters.isRerun )
+      {
+        f_out = H5::H5File(params.fn_out, output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
+      }
+      else
+      {
+        f_out = H5::H5File(params.fn_out, H5F_ACC_RDWR );
+      }
+      
+      root = f_out.openGroup("/");
     }
     else
     {
-      f_out = H5::H5File(params.fn_out, H5F_ACC_RDWR );
+      f_buffer_out = H5::H5File("last_state.h5",H5F_ACC_TRUNC);
+      root = f_buffer_out.openGroup("/");
     }
-    root = f_out.openGroup("/");
   }
   catch(H5::Exception &e)
   {
     e.printErrorStack();
   }
   
-  if (output_num == 0)
+  if (output_num == 0 or !doPermanentSafe)
   {
-    root.createGroup("last_state");
-    
+//     root.createGroup("last_state");
+//     cout << "created last state" << endl;
     try
     {
       h5_parameters = root.createGroup("parameters");
@@ -1070,8 +1082,9 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       WriteHdfPtree(h5_parameters, params.as_ptree());
       WriteHdfPtree(h5_system_parameters, mySystemParameters.as_ptree());
       WriteHdfPtree(h5_calcflow_parameters, o2_sim.bfparams.as_ptree());
-      o2_sim.WriteParametersToHDF(h5_o2_parameters);
-      //WriteHdfPtree(h5_o2_parameters, o2_sim.params.as_ptree());
+      //not yet working, read does not support types!!! while write does!
+      //o2_sim.WriteParametersToHDF(h5_o2_parameters);
+      WriteHdfPtree(h5_o2_parameters, o2_sim.params.as_ptree());
       /* on first occasion, we write field_ld to the root folder */
       h5_field_ld_group = root.createGroup("field_ld");
       grid.ld.WriteHdfLd(h5_field_ld_group);
@@ -1084,24 +1097,40 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   
   try
   {
-    if( !doPermanentSafe)
+    tumOutName = str(format("out%04i") % output_num);
+    
+//     if( !doPermanentSafe)
+//     {
+//       H5::H5File("last_state.h5",H5F_ACC_TRUNC);
+//       gout = f_buffer_out.createGroup("/last_state");
+//       cout << "unlinked last_state" << endl;
+//       //the flush deletes the unlinked object immediatelly
+//       //somehow messes up other stuff
+//       //root.flush(H5F_SCOPE_LOCAL);
+//       //gout = root.createGroup("last_state");
+//       writeAttrToH5(gout, "CURRENT_RERUN_NUMBER", mySystemParameters.reRunNumber);
+//       //data needed for rerun:
+//       //   lattice, detailed o2, fieldGf, fieldO2Consumption
+//       
+//     }
+//     else
+//     {
+//       
+//       gout = root.createGroup(tumOutName);
+//       cout << "gout create: " << tumOutName << endl;
+//       cout << "increment output_num from: " << output_num << endl;
+//     }
+    if( doPermanentSafe )
     {
-      root.unlink("last_state");
-      //the flush deletes the unlinked object immediatelly
-      //somehow messes up other stuff
-      //root.flush(H5F_SCOPE_LOCAL);
-      gout = root.createGroup("last_state");
-      writeAttrToH5(gout, "CURRENT_RERUN_NUMBER", mySystemParameters.reRunNumber);
-      //data needed for rerun:
-      //   lattice, detailed o2, fieldGf, fieldO2Consumption
-      
+      gout = root.createGroup(tumOutName);
     }
     else
     {
-      tumOutName = str(format("out%04i") % output_num);
-      gout = root.createGroup(tumOutName);
+      gout = root.createGroup("/last_state");
     }
-    
+    writeAttrToH5(gout, "CURRENT_RERUN_NUMBER", mySystemParameters.reRunNumber);
+    cout << "gout create: " << tumOutName << endl;
+      
     h5_vbl = gout.createGroup("vbl");
     h5_current_vessels = gout.createGroup("vessels");
     h5_tum = gout.createGroup("tumor");
@@ -1140,8 +1169,6 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       writeAttrToH5(h5_memory, string("rss"), m.rss);
       writeAttrToH5(h5_memory, string("rss_peak"), m.rss_peak);
     }
-    
-    
     
     /** runtime data
      */
@@ -1231,7 +1258,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   
   //f_out.flush(H5F_SCOPE_LOCAL);
   f_out.close();
-  //++output_num;
+  f_buffer_out.close();
   
   cout << format("files %s flushed and closed")  % params.fn_out << endl;
   return tumOutName;

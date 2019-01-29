@@ -192,7 +192,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
       h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
       h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
       h5_system_of_first_run = h5_params_of_previous_run.openGroup("system");
-      h5_o2_params_of_previous_run = h5_params_of_previous_run.openGroup("o2_sim/o2");
+      h5_o2_params_of_previous_run = h5_params_of_previous_run.openGroup("o2_sim");
       h5_vbl_param = last_state.openGroup("vbl");
       h5_vbl_Environment =h5_vbl_param.openGroup("Environment");
       h5_vbl_Environment_0=h5_vbl_param.openGroup("Environment_0");

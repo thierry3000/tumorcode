@@ -85,29 +85,51 @@ def estimateMTS_runtime(runTimeIndex):
 #      return 1
 #    if last_out_num >=100 and last_out_num < 200:
 #      return 2
-  hours = 0.5
-  print('estimate hours for %i: %i' % (runTimeIndex, hours))
+  if runTimeIndex < 100:
+    hours = 0.5
+  if runTimeIndex < 200:
+    hours = 1
+  if runTimeIndex < 300:
+    hours = 2
+  if runTimeIndex < 400:
+    hours = 6
+  if runTimeIndex < 500:
+    hours = 12
+  if runTimeIndex < 600:
+    hours = 23
+  print('estimate hours for %i: %s' % (runTimeIndex, hours))
   return hours
 ''' returns estimated memory in MB'''
 def estimateMTS_memory(runTimeIndex):
-#    with h5py.File(fn_of_previous_run, 'r') as previousFile:
-#      last_out_num = int(previousFile['last_state'].attrs['OUTPUT_NUM'][0])
-#      print(last_out_num)
-#    if last_out_num < 100:
-#      return 1
-#    if last_out_num >=100 and last_out_num < 200:
-#      return 2
+
   if runTimeIndex < 100:
     return '1GB'
   if runTimeIndex < 200:
     return '2GB'
   if runTimeIndex < 300:
     return '4GB'
-#  memoryInMB = 100
-#  print('estimate memory for %i: %iMB' % (runTimeIndex, memoryInMB))
-#  return '%iMB' % memoryInMB
-    
-def run_pipeline(vessel_fn, name, paramSet, mem, days):
+  if runTimeIndex < 400:
+    return '60GB'
+  if runTimeIndex < 500:
+    return '90GB'
+  if runTimeIndex < 600:
+    return '110GB'
+
+def estimateMTS_nProc(runTimeIndex):
+  if runTimeIndex < 10:
+    return 16
+  if runTimeIndex < 100:
+    return 8
+  if runTimeIndex < 200:
+    return 16
+  if runTimeIndex < 300:
+    return 16
+  if runTimeIndex < 400:
+    return 20
+  if runTimeIndex < 600:
+    return 28
+  
+def run_pipeline(vessel_fn, name, paramSet, mem, days, pipelineLength):
   ''' initial job'''
   name, paramSet = krebsjobs.PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTumMTS', paramSet)
   print("name: %s" %name)
@@ -120,11 +142,16 @@ def run_pipeline(vessel_fn, name, paramSet, mem, days):
                             mem = mem,
                             hours = 1,
                             change_cwd = True)
-  fn_of_previous_run = '%i/%s.h5' % (jobID_to_continue,name)
+  if qsub.determine_submission_program_() == 'run_locally':
+    fn_of_previous_run = name+'.h5'
+    fn_of_previous_run = 'last_state.h5'
+  else:
+    fn_of_previous_run = '%i/last_state.h5' % jobID_to_continue
   
-  for i in range(10):
+  for i in range(pipelineLength):
     jobID_to_continue = qsub.submit(qsub.func(krebs.tumors.rerun_faketum_mts, fn_of_previous_run),
                             name = 'job_'+ name,
+                            num_cpus = estimateMTS_nProc(i),
                             mem = estimateMTS_memory(i),
                             hours = estimateMTS_runtime(i),
                             change_cwd = True,
@@ -171,6 +198,7 @@ if __name__ == '__main__':
   parser.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/fparameterSetsFakeTumor.py')
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
   parser.add_argument('--rerun', help='allows to rerun a simulation', default=False, action='store_true')
+  parser.add_argument('--pipelineLength', help= 'number of successsive pipeline calls', type=int ,default = 0)
   
   goodArgumentsMTS, otherArgumentsMTS = parser.parse_known_args()
   qsub.parse_args(otherArgumentsMTS)
@@ -197,7 +225,7 @@ if __name__ == '__main__':
     for fn in filenames:
       #run(fn, tumorParameterName, factory, '4GB', 2.)
       #run(fn, tumorParameterName, factory, '2GB', 5.)
-      run_pipeline(fn, tumorParameterName, factory, '2GB', 5.)
+      run_pipeline(fn, tumorParameterName, factory, '2GB', 5., goodArgumentsMTS.pipelineLength)
   else:
     print('starting rerun with file: %s' % goodArgumentsMTS.vesselFileNames[0].name)
     if not os.path.isfile(goodArgumentsMTS.vesselFileNames[0].name):
