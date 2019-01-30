@@ -86,19 +86,19 @@ def estimateMTS_runtime(runTimeIndex):
 #    if last_out_num >=100 and last_out_num < 200:
 #      return 2
   if runTimeIndex < 100:
-    hours = 0.5
+    return 2./60.
   if runTimeIndex < 200:
-    hours = 1
+    return 5./60. # 5min
   if runTimeIndex < 300:
-    hours = 2
+    return 0.5
   if runTimeIndex < 400:
-    hours = 6
+    return 1
   if runTimeIndex < 500:
-    hours = 12
+    return 6
   if runTimeIndex < 600:
-    hours = 23
-  print('estimate hours for %i: %s' % (runTimeIndex, hours))
-  return hours
+    return 12
+  print('estimate hours for %i: %d' % (runTimeIndex, hours))
+  #return hours
 ''' returns estimated memory in MB'''
 def estimateMTS_memory(runTimeIndex):
 
@@ -116,10 +116,10 @@ def estimateMTS_memory(runTimeIndex):
     return '110GB'
 
 def estimateMTS_nProc(runTimeIndex):
-  if runTimeIndex < 10:
+  if runTimeIndex < 2:
     return 16
   if runTimeIndex < 100:
-    return 8
+    return 16
   if runTimeIndex < 200:
     return 16
   if runTimeIndex < 300:
@@ -144,9 +144,8 @@ def run_pipeline(vessel_fn, name, paramSet, mem, days, pipelineLength):
                             change_cwd = True)
   if qsub.determine_submission_program_() == 'run_locally':
     fn_of_previous_run = name+'.h5'
-    fn_of_previous_run = 'last_state.h5'
   else:
-    fn_of_previous_run = '%i/last_state.h5' % jobID_to_continue
+    fn_of_previous_run = '%i/%s.h5' % (jobID_to_continue, name)
   
   for i in range(pipelineLength):
     jobID_to_continue = qsub.submit(qsub.func(krebs.tumors.rerun_faketum_mts, fn_of_previous_run),

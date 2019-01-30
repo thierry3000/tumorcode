@@ -143,6 +143,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
   printPtree(fakeTumMTSSettings);
   #endif
   
+  s.mySystemParameters.JobID = std::getenv("SLURM_JOB_ID");
   if( !isRerun )
   {
     // update settings with the read in data
@@ -180,15 +181,23 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     H5::Group h5_vbl_Environment_0;
     H5::Group h5_vbl_dose_rateSignal;
     H5::Group h5_vbl_flowSignal;
+    
+    H5::Group h5_params_of_permanent;
+    H5::Group h5_system_of_permanent;
+    
     int reRunNumber;
     try
     {
       //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
       //storing current system information needs write permissions
       std::unique_ptr<H5::H5File> file = std::unique_ptr<H5::H5File>(new H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR));
+      std::unique_ptr<H5::H5File> last_state_file = std::unique_ptr<H5::H5File>(new H5::H5File("last_state.h5", H5F_ACC_RDONLY));
+    
       //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR);
-      last_state = file->openGroup("/last_state");
-      h5_params_of_previous_run = file->openGroup("/parameters");
+      last_state = last_state_file->openGroup("/last_state");
+      h5_params_of_previous_run = last_state_file->openGroup("/parameters");
+      h5_params_of_permanent = file->openGroup("/parameters");
+      
       h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
       h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
       h5_system_of_first_run = h5_params_of_previous_run.openGroup("system");
@@ -212,7 +221,9 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     ReadHdfPtree(vesselSettings, h5_vessel_params_of_previous_run);
     ReadHdfPtree(bfSettings, h5_calcflow_of_previous_run);
     ReadHdfPtree(fakeTumMTSSettings, h5_params_of_previous_run);
-    ReadHdfPtree(systemSettings, h5_system_of_first_run);
+    //I do not need the system settings of the previous run, do I?
+    //ReadHdfPtree(systemSettings, h5_system_of_first_run);
+    
     ReadHdfPtree(detailedO2Settings, h5_o2_params_of_previous_run);
     
     ReadHdfPtree(vblSettings, h5_vbl_param);
@@ -274,7 +285,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
  
     //override read in
     fakeTumMTSSettings.put("vessel_path", "last_state/vessels");
-    fakeTumMTSSettings.put("fn_vessel", fn_of_previous_sim_c_str);
+    fakeTumMTSSettings.put("fn_vessel", "last_state.h5");
     systemSettings.put("isRerun", true);
     
     readAttrFromH5(last_state, "CURRENT_RERUN_NUMBER", reRunNumber);
@@ -282,14 +293,16 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     systemSettings.put("reRunNumber", reRunNumber);
     try
     {
-      h5_system_of_current_run = h5_params_of_previous_run.createGroup(str(format("system_rerun_%02i") % reRunNumber));
+      h5_system_of_permanent = h5_params_of_permanent.createGroup(str(format("system_rerun_%02i") % reRunNumber));
+      //h5_system_of_current_run = h5_params_of_previous_run.createGroup(str(format("system_rerun_%02i") % reRunNumber));
     }
     catch(H5::Exception &e)
     {
       cout << "error: creating system_rerun parameters group" << endl;
       e.printErrorStack();
     }
-    WriteHdfPtree(h5_system_of_current_run, systemSettings);
+    //WriteHdfPtree(h5_system_of_current_run, systemSettings);
+    WriteHdfPtree(h5_system_of_permanent, systemSettings);
     //run time variables NO parameters
     readAttrFromH5(last_state, string("OUTPUT_NUM"), s.output_num);
     readAttrFromH5(last_state, string("NUM_ITERATION"), s.num_iteration);
@@ -308,6 +321,8 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     h5_vbl_Environment_0.close();
     h5_vbl_dose_rateSignal.close();
     h5_vbl_flowSignal.close();
+    h5_system_of_permanent.close();
+    h5_params_of_permanent.close();
   }
   
   // assign o2 parameters to the simulation
@@ -461,6 +476,10 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
     //update with params of previous run
     //H5::H5File file;
     std::unique_ptr<H5::H5File> file;
+    std::unique_ptr<H5::H5File> last_state_file;
+    H5::Group h5_params_of_permanent;
+    H5::Group h5_system_of_permanent;
+    
     H5::Group h5_params_of_previous_run;
     H5::Group h5_vessel_params_of_previous_run;
     H5::Group h5_calcflow_of_previous_run;
@@ -472,8 +491,10 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
       //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY);
       //storing current system information needs write permissions
       file = std::unique_ptr<H5::H5File>(new H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR));
+      last_state_file = std::unique_ptr<H5::H5File>(new H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDONLY));
+      h5_params_of_permanent = file->openGroup("/parameters");
       //file = H5::H5File(fn_of_previous_sim_c_str, H5F_ACC_RDWR);
-      h5_params_of_previous_run = file->openGroup("/parameters");
+      h5_params_of_previous_run = last_state_file->openGroup("/parameters");
       h5_vessel_params_of_previous_run = h5_params_of_previous_run.openGroup("vessels");
       h5_calcflow_of_previous_run = h5_params_of_previous_run.openGroup("calcflow");
       h5_system_of_first_run = h5_params_of_previous_run.openGroup("system");
@@ -493,12 +514,15 @@ void run_fakeTumor(const py::str &param_info_str_or_filename_of_pr, bool isRerun
     systemSettings.put("isRerun", true);
     try
     {
-      last_state = file->openGroup("/last_state");
+      last_state = last_state_file->openGroup("/last_state");
       readAttrFromH5(last_state, "CURRENT_RERUN_NUMBER", reRunNumber);
       reRunNumber++;
       systemSettings.put("reRunNumber", reRunNumber);
+      
       h5_system_of_current_run = h5_params_of_previous_run.createGroup(str(format("system_rerun_%02i") % reRunNumber));
+      h5_system_of_permanent = h5_params_of_permanent.createGroup(str(format("system_rerun_%02i") % reRunNumber)); 
       WriteHdfPtree(h5_system_of_current_run, systemSettings);
+      WriteHdfPtree(h5_system_of_permanent, systemSettings);
     }
     catch(H5::Exception &e)
     {

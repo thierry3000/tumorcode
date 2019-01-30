@@ -1028,7 +1028,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   }
   else
   {
-    cout << format("buffer output %i -> %s") % output_num % "last_state.h5" << endl;
+    cout << format("buffer output %i -> %s") % output_num % params.fn_out << endl;
   }
   H5::H5File f_out,f_buffer_out;
   H5::Group root, gout, h5_tum, h5_cells_out, h5_ld_last_state, h5_parameters, h5_vessel_parameters, h5_system_parameters, h5_o2_parameters, h5_calcflow_parameters, h5_field_ld_group, h5_timing, h5_current_vessels, po2outputGroup, ldgroup,
@@ -1045,6 +1045,11 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
       }
       else
       {
+        //if on cluster
+//         if( ! mySystemParameters.cluster == "local")
+//         {
+//         
+//         }
         f_out = H5::H5File(params.fn_out, H5F_ACC_RDWR );
       }
       
@@ -1063,6 +1068,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   
   if (output_num == 0 or !doPermanentSafe)
   {
+    writeAttrToH5(root,string("initialJobID"),mySystemParameters.JobID);
 //     root.createGroup("last_state");
 //     cout << "created last state" << endl;
     try

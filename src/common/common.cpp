@@ -196,6 +196,9 @@ SystemParameters::SystemParameters()
   
   isRerun = false;
   reRunNumber = 0;
+  // Get the current time in local Timezone   
+  boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
+  date_of_run = boost::posix_time::to_simple_string(timeLocal);
 }
 void SystemParameters::assign(const boost::property_tree::ptree& pt)
 {
@@ -208,6 +211,7 @@ void SystemParameters::assign(const boost::property_tree::ptree& pt)
   
   DOPT(isRerun);
   DOPT(reRunNumber);
+  DOPT(date_of_run);
   #undef DOPT
 }
 boost::property_tree::ptree SystemParameters::as_ptree() const
@@ -222,6 +226,8 @@ boost::property_tree::ptree SystemParameters::as_ptree() const
   
   DOPT(isRerun);
   DOPT(reRunNumber);
+  DOPT(date_of_run);
+  DOPT(JobID);
   #undef DOPT
   return pt;
 }

@@ -37,6 +37,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/tuple/tuple.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/asio/ip/host_name.hpp> // get host name
+#include <boost/date_time.hpp>
 
 #include <cstdlib> // std::getenv
 
@@ -91,11 +92,13 @@ struct SystemParameters
   int num_threads;
   string cluster;
   string computing_node;
+  string date_of_run;
   int num_threads_queuing;
   double mem_in_GB;
   
   bool isRerun;
   int reRunNumber;
+  int JobID;
   
   SystemParameters();
   void assign(const ptree &pt);

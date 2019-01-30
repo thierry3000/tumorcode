@@ -55,7 +55,8 @@ def parse_args(argv):
   threads_option = parserQueue.add_argument('-n', '--numThreads', help= 'num of threads for job', type=int, default = None)
   exclude_option = parserQueue.add_argument('--exclude', help= 'nodes to exclude', type=str, default = None)
   cineca_debub_option = parserQueue.add_argument('-c', '--cinecaDebug', help= 'if true, we submit do debug queue', default=False, action='store_true')
-  cineca_special_option = parserQueue.add_argument('-s', '--cinecaSpecial', help= 'if true, we submit to bdw_qos_special queue', default=False, action='store_true')
+  cineca_knl_deb_option = parserQueue.add_argument('--knlDeb', help= 'if true, we submit to knl_usr_dbg queue', default=False, action='store_true')
+  cineca_knl_option = parserQueue.add_argument('--knl', help= 'if true, we submit to knl_usr_prod queue', default=False, action='store_true')
 #  global defaultMemory
 #  defaultMemory = memory_option.default
 #  global defaultDays
@@ -179,9 +180,12 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
       print >>f, '#SBATCH --nodes=1'
       print >>f, '#SBATCH --ntasks-per-node=1'
       
-    #if goodArgumentsQueue.cinecaDebug:
-      #print('cinecaDebug chosen time below 2 hours')
-      #print >>f, '#SBATCH --partition=bdw_usr_dbg'
+    if goodArgumentsQueue.knl:
+      print('knl_usr_prod chosen')
+      print >>f, '#SBATCH --partition=knl_usr_prod'
+    if goodArgumentsQueue.knlDeb:
+      print('knl_usr_dbg chosen')
+      print >>f, '#SBATCH --partition=knl_usr_dbg'
       #print >>f, '#SBATCH --time=0-00:10:00'
     #else:
       #print >>f, '#SBATCH --partition=bdw_usr_prod'

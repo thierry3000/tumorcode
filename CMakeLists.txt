@@ -160,6 +160,10 @@ set (MAX_OPTIMIZATION TRUE CACHE BOOL "compile with -march=native (important for
 set (ADDITIONAL_INCLUDE_DIRS CACHE PATH "Additional dirs to search for included files")
 set (ADDITIONAL_LIBRARY_DIRS CACHE PATH "Additional dirs to search for linked libraries")
 
+find_package(Boost REQUIRED COMPONENTS "date_time")
+message("Boost_DATE_TIME_LIBRARY: ${Boost_DATE_TIME_LIBRARY}")
+set(myLibs "${myLibs};${Boost_DATE_TIME_LIBRARY}")
+
 find_package(Boost REQUIRED COMPONENTS "program_options")
 message("Boost_PROGRAM_OPTIONS_LIBRARY: ${Boost_PROGRAM_OPTIONS_LIBRARY}")
 set(myLibs "${myLibs};${Boost_PROGRAM_OPTIONS_LIBRARY}")
