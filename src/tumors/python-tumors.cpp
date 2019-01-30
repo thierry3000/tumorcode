@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common.h"
 
 #include <boost/filesystem.hpp>
+#include <boost/convert/lexical_cast.hpp>
 //#include <boost/python/def.hpp>
 #include "faketum.h"
 
@@ -110,10 +111,10 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
   {
     std::cout << "run_fakeTumor_mts rerun called on c++ side" << std::endl;
     fn_of_previous_sim_c_str = py::extract<char const*>(param_info_str_or_filename_of_pr);
-    #ifdef DEBUG
+    //#ifdef DEBUG
       std::cout << "with filename: " << std::endl;
       std::printf("%s\n", fn_of_previous_sim_c_str);
-    #endif
+    //#endif
   }
   // enable standard exception handling
   feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
@@ -143,7 +144,14 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
   printPtree(fakeTumMTSSettings);
   #endif
   
-  s.mySystemParameters.JobID = std::getenv("SLURM_JOB_ID");
+  if(const char* slurmJobID = std::getenv("SLURM_JOB_ID"))
+  {
+    s.mySystemParameters.JobID = boost::lexical_cast<int>(std::getenv("SLURM_JOB_ID"));
+  }
+  else 
+  {
+    s.mySystemParameters.JobID = 0;
+  }
   if( !isRerun )
   {
     // update settings with the read in data

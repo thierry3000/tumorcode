@@ -1057,7 +1057,20 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
     }
     else
     {
-      f_buffer_out = H5::H5File("last_state.h5",H5F_ACC_TRUNC);
+      //find the folder of slurm job 
+      f_out = H5::H5File(params.fn_out, H5F_ACC_RDONLY);
+      int slurmIDofInitialJob;
+      readAttrFromH5(f_out, "initialJobID", slurmIDofInitialJob);
+      if (slurmIDofInitialJob >0 )
+      {
+        f_buffer_out = H5::H5File( slurmIDofInitialJob + "/last_state.h5",H5F_ACC_TRUNC);
+        cout << "creating with queue at: "<< slurmIDofInitialJob << endl;
+      }
+      else
+      {
+        f_buffer_out = H5::H5File("last_state.h5",H5F_ACC_TRUNC);
+        cout << "creating without queue" << endl;
+      }
       root = f_buffer_out.openGroup("/");
     }
   }
