@@ -363,6 +363,10 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     * if we are on a cluster, we expect multiple runs
     * and create a directory for each run 
     */
+    /*
+     * this was not so nice for the reruns and the storage of last_state.h5
+     */
+    /*
     boost::filesystem::path P = boost::filesystem::path(s.params.fn_out);
     if( std::getenv("SLURM_JOB_ID") and !s.mySystemParameters.isRerun )// environmental variable present, we are on a slurm cluster queue!
     {
@@ -373,6 +377,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
       std::cout << newPath << std::endl;
       s.params.fn_out = newPath.string();
     }
+    */
   }
 
 #ifdef EPETRA_MPI

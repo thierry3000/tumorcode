@@ -128,13 +128,21 @@ def estimateMTS_nProc(runTimeIndex):
     return 20
   if runTimeIndex < 600:
     return 28
-  
+def checkIfFileExists(fn):
+  print('checking if file exists...')
+  if (os.path.isfile(fn)):
+    print('your are about to destroy the file: %s' % fn)
+    sys.exit()
+    
 def run_pipeline(vessel_fn, name, paramSet, mem, days, pipelineLength):
   ''' initial job'''
   name, paramSet = krebsjobs.PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTumMTS', paramSet)
   print("name: %s" %name)
   configstr = dicttoinfo(paramSet)
   config_file_name = '%s.info' % paramSet['fn_out']
+  
+  checkIfFileExists(paramSet['fn_out'])
+  
   with open(config_file_name, 'w') as f:
     f.write(configstr)
   jobID_to_continue=qsub.submit(qsub.func(krebs.tumors.run_faketum_mts, config_file_name),
@@ -162,6 +170,9 @@ def run(vessel_fn, name, paramSet, mem, days):
   name, paramSet = krebsjobs.PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTumMTS', paramSet)
   configstr = dicttoinfo(paramSet)
   config_file_name = '%s.info' % paramSet['fn_out']
+
+  checkIfFileExists(paramSet['fn_out'])  
+  
   with open(config_file_name, 'w') as f:
     f.write(configstr)
     

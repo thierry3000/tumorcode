@@ -1041,7 +1041,7 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
     {
       if( !mySystemParameters.isRerun )
       {
-        f_out = H5::H5File(params.fn_out, output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
+	f_out = H5::H5File(params.fn_out, output_num==0 ? H5F_ACC_TRUNC : H5F_ACC_RDWR);
       }
       else
       {
@@ -1057,20 +1057,8 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
     }
     else
     {
-      //find the folder of slurm job 
-      f_out = H5::H5File(params.fn_out, H5F_ACC_RDONLY);
-      int slurmIDofInitialJob;
-      readAttrFromH5(f_out.openGroup("/"), string("initialJobID"), slurmIDofInitialJob);
-      if (slurmIDofInitialJob >0 )
-      {
-        f_buffer_out = H5::H5File( slurmIDofInitialJob + "/last_state.h5",H5F_ACC_TRUNC);
-        cout << "creating with queue at: "<< slurmIDofInitialJob << endl;
-      }
-      else
-      {
-        f_buffer_out = H5::H5File("last_state.h5",H5F_ACC_TRUNC);
-        cout << "creating without queue" << endl;
-      }
+      cout << "truncating last_state.h5" << endl;
+      f_buffer_out = H5::H5File("last_state.h5",H5F_ACC_TRUNC);
       root = f_buffer_out.openGroup("/");
     }
   }
@@ -1081,7 +1069,6 @@ std::string FakeTumMTS::FakeTumorSimMTS::writeOutput(bool doPermanentSafe)
   
   if (output_num == 0 or !doPermanentSafe)
   {
-    writeAttrToH5(root,string("initialJobID"),mySystemParameters.JobID);
 //     root.createGroup("last_state");
 //     cout << "created last state" << endl;
     try
