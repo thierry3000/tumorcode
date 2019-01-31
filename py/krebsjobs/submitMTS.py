@@ -150,13 +150,14 @@ def run_pipeline(vessel_fn, name, paramSet, mem, days, pipelineLength):
                             mem = mem,
                             hours = 1,
                             change_cwd = True)
-  if qsub.determine_submission_program_() == 'run_locally':
-    fn_of_previous_run = name+'.h5'
-  else:
-    fn_of_previous_run = '%i/%s.h5' % (jobID_to_continue, name)
+  '''now we store in the same folder --> better for cluster'''
+#  if qsub.determine_submission_program_() == 'run_locally':
+#    fn_of_previous_run = name+'.h5'
+#  else:
+#    fn_of_previous_run = '%i/%s.h5' % (jobID_to_continue, name)
   
   for i in range(pipelineLength):
-    jobID_to_continue = qsub.submit(qsub.func(krebs.tumors.rerun_faketum_mts, fn_of_previous_run),
+    jobID_to_continue = qsub.submit(qsub.func(krebs.tumors.rerun_faketum_mts, name+'.h5'),
                             name = 'job_'+ name,
                             num_cpus = estimateMTS_nProc(i),
                             mem = estimateMTS_memory(i),
