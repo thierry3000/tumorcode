@@ -30,7 +30,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common.h"
 
 #include <boost/filesystem.hpp>
-#include <boost/convert/lexical_cast.hpp>
+#if BOOST_VERSION>106300
+  #include <boost/convert/lexical_cast.hpp>
+#else
+  #include <boost/lexical_cast.hpp>
+#endif
 //#include <boost/python/def.hpp>
 #include "faketum.h"
 

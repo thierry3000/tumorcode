@@ -4,7 +4,7 @@ project(numpycpp NONE)
  
 include(ExternalProject)
 ExternalProject_Add(numpycpp
-  GIT_REPOSITORY    https://github.com/DaWelter/numpycpp.git
+  GIT_REPOSITORY    https://github.com/thierry3000/numpycpp.git
   GIT_TAG           master
   SOURCE_DIR        "${CMAKE_BINARY_DIR}/externalProjects/numpycpp-src"
   BINARY_DIR        "${CMAKE_BINARY_DIR}/externalProjects/numpycpp-build"
