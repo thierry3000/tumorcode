@@ -368,6 +368,7 @@ void Parameters::UpdateInternalValues()
     std::cout << "bc_type: " << tissue_po2_boundary_condition << std::endl;
     throw std::invalid_argument("tissue_po2_boundary_condition must be 'dirichlet','dirichlet_x', 'dirichlet_yz' or 'neumann'");
   }
+  cout << "finished Updating internals!" << endl;
 }
 
 // void Parameters::writeParametersToHDF(H5::Group& parameter_out_group)
@@ -1744,6 +1745,7 @@ void DetailedPO2Sim::init(
  */
 int DetailedPO2Sim::run()
 {
+  params.loglevel =1;
 
 #if APPROXIMATE_FEM_TRANSVASCULAR_EXCHANGE_TERMS
   tissue_diff_matrix_builder.Init7Point(grid.ld, grid.dim);
@@ -1882,10 +1884,12 @@ int DetailedPO2Sim::run()
   
   tissue_diff_matrix_builder.ZeroOut();
   IntegrateVesselPO2(params, po2vessels, sorted_vessels, arterial_roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
+  cout << "computing final results" << endl;
+  cout.flush();
   //IntegrateVesselPO2(params, po2vessels, vl, sorted_vessels, roots, grid.ld, po2field, phases, tissue_diff_matrix_builder, world);
-  
   ComputePo2Field(grid, mtboxes, phases, po2field, cell_based_o2_uptake, tissue_diff_matrix_builder, keep_preconditioner);
   cout << "before return field" << endl;
+  cout.flush();
   return 0;
 }
 

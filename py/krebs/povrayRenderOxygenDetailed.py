@@ -247,8 +247,11 @@ def renderScene(po2group, imagefn, options):
     
   vessel_graph.edges['po2_vessels'] = po2vessels
   print(parameters)
-  vessel_graph.edges['saturation'] = PO2ToSaturation(po2vessels, parameters)
-  vessel_graph.edges['hboconc'] = vessel_graph.edges['saturation']*vessel_graph.edges['hematocrit']*chb_of_rbcs*1.0e3
+  ''' this might need update because the vessels are stored
+  after remodeling in mts tumor
+  '''
+  #vessel_graph.edges['saturation'] = PO2ToSaturation(po2vessels, parameters)
+  #vessel_graph.edges['hboconc'] = vessel_graph.edges['saturation']*vessel_graph.edges['hematocrit']*chb_of_rbcs*1.0e3
   vessel_graph = vessel_graph.get_filtered(edge_indices = myutils.bbitwise_and(vessel_graph['flags'], krebsutils.CIRCULATED))
   if options.filterradiuslowpass>0:
     print("lowpass filter activated:")
@@ -263,7 +266,7 @@ def renderScene(po2group, imagefn, options):
   #try world
   options.imageFileName = imagefn+'_po2vessels'+ext
   renderSliceWithDistribution((po2field_ld, vessel_graph, 'po2_vessels'), (po2field_ld, po2field), '', options)
-  options.imageFileName = imagefn+'_saturation'+ext
-  renderSlice((po2field_ld, vessel_graph, 'saturation'), (None, None), '', options)
-  options.imageFileName = imagefn+'_hboconc'+ext
-  renderSlice((po2field_ld, vessel_graph, 'hboconc'), (None, None), 'HbO [mmol/l blood]', options)
+  #options.imageFileName = imagefn+'_saturation'+ext
+  #renderSlice((po2field_ld, vessel_graph, 'saturation'), (None, None), '', options)
+  #options.imageFileName = imagefn+'_hboconc'+ext
+  #renderSlice((po2field_ld, vessel_graph, 'hboconc'), (None, None), 'HbO [mmol/l blood]', options)

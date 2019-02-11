@@ -355,25 +355,37 @@ static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
 np::ndarray PyComputeSaturation(const np::ndarray &py_po2, const py::dict &py_parameters)
 {
   cout << "PyComputeSaturation called" << endl;
+  cout << "BOOST_VERSION>106300 found" << endl;
+  /**
+   * this needs to behave differently wether py::dict everyting is 
+   * in strings or with correct data type, which is new 
+   */
+  //std::string D_plasma_cpp_string = py::extract<std::string>(py_parameters["vessel_group_path"]);
+  //double D_plasma_cpp_double = py::extract<double>(py_parameters["D_plasma"]);
   DetailedPO2::Parameters params = py::extract<DetailedPO2::Parameters>(py_parameters);
   const int return_length = py_po2.get_shape()[0];
   cout << "shape of py_po2: " << endl
   << py_po2.get_shape()[0] << endl 
   <<py_po2.get_shape()[1] << endl;
-  if(!(py_po2.get_nd() == 1))
-    throw std::invalid_argument("rank 1 and contiguous expected");
+//   if(!(py_po2.get_nd() == 1))
+//     throw std::invalid_argument("rank 1 and contiguous expected");
 #ifndef NDEBUG
   cout << "make empty in PyComputeSaturation: " << return_length << endl;
 #endif
-  np::ndarray result = np::zeros(py::make_tuple(return_length), np::dtype::get_builtin<float>());
-
+  cout << "return_length: " << return_length << endl;
+  //py::tuple shape = py::make_tuple(3, 1);
+  //np::dtype dtype = np::dtype::get_builtin<double>();
+  //np::ndarray a = np::zeros(shape, dtype);
+  np::ndarray result = np::zeros(py::make_tuple(return_length,1), np::dtype::get_builtin<float>());
+  //np::ndarray result = np::zeros(py::make_tuple(py_po2.shape(0)), np::dtype::get_builtin<float>());
+  cout << "bla" << endl;cout.flush();
   for (int i=0; i<return_length; i++)
   {
     //data[i] = params.Saturation(py::extract<float>(py_po2[i]));
     auto bla = params.Saturation(py::extract<float>(py_po2[i]));
     result[i] = bla;
   }
-  
+  cout << "returning from PyComputeSaturation" << endl;
   return result;
 }
 #else
@@ -827,62 +839,141 @@ struct DetailedO2ParamsFromPy
       boost::python::converter::rvalue_from_python_stage1_data* data)
     {
       py::dict o(py::handle<>(py::borrowed(obj_ptr)));
-      Parameters o2params; // use default values if no equivalent is found 
-      #define DOPT(name) checkedExtractFromDict(o, #name, o2params.name)
-      DOPT(po2init_r0);
-      DOPT(po2init_dr);
-      DOPT(po2init_cutoff);
-      DOPT(solubility_plasma); 
-      DOPT(sat_curve_exponent);
-      DOPT(sat_curve_p50);
-      DOPT(po2_mmcons_k_norm);
-      DOPT(po2_mmcons_k_tum);
-      DOPT(po2_mmcons_k_necro);
-      DOPT(po2_mmcons_m0_norm);
-      DOPT(po2_mmcons_m0_tum);
-      DOPT(po2_mmcons_m0_necro);
-      
-      DOPT(D_plasma);
-      DOPT(solubility_tissue);
-      DOPT(rd_norm);
-      DOPT(rd_tum);
-      DOPT(rd_necro);
-      DOPT(max_iter);
-      DOPT(num_threads);
-      DOPT(convergence_tolerance);
-      DOPT(axial_integration_step_factor);
-      DOPT(debug_zero_o2field);
-      
-      DOPT(michaelis_menten_uptake);
-      DOPT(useCellBasedUptake);
-      DOPT(massTransferCoefficientModelNumber);
-      DOPT(conductivity_coeff1);
-      DOPT(conductivity_coeff2);
-      DOPT(conductivity_coeff3);
-      DOPT(detailedO2name);
-      DOPT(loglevel);
-      DOPT(tissue_po2_boundary_condition);
-      DOPT(extra_tissue_source_const);
-      DOPT(extra_tissue_source_linear);
-      
-      DOPT(input_file_name);
-      DOPT(input_group_path);
-      DOPT(output_file_name);
-      DOPT(output_group_path);
-      DOPT(tumor_file_name);
-      DOPT(tumor_group_path);
-      DOPT(vessel_group_path);
-      
-      DOPT(debug_fn);
-      DOPT(transvascular_ring_size);
-      DOPT(haemoglobin_binding_capacity);
-      DOPT(tissue_boundary_value);
-      DOPT(approximateInsignificantTransvascularFlux);
-      
-      DOPT(grid_lattice_const);
-      DOPT(safety_layer_size);
-      
-      #undef DOPT
+      Parameters o2params; // use default values if no equivalent is found
+      /* lets check whether D_plasma is stored as double or as
+       * string 
+       */
+      bool isEverythingInDictAString;
+      try
+      {
+        std::string buffer = py::extract<std::string>(o["D_plasma"]);
+        isEverythingInDictAString = true;
+      }
+      catch(std::exception &e)
+      {
+        isEverythingInDictAString = false;
+        e.what();
+      }
+      if (isEverythingInDictAString)
+      {
+        cout << "Your O2 parameters are stored as strings." << endl;
+        #define DOPT(name) checkedExtractFromDict_all_strings(o, #name, o2params.name)
+        DOPT(po2init_r0);
+        DOPT(po2init_dr);
+        DOPT(po2init_cutoff);
+        DOPT(solubility_plasma); 
+        DOPT(sat_curve_exponent);
+        DOPT(sat_curve_p50);
+        DOPT(po2_mmcons_k_norm);
+        DOPT(po2_mmcons_k_tum);
+        DOPT(po2_mmcons_k_necro);
+        DOPT(po2_mmcons_m0_norm);
+        DOPT(po2_mmcons_m0_tum);
+        DOPT(po2_mmcons_m0_necro);
+        
+        DOPT(D_plasma);
+        DOPT(solubility_tissue);
+        DOPT(rd_norm);
+        DOPT(rd_tum);
+        DOPT(rd_necro);
+        DOPT(max_iter);
+        DOPT(num_threads);
+        DOPT(convergence_tolerance);
+        DOPT(axial_integration_step_factor);
+        DOPT(debug_zero_o2field);
+        
+        DOPT(michaelis_menten_uptake);
+        DOPT(useCellBasedUptake);
+        DOPT(massTransferCoefficientModelNumber);
+        DOPT(conductivity_coeff1);
+        DOPT(conductivity_coeff2);
+        DOPT(conductivity_coeff3);
+        DOPT(detailedO2name);
+        DOPT(loglevel);
+        DOPT(tissue_po2_boundary_condition);
+        DOPT(extra_tissue_source_const);
+        DOPT(extra_tissue_source_linear);
+        
+        DOPT(input_file_name);
+        DOPT(input_group_path);
+        DOPT(output_file_name);
+        DOPT(output_group_path);
+        DOPT(tumor_file_name);
+        DOPT(tumor_group_path);
+        DOPT(vessel_group_path);
+        
+        DOPT(debug_fn);
+        DOPT(transvascular_ring_size);
+        DOPT(haemoglobin_binding_capacity);
+        DOPT(tissue_boundary_value);
+        DOPT(approximateInsignificantTransvascularFlux);
+        
+        DOPT(grid_lattice_const);
+        DOPT(safety_layer_size);
+        
+        #undef DOPT
+      }
+      if (not isEverythingInDictAString)
+      {
+        //for debug PURPOSE only
+        //checkedExtractFromDict_all_strings(o, "po2init_r0", o2params.po2init_r0);
+        cout << "Your O2 parameters are with appropriate data types." << endl;
+        #define DOPT(name) checkedExtractFromDict(o, #name, o2params.name)
+        DOPT(po2init_r0);
+        DOPT(po2init_dr);
+        DOPT(po2init_cutoff);
+        DOPT(solubility_plasma); 
+        DOPT(sat_curve_exponent);
+        DOPT(sat_curve_p50);
+        DOPT(po2_mmcons_k_norm);
+        DOPT(po2_mmcons_k_tum);
+        DOPT(po2_mmcons_k_necro);
+        DOPT(po2_mmcons_m0_norm);
+        DOPT(po2_mmcons_m0_tum);
+        DOPT(po2_mmcons_m0_necro);
+        
+        DOPT(D_plasma);
+        DOPT(solubility_tissue);
+        DOPT(rd_norm);
+        DOPT(rd_tum);
+        DOPT(rd_necro);
+        DOPT(max_iter);
+        DOPT(num_threads);
+        DOPT(convergence_tolerance);
+        DOPT(axial_integration_step_factor);
+        DOPT(debug_zero_o2field);
+        
+        DOPT(michaelis_menten_uptake);
+        DOPT(useCellBasedUptake);
+        DOPT(massTransferCoefficientModelNumber);
+        DOPT(conductivity_coeff1);
+        DOPT(conductivity_coeff2);
+        DOPT(conductivity_coeff3);
+        DOPT(detailedO2name);
+        DOPT(loglevel);
+        DOPT(tissue_po2_boundary_condition);
+        DOPT(extra_tissue_source_const);
+        DOPT(extra_tissue_source_linear);
+        
+        DOPT(input_file_name);
+        DOPT(input_group_path);
+        DOPT(output_file_name);
+        DOPT(output_group_path);
+        DOPT(tumor_file_name);
+        DOPT(tumor_group_path);
+        DOPT(vessel_group_path);
+        
+        DOPT(debug_fn);
+        DOPT(transvascular_ring_size);
+        DOPT(haemoglobin_binding_capacity);
+        DOPT(tissue_boundary_value);
+        DOPT(approximateInsignificantTransvascularFlux);
+        
+        DOPT(grid_lattice_const);
+        DOPT(safety_layer_size);
+        
+        #undef DOPT
+      }
 
       void* storage = ((boost::python::converter::rvalue_from_python_storage<Parameters>*)data)->storage.bytes;
       new (storage) Parameters(o2params);
@@ -899,57 +990,57 @@ struct DetailedO2ParamsToPy
     #define DOPT(name) d[#name] = p.name
     py::dict d;
     DOPT(po2init_r0);
-      DOPT(po2init_dr);
-      DOPT(po2init_cutoff);
-      DOPT(solubility_plasma); 
-      DOPT(sat_curve_exponent);
-      DOPT(sat_curve_p50);
-      DOPT(po2_mmcons_k_norm);
-      DOPT(po2_mmcons_k_tum);
-      DOPT(po2_mmcons_k_necro);
-      DOPT(po2_mmcons_m0_norm);
-      DOPT(po2_mmcons_m0_tum);
-      DOPT(po2_mmcons_m0_necro);
-      
-      DOPT(D_plasma);
-      DOPT(solubility_tissue);
-      DOPT(rd_norm);
-      DOPT(rd_tum);
-      DOPT(rd_necro);
-      DOPT(max_iter);
-      DOPT(num_threads);
-      DOPT(convergence_tolerance);
-      DOPT(axial_integration_step_factor);
-      DOPT(debug_zero_o2field);
-      
-      DOPT(michaelis_menten_uptake);
-      DOPT(useCellBasedUptake);
-      DOPT(massTransferCoefficientModelNumber);
-      DOPT(conductivity_coeff1);
-      DOPT(conductivity_coeff2);
-      DOPT(conductivity_coeff3);
-      DOPT(detailedO2name);
-      DOPT(loglevel);
-      DOPT(tissue_po2_boundary_condition);
-      DOPT(extra_tissue_source_const);
-      DOPT(extra_tissue_source_linear);
-      
-      DOPT(input_file_name);
-      DOPT(input_group_path);
-      DOPT(output_file_name);
-      DOPT(output_group_path);
-      DOPT(tumor_file_name);
-      DOPT(tumor_group_path);
-      DOPT(vessel_group_path);
-      
-      DOPT(debug_fn);
-      DOPT(transvascular_ring_size);
-      DOPT(haemoglobin_binding_capacity);
-      DOPT(tissue_boundary_value);
-      DOPT(approximateInsignificantTransvascularFlux);
-      
-      DOPT(grid_lattice_const);
-      DOPT(safety_layer_size);
+    DOPT(po2init_dr);
+    DOPT(po2init_cutoff);
+    DOPT(solubility_plasma); 
+    DOPT(sat_curve_exponent);
+    DOPT(sat_curve_p50);
+    DOPT(po2_mmcons_k_norm);
+    DOPT(po2_mmcons_k_tum);
+    DOPT(po2_mmcons_k_necro);
+    DOPT(po2_mmcons_m0_norm);
+    DOPT(po2_mmcons_m0_tum);
+    DOPT(po2_mmcons_m0_necro);
+    
+    DOPT(D_plasma);
+    DOPT(solubility_tissue);
+    DOPT(rd_norm);
+    DOPT(rd_tum);
+    DOPT(rd_necro);
+    DOPT(max_iter);
+    DOPT(num_threads);
+    DOPT(convergence_tolerance);
+    DOPT(axial_integration_step_factor);
+    DOPT(debug_zero_o2field);
+    
+    DOPT(michaelis_menten_uptake);
+    DOPT(useCellBasedUptake);
+    DOPT(massTransferCoefficientModelNumber);
+    DOPT(conductivity_coeff1);
+    DOPT(conductivity_coeff2);
+    DOPT(conductivity_coeff3);
+    DOPT(detailedO2name);
+    DOPT(loglevel);
+    DOPT(tissue_po2_boundary_condition);
+    DOPT(extra_tissue_source_const);
+    DOPT(extra_tissue_source_linear);
+    
+    DOPT(input_file_name);
+    DOPT(input_group_path);
+    DOPT(output_file_name);
+    DOPT(output_group_path);
+    DOPT(tumor_file_name);
+    DOPT(tumor_group_path);
+    DOPT(vessel_group_path);
+    
+    DOPT(debug_fn);
+    DOPT(transvascular_ring_size);
+    DOPT(haemoglobin_binding_capacity);
+    DOPT(tissue_boundary_value);
+    DOPT(approximateInsignificantTransvascularFlux);
+    
+    DOPT(grid_lattice_const);
+    DOPT(safety_layer_size);
     
     #undef DOPT
     return py::incref(d.ptr());

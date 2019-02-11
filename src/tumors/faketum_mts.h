@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h> // calculte 3rd root
 // to check if parameter files are present
 #include <boost/filesystem.hpp>
+#include <boost/optional.hpp>
 #include <memory> //std::shared_ptr
 #include "common/vesselmodel1.h"
 #include "common/cell_based_oxygen_update_model.h"
@@ -77,7 +78,7 @@ enum TissuePressureDistribution
 struct nearest
 {
   double distance = std::numeric_limits<double>::max();
-  uint indexOfVessel = 0;
+  int indexOfVessel = 0;
 };
 
 struct Parameters
@@ -245,7 +246,8 @@ const int ANN_dim = 3;            // space dimension
  * writes the vbl based stuff to the HDF5 file
  * returns the H5 Group name 
  */
-  std::string writeOutput(bool doPermanentSafe);
+  void writeOutput(H5::Group &g,bool doPermanentSafe);
+  void WriteParametersToHDF(H5::Group &g);
   void writeVBLDataToHDF(H5::Group &g);
   void readVBLDataFromHDF(H5::Group &h5_vbl);
   void WriteCellsSystemHDF_with_nearest_vessel_index(H5::Group &out_cell_group);

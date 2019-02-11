@@ -70,6 +70,7 @@ def HandleNdimensions(*argsToRavel):
 @HandleNdimensions(0)
 def PO2ToSaturation(po2, parameters):
   '''call c++ also convert arrays to the expected format'''
+  print('shape of po2: %s' % po2.shape)
   sat = detailedo2current.computeSaturation_(po2, parameters)
   print('calculated saturation:')
   print(sat)
@@ -149,10 +150,19 @@ def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
 
 
 def readParameters(po2group):
-  if('simType' in po2group.attrs.keys()):
-    if(po2group.attrs['simType'] == 'MTS'):
-      o2_paramset_name = po2group.parent.parent['parameters/o2_params'].attrs['detailedO2name']
-      p = getattr(parameterSetsO2, o2_paramset_name)
+  print('detailed o2 group found at %s' % po2group)
+  if('simType' in po2group.parent.attrs.keys()):
+    if(po2group.parent.attrs['simType'] == 'MTS'):
+      print('assume o2 parameters at: /parameters/o2_sim')
+      p = dict()
+      for aKey in po2group.parent.parent.parent['parameters/o2_sim'].attrs.keys():
+        temp = po2group.parent.parent.parent['parameters/o2_sim'].attrs[aKey]
+        if (type(temp) == type(str())):
+          p[aKey] = temp
+        else:
+          p[aKey] = np.asscalar(temp)
+      #o2_paramset_name = po2group.parent.parent.parent['parameters/o2_sim'].attrs['detailedO2name']
+      #p = getattr(parameterSetsO2, o2_paramset_name)
       #p=myutils.hdf_read_dict_hierarchy_attr(po2group.parent.parent['parameters/o2_params'])
   else:
     p = dict()
@@ -199,9 +209,11 @@ def getSourceRefs_(po2group):
   return srcVessels, srcTissue
 
 def OpenVesselAndTumorGroups(po2group):
-  if('simType' in po2group.attrs.keys()):
-    if(po2group.attrs['simType']=='MTS'):
-      gvessels = po2group.parent['vessels']
+  print('attempt to read from %s' % po2group)
+  if('simType' in po2group.parent.attrs.keys()):
+    if(po2group.parent.attrs['simType']=='MTS'):
+      print('found MTS simulation')
+      gvessels = po2group.parent.parent['vessels']
       gtumor = None
   else:
     if 'po2' in po2group.name: #pure o2 sim

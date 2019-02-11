@@ -51,6 +51,9 @@ using boost::str;
 template<class T>
 void checkedExtractFromDict(const py::dict &d, const char *name, T &variableToFill);
 
+template<class T>
+void checkedExtractFromDict_all_strings(const py::dict &d, const char *name, T &variableToFill);
+
 
 
 template<class T, int dim>

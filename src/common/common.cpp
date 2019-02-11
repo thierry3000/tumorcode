@@ -234,6 +234,7 @@ boost::property_tree::ptree SystemParameters::as_ptree() const
 
 void readSystemParameters(SystemParameters &sysParamsToFill)
 {
+  std::cout << "reading System parameters" << std::endl;
   // update cluster information, if we are on a cluster
   if( std::getenv("SLURM_CLUSTER_NAME") )
   {

@@ -388,8 +388,14 @@ if __name__ == '__main__':
           graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))      
         writeVessels_(graph, goodArguments)
 
-      elif 'out' in d:
-        vesselgroup = f[join('/',d+'/vessels')]['.']
+      elif 'out' in d or 'last_state' in d:
+        if 'out' in d:
+          vesselgroup = f[join('/',d+'/vessels')]['.']
+        elif 'last_state' in d:
+          print('found vessels at /last_state/vessels')
+          vesselgroup = f['/last_state/vessels']
+        else:
+          print('no proper vesselgroup found')
         if '/parameters' in f:
           useConstO2 = f['/parameters'].attrs['useConstO2']
           # comes as string

@@ -54,7 +54,7 @@ def parse_args(argv):
   hours_option = parserQueue.add_argument('--hours', help= 'runtime for job in hours', type=float, default = None)
   threads_option = parserQueue.add_argument('-n', '--numThreads', help= 'num of threads for job', type=int, default = None)
   exclude_option = parserQueue.add_argument('--exclude', help= 'nodes to exclude', type=str, default = None)
-  cineca_debub_option = parserQueue.add_argument('-c', '--cinecaDebug', help= 'if true, we submit do debug queue', default=False, action='store_true')
+  debub_option = parserQueue.add_argument('-D', '--Debug', help= 'if true, we submit do debug queue', default=False, action='store_true')
   cineca_knl_deb_option = parserQueue.add_argument('--knlDeb', help= 'if true, we submit to knl_usr_dbg queue', default=False, action='store_true')
   cineca_knl_option = parserQueue.add_argument('--knl', help= 'if true, we submit to knl_usr_prod queue', default=False, action='store_true')
 #  global defaultMemory
@@ -211,27 +211,33 @@ def write_directives_slurm_(f, num_cpus=None, mem=None, name=None, days=None, ho
       print >>f, '#SBATCH --cpus-per-task=1'
       print >>f, '#SBATCH --ntasks=1'
       print >>f, '#SBATCH --partition=onenode'
-    if num_cpus > 1 and not goodArgumentsQueue.mpi:
+    if not goodArgumentsQueue.Debug:
+      if num_cpus > 1 and not goodArgumentsQueue.mpi:
+        print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
+        print >>f, '#SBATCH --ntasks=1'
+        print >>f, '#SBATCH --nodes=1'
+        print >>f, '#SBATCH --partition=onenode'
+        print >>f, '#SBATCH --ntasks-per-node=1'
+        # this is for sparing the nodes with lots of cores
+        #print >>f, '#SBATCH --exclude=leak[57-64]'
+        #print >>f, '#SBATCH --nodelist=leak62'
+        #print >>f, '#SBATCH --resv-ports'
+      #MPI
+      if num_cpus > 1 and goodArgumentsQueue.mpi:
+        print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
+    #    print >>f, '#SBATCH --ntasks=50'
+        print >>f, '#SBATCH --ntasks-per-node=1'
+        print >>f, '#SBATCH --nodes=%i' % goodArgumentsQueue.mpi
+        print >>f, '#SBATCH --partition=mpi'
+    #    print >>f, '#SBATCH --resv-ports'
+    #    print >>f, '#SBATCH --ntasks-per-node=8'
+    else:#DEBUG
       print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
       print >>f, '#SBATCH --ntasks=1'
       print >>f, '#SBATCH --nodes=1'
-      print >>f, '#SBATCH --partition=onenode'
+      print >>f, '#SBATCH --partition=debug'
       print >>f, '#SBATCH --ntasks-per-node=1'
-      # this is for sparing the nodes with lots of cores
-      #print >>f, '#SBATCH --exclude=leak[57-64]'
-      #print >>f, '#SBATCH --nodelist=leak62'
-      
-      
-      #print >>f, '#SBATCH --resv-ports'
-    #MPI
-    if num_cpus > 1 and goodArgumentsQueue.mpi:
-      print >>f, '#SBATCH --cpus-per-task=%i' % num_cpus
-  #    print >>f, '#SBATCH --ntasks=50'
-      print >>f, '#SBATCH --ntasks-per-node=1'
-      print >>f, '#SBATCH --nodes=%i' % goodArgumentsQueue.mpi
-      print >>f, '#SBATCH --partition=mpi'
-  #    print >>f, '#SBATCH --resv-ports'
-  #    print >>f, '#SBATCH --ntasks-per-node=8'
+    
     if days or hours:
       days, hours, minutes = fmtDate_(days, hours)
       print >>f, '#SBATCH --time=%i-%i:%i:00' % (days, hours, minutes)

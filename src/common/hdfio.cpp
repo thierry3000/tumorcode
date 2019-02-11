@@ -525,8 +525,8 @@ void ReadHdfGraph(const H5::Group &g, VesselList3d *vl )
   for(int i=0; i<ecnt; ++i)
   {
 #ifndef NDEBUG
-    std::cout << "va[" << i << "]: " << va[i] << std::endl;
-    std::cout << "vb[" << i << "]: " << vb[i] << std::endl;
+    //std::cout << "va[" << i << "]: " << va[i] << std::endl;
+    //std::cout << "vb[" << i << "]: " << vb[i] << std::endl;
 #endif
     Vessel* v = vl->InsertVessel(vl->GetNode(va[i]),vl->GetNode(vb[i]));
   }

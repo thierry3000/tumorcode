@@ -133,7 +133,11 @@ def checkIfFileExists(fn):
   if (os.path.isfile(fn)):
     print('your are about to destroy the file: %s' % fn)
     sys.exit()
-    
+
+''' T.F. notes for cluster snowden execution:
+  the first 100 time steps could be done in under 1 h with 28 cores and less than 1GB RAM
+  with detailded o2 steps of 50
+'''
 def run_pipeline(vessel_fn, name, paramSet, mem, days, pipelineLength):
   ''' initial job'''
   name, paramSet = krebsjobs.PrepareConfigurationForSubmission(vessel_fn, name, 'fakeTumMTS', paramSet)
@@ -147,7 +151,7 @@ def run_pipeline(vessel_fn, name, paramSet, mem, days, pipelineLength):
     f.write(configstr)
   jobID_to_continue=qsub.submit(qsub.func(krebs.tumors.run_faketum_mts, config_file_name),
                             name = 'job_'+name,
-                            mem = mem,
+                            mem = '1GB',
                             hours = 1,
                             change_cwd = True)
   '''now we store in the same folder --> better for cluster'''
@@ -193,22 +197,23 @@ def rerun(fn_of_previous_run, job_name, mem, days):
   #with open(config_file_name, 'w') as f:
   #  f.write(configstr)
   
-  estimateMTS_runtime(fn_of_previous_run)
+  #estimateMTS_runtime(fn_of_previous_run)
   qsub.submit(qsub.func(krebs.tumors.rerun_faketum_mts, fn_of_previous_run),
                             name = 'job_'+ job_name,
-                            mem = mem,
-                            hours = estimateMTS_runtime(fn_of_previous_run),
+                            #mem = mem,
+                            #hours = estimateMTS_runtime(fn_of_previous_run),
 			    #days = days,
                             #num_cpus = 2,
 			    #set by slurm
                             change_cwd = True)
 
 if __name__ == '__main__':
+  default_reruns = 0
   import argparse
   parser = argparse.ArgumentParser(description='Compute Fake tumor. Vessels are needed for that')  
   parser.add_argument('tumParamSet', help='Valid configuration are found in /py/krebsjobs/parameters/fparameterSetsFakeTumor.py')
   parser.add_argument('vesselFileNames', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')
-  parser.add_argument('--rerun', help='allows to rerun a simulation', default=False, action='store_true')
+  parser.add_argument('--rerun', help='allows to rerun a simulation with the numbers specified', default=default_reruns, type=int)
   parser.add_argument('--pipelineLength', help= 'number of successsive pipeline calls', type=int ,default = 0)
   
   goodArgumentsMTS, otherArgumentsMTS = parser.parse_known_args()
@@ -239,10 +244,20 @@ if __name__ == '__main__':
       run_pipeline(fn, tumorParameterName, factory, '2GB', 5., goodArgumentsMTS.pipelineLength)
   else:
     print('starting rerun with file: %s' % goodArgumentsMTS.vesselFileNames[0].name)
+    if not goodArgumentsMTS.rerun == default_reruns:
+      print('starting rerun %i times' % goodArgumentsMTS.rerun)
+      '''hack the file'''
+      with h5py.File(goodArgumentsMTS.vesselFileNames[0].name,'r+') as simulationFile:
+        print("found %s" % simulationFile['/parameters'].attrs['max_iteration_per_rerun'] )
+        ''' since we use boost property trees, everything is stored as string '''
+        simulationFile['/parameters'].attrs['max_iteration_per_rerun'] = "%i" % goodArgumentsMTS.rerun
+        print("changed to %i" %  goodArgumentsMTS.rerun )
+    #NOTE: else 
+    # it automatically uses the value from the last simulation!!!
     if not os.path.isfile(goodArgumentsMTS.vesselFileNames[0].name):
       raise AssertionError('The file %s is not present!'%goodArgumentsMTS.vesselFileNames[0].name)
     string_to_provide = str(goodArgumentsMTS.vesselFileNames[0].name)
     goodArgumentsMTS.vesselFileNames[0].close()
-    rerun(string_to_provide, 'rerun_of_', '2GB', 5.)
+    rerun(string_to_provide, 'rerun_of_', '2GB', None)
   
         

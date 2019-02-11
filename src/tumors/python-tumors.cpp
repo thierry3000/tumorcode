@@ -318,6 +318,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     //run time variables NO parameters
     readAttrFromH5(last_state, string("OUTPUT_NUM"), s.output_num);
     readAttrFromH5(last_state, string("NUM_ITERATION"), s.num_iteration);
+    s.num_iteration++;
     readAttrFromH5(last_state, string("time"), s.time);
     readAttrFromH5(last_state, string("NEXT_OUTPUT_TIME"), s.next_output_time);
     readAttrFromH5(last_state, string("NEXT_ADAPTION_TIME"), s.next_adaption_time);

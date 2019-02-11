@@ -49,13 +49,19 @@ def clientfunc(job, cwd):
 
 def estimateRuntimeAndMemory(g):
   ''' time in hours. memory in mB '''
-  if 'po2vessels' in g:
-    N = g['po2vessels'].shape[1]
-  elif 'conc' in g:
-    N = len(g.parent['vessels/edges/node_a_index'])
+  print('estimate for group: %s' % g)
+  if('simType' in g.attrs.keys()):
+    if g.attrs['simType'] == 'MTS':
+      print('found MTS simulation')
+      N=g['vessels/po2vessels'].shape[1]
   else:
-    if 'vessels' in g: g = g['vessels']
-    N = len(g['edges/node_a_index'])
+    if 'po2vessels' in g:
+      N = g['po2vessels'].shape[1]
+    elif 'conc' in g:
+      N = len(g.parent['vessels/edges/node_a_index'])
+    else:
+      if 'vessels' in g: g = g['vessels']
+      N = len(g['edges/node_a_index'])
   t = (N*5. / 60.)/(100000)
   #m = (1200. * N) / (300000) #this seams to be to low for tumors!
   m = (2400. * N) / (300000)
@@ -86,6 +92,7 @@ class RenderJob(object):
 #    self.params.update(params)
     params.threads = my_threads
     self.params = params
+    print("self.group_name: %s" % self.group_name)
     self.runtime_and_mem = estimateRuntimeAndMemory(f[self.group_name])
 
   @property

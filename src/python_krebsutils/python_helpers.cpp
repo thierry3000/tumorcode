@@ -255,13 +255,88 @@ void exportVectorClassConverters()
 //     throw e; // don't every try to handle this!
 //   }
 // }
+template<>
+void checkedExtractFromDict_all_strings<std::string>(const py::dict &d, const char *name, std::string &variableToFill)
+{
+  try
+  {
+    std::string buffer = py::extract<std::string>(d[name]);
+    variableToFill = buffer;
+  }
+  catch (const py::error_already_set &e) 
+  {
+    std::cerr << "_all_strings" << endl;
+    std::cerr << format("unable to extract parameter: '%s' from detailed O2 parameters --> USING default value\n") % name;
+    //variableToFill = static_cast<T>(string(0.0));
+    //throw e; // don't every try to handle this!
+  }
+}
+template<>
+void checkedExtractFromDict_all_strings<int>(const py::dict &d, const char *name, int &variableToFill)
+{
+  try
+  {
+    int buffer = std::stoi(py::extract<std::string>(d[name]));
+    variableToFill = buffer;
+  }
+  catch (const py::error_already_set &e) 
+  {
+    std::cerr << "_all_strings" << endl;
+    std::cerr << format("unable to extract parameter: '%s' from detailed O2 parameters --> USING default value\n") % name;
+    //variableToFill = static_cast<T>(string(0.0));
+    //throw e; // don't every try to handle this!
+  }
+}
+template<>
+void checkedExtractFromDict_all_strings<double>(const py::dict &d, const char *name, double &variableToFill)
+{
+  try
+  {
+    double buffer = std::stod(py::extract<std::string>(d[name]));
+    variableToFill = buffer;
+  }
+  catch (const py::error_already_set &e) 
+  {
+    std::cerr << "_all_strings" << endl;
+    std::cerr << format("unable to extract parameter: '%s' from detailed O2 parameters --> USING default value\n") % name;
+    //variableToFill = static_cast<T>(string(0.0));
+    //throw e; // don't every try to handle this!
+  }
+}
+template<>
+void checkedExtractFromDict_all_strings<bool>(const py::dict &d, const char *name, bool &variableToFill)
+{
+  try
+  {
+    std::string buffer = py::extract<std::string>(d[name]);
+    if (buffer.compare("true") == 0 or buffer.compare("True") == 0)
+    {
+      variableToFill= true;
+    }
+    if (buffer.compare("false") == 0 or buffer.compare("False") == 0)
+    {
+      variableToFill= false;
+    }
+  }
+  catch (const py::error_already_set &e) 
+  {
+    std::cerr << "_all_strings" << endl;
+    std::cerr << format("unable to extract parameter: '%s' from detailed O2 parameters --> USING default value\n") % name;
+    //variableToFill = static_cast<T>(string(0.0));
+    //throw e; // don't every try to handle this!
+  }
+}
+//template void checkedExtractFromDict_all_strings<double>(const py::dict &d, const char *name, double &variableToFill);
+//template void checkedExtractFromDict_all_strings<std::string>(const py::dict &d, const char *name, string &variableToFill);
+//template void checkedExtractFromDict_all_strings<int>(const py::dict &d, const char *name, int &variableToFill);
+//template void checkedExtractFromDict_all_strings<bool>(const py::dict &d, const char *name, bool &variableToFill);
 
 template<class T>
 void checkedExtractFromDict(const py::dict &d, const char *name, T &variableToFill)
 {
   try
   {
-    T buffer = py::extract<T>(d[name]);
+    T buffer = (T) py::extract<T>(d[name]);
     variableToFill = buffer;
   }
   catch (const py::error_already_set &e) 
@@ -272,7 +347,7 @@ void checkedExtractFromDict(const py::dict &d, const char *name, T &variableToFi
   }
 }
 template void checkedExtractFromDict<double>(const py::dict &d, const char *name, double &variableToFill);
-template void checkedExtractFromDict<string>(const py::dict &d, const char *name, string &variableToFill);
+template void checkedExtractFromDict<std::string>(const py::dict &d, const char *name, string &variableToFill);
 template void checkedExtractFromDict<int>(const py::dict &d, const char *name, int &variableToFill);
 template void checkedExtractFromDict<bool>(const py::dict &d, const char *name, bool &variableToFill);
 
