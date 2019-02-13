@@ -1745,7 +1745,6 @@ void DetailedPO2Sim::init(
  */
 int DetailedPO2Sim::run()
 {
-  params.loglevel =1;
 
 #if APPROXIMATE_FEM_TRANSVASCULAR_EXCHANGE_TERMS
   tissue_diff_matrix_builder.Init7Point(grid.ld, grid.dim);
