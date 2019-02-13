@@ -826,10 +826,6 @@ void FakeTumMTS::FakeTumorSimMTS::doMilottiStep()
    */
   //uint returnValue = tumorcode_pointer_to_currentCellsSystem->runMainLoop( boost::none );
   double timeToVBL = time*3600;
-  //*timeToVBL = time*3600.0;
-  //double timeToVBL = time*3600.0;
-  cout << format("timeToVBL: %f\n" ) % timeToVBL;
-  cout.flush();
   uint returnValue = tumorcode_pointer_to_currentCellsSystem->runMainLoop( timeToVBL );
   
   //std::cout << "o2_uptake after milotti" << std::endl;
@@ -1808,6 +1804,13 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
     buffer[i] = (double) tumorcode_pointer_to_currentCellsSystem->Get_phase_age()[i];
   }
   writeDataSetToGroup(out_cell_group, string("cell_phase_age"), buffer);
+  
+  // cell type
+  for( int i = 0; i<numberOfCells; ++i)
+  {
+    buffer_int[i] = (int) tumorcode_pointer_to_currentCellsSystem->get_CellTypeIndexVector()[i];
+  }
+  writeDataSetToGroup(out_cell_group, string("cell_type"), buffer_int);
   
   // number of neighbours
   for( int i = 0; i<numberOfCells; ++i)
