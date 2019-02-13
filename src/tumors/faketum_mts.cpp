@@ -60,7 +60,7 @@ void FakeTumMTS::FakeTumorSimMTS::initMilotti()
 //   currentCellsSystem->Set_EnvironmentFile( "/home/usersHR/thierry/git_codes/Sim3D-v3/parameters/Environment.txt" );
   tumorcode_pointer_to_currentCellsSystem->Set_Commands( "commands.txt" );
   tumorcode_pointer_to_currentCellsSystem->Set_CellTypeFile( "CellType.txt" );
-  tumorcode_pointer_to_currentCellsSystem->Set_CellTypeFileAlt( "CellType.txt" );
+  tumorcode_pointer_to_currentCellsSystem->Set_CellTypeFileAlt( "CellTypeAlt.txt" );
   tumorcode_pointer_to_currentCellsSystem->Set_EnvironmentFile( "Environment.txt" );
   
   if( !mySystemParameters.isRerun )
@@ -105,7 +105,7 @@ void FakeTumMTS::FakeTumorSimMTS::initMilotti()
     cout << "Continuing ...  " << run_name << endl;
     //tumorcode_pointer_to_currentCellsSystem->InitializeCellsSystem( terminal );
     cout << "Initialization milotti completed" << endl;
-    tumorcode_pointer_to_currentCellsSystem->RunDefinition( );// Run number and output directory output directory & output file opening for metabolism
+    //tumorcode_pointer_to_currentCellsSystem->RunDefinition( );// Run number and output directory output directory & output file opening for metabolism
     //tumorcode_pointer_to_currentCellsSystem->Set_nconfiguration( 0 ); // The configuration number is initialized to 0
      
     
@@ -638,15 +638,7 @@ int FakeTumMTS::FakeTumorSimMTS::run()
      *      O2 calculation done!!
      */
     
-#ifdef W_timing
-    currentTiming.begin_ann = std::chrono::steady_clock::now();
-#endif
-    findNearestVessel(state.previous_po2vessels);// to have the information for the first output
-#ifdef W_timing
-    currentTiming.end_ann = std::chrono::steady_clock::now();
-    currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
-    currentTiming.run_ann = currentTiming.run_ann + currentTiming.time_diff.count();
-#endif
+
 
 
     /* increment tumor time */
@@ -678,30 +670,21 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     currentTiming.run_doMilottiStep = currentTiming.run_doMilottiStep + currentTiming.time_diff.count();
 #endif
 
-    
+#ifdef W_timing
+    currentTiming.begin_ann = std::chrono::steady_clock::now();
+#endif
+    findNearestVessel(state.previous_po2vessels);// to have the information for the first output
+#ifdef W_timing
+    currentTiming.end_ann = std::chrono::steady_clock::now();
+    currentTiming.time_diff = currentTiming.end_ann-currentTiming.begin_ann;
+    currentTiming.run_ann = currentTiming.run_ann + currentTiming.time_diff.count();
+#endif
   
     
+
 
     /**
-    * do a vessel model remodeling step 
-    */
-#ifndef NDEBUG
-    cout << boost::format("start vessel remodel step! \n");
-#endif
-
-#ifdef W_timing
-    currentTiming.begin_doStep = std::chrono::steady_clock::now();
-#endif
-    doStep(params.dt);
-#ifdef W_timing
-    currentTiming.end_doStep = std::chrono::steady_clock::now();
-    currentTiming.time_diff = currentTiming.end_doStep-currentTiming.begin_doStep;
-    currentTiming.run_doStep = currentTiming.run_doStep + currentTiming.time_diff.count();
-#endif
-  
-    cout << boost::format("finished vessel remodel step! \n");
-    /*
-     * OUTPUT
+     *        OUTPUT
      */
     cout << "try to create file: " << params.fn_out << endl;
     cout.flush();
@@ -760,13 +743,44 @@ int FakeTumMTS::FakeTumorSimMTS::run()
     last_state_root = last_state_file_write.openGroup("/");
     cout << format("buffer output last_state.h5\n");
     
-    
+    /** NOTE:
+     * we output the vessels 
+     * 1) from which the o2 was calculated
+     * 2) vbl cells felt the nearest
+     * 
+     * but 
+     * there is a vessel remodel stage in the end!
+     */
     writeOutput(last_state_gout_write, false);
     WriteParametersToHDF(last_state_root);
     last_state_gout_write.close();
     last_state_file_write.close();
     last_state_root.close();
     permanent_root.close();
+    
+    /**
+     *        END OF OUTPUT
+     */
+    
+    /**
+     * do a vessel model remodeling step 
+     */
+#ifndef NDEBUG
+    cout << boost::format("start vessel remodel step! \n");
+#endif
+
+#ifdef W_timing
+    currentTiming.begin_doStep = std::chrono::steady_clock::now();
+#endif
+    doStep(params.dt);
+#ifdef W_timing
+    currentTiming.end_doStep = std::chrono::steady_clock::now();
+    currentTiming.time_diff = currentTiming.end_doStep-currentTiming.begin_doStep;
+    currentTiming.run_doStep = currentTiming.run_doStep + currentTiming.time_diff.count();
+#endif
+  
+    cout << boost::format("finished vessel remodel step! \n");
+    
     
     ++num_iteration;
     ++iteration_in_this_rerun;
@@ -1246,7 +1260,7 @@ void FakeTumMTS::FakeTumorSimMTS::writeOutput(H5::Group &gout, bool doPermanentS
   {
     /** 
      *  VBL
-     */ 
+     */
     WriteHdfPtree(h5_vbl, tumorcode_pointer_to_currentCellsSystem->get_params_pointer()->as_ptree());
     
     boost::property_tree::ptree return_from_vbl = tumorcode_pointer_to_currentCellsSystem->as_ptree();
@@ -1716,6 +1730,11 @@ void FakeTumMTS::FakeTumorSimMTS::WriteCellsSystemHDF_with_nearest_vessel_index(
   DynArray<Float3> a(numberOfCells);
   DynArray<int> index_of_nearest_vessel(numberOfCells);
   DynArray<double> min_distances(numberOfCells);
+  if(numberOfCells != vectorOfnearestVessels.size())
+  {
+    std::cout << "why?" << std::endl;
+  }
+  
   for( int i = 0; i<numberOfCells ;++i)
   {
     a[i] = Float3(x[i],y[i],z[i]);

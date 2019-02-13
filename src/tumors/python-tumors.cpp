@@ -193,6 +193,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     H5::Group h5_vbl_Environment_0;
     H5::Group h5_vbl_dose_rateSignal;
     H5::Group h5_vbl_flowSignal;
+    H5::Group h5_vbl_mutation;
     
     H5::Group h5_params_of_permanent;
     H5::Group h5_system_of_permanent;
@@ -219,6 +220,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
       h5_vbl_Environment_0=h5_vbl_param.openGroup("Environment_0");
       h5_vbl_dose_rateSignal=h5_vbl_param.openGroup("dose_rateSignal");
       h5_vbl_flowSignal=h5_vbl_param.openGroup("flowSignal");
+      h5_vbl_mutation = h5_vbl_param.openGroup("mutation");
     }
     catch(H5::Exception &e)
     {
@@ -254,7 +256,14 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     ptree vblSettings_flowSignal;
     ReadHdfPtree(vblSettings_flowSignal, h5_vbl_flowSignal);
     vblSettings.put_child("flowSignal", vblSettings_flowSignal);
-    
+    //mutation 12.02.2019
+    ptree vblSettings_mutation;
+    ReadHdfPtree(vblSettings_mutation, h5_vbl_mutation);
+#ifndef NDEBUG
+    printPtree(vblSettings_mutation);
+#endif
+    vblSettings.put_child("mutation", vblSettings_mutation);
+
     //ready types
     int ntypes = vblSettings.get<int>("ntypes");
     for(int i=0;i<ntypes; i++)
@@ -271,7 +280,7 @@ void run_fakeTumor_mts(const py::str &param_info_str_or_filename_of_pr, bool isR
     s.all_pt_params.put_child("vbl", vblSettings);
     try 
     {
-      #ifndef NDEBUG
+#ifndef NDEBUG
       cout << "**************** VBL Settings ***************"<< endl;
     printPtree(vblSettings);
 #endif
