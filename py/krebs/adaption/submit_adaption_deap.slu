@@ -1,17 +1,24 @@
 #!/bin/bash
 #SBATCH --job-name=value_list_pressure_$1
-#SBATCH --nodes=7
-#SBATCH --ntasks=140
+#SBATCH --nodelist=leak[52-54,56,57-58,63]
+#SBATCH --ntasks=148
 #SBATCH --cpus-per-task=1
 #SBATCH --time=3-00:09:00
 #SBATCH --partition=mpi
-
+#python2 -m scoop /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
+# --nodes=
+# NOTE: you need the free_hosts.txt with structure
+# leak52 16
+# leak63 28
+# etc. to get the nunber of worker right!!!
 date
 echo "value list $1"
 cd /localdisk/thierry/output/deap_2019
 echo $SLURM_NODELIST
-POP=2500
-GEN=5
+export OMP_NUM_THREADS=1
+echo "openMP: ${OMP_NUM_THREADS}"
+POP=1000
+GEN=2
 echo "POP: ${POP} GEN: ${GEN}"
-python2 -m scoop /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
+python2 -m scoop --hostfile free_hosts.txt /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
 date

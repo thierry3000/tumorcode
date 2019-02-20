@@ -10,7 +10,9 @@ date
 echo "value list $1"
 cd /localdisk/thierry/output/deap_2019
 echo $SLURM_NODELIST
-POP=192
+export OMP_NUM_THREADS=1
+echo "openMP: ${OMP_NUM_THREADS}"
+POP=32
 GEN=1
 echo "POP: ${POP} GEN: ${GEN}"
 python2 -m scoop /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
