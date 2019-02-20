@@ -169,12 +169,17 @@ LatticeDataFCC::LatticeDataFCC()
 LatticeDataFCC::~LatticeDataFCC()
 {
   ClearMem( this, 1 );
+#ifndef NDEBUG  
   std::cout << "destruct LatticeDataFCC" << std::endl;
+#endif
 }
 
 LatticeDataFCC::LatticeDataFCC(const LatticeDataFCC& ld)
 {
+#ifndef NDEBUG
+  printf("in constructor LatticeDataFCC");
   ld.print(std::cout);
+#endif
   //ClearMem( this, 1);
   CopyMem(&ld, this, 1);
   //type=string("FCC");

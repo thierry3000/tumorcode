@@ -194,7 +194,7 @@ def calcBoxCounts(data, vesselgroup, dataId, opts):
           subgraph = graph
         if len(subgraph.edgelist): # if graph is not empty
           print 'computing %s' % dataId
-          krebsutils.set_num_threads(opts.num_threads)
+          #krebsutils.set_num_threads(opts.num_threads)
           #do boxcounting
           spacing = opts.spacing
           max_spacing = max(krebsutils.LatticeDataGetWorldSize(makeLd(graph, spacing, 0.)))

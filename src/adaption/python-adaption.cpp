@@ -98,7 +98,7 @@ void InitBFParameters(BloodFlowParameters *params, const py::dict *py_parameters
 
 #undef GET_ADAPTION_PARAM_FROM_DICT
 #undef GET_ADAPTION_PARAM_IF_NONNONE
-#ifdef DEBUG
+#ifndef NDEBUG
   printf("leave InitBFParameters\n");
 #endif
 }
@@ -108,7 +108,7 @@ void InitParameters(Adaption::Parameters *params, const py::dict *py_parameters)
 #define GET_ADAPTION_PARAM_FROM_DICT(TYPE, NAME) py::extract<TYPE>(py_parameters->get(NAME))
 #define GET_ADAPTION_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters->get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
   
-#ifdef DEBUG
+#ifndef NDEBUG
   printf("entered InitParameters\n");
 #endif
   //this could possibly done for every parameter
@@ -161,7 +161,7 @@ void InitParameters(Adaption::Parameters *params, const py::dict *py_parameters)
   //GET_ADAPTION_PARAM_IF_NONNONE(params->individuals, int, "individuals");
 #undef GET_ADAPTION_PARAM_FROM_DICT
 #undef GET_ADAPTION_PARAM_IF_NONNONE
-#ifdef DEBUG
+#ifndef NDEBUG
   printf("leave InitParameters\n");
 #endif
 }
@@ -198,7 +198,9 @@ void InitParameters(Adaption::Parameters *params, const py::dict *py_parameters)
 static py::object PyComputeAdaption(const py::dict py_parameters, const py::dict py_bfparams, bool doOutput)
 {
 #ifndef TOTAL_SILENCE
+#ifndef USE_ADAPTION
   cout<<" PyComputeAdaption is called "<<endl;
+#endif
 #endif
 #if 1
   BloodFlowParameters bfparams = py::extract<BloodFlowParameters>(py_bfparams);

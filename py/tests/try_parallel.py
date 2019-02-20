@@ -63,7 +63,7 @@ toolbox.register("update", updateParticle, phi1=2.0, phi2=2.0)
 toolbox.register("evaluate", benchmarks.h1)
 
 def main_pso():
-    pop = toolbox.population(n=1000)
+    pop = toolbox.population(n=goodArguments.populations)
     stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register("avg", numpy.mean)
     stats.register("std", numpy.std)
@@ -73,7 +73,7 @@ def main_pso():
     logbook = tools.Logbook()
     logbook.header = ["gen", "evals"] + stats.fields
 
-    GEN = 10
+    GEN = goodArguments.generations
     best = None
     
     for g in range(GEN):
@@ -91,7 +91,7 @@ def main_pso():
         toolbox.update(part, best)
        #Gather all the fitnesses in one list and print the stats
       logbook.record(gen=g, evals=len(pop), **stats.compile(pop))
-      print("generation: %i" % g)
+      #print("generation: %i" % g)
       #print(logbook.stream)
 
 #    
@@ -113,7 +113,18 @@ def test_sum():
   assert serialSum == parallelSum
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='test scoop and deap')  
+    parser.add_argument('-g',dest='generations', type=int, default=1000, help='gerations of PSO')
+    parser.add_argument('-p',dest='populations', type=int, default=5, help='populations of PSO')
+    goodArguments, otherArguments = parser.parse_known_args()
     #test_sum()
+    start = time.time()
     pop, logbook, best = main_pso()
+    print("runtime:")
+    end = time.time()
+    print(end-start)
     print("best: ")
     print(best)
+    print("fitness: ")
+    print(best.fitness.values)

@@ -233,7 +233,7 @@ def doit(filenames):
       PlotHistograms(pdfwriter, histogramGroupInitial, 'all', 'Initial')
 
 if __name__ == '__main__':
-  krebsutils.set_num_threads(2)
+  #krebsutils.set_num_threads(2)
   import argparse
   parser = argparse.ArgumentParser(description='Compare O2 from adation and no adaption')  
   parser.add_argument('detailedO2FileNames', nargs='+', type=argparse.FileType('r'), default=sys.stdin, help='detailedO2 files to calculate')   

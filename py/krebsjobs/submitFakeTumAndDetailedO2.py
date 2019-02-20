@@ -49,7 +49,7 @@ import krebs.tumors
 
 
 def worker_on_client(vessel_fn, tumor_parameters, o2_parameter_set_name, num_threads):
-  krebsutils.set_num_threads(num_threads)
+  #krebsutils.set_num_threads(num_threads)
   tumor_fn = tumor_parameters['fn_out']
   tend = tumor_parameters['tend']
   pattern1 = 'out0000'

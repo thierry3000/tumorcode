@@ -1532,7 +1532,7 @@ def plot_snapshots_linear(f, dataman_, pdfpages):
 
 
 def measure_and_plot(filenames):
-  krebsutils.set_num_threads(3)
+  #krebsutils.set_num_threads(3)
   rc = matplotlib.rc
   rc('figure', **{'subplot.left' : 0.15,
                   'subplot.right' : 1.-0.15,

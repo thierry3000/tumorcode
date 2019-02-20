@@ -500,7 +500,7 @@ std::shared_ptr<VesselList3d> ReadVesselList3d(const H5::Group &vesselgroup, con
     }
 
     std::unique_ptr<polymorphic_latticedata::LatticeData> ldp = polymorphic_latticedata::ReadHdf(ldgroup);
-#ifdef DEBUG
+#ifndef NDEBUG
     cout << "ReadVesselList3d read " << endl;
     ldp->print(cout);
 #endif
@@ -511,7 +511,7 @@ std::shared_ptr<VesselList3d> ReadVesselList3d(const H5::Group &vesselgroup, con
     vl->Init(ldp);
   
     
-#ifdef DEBUG
+#ifndef NDEBUG
     VESSEL_INTEGRITY_CHECK_SWITCH(vl->IntegrityCheck();)
 #endif
 

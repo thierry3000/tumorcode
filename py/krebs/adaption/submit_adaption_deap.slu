@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH --job-name=value_list_pressure_$1
+#SBATCH --nodes=7
+#SBATCH --ntasks=140
+#SBATCH --cpus-per-task=1
+#SBATCH --time=3-00:09:00
+#SBATCH --partition=mpi
+
+date
+echo "value list $1"
+cd /localdisk/thierry/output/deap_2019
+echo $SLURM_NODELIST
+POP=2500
+GEN=5
+echo "POP: ${POP} GEN: ${GEN}"
+python2 -m scoop /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
+date

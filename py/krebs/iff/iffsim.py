@@ -112,7 +112,7 @@ def run_iffsim(params):
   outfilename = params.pop('fn_out')
   measure_params = params.pop('ift_measure', dict())
 
-  krebsutils.set_num_threads(params.pop('num_threads', 1))
+  #krebsutils.set_num_threads(params.pop('num_threads', 1))
   krebsutils.run_iffsim(dicttoinfo.dicttoinfo(params), str(outfilename.encode('utf-8')), Measure(outfilename, measure_params))
 
 

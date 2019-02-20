@@ -48,8 +48,8 @@ from krebsutils import typelist
 def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
   print('Adaption on %s / %s / param: %s' % (fn, grp_pattern, adaptionParams['name']))
   qsub.printClientInfo()  
-  h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
-  krebsutils.set_num_threads(num_threads)
+  #h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
+  #krebsutils.set_num_threads(num_threads)
   
   #params['name'] = parameter_set_name
   adaptionParams['adaption'].update(
@@ -67,8 +67,8 @@ def worker_on_client(fn, grp_pattern, adaptionParams, num_threads):
 '''
 def worker_on_client_optimize(fn, grp_pattern, adaptionParams, num_threads, timing):
   print('Adaption on %s / %s / param: %s' % (fn, grp_pattern, adaptionParams['name']))
-  h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
-  krebsutils.set_num_threads(num_threads)
+  #h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
+  #krebsutils.set_num_threads(num_threads)
   
   if timing:
     prof = cProfile.Profile()
@@ -81,7 +81,7 @@ def worker_on_client_optimize(fn, grp_pattern, adaptionParams, num_threads, timi
     adaption_refs_optimize = krebs.adaption.doit_optimize(fn, adaptionParams['adaption'],adaptionParams['calcflow'])
   print("got back: ")
   print(adaption_refs_optimize)
-  h5files.closeall() # just to be sure
+  #h5files.closeall() # just to be sure
 
 ''' I tried to assing parameters due to the RC type here 
     which was kind of stupid

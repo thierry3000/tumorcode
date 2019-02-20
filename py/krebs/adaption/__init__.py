@@ -35,8 +35,9 @@ import warnings
 from krebs.analyzeGeneral   import DataBasicVessel
 from krebs.analyzeBloodFlowResistance import ComputeVascularTreeBloodFlowResistances
 
-
-sys.path.append(os.path.join(os.path.dirname(__file__),'../../../lib'))
+#print(sys.path)
+#print()
+#sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 
 if sys.flags.debug:
   adaption_cpp = __import__('libadaption_d', globals(), locals())
@@ -46,7 +47,7 @@ else:
 def worker_on_client(fn, grp_pattern, adaptionParams, num_threads=1):
   print('Adaption on %s / %s / param: %s' % (fn, grp_pattern, adaptionParams['name']))
   #h5files.search_paths = [dirname(fn)] # so the plotting and measurement scripts can find the original tumor files using the stored basename alone
-  _ku.set_num_threads(num_threads)
+  #_ku.set_num_threads(num_threads)
   
   #params['name'] = parameter_set_name
   adaptionParams['adaption'].update(
@@ -192,7 +193,6 @@ def computeAdaption_(gdst, vesselgroup, parameters):
   
 def doit_optimize_deap(individual):
   
-  _ku.set_num_threads(1)
   if sys.flags.debug:
     print("individual in doit_optimize_deap")
     print(individual)

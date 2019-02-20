@@ -1248,6 +1248,6 @@ def doit(filenames, pattern, normalTissueEnsembleInput = None):
         PlotConvergenceData(pdfwriter, dataman, items)
 
 if __name__ == '__main__':
-  krebsutils.set_num_threads(2)
+  #krebsutils.set_num_threads(2)
   filenames, pattern = sys.argv[1:-1], sys.argv[-1]
   doit(filenames, pattern)

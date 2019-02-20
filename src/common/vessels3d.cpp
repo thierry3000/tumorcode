@@ -85,7 +85,7 @@ void VesselList3d::ClearLattice()
 
 std::unique_ptr< VesselList3d > VesselList3d::Clone()
 {
-  #ifdef DEBUG
+  #ifndef NDEBUG
   cout << "this lattice data will be passed to: " << endl;
   this->m_ld->print(cout);
   #endif
@@ -94,7 +94,7 @@ std::unique_ptr< VesselList3d > VesselList3d::Clone()
 //   my_return_list->Init(this->Ld());
   my_return_list->Init(m_ld);
   //my_return_list->bclist.reset(new BCList);
-  #ifdef DEBUG
+  #ifndef NDEBUG
   cout << "recognized: " << endl;
   my_return_list->m_ld->print(cout);
 #endif

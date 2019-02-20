@@ -266,6 +266,7 @@ void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &para
         if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsVein())
         {
 #ifdef DEBUG
+          //vein pressure is set to a_flow 
           cout<< format("changing %i to pressure: %f\n") % vc->Index() % params.a_pressure <<endl;
 #endif
           FlowBC aCondition = FlowBC(FlowBC::Type::PIN, params.a_flow );
@@ -274,6 +275,7 @@ void ChangeBoundaryConditions(VesselList3d &vl, const Adaption::Parameters &para
         if (vc->Count() > 0 and vc->IsBoundary() and vc->GetEdge(0)->IsCirculated() and vc->GetEdge(0)->IsArtery())
         {
 #ifdef DEBUG
+          //artery pressure is set to a_pressure
           cout<< format("changing %i to flow: %f\n") % vc->Index() % params.a_flow <<endl;
 #endif
           FlowBC aCondition = FlowBC(FlowBC::Type::PIN, params.a_pressure );
@@ -542,7 +544,9 @@ void ConductiveTransport::SetFlow(int i, FlReal x) const
   if ( x<1e-6 )//1e-5 worked for type D,E,F
   {
 #ifndef TOTAL_SILENCE
+#ifndef USE_ADAPTION
     printf("Warning: Low flow segment at %i\n", i);
+#endif
 #endif
     //myAssert(x > 0.01);
     x = 1e-6;
@@ -554,7 +558,9 @@ void ConductiveTransport::SetHema(int i, FlReal x) const
   if( x < 0.01 )
   {
     #ifndef TOTAL_SILENCE
+    #ifndef USE_ADAPTION
     printf("Warning: Low hema segment at %i\n", i);
+    #endif
     #endif
     //myAssert(x > 0.001);
     x = 0.01;
@@ -562,7 +568,9 @@ void ConductiveTransport::SetHema(int i, FlReal x) const
   if( x > 0.99 )
   {
     #ifndef TOTAL_SILENCE
+    #ifndef USE_ADAPTION
     printf("Warning: High hema segment at %i\n", i);
+    #endif
     #endif
     //myAssert(x > 0.001);
     x = 0.9;
@@ -1004,11 +1012,11 @@ void KillSmallVessels(VesselList3d &vl, double rad_min)
   #define VESSEL_THREAD_CHUNK_SIZE 1024
   
   DynArray<Vessel*> toKill;
-  tbb::spin_mutex mutex;
-  #pragma omp parallel
-  {
+  //tbb::spin_mutex mutex;
+  //#pragma omp parallel
+  //{
     DynArray<Vessel*> th_toKill(4024, ConsTags::RESERVE);
-    #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
+    //#pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for( int i=0;i<ecnt; ++i )
     {
       Vessel* v = vl.GetEdge( i );
@@ -1024,12 +1032,12 @@ void KillSmallVessels(VesselList3d &vl, double rad_min)
         th_toKill.push_back(v);
       }
     }
-    mutex.lock();
+    //mutex.lock();
     toKill.insert(toKill.end(), th_toKill.begin(), th_toKill.end());
-    mutex.unlock();
+    //mutex.unlock();
     th_toKill.remove_all();
-  }//end omp parallel
-  #pragma omp barrier
+  //}//end omp parallel
+  //#pragma omp barrier
 #ifdef DEBUG
   printf("going to kill %i vessels by adaption\n" , toKill.size());
 #endif
@@ -1059,12 +1067,12 @@ void SetAdaptionValues(VesselList3d &vl, CompressedAdaptionNetwork& fl, double d
 //  int k =0; //note definition of kk is even more powerful than a threadsafe counter!!!!
 //#pragma omp parallel private(k) // this is needed because otherwise k++ not threadsafe
 
-  #pragma omp parallel reduction(+:negativeRadiusSuggested,tooSmallRadiusSuggested,tooBigRadiusSuggested,delta_r_square),reduction(max:max_delta_r_again,max_stot_again)
-  {
+  //#pragma omp parallel reduction(+:negativeRadiusSuggested,tooSmallRadiusSuggested,tooBigRadiusSuggested,delta_r_square),reduction(max:max_delta_r_again,max_stot_again)
+  //{
 //     DynArray<Vessel*> th_toKill(4024, RESERVE);
 //     DynArray<FlReal> th_max_delta_r(64,RESERVE);
 //     DynArray<FlReal> th_max_stot(64,RESERVE);
-    #pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
+    //#pragma omp for schedule(dynamic, VESSEL_THREAD_CHUNK_SIZE)
     for( int i=0;i<vl.GetECount(); ++i )
     {
       Vessel* v = vl.GetEdge( i );
@@ -1148,8 +1156,8 @@ void SetAdaptionValues(VesselList3d &vl, CompressedAdaptionNetwork& fl, double d
 //     toKill.insert(toKill.end(), th_toKill.begin(), th_toKill.end());
 //     mutex.unlock();
 //  printf("max_stot_again: %f\n", max_stot_again);
-  }//end omp parallel
-  #pragma omp barrier
+  //}//end omp parallel
+  //#pragma omp barrier
 #if 0
   printf("########## max delta r: %f \n", max_delta_r_again);
   printf("########## max s_tot : %f \n", max_stot_again);
@@ -1379,36 +1387,36 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Param
 #endif
   
   /***********************   MPI ***********************/
-  int rank,size;
-  int flag;// = Is_initialized();
-  int tid, nthreads;
-  int errorCode = MPI_Initialized(&flag);
-  if (flag)
-  {
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-#ifndef TOTAL_SILENCE
-    printf("on MPI process %i of %i \n", rank, size);
-#endif
-    /* Obtain thread number */
-    tid = omp_get_thread_num();
-#ifndef TOTAL_SILENCE
-    printf("on thread %i \n", tid);
-#endif
-    if( tid == 0 )
-    {
-      nthreads = omp_get_num_threads();
-#ifndef TOTAL_SILENCE
-      printf("this master has %i subthreads\n", nthreads);
-#endif
-    }
-  }
-  else
-  {
-#ifndef TOTAL_SILENCE
-    printf("on thread %i of %i\n", omp_get_num_threads(), omp_get_max_threads());
-#endif
-  }
+//   int rank,size;
+//   int flag;// = Is_initialized();
+//   int tid, nthreads;
+//   int errorCode = MPI_Initialized(&flag);
+//   if (flag)
+//   {
+//     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//     MPI_Comm_size(MPI_COMM_WORLD, &size);
+// #ifndef TOTAL_SILENCE
+//     printf("on MPI process %i of %i \n", rank, size);
+// #endif
+//     /* Obtain thread number */
+//     tid = omp_get_thread_num();
+// #ifndef TOTAL_SILENCE
+//     printf("on thread %i \n", tid);
+// #endif
+//     if( tid == 0 )
+//     {
+//       nthreads = omp_get_num_threads();
+// #ifndef TOTAL_SILENCE
+//       printf("this master has %i subthreads\n", nthreads);
+// #endif
+//     }
+//   }
+//   else
+//   {
+// #ifndef TOTAL_SILENCE
+//     printf("on thread %i of %i\n", omp_get_num_threads(), omp_get_max_threads());
+// #endif
+//   }
   /***********************  END MPI ***********************/
   
   
@@ -1426,10 +1434,10 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Param
   //this seems to be necessary to get a stable result for the apj stuff
   //used together with change of radii of veins
   // is this threadsafe when multiple instances of p_vl exist?
-  #pragma omp single
-  {
+  //#pragma omp single
+  //{
     ChangeBoundaryConditions(vl,params);  // if KEEP is chosen, nothing should happen here
-  }
+  //}
 #endif
   
 #ifdef DEBUG
@@ -1455,7 +1463,7 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Param
    * it turns out that they are not so nice for adaption
    * is good to have well definde pressures and flow, even if this may be redundant
    */
-#ifdef DEBUG
+#ifndef NDEBUG
   printf("vl.GetECount(): %d\n", vl.GetECount() );
   printf("running first CalcFlow in adaptionLoop\n");
   CalcFlow(vl, bfparams);
@@ -1699,11 +1707,11 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Param
   FlReal mean_std;
   if(how_often >= params.max_nun_iterations)
   {
-#if ADAPTION_OUTPUT
-#ifndef TOTAL_SILENCE
+//#if ADAPTION_OUTPUT
+//#ifndef TOTAL_SILENCE
     cout<<"NOT Convergent!"<<endl;
-#endif
-#endif
+//#endif
+//#endif
     return std::make_tuple(1,
                            42424242424242424242424242424242424.0,
                            42424242424242424242424242424242424.0,
@@ -1711,51 +1719,47 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Param
   }
   else
   {
-#if ADAPTION_OUTPUT
-#ifndef TOTAL_SILENCE
-    cout<<"convergent!"<<endl;
-#endif
-#endif
-  if(doDebugOutput)//this needs improvements, skipped for now
-  {
-    try 
+    cout<<"ADAPTIONconvergent!"<<endl;
+    if(doDebugOutput)//this needs improvements, skipped for now
     {
-      H5::H5File f;
-      //write vessel list to file
-      if( params.outputFileName.compare("empty") !=0 )
+      try 
       {
-        f= H5::H5File( params.outputFileName , H5F_ACC_RDWR);
+        H5::H5File f;
+        //write vessel list to file
+        if( params.outputFileName.compare("empty") !=0 )
+        {
+          f= H5::H5File( params.outputFileName , H5F_ACC_RDWR);
+        }
+        else
+        {
+          cout << " no outputFileName found!!! --> creating one" << endl;
+          string stripped = RemoveAllExtensions(params.vesselFileName);
+          stripped = RemovePath(stripped);
+          f= H5::H5File( "adaption_" + params.parameterSetName +"_" + stripped +".h5", H5F_ACC_TRUNC);
+        }
+        H5::Group out_ = f.openGroup("/");
+        H5::Group params_;
+        H5::Group grp_temp = out_.createGroup("vessels_after_adaption");
+        ptree getEverytingPossible = make_ptree("w_adaption", true);
+        WriteVesselList3d(vl, grp_temp, getEverytingPossible);
+        params_ = grp_temp.createGroup("parameters");
+        ptree outputPtree = params.as_ptree();
+        outputPtree.put("cwd", boost::filesystem::current_path().string());
+        WriteHdfPtree(params_, outputPtree);
+        grp_temp.close();
+        params_.close();
+        out_.close();
+        f.close();
       }
-      else
+      catch(H5::Exception &e)
       {
-        cout << " no outputFileName found!!! --> creating one" << endl;
-        string stripped = RemoveAllExtensions(params.vesselFileName);
-        stripped = RemovePath(stripped);
-        f= H5::H5File( "adaption_" + params.parameterSetName +"_" + stripped +".h5", H5F_ACC_TRUNC);
+        e.printErrorStack();
       }
-      H5::Group out_ = f.openGroup("/");
-      H5::Group params_;
-      H5::Group grp_temp = out_.createGroup("vessels_after_adaption");
-      ptree getEverytingPossible = make_ptree("w_adaption", true);
-      WriteVesselList3d(vl, grp_temp, getEverytingPossible);
-      params_ = grp_temp.createGroup("parameters");
-      ptree outputPtree = params.as_ptree();
-      outputPtree.put("cwd", boost::filesystem::current_path().string());
-      WriteHdfPtree(params_, outputPtree);
-      grp_temp.close();
-      params_.close();
-      out_.close();
-      f.close();
     }
-    catch(H5::Exception &e)
-    {
-      e.printErrorStack();
-    }
-  }
     //calculate mean and std
     using namespace boost::accumulators;
     accumulator_set<double, features<tag::mean, tag::variance>> acc;
-#pragma omp parallel for
+//#pragma omp parallel for
   for(int i =0;i<vl.GetECount();++i)
   {
     Vessel* v = vl.GetEdge(i);
@@ -1766,7 +1770,7 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Param
   }
   mean_value = mean(acc);
   mean_std = sqrt(variance(acc));
-#pragma omp barrier
+//#pragma omp barrier
 
   // surface
   double total_surface=0.0;
@@ -1781,13 +1785,13 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Param
     scale = 42.;
   }
   // cout << "check scale bla " << vl->Ld().Scale() << endl;
-#pragma omp parallel for default(shared) reduction(+:total_surface)
+//#pragma omp parallel for default(shared) reduction(+:total_surface)
   for(int i =0;i<vl.GetECount();++i)
   {
     Vessel* v = vl.GetEdge(i);
     total_surface += (2* 3.1415 * v->r * scale);
   }
-#pragma omp barrier
+//#pragma omp barrier
     
   //return std::make_tuple(0, mean_value);
   //we are minimizing on the python site, so return -total_surface ----> maximizes it

@@ -364,7 +364,9 @@ void HematocritCalculator::SetHematocrit(int i,FlReal x) const
   else if (x<0. || x>1.01) 
   {
 #ifndef TOTAL_SILENCE
+#ifndef USE_ADAPTION
     printf("warning hematocrit %f out of bounds at vessel %i\n", x, i);
+#endif
 #endif
     myAssert(x<0. || x>1.01); 
   }
@@ -565,7 +567,9 @@ void HematocritCalculator::UpdateHematocritAtNode( int upstream_node, int edge_i
       if( diff>1.0e-3f ) 
       {
 #ifndef SILENCE
+#ifndef USE_ADAPTION
         printf("WARNING: UpdateHematocritAtNode: RBC conservation violated %f %% (out: %e, in: %e) at node %i\n",diff,rbcout,rbcIn,upstream_node);
+#endif
 #endif
         /*if( diff>0.5f ) 
         {
@@ -712,8 +716,10 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
       /* this is where due to numerical inaccuracies (???) small random flows occur which dont respect mass conservation
        * after breaking the computation is restarted with the offending vessels hidden.
        */
+#ifndef USE_ADAPTION
       cout << "offending vessels hidden --> restart" << std::endl;
       cout.flush();
+#endif
       break;
     }
 
@@ -787,11 +793,15 @@ int CalcFlowWithPhaseSeparation(VesselList3d &vl, const BloodFlowParameters &blo
   
   if (!ok)
   {
+#ifndef USE_ADAPTION
     cout << "before cc" << endl;
     cout.flush();
+#endif
     ComputeCirculatedComponents(&vl);
+#ifndef USE_ADAPTION
     cout << "cc again called" << endl;
     cout.flush();
+#endif
     returnCode = CalcFlowWithPhaseSeparation(vl, bloodFlowParameters);
   }
   //delete solver;

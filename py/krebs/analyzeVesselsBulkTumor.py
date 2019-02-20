@@ -241,7 +241,7 @@ def doit(filenames, pattern):
       g.create_dataset('bins', data = bins_spec.arange())
 
 if __name__ == '__main__':
-  krebsutils.set_num_threads(2)
+  #krebsutils.set_num_threads(2)
   
   import argparse
   parser = argparse.ArgumentParser(description='Sample morpholical data.') 
