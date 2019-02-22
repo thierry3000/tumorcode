@@ -1728,7 +1728,7 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Param
         //write vessel list to file
         if( params.outputFileName.compare("empty") !=0 )
         {
-          f= H5::H5File( params.outputFileName , H5F_ACC_RDWR);
+          f= H5::H5File( params.outputFileName , H5F_ACC_TRUNC);
         }
         else
         {
@@ -1753,6 +1753,7 @@ std::tuple<uint,FlReal,FlReal, FlReal> runAdaption_Loop( VesselList3d &vl, Param
       }
       catch(H5::Exception &e)
       {
+        cout << "Error in doDebugOutput for adaption" << endl;
         e.printErrorStack();
       }
     }

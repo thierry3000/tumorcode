@@ -36,7 +36,14 @@ import os
 import krebsutils as ku
 
 
-def plot_hydorodynamic_charicteristics(vessel_grp,pp):
+def plot_shearstress(vessel_grp,pp):
+    index_of_artery = np.bitwise_and(np.asarray(vessel_grp['edges/flags']), ku.ARTERY)>0
+    index_of_artery = index_of_artery[:,0]
+    index_of_capillary = np.bitwise_and(np.asarray(vessel_grp['edges/flags']), ku.CAPILLARY)>0
+    index_of_capillary = index_of_capillary[:,0]
+    index_of_vein = np.bitwise_and(np.asarray(vessel_grp['edges/flags']), ku.VEIN)>0
+    index_of_vein = index_of_vein[:,0]
+  
     shearforce = np.asarray(vessel_grp['edges/shearforce'])
     shearforce = shearforce[:,0]
     shearforce = np.multiply(shearforce,10000)
@@ -58,31 +65,86 @@ def plot_hydorodynamic_charicteristics(vessel_grp,pp):
         pressure_at_vessel.append((pressure_at_nodes[NodeA]+pressure_at_nodes[NodeB])/2 * 1/0.1333)
     
     fig = matplotlib.figure.Figure()
-    ax1 = fig.add_subplot(211)
-    #plt.subplot(2,1,1)
-    ax1.semilogy(pressure_at_vessel,shearforce,'*')
+    ax1 = fig.add_subplot(111)
+    
+    #ax1.loglog(pressure_at_vessel,shearforce,'*')
+    pressure_at_vessel=np.asarray(pressure_at_vessel)
+    ax1.loglog(pressure_at_vessel[index_of_artery],shearforce[index_of_artery],'o', markerfacecolor='r', markeredgecolor='r')
+    ax1.loglog(pressure_at_vessel[index_of_capillary],shearforce[index_of_capillary],'D',markerfacecolor='none', markeredgecolor='coral' )
+    ax1.loglog(pressure_at_vessel[index_of_vein],shearforce[index_of_vein],'v', markerfacecolor='none', markeredgecolor='b')
+    
+    
+    
+    ax1.set_ylabel('shearstress dyne/cm^2')
+    if goodArguments.apj:
+      ax1.set_xlim([12,100])
+      ax1.set_ylim([1,1000])
+    
+    
+    
     ax1.grid()
     
-    #ax1.xaxis.set_label_coords(0.05, .025)
+    pp.savefig(fig, 'hydorodynamic_charicteristics')
     
-    #ax1.set_xlim([10,100])
-    #ax1.set_ylim([1,1000])
-    ax1.set_ylabel('shearstress dyne/cm^2')
-    ax2 = fig.add_subplot(212, sharex=ax1)
-    ax2.semilogy(pressure_at_vessel,diameter,'r*')
-    ax2.grid()
-    #plt.xlabel('pressure/ mmHg')
+def plot_diameter(vessel_grp,pp):
+    index_of_artery = np.bitwise_and(np.asarray(vessel_grp['edges/flags']), ku.ARTERY)>0
+    index_of_artery = index_of_artery[:,0]
+    index_of_capillary = np.bitwise_and(np.asarray(vessel_grp['edges/flags']), ku.CAPILLARY)>0
+    index_of_capillary = index_of_capillary[:,0]
+    index_of_vein = np.bitwise_and(np.asarray(vessel_grp['edges/flags']), ku.VEIN)>0
+    index_of_vein = index_of_vein[:,0]
+  
+    shearforce = np.asarray(vessel_grp['edges/shearforce'])
+    shearforce = shearforce[:,0]
+    shearforce = np.multiply(shearforce,10000)
+    diameter = np.multiply(np.asarray(vessel_grp['edges/radius']),2)
+    diameter = diameter[:,0]
+    
+    node_a_index = np.asarray(vessel_grp['edges/node_a_index'])
+    node_a_index = node_a_index[:,0]
+    node_b_index = np.asarray(vessel_grp['edges/node_b_index'])
+    node_b_index = node_b_index[:,0]
+        
+    pressure_at_nodes = np.asarray(vessel_grp['nodes/pressure'])
+    pressure_at_nodes = pressure_at_nodes[:,0]
+    
+    
+    pressure_at_vessel=[]
+        
+    for NodeA, NodeB in itertools.izip(node_a_index,node_b_index):
+        pressure_at_vessel.append((pressure_at_nodes[NodeA]+pressure_at_nodes[NodeB])/2 * 1/0.1333)
+    
+    fig = matplotlib.figure.Figure()
+    ax2 = fig.add_subplot(111)
+    
+    #ax1.loglog(pressure_at_vessel,shearforce,'*')
+    pressure_at_vessel=np.asarray(pressure_at_vessel)
+    
+    
+    #ax2.loglog(pressure_at_vessel,diameter,'r*')
+    ax2.loglog(pressure_at_vessel[index_of_artery],diameter[index_of_artery],'o', markerfacecolor='r', markeredgecolor='r', label='ART')
+    ax2.loglog(pressure_at_vessel[index_of_capillary],diameter[index_of_capillary],'D',markerfacecolor='none', markeredgecolor='coral', label='CAP' )
+    ax2.loglog(pressure_at_vessel[index_of_vein],diameter[index_of_vein],'v', markerfacecolor='none', markeredgecolor='b', label='VEN')
     ax2.set_ylabel(r'diameter/ $\mu m$')
     ax2.set_xlabel(r'pressure/ $mmHg$')
-    #plt.xlim([10,100])
-    ax1.set_xlim([20,53])
-    ax2.set_xlim([20,53])
     if goodArguments.apj:
-      ax2.set_ylim([3,100])
+      ax2.set_ylim([5,110])
+      ax2.set_xlim([12,110])
+    
+    ax2.grid()
+    #labels = ['ART', 'CAP', 'VEN']
+    #dummies = [ax2.plot([], [], ls='o', c=c)[0] for c in colors]
+    ax2.legend()
     pp.savefig(fig, 'hydorodynamic_charicteristics')
-    #plt.show()
 
 def plot_hydrodynamic_stimuli(vessel_grp,pp):
+    index_of_artery = np.bitwise_and(np.asarray(vessel_grp['edges/flags']), ku.ARTERY)>0
+    index_of_artery = index_of_artery[:,0]
+    index_of_capillary = np.bitwise_and(np.asarray(vessel_grp['edges/flags']), ku.CAPILLARY)>0
+    index_of_capillary = index_of_capillary[:,0]
+    index_of_vein = np.bitwise_and(np.asarray(vessel_grp['edges/flags']), ku.VEIN)>0
+    index_of_vein = index_of_vein[:,0]
+    
     shearforce = np.asarray(vessel_grp['edges/shearforce'])
     shearforce = shearforce[:,0]
     shearforce = np.multiply(shearforce,10000) #kpa to dyne
@@ -99,14 +161,26 @@ def plot_hydrodynamic_stimuli(vessel_grp,pp):
         
     for NodeA, NodeB in itertools.izip(node_a_index,node_b_index):
         pressure_at_vessel.append((pressure_at_nodes[NodeA]+pressure_at_nodes[NodeB])/2 * 1/0.1333)
+    pressure_at_vessel = np.asarray(pressure_at_vessel)
     pressure_stimuli = 100 - 86 *np.exp(-5000*np.log10(np.log10(pressure_at_vessel))**5.4)
     fig = matplotlib.figure.Figure()
     ax = fig.add_subplot(111)
-    ax.semilogx(pressure_at_vessel,np.log10(shearforce),'*')
-    ax.semilogx(pressure_at_vessel,-np.log10(pressure_stimuli),'r*')
-    ax.legend([r'$log_{10}($ shearforce $)$', r'$-log_{10}($ expected wallstress $)$'])
+    #ax.semilogx(pressure_at_vessel,np.log10(shearforce),'*')
+    ax.semilogx(pressure_at_vessel[index_of_artery],np.log10(shearforce[index_of_artery]),'o', markerfacecolor='r', markeredgecolor='r', label='ART')
+    ax.semilogx(pressure_at_vessel[index_of_capillary],np.log10(shearforce[index_of_capillary]),'D',markerfacecolor='none', markeredgecolor='coral', label='CAP' )
+    ax.semilogx(pressure_at_vessel[index_of_vein],np.log10(shearforce[index_of_vein]),'v', markerfacecolor='none', markeredgecolor='b', label='VEN')
+    
+    #ax.semilogx(pressure_at_vessel,-np.log10(pressure_stimuli),'r*')
+    ax.semilogx(pressure_at_vessel[index_of_artery],-np.log10(pressure_stimuli[index_of_artery]),'o', markerfacecolor='r', markeredgecolor='r')
+    ax.semilogx(pressure_at_vessel[index_of_capillary],-np.log10(pressure_stimuli[index_of_capillary]),'D',markerfacecolor='none', markeredgecolor='coral' )
+    ax.semilogx(pressure_at_vessel[index_of_vein],-np.log10(pressure_stimuli[index_of_vein]),'v', markerfacecolor='none', markeredgecolor='b')
+    #ax.legend([r'$log_{10}($ shearforce $)$', r'$-log_{10}($ expected wallstress $)$'])
+    ax.legend(loc='center right')
     ax.grid()
     ax.set_xlabel('pressure/ mmHg')
+    if goodArguments.apj:
+      ax.set_ylim([-2.2,4])
+      #ax2.set_ylim([3,100])
     #ax.xaxis.set_label_coords(1.05, -20.025)
     #ax.set_xlim([10,100])
     #ax.set_ylim([-2.2,4])
@@ -146,13 +220,13 @@ def plot_conductive_stimuli(adaption_grp,pp):
     fig2 = matplotlib.figure.Figure()
     ax = fig2.add_subplot(111)
     #ax.set_title('Stimuli')
-    ax.semilogx(flow[index_of_artery],metabolic[index_of_artery],'*r')
-    ax.semilogx(flow[index_of_capillary],metabolic[index_of_capillary],'*y')
-    ax.semilogx(flow[index_of_vein],metabolic[index_of_vein],'*b')
+    ax.semilogx(flow[index_of_artery],metabolic[index_of_artery],'o', markerfacecolor ='r', markeredgecolor='r')
+    ax.semilogx(flow[index_of_capillary],metabolic[index_of_capillary], 'o', markerfacecolor ='coral', markeredgecolor='coral')
+    ax.semilogx(flow[index_of_vein],metabolic[index_of_vein],'v', markerfacecolor ='b', markeredgecolor='b' )
     
-    ax.semilogx(flow[index_of_artery],conductive[index_of_artery],'.r')
-    ax.semilogx(flow[index_of_capillary],conductive[index_of_capillary],'.y')
-    ax.semilogx(flow[index_of_vein],conductive[index_of_vein],'.b')
+    ax.semilogx(flow[index_of_artery],conductive[index_of_artery],'o', markerfacecolor ='none', markeredgecolor='r')
+    ax.semilogx(flow[index_of_capillary],conductive[index_of_capillary],'o', markerfacecolor ='none', markeredgecolor='coral')
+    ax.semilogx(flow[index_of_vein],conductive[index_of_vein],'v', markerfacecolor ='none', markeredgecolor='b')
     datasets = ax.get_lines()
     legend1=ax.legend([datasets[i] for i in [0,1,2]],['metabolic/ artery','metabolic/ capillary', 'metabolic/ vein'], loc=1)
     legend2=ax.legend([datasets[i] for i in [3,4,5]],['conductive/ artery','conductive/ capillary', 'conductive/ vein'], loc=2)
@@ -427,6 +501,7 @@ if __name__ == '__main__':
     for fn in filenames:
       with h5py.File(fn) as f:
         no_of_iterations = ''
+        no_of_iterations = 'plot'
         vesselgrp = f['vessels_after_adaption']
         common_filename = os.path.splitext(os.path.basename(fn))[0]
       
@@ -434,8 +509,11 @@ if __name__ == '__main__':
           hydrodynamic_fig = plot_hydrodynamic_stimuli(vesselgrp, pp)
         with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_conductive_stimulies.pdf') as pp:
           plot_conductive_stimuli(vesselgrp,pp)
-        with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_hydrodynamics.pdf') as pp:
-          plot_hydorodynamic_charicteristics(vesselgrp,pp)
+        with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_diameter_hydrodynamics.pdf') as pp:
+          plot_diameter(vesselgrp,pp)
+        with mpl_utils.PdfWriter(no_of_iterations + '_' + common_filename + '_shearstress_hydrodynamics.pdf') as pp:
+          plot_shearstress(vesselgrp,pp)
+          
   
       #plot_movie(f,pp=None)
       #plot_movie_typeE(f,pp=None)

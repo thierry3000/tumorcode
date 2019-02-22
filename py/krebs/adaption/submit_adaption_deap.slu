@@ -1,24 +1,25 @@
 #!/bin/bash
-#SBATCH --job-name=value_list_pressure_$1
-#SBATCH --nodelist=leak[52-54,56,57-58,63]
-#SBATCH --ntasks=148
+#SBATCH --job-name=value_list_14
+#SBATCH --nodelist=leak[52-54,56,58-61]
+#SBATCH --ntasks=176
 #SBATCH --cpus-per-task=1
-#SBATCH --time=3-00:09:00
+#SBATCH --time=5-00:09:00
 #SBATCH --partition=mpi
 #python2 -m scoop /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
-# --nodes=
-# NOTE: you need the free_hosts.txt with structure
-# leak52 16
-# leak63 28
-# etc. to get the nunber of worker right!!!
 date
-echo "value list $1"
 cd /localdisk/thierry/output/deap_2019
-echo $SLURM_NODELIST
+echo "SLURM_JOB_NODELIST: ${SLURM_JOB_NODELIST}"
+echo "SLURM_JOB_NUM_NODES: ${SLURM_JOB_NUM_NODES}"
+echo "SLURM_NTASKS: ${SLURM_NTASKS}"
 export OMP_NUM_THREADS=1
 echo "openMP: ${OMP_NUM_THREADS}"
-POP=1000
-GEN=2
+POP=528
+GEN=3
+NUM_INDICES=341
 echo "POP: ${POP} GEN: ${GEN}"
-python2 -m scoop --hostfile free_hosts.txt /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
+#python2 -m scoop --hostfile free_hosts.txt /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
+for i in `seq 0 $NUM_INDICES`; do
+  echo "listindex ${i}"
+  python2 -m scoop --hostfile free_hosts.txt /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py value_list14 --listindex=${i} -p ${POP} -g ${GEN};
+done;
 date

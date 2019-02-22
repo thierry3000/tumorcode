@@ -57,9 +57,9 @@ def whiskers_plot_parameters(f,pdf):
   average_k_m = np.median(all_bests[:,1])
   average_k_s = np.median(all_bests[:,2])
   print("averge kc: %f, average k_m: %f, average k_s %f" % (average_k_c, average_k_m,average_k_s))
-  f['/'].attrs['average_kc'] = average_k_c
-  f['/'].attrs['average_km'] = average_k_m
-  f['/'].attrs['average_ks'] = average_k_s
+  #f['/'].attrs['average_kc'] = average_k_c
+  #f['/'].attrs['average_km'] = average_k_m
+  #f['/'].attrs['average_ks'] = average_k_s
   ''' whiskers plot '''
   fig = plt.figure()
   ax = fig.add_subplot(111)
@@ -68,7 +68,8 @@ def whiskers_plot_parameters(f,pdf):
   ax.text(1.,average_k_c, "%0.2f" % average_k_c,horizontalalignment='center',verticalalignment='bottom')
   ax.text(2.,average_k_m, "%0.2f" % average_k_m,horizontalalignment='center',verticalalignment='bottom')
   ax.text(3.,average_k_s, "%0.2f" % average_k_s,horizontalalignment='center',verticalalignment='bottom')
-  ax.text(1.5,3.8,'# %i convergent boundary conditions' % len(all_bests))
+  total_groups = len(f.keys())
+  ax.text(1.5,3.8,'%i convergent boundary conditions of\n%i tested' % (len(all_bests), total_groups))
   #ax.xaxis.set_ticks_([r'$k_c$', r'$k_m$', r'$S_5$'])
   #box1 = plt.boxplot(all_bests)
   #plt.xticks([1,2,3],[r'$k_c$', r'$k_m$', r'$S_5$'])
@@ -134,25 +135,32 @@ def convergenz_phase_diagram(f,pdf):
   sorted_fitnesses_smaller_max = sorted_fitnesses[sorted_fitnesses<max_Z]
   largest_value_except_false = sorted_fitnesses_smaller_max[-1]
   Z[bad_indeces] = largest_value_except_false
-  CS = plt.contour(np.log10(FLOW),PRESSURE,np.log10(np.transpose(Z)))
+  CS = plt.contour(FLOW,PRESSURE,np.log10(np.transpose(Z)))
+  #CS = plt.contour(np.log10(FLOW),PRESSURE,np.log10(np.transpose(Z)))
   plt.clabel(CS, inline=1, fontsize=5)
-  plt.title('convergent area for adaption.')
-  plt.xlabel(r'$\log_{10}$ (Flow through arterial inlet) / $\mu m^3/s$')
-  plt.ylabel(r'Pressure at venous outlet/ $kPa$')
+  plt.title('Convergent boundary conditions for adaption')
+  #plt.xlabel(r'$\log_{10}$ (Flow through arterial inlet) / $\mu m^3/s$')
+  plt.xlabel(r'Flow through arterial inlet / $\mu$m$^3$/s')
+  plt.ylabel(r'Pressure at venous outlet/ kPa')
+  labels = [r'log$_{10}$ of fitness']
+  for i in range(len(labels)):
+    CS.collections[i].set_label(labels[i])
+  plt.legend(loc='lower right')
   pdf.savefig()
   ''' smothed image'''
-  plt.figure()
-  im = plt.imshow(np.log10(np.transpose(Z)),interpolation='bilinear')
-  plt.colorbar()
-  #print("finshed that")
-  #plt.xticks(param_id, param_id_label, rotation='vertical')
-  #plt.tight_layout()
-  #ax = plt.gca()
-  #if doLogPlot:
-  #  ax.set_yscale('log')
-  pdf.savefig()
-  print("finished phase diagram")
-  #plt.show()
+  if 0:
+    plt.figure()
+    im = plt.imshow(np.log10(np.transpose(Z)),interpolation='bilinear')
+    plt.colorbar()
+    #print("finshed that")
+    #plt.xticks(param_id, param_id_label, rotation='vertical')
+    #plt.tight_layout()
+    #ax = plt.gca()
+    #if doLogPlot:
+    #  ax.set_yscale('log')
+    pdf.savefig()
+    print("finished phase diagram")
+  
 def convergenz_plot(f,pdf):
   group_labels = []
   group_bests = []
@@ -198,7 +206,8 @@ def find_convergent_groups(f):
     if variance_stuff:
       convergent_groups.append(group)
     else:
-      if float(np.asarray(f[group + '/fitness values'])) < 1e15:
+      #if float(np.asarray(f[group + '/fitness values'])) < 1e15:
+      if float(np.asarray(f[group + '/fitness values'])) < np.power(10,4.8):
         convergent_groups.append(group)
   return convergent_groups
 
@@ -224,10 +233,10 @@ def redo_adaption_for_convergent_sets(f):
         outputFileName = 'redoAdaption_set_%s_%i.h5' % (setName,paramSetIndex) ,
         )
     returnState, mean, varOfMean, total_surface = _adap.do_simple_adaption(inputFileName,vessel_grp, factory)
-    f[group].attrs['returnState'] = returnState
-    f[group].attrs['mean'] = mean
-    f[group].attrs['varOfMean'] = varOfMean
-    f[group].attrs['total_surface'] = total_surface
+    #f[group].attrs['returnState'] = returnState
+    #f[group].attrs['mean'] = mean
+    #f[group].attrs['varOfMean'] = varOfMean
+    #f[group].attrs['total_surface'] = total_surface
     #note: this is not flushing the file, so wait until program finished!
 if __name__ == '__main__':
   import argparse
@@ -240,18 +249,21 @@ if __name__ == '__main__':
   goodArguments, otherArguments = parser.parse_known_args()
   #print("running with %s" % goodArguments.AdaptionParamSet)
   
-  
-  f = h5py.File(goodArguments.fileName,'a')
   basenameOfFile = basename(goodArguments.fileName)
-  with PdfPages('out_deap_results_%s.pdf' % basenameOfFile) as pdf:
-    rc = matplotlib.rc
-    rc('font', size = 8.)
-    rc('axes', titlesize = 10., labelsize = 8.)
+  rc = matplotlib.rc
+  rc('font', size = 8.)
+  rc('axes', titlesize = 10., labelsize = 8.)
+  
+  with h5py.File(goodArguments.fileName,'r') as f:
     if 0:
-      convergenz_plot(f,pdf)
+      with PdfPages('out_deap_results_convergenz_plot_%s.pdf' % basenameOfFile) as pdf:
+        convergenz_plot(f,pdf)
     if 1:
-      convergenz_phase_diagram(f,pdf)
+      with PdfPages('out_deap_results_phase_dia_%s.pdf' % basenameOfFile) as pdf:
+        convergenz_phase_diagram(f,pdf)
     if 1:
-      whiskers_plot_parameters(f,pdf)
-  if goodArguments.redo:
-    redo_adaption_for_convergent_sets(f)
+      with PdfPages('out_deap_results_whiskers_params_%s.pdf' % basenameOfFile) as pdf:
+        whiskers_plot_parameters(f,pdf)
+      
+    if goodArguments.redo:
+      redo_adaption_for_convergent_sets(f)

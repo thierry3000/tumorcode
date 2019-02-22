@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=value_list_pressure_$1
-#SBATCH --nodes=2
+#SBATCH --nodelist=leak[50-51]
 #SBATCH --ntasks=32
 #SBATCH --cpus-per-task=1
 #SBATCH --time=0-00:09:00
@@ -8,12 +8,21 @@
 
 date
 echo "value list $1"
-cd /localdisk/thierry/output/deap_2019
-echo $SLURM_NODELIST
+cd /localdisk/thierry/output/deap_test
+echo "SLURM_JOB_NODELIST: ${SLURM_JOB_NODELIST}"
+echo "SLURM_JOB_NUM_NODES: ${SLURM_JOB_NUM_NODES}"
+echo "SLURM_NTASKS: ${SLURM_NTASKS}"
+#export SLURM_RESV_PORTS=250
+#echo "SLURM_RESV_PORTS: ${SLURM_RESV_PORTS}"
 export OMP_NUM_THREADS=1
 echo "openMP: ${OMP_NUM_THREADS}"
 POP=32
 GEN=1
 echo "POP: ${POP} GEN: ${GEN}"
-python2 -m scoop /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
+BACKEND=ZMQ
+echo "BACKEND: ${BACKEND}"
+echo "content of free_hosts.txt"
+cat free_hosts.txt
+python2 -m scoop --hostfile free_hosts.txt --backend ${BACKEND} /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
+#python2 -m scoop --verbose --hostfile free_hosts.txt --backend ${BACKEND} /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
 date

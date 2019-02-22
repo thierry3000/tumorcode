@@ -9,5 +9,5 @@
 cd /localdisk/thierry/output/deap_test
 echo "nodes=2, ntasks=32, cpus-per-task=1"
 export OMP_NUM_THREADS=1
-/usr/bin/python2 -m scoop /localdisk/thierry/tc_install/py/tests/try_parallel.py -p 32 -g 3
+/usr/bin/python2 -m scoop /localdisk/thierry/tc_install/py/tests/try_parallel.py -p 1000 -g 10
 # end of run.sh

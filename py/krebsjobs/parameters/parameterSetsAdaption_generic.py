@@ -68,6 +68,7 @@ default_phase['calcflow'].update(
 )
 apj = dict(
   num_threads = 1,
+  name = 'apj',
   #this is converging, note k_s changed from 1.79 to 1.99
   adaption = dict(
     k_c = 2.74,
@@ -325,6 +326,7 @@ adaption_asymetric_world_bak = dict(
 )
 
 mesentry_paper = dict(
+  name = 'mesentry_paper',
   adaption = dict(
     k_c = 2.74,
     k_m = 0.83,
@@ -351,6 +353,7 @@ Structural adaptation and stability of microvascular networks: theory and simula
 '''
 mesentry = dict(
   num_threads = 4,
+  name = 'mesentry',
   adaption = dict(
     k_c = 2.74,
     k_m = 0.83,
@@ -359,13 +362,13 @@ mesentry = dict(
     S_0 = 20,
     cond_length = 1500.,
     #if this is 0 we iterate until qdev is reached
-    max_nun_iterations = 1000,
+    max_nun_iterations = 300,
     #qdev = 0, means local conditions!
-    qdev = .0,
+    qdev = .001,
     #if starting_radii is 0. we use the values given in
     #the input file
     starting_radii = 0.,
-    delta_t = 0.05,
+    delta_t = 0.1,
     addAverageConductivity = False,
     radMin_for_kill = 1.5,
     boundary_Condition_handling = boundary_Condition_handling_map['KEEP'],
@@ -378,10 +381,17 @@ mesentry = dict(
   ),
 )
 mesentry_new_h = deepcopy(mesentry)
+mesentry_new_h['name'] = 'mesentry_new_h'
 mesentry_new_h['calcflow'].update(
   includePhaseSeparationEffect = 1,
 )
-
+mesentry_new_h_initial = deepcopy(mesentry_new_h)
+mesentry_new_h_initial['name'] = 'mesentry_new_h_initial'
+mesentry_new_h_initial['adaption'].update(
+    delta_t = 0.01,
+    qdev = 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.000000,
+    max_nun_iterations = 2,
+    )
 deap_test = dict(
   num_threads = 1,
   adaption = dict(
@@ -830,8 +840,22 @@ def _value_pressure_2():
   return list(mk1(i) for i in xrange(len(combined)))
 value_list_pressure_2 = _value_pressure_2()
 
+deap_id5 = deepcopy(deap_test_4)
+deap_id5.update(
+   boundary_Condition_handling = boundary_Condition_handling_map['BOTH_PRESSURE'],
+   name = 'deap_id5',
+   )
+deap_id5['adaption'].update(
+    a_pressure = 2.81,
+    a_flow = 6.87,
+    max_nun_iterations = 150,
+    Q_refdot = 40.,
+    cond_length = 1700.,
+    )
+   
 final_I = dict(
   num_threads = 1,
+  name = 'final_I',
   adaption = dict(
     k_c = 2.74,
     k_m = 0.83,
@@ -870,19 +894,42 @@ final_II = deepcopy(final_I)
 final_II['adaption']['k_m'] = 0.63
 final_II['adaption']['k_c'] = 3.19
 final_II['adaption']['k_s'] = 1.57
+final_II['name'] = 'final_II'
 
 final_III = deepcopy(final_II)
 final_III['adaption']['k_m'] = 0.97
 final_III['adaption']['k_c'] = 2.85
 final_III['adaption']['k_s'] = 1.79
+final_III['name'] = 'final_III'
 final_III['adaption']['max_nun_iterations'] = 1000
 
+#this is clearly in the successfull adapted range
+final_IV = deepcopy(final_II)
+final_IV['adaption']['k_m'] = 1.76
+final_IV['adaption']['k_c'] = 2.8
+final_IV['adaption']['k_s'] = 2.33
+final_IV['adaption']['max_nun_iterations'] = 1000
+final_IV['name'] = 'final_IV'
+final_IV['calcflow'].update(
+    includePhaseSeparationEffect=True,
+    )
+final_V = deepcopy(final_I)
+final_V['calcflow'].update(
+    includePhaseSeparationEffect=True,
+    )
+final_apj = deepcopy(final_IV)
+final_apj['adaption']['k_m'] = 0.83
+final_apj['adaption']['k_c'] = 2.74
+final_apj['adaption']['k_s'] = 1.79
 if __name__ == '__main__':
-  index = 142
-  print_c = deepcopy(value_list14)
-  print('starting radii: %f ' % print_c[index]['adaption']['starting_radii'])
-  print('a_pressure: %f ' % print_c[index]['adaption']['a_pressure'])
-  print('a_flow: %0.1g ' % print_c[index]['adaption']['a_flow'])
-  print('a_flow: %f ' % print_c[index]['adaption']['a_flow'])
-  print('handling: %s ' % print_c[index]['adaption']['boundary_Condition_handling'])
-  print(len(print_c))
+#  index = 142
+#  print_c = deepcopy(value_list14)
+#  print('starting radii: %f ' % print_c[index]['adaption']['starting_radii'])
+#  print('a_pressure: %f ' % print_c[index]['adaption']['a_pressure'])
+#  print('a_flow: %0.1g ' % print_c[index]['adaption']['a_flow'])
+#  print('a_flow: %f ' % print_c[index]['adaption']['a_flow'])
+#  print('handling: %s ' % print_c[index]['adaption']['boundary_Condition_handling'])
+#  print(len(print_c))
+#  print(final_IV)
+  
+  print(value_list_pressure_2)

@@ -133,6 +133,7 @@ if not qsub.is_client and __name__=='__main__':
   parser.add_argument('grp_pattern', default="adaption/vessels_after_adaption")
   parser.add_argument('-t','--tumorParams', help='by explicitly enable this you can use tumor parameters for the adaption as well', action='store_true')
   parser.add_argument('--time', default=False, help='Show time profile', action='store_true')
+  parser.add_argument('--listindex', default = None, type=int, help="index of value list" )
   parser.add_argument('--ks', default = None, help='ks')
   parser.add_argument('--kc', default = None, help='kc')
   parser.add_argument('--km', default = None, help='km')
@@ -168,12 +169,18 @@ if not qsub.is_client and __name__=='__main__':
   factory = getattr(parameterSetsAdaption, goodArguments.AdaptionParamSetName)
   
   if factory.__class__ == list:
-    factory=factory[7]
+    #factory=factory[0]
     print("warning: you are using several parameter sets")
-  
+    print("USE THE LISTINDEX to specify")
+    if goodArguments.listindex is not None:
+      factory=factory[goodArguments.listindex]
+    else:
+      factory=factory[0]
+      
   if factory.__class__ == dict:
     print('single parameter set chosen')
     factory['adaption']['name'] = goodArguments.AdaptionParamSetName
+        
     #run_optimize(factory, filenames, goodArguments.grp_pattern, goodArguments.time)
     if goodArguments.kc is not None:
       print("setting kc = %f" % float(goodArguments.kc))

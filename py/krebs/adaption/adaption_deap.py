@@ -34,7 +34,7 @@ import krebsjobs.parameters.parameterSetsAdaption as parameterSetsAdaption
 
 import operator
 import random
-import copy
+#import copy
 from scoop import futures, shared
 
 import numpy
@@ -143,8 +143,8 @@ if __name__ == "__main__":
   import argparse
   parser = argparse.ArgumentParser(description='Compute adaption see Secomb model', formatter_class=argparse.ArgumentDefaultsHelpFormatter)  
   parser.add_argument('AdaptionParamSet')
-  parser.add_argument('--listindex', type=int, help="index of value list" )
-  parser.add_argument('--outputFileFolder', type=str, help="where to store the output, default is working directory")
+  parser.add_argument('--listindex', type=int, default= None, help="index of value list" )
+  parser.add_argument('--outputFileFolder', default=None, type=str, help="where to store the output, default is working directory")
   parser.add_argument('--fileName', type=str,help="name of vesselfile to optimize")
   parser.add_argument('-g',dest='generations', type=int, default=100, help='gerations of PSO')
   parser.add_argument('-p',dest='populations', type=int, default=5, help='populations of PSO')
@@ -153,9 +153,10 @@ if __name__ == "__main__":
   print("running with %s" % goodArguments.AdaptionParamSet)
   
   if( str(goodArguments.AdaptionParamSet).startswith('value_li' ) ):
-    bla = int(goodArguments.listindex)
-    print("list index: %i chosen" % bla)
-    shared.setConst(parameterListIndex = bla)
+    if not goodArguments.listindex is None:
+      bla = int(goodArguments.listindex)
+      print("list index: %i chosen" % bla)
+      shared.setConst(parameterListIndex = bla)
   
   #adaption parameters
   shared.setConst(adaptionParams=goodArguments.AdaptionParamSet)
@@ -188,26 +189,37 @@ if __name__ == "__main__":
   #print(pop)
   #print(os.getcwd())
   
-#  if (goodArguments.outputFileFolder):
-#    outfile_name = str(goodArguments.outputFileFolder) + '/deap_results_%s.h5' % str(goodArguments.AdaptionParamSet)
-#  else:
-#    if (goodArguments.listindex is not None):
-#      outfile_name = 'deap_results_%s_id_%i.h5' % (str(goodArguments.AdaptionParamSet), int(goodArguments.listindex))
-#    else:
-#      outfile_name = 'deap_results_%s.h5' % str(goodArguments.AdaptionParamSet)
-#  print('outfile: %s will be stored at: %s' % (outfile_name, os.getcwd()))
-#  with h5py.File(outfile_name) as f:
-#    currentTime = str(datetime.datetime.now().time())
-#    myGroup = f.create_group(str(goodArguments.listindex))
-#    myGroup.attrs.create("time", data=currentTime)
-#    myGroup.create_dataset('best' , data=best)
-#    myGroup.create_dataset('fitness values', data=best.fitness.values)
-#    myGroup.attrs.create("GEN", data=goodArguments.generations)
-#    myGroup.attrs.create("populations", data=goodArguments.populations)
-#    myGroup.attrs.create("vfile", data=vfile_name)
-#    myGroup.attrs.create("vessel_grp", data=vessel_grp)
-#    myGroup.attrs.create("params", data=goodArguments.AdaptionParamSet)
-#    if (goodArguments.listindex is not None):
-#      myGroup.attrs.create("paramListIndex", data = goodArguments.listindex)
-#    myGroup.attrs.create("type", data="variance opt")
+  if goodArguments.outputFileFolder is not None:
+    outfile_name = str(goodArguments.outputFileFolder) + '/deap_results_%s.h5' % str(goodArguments.AdaptionParamSet)
+  else:
+    outfile_name = 'deap_results_%s.h5' % str(goodArguments.AdaptionParamSet)
+#    k=0
+#    while (os.path.isfile(outfile_name)):
+#      print("warning updating filename")
+#      outfile_name = 'deap_results_%s_%i.h5' % (str(goodArguments.AdaptionParamSet), k)
+    
+  print('outfile: %s will be stored at: %s' % (outfile_name, os.getcwd()))
+  
+  
+  with h5py.File(outfile_name) as f:
+    currentTime = str(datetime.datetime.now().time())
+    #check if key already exists
+    k=0
+    suggested_name = str(goodArguments.listindex)
+    while suggested_name in f.keys():
+      suggested_name = "%s_%i" % (suggested_name, k)
+      k=k+1
+      
+    myGroup = f.create_group(suggested_name)
+    myGroup.attrs.create("time", data=currentTime)
+    myGroup.create_dataset('best' , data=best)
+    myGroup.create_dataset('fitness values', data=best.fitness.values)
+    myGroup.attrs.create("GEN", data=goodArguments.generations)
+    myGroup.attrs.create("populations", data=goodArguments.populations)
+    myGroup.attrs.create("vfile", data=vfile_name)
+    myGroup.attrs.create("vessel_grp", data=vessel_grp)
+    myGroup.attrs.create("params", data=goodArguments.AdaptionParamSet)
+    if (goodArguments.listindex is not None):
+      myGroup.attrs.create("paramListIndex", data = goodArguments.listindex)
+    myGroup.attrs.create("type", data="variance opt")
  

@@ -236,7 +236,8 @@ def doit(parameters):
 #  fn = parameters['adaption']['vesselFileName']
 #  pattern = parameters['adaption']['vesselGroupName']
   
-  print('starting doit in python ... paramset :%s' % parameters['adaption']['name'])
+  #print('starting doit in python ... paramset :%s' % str(parameters['name']))
+  
 
 #  f_ = h5files.open(fn, 'r')
 #  dirs = myutils.walkh5(f_['.'], pattern)
