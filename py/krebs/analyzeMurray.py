@@ -105,7 +105,7 @@ def DoGetMurrayForSingleFile(fn,pattern, pdfpages):
   font = {'family': 'serif',
         'color':  'black',
         'weight': 'normal',
-        'size': 4,
+        'size': 10,
         'rotation': 30,
         'verticalalignment': 'bottom',
         'horizontalalignment': 'left',
@@ -115,13 +115,13 @@ def DoGetMurrayForSingleFile(fn,pattern, pdfpages):
     ax1.plot(x , x, c='k', linewidth=0.1)
   
   ### plot data
-  ax1.set_title('%i venous points, %i arterial points' % (result_venous.shape[1], result_a.shape[1]), size=6)
+  ax1.set_title('%i venous points, %i arterial points' % (result_venous.shape[1], result_a.shape[1]), size=18)
 # ax1.set_title('Murray for file:\n%s\n%i venous points, %i arterial points' % (os.path.basename(afile.filename),result_venous.shape[1], result_a.shape[1]), size=6)
-  pointsize = 0.1
+  pointsize = 1.1
   venous = ax1.scatter(np.power(result_venous[0,:]**3+result_venous[1,:]**3,1/float(3)),result_venous[2,:],c='b', s=pointsize, label='bldk')
   arterial = ax1.scatter(np.power(result_a[0,:]**3+result_a[1,:]**3,1/float(3)),result_a[2,:],c='r',s=pointsize)
-  ax1.set_xlabel(r'$\sqrt[3]{r_{daughter_1}^3 + r_{daughter_2}^3}$')
-  ax1.set_ylabel(r'$r_{mother}$')
+  ax1.set_xlabel(r'$\sqrt[3]{r_{daughter_1}^3 + r_{daughter_2}^3}$',fontsize=10)
+  ax1.set_ylabel(r'$r_{mother}$',fontsize=18)
   ax1.legend((venous,arterial),('Venous', 'Arterial'),loc='lower right')
   ax1.grid()
   ### inset
@@ -204,8 +204,8 @@ def DoSymetryMurrayForSingleFile(fn,pattern, pdfpages):
   width = 0.7*(bin_edges[1]-bin_edges[0])
   centers = (bin_edges[:-1]+bin_edges[1:])/2
   ax2.bar(centers,hist/float(len(result_a[0,:])), align='center', width=width, color='red')
-  ax2.set_xlabel(r'$\|r_{daughter 1}- r_{daughter 2}\|$')
-  ax2.set_ylabel(r'$p$')
+  ax2.set_xlabel(r'$\|r^{daughter}_a- r^{daughter}_b\|$',fontsize=18)
+  ax2.set_ylabel(r'probability',fontsize=18)
   #fig1.tight_layout()
 #  pdfpages.savefig(fig1) 
   fig2.tight_layout()
@@ -379,9 +379,9 @@ if __name__ == "__main__":
     pattern =  goodArguments.grp_pattern
     print(pattern)
     print(filenames[0])
-    outfilename='murray_both_for_file_%s' % basename(filenames[0])
-    with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:
-      DoGetMurrayForSingleFileGENERAL(filenames[0],pattern, pdfpages)
+#    outfilename='murray_both_for_file_%s' % basename(filenames[0])
+#    with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:
+#      DoGetMurrayForSingleFileGENERAL(filenames[0],pattern, pdfpages)
       
     outfilename='murray_for_file_%s' % basename(filenames[0])
     with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  

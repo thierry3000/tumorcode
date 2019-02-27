@@ -75,11 +75,12 @@ def plot_shearstress(vessel_grp,pp):
     
     
     
-    ax1.set_ylabel('shearstress dyne/cm^2')
+    ax1.set_ylabel('shearstress dyne/cm^2', fontsize=18)
     if goodArguments.apj:
       ax1.set_xlim([12,100])
       ax1.set_ylim([1,1000])
-    
+    else:
+      ax1.set_xlim([20,52])
     
     
     ax1.grid()
@@ -122,11 +123,18 @@ def plot_diameter(vessel_grp,pp):
     
     
     #ax2.loglog(pressure_at_vessel,diameter,'r*')
-    ax2.loglog(pressure_at_vessel[index_of_artery],diameter[index_of_artery],'o', markerfacecolor='r', markeredgecolor='r', label='ART')
-    ax2.loglog(pressure_at_vessel[index_of_capillary],diameter[index_of_capillary],'D',markerfacecolor='none', markeredgecolor='coral', label='CAP' )
-    ax2.loglog(pressure_at_vessel[index_of_vein],diameter[index_of_vein],'v', markerfacecolor='none', markeredgecolor='b', label='VEN')
-    ax2.set_ylabel(r'diameter/ $\mu m$')
-    ax2.set_xlabel(r'pressure/ $mmHg$')
+    if goodArguments.apj:
+      ax2.loglog(pressure_at_vessel[index_of_artery],diameter[index_of_artery],'o', markerfacecolor='r', markeredgecolor='r', label='ART')
+      ax2.loglog(pressure_at_vessel[index_of_capillary],diameter[index_of_capillary],'D',markerfacecolor='none', markeredgecolor='coral', label='CAP' )
+      ax2.loglog(pressure_at_vessel[index_of_vein],diameter[index_of_vein],'v', markerfacecolor='none', markeredgecolor='b', label='VEN')
+    else:
+      ax2.loglog(pressure_at_vessel[index_of_artery],diameter[index_of_artery],'o', markerfacecolor='r', markeredgecolor='r', label='ART')
+      ax2.loglog(pressure_at_vessel[index_of_capillary],diameter[index_of_capillary],'D',markerfacecolor='none', markeredgecolor='coral', label='CAP' )
+      ax2.loglog(pressure_at_vessel[index_of_vein],diameter[index_of_vein],'v', markerfacecolor='none', markeredgecolor='b', label='VEN')
+      ax2.set_ylim([5,140])
+      ax2.set_xlim([20,52])
+    ax2.set_ylabel(r'diameter/ $\mu m$', fontsize=18)
+    ax2.set_xlabel(r'pressure/ $mmHg$', fontsize=18)
     if goodArguments.apj:
       ax2.set_ylim([5,110])
       ax2.set_xlim([12,110])
@@ -134,7 +142,7 @@ def plot_diameter(vessel_grp,pp):
     ax2.grid()
     #labels = ['ART', 'CAP', 'VEN']
     #dummies = [ax2.plot([], [], ls='o', c=c)[0] for c in colors]
-    ax2.legend()
+    ax2.legend(loc='upper center')
     pp.savefig(fig, 'hydorodynamic_charicteristics')
 
 def plot_hydrodynamic_stimuli(vessel_grp,pp):
@@ -177,9 +185,15 @@ def plot_hydrodynamic_stimuli(vessel_grp,pp):
     #ax.legend([r'$log_{10}($ shearforce $)$', r'$-log_{10}($ expected wallstress $)$'])
     ax.legend(loc='center right')
     ax.grid()
-    ax.set_xlabel('pressure/ mmHg')
+    ax.set_xlabel('pressure/ mmHg', fontsize=18)
     if goodArguments.apj:
       ax.set_ylim([-2.2,4])
+      if not 'initial' in goodArguments.FileNames:
+        ax.set_xlim([12,120])
+      else:
+        ax.set_xlim([12,120])
+    else:
+      ax.set_xlim([20,52])
       #ax2.set_ylim([3,100])
     #ax.xaxis.set_label_coords(1.05, -20.025)
     #ax.set_xlim([10,100])
@@ -234,8 +248,8 @@ def plot_conductive_stimuli(adaption_grp,pp):
     #legend2=ax.legend(['bld', 'blub'])
     ax.add_artist(legend1)
     ax.grid()
-    ax.set_xlabel("flow/nl/min")
-    ax.set_ylabel("stimuli")
+    ax.set_xlabel("flow/nl/min", fontsize=18)
+    ax.set_ylabel("stimuli", fontsize=18)
     if goodArguments.apj:
       ax.set_xlim([0.01,1000])
       ax.set_ylim([0,4])

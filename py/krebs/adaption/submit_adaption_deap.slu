@@ -1,25 +1,26 @@
 #!/bin/bash
 #SBATCH --job-name=value_list_14
-#SBATCH --nodelist=leak[52-54,56,58-61]
-#SBATCH --ntasks=176
+#SBATCH --nodelist=leak[41-48]
+#SBATCH --ntasks=160
 #SBATCH --cpus-per-task=1
 #SBATCH --time=5-00:09:00
 #SBATCH --partition=mpi
 #python2 -m scoop /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
 date
 cd /localdisk/thierry/output/deap_2019
+echo "TUGraz scoop version"
 echo "SLURM_JOB_NODELIST: ${SLURM_JOB_NODELIST}"
 echo "SLURM_JOB_NUM_NODES: ${SLURM_JOB_NUM_NODES}"
 echo "SLURM_NTASKS: ${SLURM_NTASKS}"
 export OMP_NUM_THREADS=1
 echo "openMP: ${OMP_NUM_THREADS}"
-POP=528
+POP=480
 GEN=3
 NUM_INDICES=341
 echo "POP: ${POP} GEN: ${GEN}"
 #python2 -m scoop --hostfile free_hosts.txt /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py deap_id5 -p ${POP} -g ${GEN}
 for i in `seq 0 $NUM_INDICES`; do
   echo "listindex ${i}"
-  python2 -m scoop --hostfile free_hosts.txt /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py value_list14 --listindex=${i} -p ${POP} -g ${GEN};
+  python2 -m scoop --hostfile free_hosts_mpi.txt /localdisk/thierry/tc_install/py/krebs/adaption/adaption_deap.py value_list14 --listindex=${i} -p ${POP} -g ${GEN};
 done;
 date

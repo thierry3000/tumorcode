@@ -161,20 +161,29 @@ def boxplotFromData_rBV(data, pp, data2=None):
   #ax2.boxplot([data[0,:], data[1,:],data[2,:], data[3,:]])
   violin1 = ax2.violinplot([data[0,:], data[1,:],data[2,:], data[3,:]], positions=[0,1,2,3],showmeans=False,showmedians=True)
   
-  if not data2.any() == None:
+  if not data2 is None:
     violin2 = ax2.violinplot([data2[0,:], data2[1,:],data2[2,:], data2[3,:]],positions=[0.5,1.5,2.5,3.5],showmeans=False,showmedians=True)
-  ax2.set_xticklabels([r'$rBV$', r'artery', r'vein',r'capillary'])
-  ax2.set_xticks([0.25, 1.25, 2.25,3.25])
+    ax2.set_xticks([0.25, 1.25, 2.25,3.25])
+  else:
+    ax2.set_xticks([0., 1., 2.,3.])
+  ax2.set_xticklabels([r'$rBV$ in $\%$', r'artery', r'vein',r'capillary'])
+  
   
   aColor = violin1['cmedians'].get_color()
   aColor = aColor[0,0:3]
   blue_patch = matplotlib.patches.Patch(color=aColor)
-  aColor = violin2['cmedians'].get_color()
-  aColor = aColor[0,0:3]
-  red_patch = matplotlib.patches.Patch(color=aColor)
-  label = ['tumorCode', 'adaption']
-  fake_handels = [blue_patch, red_patch]
-  ax2.legend(fake_handels, label)
+  if not data2 is None:
+    aColor = violin2['cmedians'].get_color()
+    aColor = aColor[0,0:3]
+    red_patch = matplotlib.patches.Patch(color=aColor)
+    label = ['tumorCode', 'adaption']
+    fake_handels = [blue_patch, red_patch]
+    ax2.legend(fake_handels, label)
+#  else:
+#    label = ['adaption']
+#    fake_handels = [blue_patch]
+#    ax2.legend(fake_handels, label)
+  
   #ax2.legend(['bl','dlf'])
   pp.savefig(fig2)
   
@@ -185,20 +194,30 @@ def boxplotFromData_s2v(data, pp, data2=None):
   #ax2.boxplot([data[0,:], data[1,:],data[2,:], data[3,:]])
   violin1 = ax2.violinplot([data[8,:], data[9,:],data[10,:], data[11,:]], positions=[0,1,2,3],showmeans=False,showmedians=True)
   
-  if not data2.any() == None:
+  if not data2 is None:
     violin2 = ax2.violinplot([data2[8,:], data2[9,:],data2[10,:], data2[11,:]],positions=[0.5,1.5,2.5,3.5],showmeans=False,showmedians=True)
+    ax2.set_xticks([0.25, 1.25, 2.25,3.25])
+    aColor = violin1['cmedians'].get_color()
+    aColor = aColor[0,0:3]
+    blue_patch = matplotlib.patches.Patch(color=aColor)
+    aColor = violin2['cmedians'].get_color()
+    aColor = aColor[0,0:3]
+    red_patch = matplotlib.patches.Patch(color=aColor)
+    label = ['tumorCode', 'adaption']
+    fake_handels = [blue_patch, red_patch]
+    ax2.legend(fake_handels, label, loc='upper center')
+  else:
+    ax2.set_xticks([0., 1., 2.,3.])
+    aColor = violin1['cmedians'].get_color()
+    aColor = aColor[0,0:3]
+    blue_patch = matplotlib.patches.Patch(color=aColor)
+    label = ['adaption']
+#    fake_handels = [blue_patch]
+#    ax2.legend(fake_handels, label, loc='upper center')
   ax2.set_xticklabels([r'all', r'artery', r'vein',r'capillary'])
-  ax2.set_xticks([0.25, 1.25, 2.25,3.25])
   
-  aColor = violin1['cmedians'].get_color()
-  aColor = aColor[0,0:3]
-  blue_patch = matplotlib.patches.Patch(color=aColor)
-  aColor = violin2['cmedians'].get_color()
-  aColor = aColor[0,0:3]
-  red_patch = matplotlib.patches.Patch(color=aColor)
-  label = ['tumorCode', 'adaption']
-  fake_handels = [blue_patch, red_patch]
-  ax2.legend(fake_handels, label, loc='upper center')
+  
+  
   #ax2.legend(['bl','dlf'])
   pp.savefig(fig2)
 
@@ -222,7 +241,7 @@ if __name__ == '__main__':
   import argparse
   parser = argparse.ArgumentParser(description='Plot/ Analyze rBV surface to volume.')
   parser.add_argument('grp_pattern1',help='Where to find the vessel group in the file')    
-  parser.add_argument('--grp_pattern2',help='Where to find the vessel group in the file') 
+  parser.add_argument('--grp_pattern2',default=None, help='Where to find the vessel group in the file') 
   parser.add_argument('vesselFileNames1', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
   
   #parser.add_argument('--vesselFileNames2', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
@@ -231,14 +250,17 @@ if __name__ == '__main__':
     
   goodArguments, otherArguments = parser.parse_known_args()
   
-  if goodArguments.grp_pattern2:
-    n_files = len(goodArguments.vesselFileNames1)
-    print('found %i files' % n_files)
-    #print(goodArguments.vesselFileNames1)
+  n_files = len(goodArguments.vesselFileNames1)
+  print('found %i files' % n_files)
+  
+  if not goodArguments.grp_pattern2 is None:
+    #this means we have 2 file per simulation 
+    # adapted and non adapted
+    n_files=n_files/2
     
   try:
     dirs = set()
-    for fn in goodArguments.vesselFileNames1[0:n_files/2]:
+    for fn in goodArguments.vesselFileNames1[0:n_files]:
       if not os.path.isfile(fn.name):
         raise AssertionError('The file %s is not present!'%fn)
       with h5py.File(fn.name, 'r') as f:
@@ -251,14 +273,14 @@ if __name__ == '__main__':
     print e.message
     sys.exit(-1)
   filenames1=[]
-  for fn in goodArguments.vesselFileNames1[0:n_files/2]:
+  for fn in goodArguments.vesselFileNames1[0:n_files]:
     filenames1.append(fn.name)
   print(filenames1)
   
-  if goodArguments.grp_pattern2:
+  if not goodArguments.grp_pattern2 is None:
     try:
       dirs = set()
-      for fn in goodArguments.vesselFileNames1[n_files/2:]:
+      for fn in goodArguments.vesselFileNames1[n_files:]:
         if not os.path.isfile(fn.name):
           raise AssertionError('The file %s is not present!'%fn)
         with h5py.File(fn.name, 'r') as f:
@@ -271,22 +293,31 @@ if __name__ == '__main__':
       print e.message
       sys.exit(-1)
     filenames2=[]
-    for fn in goodArguments.vesselFileNames1[n_files/2:]:
+    for fn in goodArguments.vesselFileNames1[n_files:]:
       filenames2.append(fn.name)
     print(filenames2)
   #group = sys.argv[-1]
   #filenames = sys.argv[1:-1]
   #print(filenames)
   
-  dat = getDataFromFiles(filenames1, goodArguments.grp_pattern1)
-  dat2 = getDataFromFiles(filenames2, goodArguments.grp_pattern2)
   
-  outfilename='rBV_for_file_%s' % os.path.basename(filenames1[0])
-  with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
-    boxplotFromData_rBV(dat, pdfpages, data2 = dat2)
-  outfilename='s2v_for_file_%s' % os.path.basename(filenames1[0])
-  with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
-    boxplotFromData_s2v(dat, pdfpages, data2 = dat2)
+  dat = getDataFromFiles(filenames1, goodArguments.grp_pattern1)
+  if not goodArguments.grp_pattern2 is None:
+    dat2 = getDataFromFiles(filenames2, goodArguments.grp_pattern2)
+    outfilename='rBV_for_file_%s' % os.path.basename(filenames1[0])
+    with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
+      boxplotFromData_rBV(dat, pdfpages, data2 = dat2)
+    outfilename='s2v_for_file_%s' % os.path.basename(filenames1[0])
+    with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
+      boxplotFromData_s2v(dat, pdfpages, data2 = dat2)
+  else:
+    #case of no adaption, or only adaption
+    outfilename='rBV_for_files'
+    with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
+      boxplotFromData_rBV(dat, pdfpages)
+    outfilename='s2v_for_files'
+    with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
+      boxplotFromData_s2v(dat, pdfpages)
     
   
   def printstuff(name, a, mult):
