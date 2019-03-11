@@ -25,6 +25,7 @@ if __name__ == '__main__':
   sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../..'))
 
 import matplotlib
+import matplotlib.pyplot as plt
 import identifycluster
 if (identifycluster.getname()=='snowden' or identifycluster.getname()=='durga'):
   matplotlib.use('agg')
@@ -66,6 +67,10 @@ def plot_shearstress(vessel_grp,pp):
     
     fig = matplotlib.figure.Figure()
     ax1 = fig.add_subplot(111)
+    ax1.tick_params(
+    axis='both',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    labelsize = tickfontsize)
     
     #ax1.loglog(pressure_at_vessel,shearforce,'*')
     pressure_at_vessel=np.asarray(pressure_at_vessel)
@@ -75,12 +80,30 @@ def plot_shearstress(vessel_grp,pp):
     
     
     
-    ax1.set_ylabel('shearstress dyne/cm^2', fontsize=18)
+    ax1.set_ylabel(r'shearstress dyne/cm$^2$', fontsize=18)
+    ax1.yaxis.labelpad = -10
     if goodArguments.apj:
       ax1.set_xlim([12,100])
       ax1.set_ylim([1,1000])
+      ax1.yaxis.set_major_locator(plt.NullLocator())
+      ax1.yaxis.set_minor_locator(plt.NullLocator())
+      ax1.set_yticks([1,10,100,1000])
+      ax1.set_yticklabels(['1','10','100','1000'],fontsize=tickfontsize)
+      ax1.xaxis.set_major_locator(plt.NullLocator())
+      ax1.xaxis.set_minor_locator(plt.NullLocator())
+      ax1.set_xticks([10,30,100])
+      ax1.set_xticklabels(['10','30','100'],fontsize=tickfontsize)
     else:
       ax1.set_xlim([20,52])
+      ax1.set_ylim([1,250])
+      ax1.yaxis.set_major_locator(plt.NullLocator())
+      ax1.yaxis.set_minor_locator(plt.NullLocator())
+      ax1.set_yticks([1,50,250])
+      ax1.set_yticklabels(['1','50','250'],fontsize=tickfontsize)
+      ax1.xaxis.set_major_locator(plt.NullLocator())
+      ax1.xaxis.set_minor_locator(plt.NullLocator())
+      ax1.set_xticks([20,25,50])
+      ax1.set_xticklabels(['20','25','50'],fontsize=tickfontsize)
     
     
     ax1.grid()
@@ -136,8 +159,27 @@ def plot_diameter(vessel_grp,pp):
     ax2.set_ylabel(r'diameter/ $\mu m$', fontsize=18)
     ax2.set_xlabel(r'pressure/ $mmHg$', fontsize=18)
     if goodArguments.apj:
-      ax2.set_ylim([5,110])
-      ax2.set_xlim([12,110])
+      ax2.set_ylim([5,100])
+      ax2.set_xlim([10,100])
+      ax2.xaxis.set_major_locator(plt.NullLocator())
+      ax2.xaxis.set_minor_locator(plt.NullLocator())
+      ax2.set_xticks([10,30,100])
+      ax2.set_xticklabels(['10','30','100'],fontsize=tickfontsize)
+      ax2.yaxis.set_major_locator(plt.NullLocator())
+      ax2.yaxis.set_minor_locator(plt.NullLocator())
+      ax2.set_yticks([10,100])
+      ax2.set_yticklabels(['10','100'],fontsize=tickfontsize)
+    else:
+      ax2.set_ylim([4.5,120])
+      ax2.set_xlim([20,55])
+      ax2.xaxis.set_major_locator(plt.NullLocator())
+      ax2.xaxis.set_minor_locator(plt.NullLocator())
+      ax2.set_xticks([20,25,50])
+      ax2.set_xticklabels(['20','25','50'],fontsize=tickfontsize)
+      ax2.yaxis.set_major_locator(plt.NullLocator())
+      ax2.yaxis.set_minor_locator(plt.NullLocator())
+      ax2.set_yticks([5,10,100])
+      ax2.set_yticklabels(['5','10','100'],fontsize=tickfontsize)
     
     ax2.grid()
     #labels = ['ART', 'CAP', 'VEN']
@@ -173,6 +215,10 @@ def plot_hydrodynamic_stimuli(vessel_grp,pp):
     pressure_stimuli = 100 - 86 *np.exp(-5000*np.log10(np.log10(pressure_at_vessel))**5.4)
     fig = matplotlib.figure.Figure()
     ax = fig.add_subplot(111)
+    ax.tick_params(
+    axis='both',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    labelsize = tickfontsize)
     #ax.semilogx(pressure_at_vessel,np.log10(shearforce),'*')
     ax.semilogx(pressure_at_vessel[index_of_artery],np.log10(shearforce[index_of_artery]),'o', markerfacecolor='r', markeredgecolor='r', label='ART')
     ax.semilogx(pressure_at_vessel[index_of_capillary],np.log10(shearforce[index_of_capillary]),'D',markerfacecolor='none', markeredgecolor='coral', label='CAP' )
@@ -187,13 +233,30 @@ def plot_hydrodynamic_stimuli(vessel_grp,pp):
     ax.grid()
     ax.set_xlabel('pressure/ mmHg', fontsize=18)
     if goodArguments.apj:
+      print("goodArguments.FileNames: %s" % goodArguments.FileNames[0].name)
       ax.set_ylim([-2.2,4])
-      if not 'initial' in goodArguments.FileNames:
+      if not 'initial' in goodArguments.FileNames[0].name:
+        print('first')
+        ax.xaxis.set_major_locator(plt.NullLocator())
+        ax.xaxis.set_minor_locator(plt.NullLocator())
         ax.set_xlim([12,120])
+        ax.set_xticks([12,30,120])
+        ax.set_xticklabels(['12','30','120'],fontsize=tickfontsize)
+        
       else:
-        ax.set_xlim([12,120])
+        print('else')
+        ax.xaxis.set_major_locator(plt.NullLocator())
+        ax.xaxis.set_minor_locator(plt.NullLocator())
+        ax.set_xlim([10,100])
+        ax.set_xticks([10,30,100])
+        ax.set_xticklabels(['10','30','100'],fontsize=tickfontsize)
     else:
-      ax.set_xlim([20,52])
+      ax.set_xlim([15,55])
+      ax.set_ylim([-2.2,2.5])
+      ax.xaxis.set_major_locator(plt.NullLocator())
+      ax.xaxis.set_minor_locator(plt.NullLocator())
+      ax.set_xticks([15,30,50])
+      ax.set_xticklabels(['15','30','50'],fontsize=tickfontsize)
       #ax2.set_ylim([3,100])
     #ax.xaxis.set_label_coords(1.05, -20.025)
     #ax.set_xlim([10,100])
@@ -253,6 +316,25 @@ def plot_conductive_stimuli(adaption_grp,pp):
     if goodArguments.apj:
       ax.set_xlim([0.01,1000])
       ax.set_ylim([0,4])
+      ax.yaxis.set_major_locator(plt.NullLocator())
+      ax.yaxis.set_minor_locator(plt.NullLocator())
+      ax.set_yticks([0,1,2,3,4])
+      ax.set_yticklabels(['0','1','2','3','4'],fontsize=tickfontsize)
+      ax.xaxis.set_major_locator(plt.NullLocator())
+      ax.xaxis.set_minor_locator(plt.NullLocator())
+      ax.set_xticks([0.01,0.1,1,10,100,1000])
+      ax.set_xticklabels(['0.01','0.1','1','10','100','1000'],fontsize=tickfontsize)
+    else:
+      ax.set_xlim([0.01,1500])
+      ax.set_ylim([0,3.2])
+      ax.yaxis.set_major_locator(plt.NullLocator())
+      ax.yaxis.set_minor_locator(plt.NullLocator())
+      ax.set_yticks([0,1,2,3])
+      ax.set_yticklabels(['0','1','2','3'],fontsize=tickfontsize)
+      ax.xaxis.set_major_locator(plt.NullLocator())
+      ax.xaxis.set_minor_locator(plt.NullLocator())
+      ax.set_xticks([0.01,0.1,1,10,100,1000])
+      ax.set_xticklabels(['0.01','0.1','1','10','100','1000'],fontsize=tickfontsize)
     pp.savefig(fig2,'conductive stimuli')
     #plt.show()
 def plot_movie(f,pp):
@@ -511,7 +593,7 @@ if __name__ == '__main__':
     rc = matplotlib.rc
     rc('font', size = 8.)
     rc('axes', titlesize = 10., labelsize = 8.)
-    
+    tickfontsize=14
     for fn in filenames:
       with h5py.File(fn) as f:
         no_of_iterations = ''
