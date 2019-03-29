@@ -722,12 +722,21 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, col
   ax.set_axis_off()
   #measured in fractions of figure width and height
   if not cm==None:
-    ax2 = fig.add_axes([0.05, 0.05, 0.26, 0.018]) # left bottom width height
+    if not options.bigColorbar:
+      ax2 = fig.add_axes([0.05, 0.05, 0.26, 0.018]) # left bottom width height
+    else:
+      ax2 = fig.add_axes([0.05, 0.05, 0.9, 0.04])
     c = np.linspace(0, 1, 256).reshape(1,-1)
     c = np.vstack((c,c))
     ax2.imshow(c, aspect='auto', cmap = cm.get_cmap(), vmin = 0, vmax = 1)
     ax2.yaxis.set_visible(False)
     xticks = np.linspace(0., 256., 5)
+#    if options.vesselsColorLimits is not None:
+#      print('setting colors limits for vessels')
+#      print(options.vesselsColorLimits[0])
+#      print(options.vesselsColorLimits[1])
+#      cm.set_clim(vmin=options.vesselsColorLimits[0], vmax=options.vesselsColorLimits[1])
+#    
     #xticklabels = [ myutils.f2s(v,prec=1) for v in np.linspace(*cm.get_clim(), num = 5) ]
     ''' TODO:
         border of colorbar 
@@ -737,7 +746,10 @@ def OverwriteImageWithColorbar(options,image_fn, cm, label, output_filename, col
     
     ax2.set(xticks = xticks)
     ax2.set(xticklabels=xticklabels)
-    ax2.tick_params(labelsize=mytextsize/4, colors=fontcolor)
+    if not options.bigColorbar:
+      ax2.tick_params(labelsize=mytextsize/4, colors=fontcolor)
+    else:
+      ax2.tick_params(labelsize=mytextsize/2, colors=fontcolor)
     #fig.text(0.2, 0.99, label, weight='bold', size='xx-small', va = 'top')
     if not options.noLabel:
       ax2.text(0.4,-0.09,label,
@@ -888,7 +900,7 @@ def CreateScene2(vesselgroup, epv, graph, options):
       options.vessel_clip = ('pie', 100*trafo.w)
       options.tumor_clip = ('pie', 0)
     else: #this is the pie case!!!
-      options.imageFileName += '_pie_'
+      options.imageFileName = 'pie_'+options.imageFileName
       basepos = cam_distance_factor * np.asarray((0.6,0.7,0.7))*(1./1.4)
       epv.setCamera(basepos, (0,0,0), 90, up = (0,0,1))
       num_samples_large_light = 10

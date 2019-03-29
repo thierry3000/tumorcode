@@ -146,7 +146,14 @@ def make_any_color_arrays(vesselgraph, data_name,options):
     h1 = np.max(edgedata[np.nonzero(edgedata)])
     unmapped_range = (h0, h1)
     cm = matplotlib.cm.ScalarMappable(cmap = matplotlib.cm.hsv)
-    cm.set_clim(h0, h1)
+    if options.vesselsColorLimits is None:
+      cm.set_clim(h0, h1)
+    else:
+      print('setting colors limits for vessels')
+      print(options.vesselsColorLimits[0])
+      print(options.vesselsColorLimits[1])
+      cm.set_clim(vmin=options.vesselsColorLimits[0], vmax=options.vesselsColorLimits[1])
+    
     edgecolors[mask[:,0]] = colors(edgedata[mask])
     nodecolors[nmask[:,0]] = colors(nodedata[nmask])
     #unmapped_range = (0.,1.)
@@ -159,7 +166,14 @@ def make_any_color_arrays(vesselgraph, data_name,options):
     p1 = np.amax(nodedata)
     unmapped_range = (p0, p1)
     cm = matplotlib.cm.ScalarMappable(cmap=cm_redblue)
-    cm.set_clim(p0, p1)
+    if options.vesselsColorLimits is None:
+      cm.set_clim(p0, p1)
+    else:
+      print('setting colors limits for vessels')
+      print(options.vesselsColorLimits[0])
+      print(options.vesselsColorLimits[1])
+      cm.set_clim(vmin=options.vesselsColorLimits[0], vmax=options.vesselsColorLimits[1])
+    
     edgecolors[mask[:,0]] = colors(edgedata[mask])
     nodecolors[nmask[:,0]] = colors(nodedata[nmask])
     #edgecolors[mask] = colors(edgedata[mask])
@@ -177,7 +191,13 @@ def make_any_color_arrays(vesselgraph, data_name,options):
     p0 = np.amin(edgedata)
     p1 = np.amax(edgedata)
     cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.Spectral)
-    cm.set_clim(p0, p1)
+    if options.vesselsColorLimits is None:
+      cm.set_clim(p0, p1)
+    else:
+      print('setting colors limits for vessels')
+      print(options.vesselsColorLimits[0])
+      print(options.vesselsColorLimits[1])
+      cm.set_clim(vmin=options.vesselsColorLimits[0], vmax=options.vesselsColorLimits[1])
     edgecolors[mask[:,0]] = colors(edgedata)
     nodecolors[nmask[:,0]] = colors(nodedata)
   elif data_name == 'radius':
@@ -185,13 +205,20 @@ def make_any_color_arrays(vesselgraph, data_name,options):
     nmask = nmask & (nodedata>0)
     edgedata = edgedata[mask]
     nodedata = nodedata[nmask]
-    edgedata = np.log10(edgedata)
-    nodedata = np.log10(nodedata)
+    #edgedata = np.log10(edgedata)
+    #nodedata = np.log10(nodedata)
     unmapped_range = edgedata.min(), edgedata.max()
-    cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.copper)
+    #cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.copper)
+    cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.Spectral)
     p0 = np.amin(edgedata)
     p1 = np.amax(edgedata)
-    cm.set_clim(p0, p1)
+    if options.vesselsColorLimits is None:
+      cm.set_clim(p0, p1)
+    else:
+      print('setting colors limits for vessels')
+      print(options.vesselsColorLimits[0])
+      print(options.vesselsColorLimits[1])
+      cm.set_clim(vmin=options.vesselsColorLimits[0], vmax=options.vesselsColorLimits[1])
     edgecolors[mask[:,0]] = colors(edgedata)
     nodecolors[nmask[:,0]] = colors(nodedata)
   elif data_name == 'S_tot':
@@ -225,7 +252,14 @@ def make_any_color_arrays(vesselgraph, data_name,options):
     p0 = np.floor(np.amin(edgedata))
     p1 = np.ceil(np.amax(edgedata))
     cm = matplotlib.cm.ScalarMappable(cmap=matplotlib.cm.jet)
-    cm.set_clim(p0, p1)
+    
+    if options.vesselsColorLimits is None:
+      cm.set_clim(p0, p1)
+    else:
+      print('setting colors limits for vessels')
+      print(options.vesselsColorLimits[0])
+      print(options.vesselsColorLimits[1])
+      cm.set_clim(vmin=options.vesselsColorLimits[0], vmax=options.vesselsColorLimits[1])
     edgecolors[mask[:,0]] = colors(edgedata)
     nodecolors[nmask[:,0]] = colors(nodedata)
   elif data_name == 'conductivitySignal':

@@ -109,7 +109,7 @@ void InitParameters(Adaption::Parameters *params, const py::dict *py_parameters)
 #define GET_ADAPTION_PARAM_IF_NONNONE(TARGET, TYPE, NAME) { py::object o(py_parameters->get(NAME)); if (!o.is_none()) TARGET=py::extract<TYPE>(o); }
   
 #ifndef NDEBUG
-  printf("entered InitParameters\n");
+  printf("entered InitParameters in adaption\n");
 #endif
   //this could possibly done for every parameter
   try
@@ -132,27 +132,40 @@ void InitParameters(Adaption::Parameters *params, const py::dict *py_parameters)
   params->starting_radii = GET_ADAPTION_PARAM_FROM_DICT(double,"starting_radii");
   params->delta_t = GET_ADAPTION_PARAM_FROM_DICT(double,"delta_t");
   params->cond_length = GET_ADAPTION_PARAM_FROM_DICT(double,"cond_length");
+#ifndef NDEBUG
+  cout << "first check" << endl;
+#endif
   GET_ADAPTION_PARAM_IF_NONNONE(params->avgRootNodeConductivity, double, "avgRootNodeConductivity");
   GET_ADAPTION_PARAM_IF_NONNONE(params->radMin_for_kill, double, "radMin_for_kill");
   GET_ADAPTION_PARAM_IF_NONNONE(params->boundary_Condition_handling, uint, "boundary_Condition_handling");
   GET_ADAPTION_PARAM_IF_NONNONE(params->a_pressure, double, "a_pressure");
   GET_ADAPTION_PARAM_IF_NONNONE(params->a_flow, double, "a_flow");
   //std::cout<<params->write2File<<std::endl;
-  GET_ADAPTION_PARAM_IF_NONNONE(params->write2File,bool,"write2File")
-  GET_ADAPTION_PARAM_IF_NONNONE(params->outputFileName,string,"outputFileName")
-  GET_ADAPTION_PARAM_IF_NONNONE(params->parameterSetName,string,"name")
+  GET_ADAPTION_PARAM_IF_NONNONE(params->write2File,bool,"write2File");
+  GET_ADAPTION_PARAM_IF_NONNONE(params->outputFileName,string,"outputFileName");
+  GET_ADAPTION_PARAM_IF_NONNONE(params->parameterSetName,string,"name");
   //std::cout<<params->write2File<<std::endl;
   //std::cout<<params->tum_manitulate_s1<<std::endl;
-  params->tum_manitulate_s1 = GET_ADAPTION_PARAM_FROM_DICT(bool,"tum_manitulate_s1");
+  GET_ADAPTION_PARAM_IF_NONNONE(params->tum_manitulate_s1,double,"tum_manitulate_s1");
+  GET_ADAPTION_PARAM_IF_NONNONE(params->tum_manitulate_s2,double,"tum_manitulate_s2");
+  GET_ADAPTION_PARAM_IF_NONNONE(params->tum_manitulate_s3,double,"tum_manitulate_s3");
+  GET_ADAPTION_PARAM_IF_NONNONE(params->tum_manitulate_s4,double,"tum_manitulate_s4");
+  GET_ADAPTION_PARAM_IF_NONNONE(params->tum_manitulate_s5,double,"tum_manitulate_s5");
   //std::cout<<params->tum_manitulate_s1<<std::endl;
-  params->tum_manitulate_s2 = GET_ADAPTION_PARAM_FROM_DICT(bool,"tum_manitulate_s2");
-  params->tum_manitulate_s3 = GET_ADAPTION_PARAM_FROM_DICT(bool,"tum_manitulate_s3");
-  params->tum_manitulate_s4 = GET_ADAPTION_PARAM_FROM_DICT(bool,"tum_manitulate_s4");
-  params->tum_manitulate_s5 = GET_ADAPTION_PARAM_FROM_DICT(bool,"tum_manitulate_s5");
+  //params->tum_manitulate_s2 = GET_ADAPTION_PARAM_IF_NONNONE(double,"tum_manitulate_s2");
+  //params->tum_manitulate_s3 = GET_ADAPTION_PARAM_IF_NONNONE(bool,"tum_manitulate_s3");
+  //params->tum_manitulate_s4 = GET_ADAPTION_PARAM_IF_NONNONE(bool,"tum_manitulate_s4");
+  //params->tum_manitulate_s5 = GET_ADAPTION_PARAM_IF_NONNONE(bool,"tum_manitulate_s5");
   
+  /** REQUIRED */
+#ifndef NDEBUG
+  cout << "second check" << endl;
+#endif
   params->vesselFileName = GET_ADAPTION_PARAM_FROM_DICT(string,"vesselFileName");
   params->vesselGroupName = GET_ADAPTION_PARAM_FROM_DICT(string,"vesselGroupName");
-  
+#ifndef NDEBUG
+  cout << "last check" << endl;
+#endif
   GET_ADAPTION_PARAM_IF_NONNONE(params->pop, int, "pop");
   GET_ADAPTION_PARAM_IF_NONNONE(params->individuals, int, "individuals");
   GET_ADAPTION_PARAM_IF_NONNONE(params->opt_iter, int, "opt_iter");
@@ -164,6 +177,7 @@ void InitParameters(Adaption::Parameters *params, const py::dict *py_parameters)
 #ifndef NDEBUG
   printf("leave InitParameters\n");
 #endif
+
 }
 
 /*

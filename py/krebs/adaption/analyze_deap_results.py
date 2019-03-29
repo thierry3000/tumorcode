@@ -64,12 +64,14 @@ def whiskers_plot_parameters(f,pdf):
   fig = plt.figure()
   ax = fig.add_subplot(111)
   ax.boxplot(all_bests)
-  plt.setp(ax, xticklabels=[r'$k_c$', r'$k_m$', r'$S_5$'])
-  ax.text(1.,average_k_c, "%0.2f" % average_k_c,horizontalalignment='center',verticalalignment='bottom')
-  ax.text(2.,average_k_m, "%0.2f" % average_k_m,horizontalalignment='center',verticalalignment='bottom')
-  ax.text(3.,average_k_s, "%0.2f" % average_k_s,horizontalalignment='center',verticalalignment='bottom')
+  plt.tick_params(axis='both', which='major', labelsize=tickfontsize)
+  #plt.tick_params(axis='both', which='minor', labelsize=8)
+  plt.setp(ax, xticklabels=[r'$k_c$', r'$k_m$', r'$k_s$'])
+  ax.text(1.,average_k_c, "%0.2f" % average_k_c,horizontalalignment='center',verticalalignment='bottom',fontsize=tickfontsize)
+  ax.text(2.,average_k_m, "%0.2f" % average_k_m,horizontalalignment='center',verticalalignment='bottom',fontsize=tickfontsize)
+  ax.text(3.,average_k_s, "%0.2f" % average_k_s,horizontalalignment='center',verticalalignment='bottom',fontsize=tickfontsize)
   total_groups = len(f.keys())
-  ax.text(1.5,3.8,'%i convergent boundary conditions of\n%i tested' % (len(all_bests), total_groups))
+  ax.text(1.3,3.8,'%i convergent boundary conditions of\n%i tested' % (len(all_bests), total_groups),fontsize=12)
   #ax.xaxis.set_ticks_([r'$k_c$', r'$k_m$', r'$S_5$'])
   #box1 = plt.boxplot(all_bests)
   #plt.xticks([1,2,3],[r'$k_c$', r'$k_m$', r'$S_5$'])
@@ -136,16 +138,17 @@ def convergenz_phase_diagram(f,pdf):
   largest_value_except_false = sorted_fitnesses_smaller_max[-1]
   Z[bad_indeces] = largest_value_except_false
   CS = plt.contour(FLOW,PRESSURE,np.log10(np.transpose(Z)))
+  CS.ax.tick_params(labelsize=tickfontsize)
   #CS = plt.contour(np.log10(FLOW),PRESSURE,np.log10(np.transpose(Z)))
-  plt.clabel(CS, inline=1, fontsize=5)
-  plt.title('Convergent boundary conditions for adaption')
+  plt.clabel(CS, inline=1, fontsize=10)
+  #plt.title('Convergent boundary conditions for adaption')
   #plt.xlabel(r'$\log_{10}$ (Flow through arterial inlet) / $\mu m^3/s$')
-  plt.xlabel(r'Flow through arterial inlet / $\mu$m$^3$/s')
-  plt.ylabel(r'Pressure at venous outlet/ kPa')
+  plt.xlabel(r'Flow through arterial inlet / $\mu$m$^3$/s',fontsize=tickfontsize)
+  plt.ylabel(r'Pressure at venous outlet/ kPa',fontsize=tickfontsize)
   labels = [r'log$_{10}$ of fitness']
   for i in range(len(labels)):
     CS.collections[i].set_label(labels[i])
-  plt.legend(loc='lower right')
+  plt.legend(loc='lower right',fontsize=20)
   pdf.savefig()
   ''' smothed image'''
   if 0:
@@ -250,6 +253,7 @@ if __name__ == '__main__':
   #print("running with %s" % goodArguments.AdaptionParamSet)
   
   basenameOfFile = basename(goodArguments.fileName)
+  tickfontsize=14
   rc = matplotlib.rc
   rc('font', size = 8.)
   rc('axes', titlesize = 10., labelsize = 8.)

@@ -111,32 +111,36 @@ def DoGetMurrayForSingleFile(fn,pattern, pdfpages):
         'horizontalalignment': 'left',
         }
   for alpha in alphas:
-    ax1.text(x[-1], x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
-    ax1.plot(x , x, c='k', linewidth=0.1)
+    ''' alpha line text '''
+    #ax1.text(x[-1], x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
+    ax1.plot(x , x, c='k', linewidth=2.1)
   
   ### plot data
-  ax1.set_title('%i venous points, %i arterial points' % (result_venous.shape[1], result_a.shape[1]), size=18)
+  #ax1.set_title('%i venous points, %i arterial points' % (result_venous.shape[1], result_a.shape[1]), size=18)
 # ax1.set_title('Murray for file:\n%s\n%i venous points, %i arterial points' % (os.path.basename(afile.filename),result_venous.shape[1], result_a.shape[1]), size=6)
-  pointsize = 1.1
+  pointsize = 20.1
   venous = ax1.scatter(np.power(result_venous[0,:]**3+result_venous[1,:]**3,1/float(3)),result_venous[2,:],c='b', s=pointsize, label='bldk')
   arterial = ax1.scatter(np.power(result_a[0,:]**3+result_a[1,:]**3,1/float(3)),result_a[2,:],c='r',s=pointsize)
   ax1.set_xlabel(r'$\sqrt[3]{r_{daughter_1}^3 + r_{daughter_2}^3}$',fontsize=10)
   ax1.set_ylabel(r'$r_{mother}$',fontsize=18)
-  ax1.legend((venous,arterial),('Venous', 'Arterial'),loc='lower right')
+  ax1.legend((venous,arterial),('Venous', 'Arterial'),loc='lower right', fontsize=20)
   ax1.grid()
   ### inset
   insetXrange = 30
   indicesX = x<insetXrange
   indicesVenous = result_venous[2,:] < insetXrange
   indicesArterial = result_a[2,:] < insetXrange
+  ''' Inset '''
+  '''
   axInset = plt.axes([.2,.6,.2,.2])
   x=x[indicesX]
   for alpha in alphas:
     #axInset.text(x[-1], x[-1], r'$\alpha = %0.1f $' % alpha, fontdict=font)
-    axInset.plot(x , x, c='k', linewidth=0.1)
+    axInset.plot(x , x, c='k', linewidth=2.1)
+  
   venous = axInset.scatter(np.power(result_venous[0,indicesVenous]**3+result_venous[1,indicesVenous]**3,1/float(3)),result_venous[2,indicesVenous],c='b', s=pointsize, label='bldk')
   arterial = axInset.scatter(np.power(result_a[0,indicesArterial]**3+result_a[1,indicesArterial]**3,1/float(3)),result_a[2,indicesArterial],c='r',s=pointsize)
-  
+  '''
   fig2, ax2 = plt.subplots(1,1)
   ### histogramm deviation of daughters
   hist, bin_edges = np.histogram(result_a[1,:]-result_a[0,:], bins=50) #note. they are sorted in on c++ side
