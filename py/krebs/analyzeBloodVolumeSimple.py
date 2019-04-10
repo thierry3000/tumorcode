@@ -176,7 +176,7 @@ def boxplotFromData_rBV(data, pp, data2=None):
     aColor = violin2['cmedians'].get_color()
     aColor = aColor[0,0:3]
     red_patch = matplotlib.patches.Patch(color=aColor)
-    label = ['tumorCode', 'adaption']
+    label = ['Tumorcode', 'adaption']
     fake_handels = [blue_patch, red_patch]
     ax2.legend(fake_handels, label)
 #  else:
@@ -203,7 +203,7 @@ def boxplotFromData_s2v(data, pp, data2=None):
     aColor = violin2['cmedians'].get_color()
     aColor = aColor[0,0:3]
     red_patch = matplotlib.patches.Patch(color=aColor)
-    label = ['tumorCode', 'adaption']
+    label = ['Tumorcode', 'adaption']
     fake_handels = [blue_patch, red_patch]
     ax2.legend(fake_handels, label, loc='upper center')
   else:
@@ -242,11 +242,9 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Plot/ Analyze rBV surface to volume.')
   parser.add_argument('grp_pattern1',help='Where to find the vessel group in the file')    
   parser.add_argument('--grp_pattern2',default=None, help='Where to find the vessel group in the file') 
+  
+  ''' usage: use all file names here'''
   parser.add_argument('vesselFileNames1', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
-  
-  #parser.add_argument('--vesselFileNames2', nargs='*', type=argparse.FileType('r'), default=sys.stdin, help='Vessel file to calculate')  
-  #parser.add_argument('vesselFileNames2', nargs='+', type=argparse.FileType('r'), default=sys.stdin,help='Vessel file to calculate')  
-  
     
   goodArguments, otherArguments = parser.parse_known_args()
   

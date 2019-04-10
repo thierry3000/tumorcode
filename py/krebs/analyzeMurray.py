@@ -248,6 +248,35 @@ def DoSymetryMurrayForSingleFile(fn,pattern, pdfpages):
 #    ax2.grid()
 #    plt.savefig('murray_%s.png' % os.path.basename(afile.filename))
 
+def DoSymetryMurrayForSingleFileNorm(fn,pattern, pdfpages):
+
+  result_v, result_a = ku.get_Murray2(fn, pattern)
+  result_v = removeZeros(result_v)
+  result_a = removeZeros(result_a)
+
+  fig2, ax2 = plt.subplots(1,1)
+  ### histogramm deviation of daughters
+  hist_a, bin_edges_a = np.histogram((result_a[1,:]-result_a[0,:])/result_a[2,:], bins=50) #note. they are sorted in on c++ side
+  width_a = 0.45*(bin_edges_a[1]-bin_edges_a[0])
+  centers_a = (bin_edges_a[:-1]+bin_edges_a[1:])/2
+  ax2.bar(centers_a,hist_a/float(len(result_a[0,:])), align='center', width=width_a, color='red')
+  ax2.set_xlabel(r'$\frac{\|r^{daughter}_a- r^{daughter}_b\|}{\| r^{mother} \|}$',fontsize=18)
+  ax2.set_ylabel(r'probability',fontsize=18)
+  
+  hist_v, bin_edges_v = np.histogram((result_v[1,:]-result_v[0,:])/result_v[2,:], bin_edges_a) #note. they are sorted in on c++ side
+  width_v = 0.45*(bin_edges_v[1]-bin_edges_v[0])
+  centers_v = (bin_edges_v[:-1]+bin_edges_v[1:])/2+width_a
+  ax2.bar(centers_v,hist_v/float(len(result_v[0,:])), align='center', width=width_v, color='blue')
+#  
+  ax2.legend(['arterial branch', 'venous branch'])
+  print('check norm: %f' % np.sum(hist_a/float(len(result_a[0,:]))))
+  #print('check norm: %f' % np.sum(hist_v/float(len(result_v[0,:]))))
+  #fig1.tight_layout()
+#  pdfpages.savefig(fig1) 
+  fig2.tight_layout()
+  pdfpages.savefig(fig2)
+
+
 def removeZeros(atwoarray):
     first_line = atwoarray[0,:]
     good_indeces_first_line = first_line>0
@@ -394,4 +423,8 @@ if __name__ == "__main__":
     outfilename='murray_symmetry_for_file_%s' % basename(filenames[0])
     with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
       DoSymetryMurrayForSingleFile(filenames[0],pattern, pdfpages)
+    
+    outfilename='murray_symmetry_norm_for_file_%s' % basename(filenames[0])
+    with mpl_utils.PdfWriter(outfilename + '.pdf') as pdfpages:  
+      DoSymetryMurrayForSingleFileNorm(filenames[0],pattern, pdfpages)
     
