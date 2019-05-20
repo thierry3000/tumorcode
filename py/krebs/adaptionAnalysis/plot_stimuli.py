@@ -184,7 +184,7 @@ def plot_diameter(vessel_grp,pp):
     ax2.grid()
     #labels = ['ART', 'CAP', 'VEN']
     #dummies = [ax2.plot([], [], ls='o', c=c)[0] for c in colors]
-    ax2.legend(loc='upper center')
+    ax2.legend(loc=[0.4,0.7], markerscale=2.5, fontsize=15)
     pp.savefig(fig, 'hydorodynamic_charicteristics')
 
 def plot_hydrodynamic_stimuli(vessel_grp,pp):
@@ -229,9 +229,10 @@ def plot_hydrodynamic_stimuli(vessel_grp,pp):
     ax.semilogx(pressure_at_vessel[index_of_capillary],-np.log10(pressure_stimuli[index_of_capillary]),'D',markerfacecolor='none', markeredgecolor='coral' )
     ax.semilogx(pressure_at_vessel[index_of_vein],-np.log10(pressure_stimuli[index_of_vein]),'v', markerfacecolor='none', markeredgecolor='b')
     #ax.legend([r'$log_{10}($ shearforce $)$', r'$-log_{10}($ expected wallstress $)$'])
-    ax.legend(loc='center right')
+    ax.legend(loc=[0.8,0.3], markerscale=2.5, fontsize=15)
     ax.grid()
     ax.set_xlabel('pressure/ mmHg', fontsize=18)
+    ax.set_ylabel(r'signal $S_1$, $S_2$',fontsize=18)
     if goodArguments.apj:
       print("goodArguments.FileNames: %s" % goodArguments.FileNames[0].name)
       ax.set_ylim([-2.2,4])
@@ -305,14 +306,18 @@ def plot_conductive_stimuli(adaption_grp,pp):
     ax.semilogx(flow[index_of_capillary],conductive[index_of_capillary],'o', markerfacecolor ='none', markeredgecolor='coral')
     ax.semilogx(flow[index_of_vein],conductive[index_of_vein],'v', markerfacecolor ='none', markeredgecolor='b')
     datasets = ax.get_lines()
-    legend1=ax.legend([datasets[i] for i in [0,1,2]],['metabolic/ artery','metabolic/ capillary', 'metabolic/ vein'], loc=1)
-    legend2=ax.legend([datasets[i] for i in [3,4,5]],['conductive/ artery','conductive/ capillary', 'conductive/ vein'], loc=2)
+    if goodArguments.apj:
+      legend1=ax.legend([datasets[i] for i in [0,1,2]],[r'$S_3$/ artery','$S_3$/ capillary', '$S_3$/ vein'], loc=[0.7,0.86], markerscale=2.5, fontsize=15)
+      legend2=ax.legend([datasets[i] for i in [3,4,5]],['$S_4$/ artery','$S_4$/ capillary', '$S_4$/ vein'], loc=[0.5,0.57], markerscale=2.5, fontsize=15)
+    else:
+      legend1=ax.legend([datasets[i] for i in [0,1,2]],[r'$S_3$/ artery','$S_3$/ capillary', '$S_3$/ vein'], loc=[0.7,0.2], markerscale=2.5, fontsize=15)
+      legend2=ax.legend([datasets[i] for i in [3,4,5]],['$S_4$/ artery','$S_4$/ capillary', '$S_4$/ vein'], loc=[0.22,0.82], markerscale=2.5, fontsize=15)
     #legend1=ax.legend(['metabolic/ artery','metabolic/ capillary', 'metabolic/ vein'])
     #legend2=ax.legend(['bld', 'blub'])
     ax.add_artist(legend1)
     ax.grid()
     ax.set_xlabel("flow/nl/min", fontsize=18)
-    ax.set_ylabel("stimuli", fontsize=18)
+    ax.set_ylabel(r'signal $S_3$,$S_4$', fontsize=18)
     if goodArguments.apj:
       ax.set_xlim([0.01,1000])
       ax.set_ylim([0,4])
@@ -326,7 +331,7 @@ def plot_conductive_stimuli(adaption_grp,pp):
       ax.set_xticklabels(['0.01','0.1','1','10','100','1000'],fontsize=tickfontsize)
     else:
       ax.set_xlim([0.01,1500])
-      ax.set_ylim([0,3.2])
+      ax.set_ylim([0,3.1])
       ax.yaxis.set_major_locator(plt.NullLocator())
       ax.yaxis.set_minor_locator(plt.NullLocator())
       ax.set_yticks([0,1,2,3])
