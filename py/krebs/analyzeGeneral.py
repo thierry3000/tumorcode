@@ -525,7 +525,8 @@ class DataVesselSamples(object):
         #graph = dataman.obtain_data('vessel_graph', vesselgroup, ['position','flags'])
         graph = dataman.obtain_data('vessel_graph', vesselgroup, ['position'])
         if property_name == 'weight':
-          smpl = krebsutils.sample_edges_weights(graph.nodes['position'], graph.edgelist, sample_length)
+          smpl = krebsutils.sample_edges_weights(np.array(graph.nodes['position'],np.float32), np.array(graph.edgelist,np.int32), sample_length)
+
         else:
           data, association = dataman.obtain_data('vessel_graph_property', vesselgroup, 'auto', property_name)
           smpl = generate_samples(graph, data, association, sample_length)
@@ -700,7 +701,8 @@ class DataVesselGlobal(object):
       property_name, vesselgroup, cachelocation = args
 
       def write(gmeasure, groupname):
-        ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])
+        #ld = krebsutils.read_lattice_data_from_hdf(vesselgroup['lattice'])
+        ld = krebsutils.read_lattice_data_from_hdf_by_filename(str(vesselgroup.file.filename),str('vessels/lattice'))
         volume = np.prod(ld.GetWorldSize())
         if property_name == 'mvd_linedensity':
           graph = dataman.obtain_data('vessel_graph', vesselgroup, ['length'])
@@ -730,14 +732,20 @@ class DataVesselGlobal(object):
           if property_name == 'mvd_c':
             data = [mvd_c, 0.]
         elif property_name == 'mvd_sphere_sampling':
-          ld = krebsutils.read_lattice_data_from_hdf(vesselgroup.parent['field_ld'])
+          #ld = krebsutils.read_lattice_data_from_hdf(vesselgroup.parent['field_ld'])
+          print('try to read: %s' % vesselgroup.file.filename)
+          ld = krebsutils.read_lattice_data_from_hdf_by_filename(str(vesselgroup.file.filename),str('vessels/lattice'))
           mvd_sampling_results, mvd_bins = dataman.obtain_data('sphere_vessel_density',  vesselgroup, None, suggest_bins_from_world(ld), 'radial', ld, cachelocation )
             #print(mvd_sampling_results)    
           data = [ np.mean(np.asarray(mvd_sampling_results)*1e6),
                   np.std(np.asarray(mvd_sampling_results)*1e6)]
         elif property_name == 'avg_cap_dist':
           vessels = krebsutils.read_vesselgraph(vesselgroup, ['flags', 'length','radius'])
-          flags   = RemoveArteriovenousFlagsFromCapillaries(vessels['flags'])
+          if vessels['flags'].ndim >1:
+            flags   = RemoveArteriovenousFlagsFromCapillaries(vessels['flags'][:,0])
+          else:
+            flags   = RemoveArteriovenousFlagsFromCapillaries(vessels['flags'])
+            
           mask1 = myutils.bbitwise_and(flags, krebsutils.CIRCULATED)
           #totalvol = totalLdVolume(vesselgroup)          
           def compute(flagMask):
@@ -752,7 +760,10 @@ class DataVesselGlobal(object):
           smaller than this:
             see manuscript draft
           '''
-          mvd_cap = compute((vessels['radius']<=4.0).all())
+          if vessels['radius'].ndim >1:
+            mvd_cap = compute((vessels['radius'][:,0]<=4.0).all())
+          else:
+            mvd_cap = compute((vessels['radius']<=4.0).all())
           data = (np.sqrt(1/mvd_cap), 0.)
         elif property_name == 'phi_vessels':
           graph = dataman.obtain_data('vessel_graph', vesselgroup, ['length','radius'])

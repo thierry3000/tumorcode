@@ -217,6 +217,8 @@ np::arraytbase sample_edges(np::arrayt<float> pos, np::arrayt<int> edges, np::ar
 #if BOOST_VERSION>106300
 py::object sample_edges_weights(np::ndarray pypos, np::ndarray pyedges, float sample_len)
 {
+  cout << "new boost" << endl;
+  cout.flush();
   //np::arrayt<float> pos(pypos);
   //np::arrayt<int> edges(pyedges);
   int cnt = pyedges.get_shape()[0];
@@ -259,10 +261,13 @@ py::object sample_edges_weights(np::ndarray pypos, np::ndarray pyedges, float sa
   //return np::from_data(tmp,np::dtype::get_builtin<float>(),py::make_tuple(tmp.size()), py::make_tuple(sizeof(float)),own);
 }
 #else
-py::object sample_edges_weights(nm::array pypos, nm::array pyedges, float sample_len)
+py::object sample_edges_weights(const nm::array py_pos, const nm::array py_edges, float sample_len)
 {
-  np::arrayt<float> pos(pypos);
-  np::arrayt<int> edges(pyedges);
+  cout << "old boost" << endl;
+  cout.flush();
+  //CheckArray1(FlReal, py_pos, 0); // do not check dimension 
+  np::arrayt<float> pos(py_pos);
+  np::arrayt<int> edges(py_edges);
   int cnt = edges.shape()[0];
 
   DynArray<float> tmp(1024, ConsTags::RESERVE);

@@ -523,10 +523,11 @@ def PrintGlobalData(pdfpages, vesselgroups, f_measure, dataman):
                 'flow',
                 'avg_cap_dist',
                 'mvd_linedensity',
-                'mvd_sphere_sampling',
+                #'mvd_sphere_sampling',
                 'mvd','mvd_a','mvd_v','mvd_c',
                 'phi_vessels', 'phi_a','phi_v','phi_c', 
-                'total_perfusion']
+                #'total_perfusion',
+                ]
   #prop_list2 = ['radius','shearforce','velocity','flow','avg_cap_dist','mvd_linedensity','phi_vessels']
   prop_data_vessel_global = ['mvd']
   try:
@@ -544,12 +545,12 @@ def PrintGlobalData(pdfpages, vesselgroups, f_measure, dataman):
     data = []
     for gvessels in vesselgroups:
       data.append(dataman.obtain_data('basic_vessel_global', name, gvessels, cachelocation(gvessels)))
-      ld_vessels = krebsutils.read_lattice_data_from_hdf(gvessels['lattice'])
+      ld_vessels = krebsutils.read_lattice_data_from_hdf_by_filename(str(gvessels.file.filename),str('vessels/lattice'))
       bbox_vessels.append(ld_vessels.worldBox)
     result_string.append(r'$<%s>$ = $%s$%s' %
       (Prettyfier.get_sym(name), Format(name, data), Prettyfier.get_munit(name)))
       
-  ld = krebsutils.read_lattice_data_from_hdf(vesselgroups[0]['lattice'])
+  ld = krebsutils.read_lattice_data_from_hdf_by_filename(str(vesselgroups[0].file.filename),str('vessels/lattice'))
   bbox_vessels.append(ld.worldBox)
 
   bbox_vessels = np.average(bbox_vessels, axis=0).reshape(3,2).transpose()
@@ -813,8 +814,10 @@ def DoIt(filenames, pattern, with_o2):
     fn_measure = myutils.strip_from_end(fn_measure, '_detailedpo2')
 
   
-  files = [h5files.open(fn, 'a') for fn in filenames]
-  f_measure = h5files.open('plotVessels_chache.h5', 'a', search = False)
+#  files = [h5files.open(fn, 'a') for fn in filenames]
+  files = [h5py.File(fn, 'a') for fn in filenames]
+#  f_measure = h5files.open('plotVessels_chache.h5', 'a', search = False)
+  f_measure = h5py.File('plotVessels_chache.h5', 'a')
   groups = list(itertools.chain.from_iterable(myutils.walkh5(f, pattern, return_h5objects=True) for f in files))
   if len(groups)<=0:
     print 'no matching groups in hdf file(s)'
@@ -839,7 +842,7 @@ def DoIt(filenames, pattern, with_o2):
                                          analyzeGeneral.DataDistanceFromCenter(),
                                          analyzeGeneral.DataBasicVessel(),
                                          analyzeGeneral.DataVesselSamples(),
-                                         analyzeBloodFlow.DataTumorBloodFlow(),
+                                         #analyzeBloodFlow.DataTumorBloodFlow(),
                                          analyzeGeneral.DataVesselRadial(),
                                          analyzeGeneral.DataVesselGlobal()])
 
@@ -863,7 +866,7 @@ def DoIt(filenames, pattern, with_o2):
       dataman = myutils.DataManager(20, [analyzeGeneral.DataTumorTissueSingle(), 
                                           analyzeGeneral.DataVesselRadial(), 
                                           analyzeGeneral.DataDistanceFromCenter(),
-                                          analyzeBloodFlow.DataTumorBloodFlow(),
+                                          #analyzeBloodFlow.DataTumorBloodFlow(),
                                           analyzeGeneral.DataBasicVessel(),
                                           analyzeGeneral.DataVesselSamples(),
                                           analyzeGeneral.DataVesselGlobal()
@@ -874,10 +877,10 @@ def DoIt(filenames, pattern, with_o2):
       if 0:
         res = getMultiScatter(300. * len(filenames), vesselgroups)
         plotMultiScatterBeauty(res, pdfpages)
-      if 0:
+      if 1:
         PlotRadiusHistogram2(dataman, vesselgroups, pdfpages)
             
-      if 0 and all(map(lambda g: 'data' in g.parent, vesselgroups)):
+      if 1 and all(map(lambda g: 'data' in g.parent, vesselgroups)):
         data = VesselData()
         for g in vesselgroups:
           data.add(g.parent['data'])

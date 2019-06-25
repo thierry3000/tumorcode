@@ -36,7 +36,8 @@ import extensions
 import pprint
 
 import krebsutils
-imports_ = 'convectionTest convectionLevelset levelsetRedistancing zalesakDisk rotationalVelocityField calcCurvature surfaceTensionForceTest EST_testOperatorApplication EST_testOperatorSolve steppersConvergenceTest'.split()
+#imports_ = 'convectionTest convectionLevelset levelsetRedistancing zalesakDisk rotationalVelocityField calcCurvature surfaceTensionForceTest EST_testOperatorApplication EST_testOperatorSolve steppersConvergenceTest'.split()
+imports_ = 'convectionTest convectionLevelset levelsetRedistancing zalesakDisk rotationalVelocityField calcCurvature surfaceTensionForceTest'.split()
 # load functions from libkrebs_ into local namespace
 # i do this because libkrebs can be the debug or release version of the library dependign on the debug switch in the python interpreter
 # so do not directly use 'import libkrebs_.blabla'!
@@ -783,8 +784,8 @@ def runTestEllipticSolver():
 
 
 if __name__ == "__main__":
-  runTestEllipticSolver()
-  #check_surface_metrics()
+  #runTestEllipticSolver()
+  check_surface_metrics()
 #  runSTFTest()
   #runSTFStabilityTest()
 #  testCurvature()
