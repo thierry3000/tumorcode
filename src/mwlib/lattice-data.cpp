@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <float.h>
 #include <string>
+#include <iostream>
 
 #include "math_ext.h"
 #include <boost/archive/text_oarchive.hpp>
