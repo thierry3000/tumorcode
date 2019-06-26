@@ -526,7 +526,7 @@ class DataVesselSamples(object):
         graph = dataman.obtain_data('vessel_graph', vesselgroup, ['position'])
         if property_name == 'weight':
           smpl = krebsutils.sample_edges_weights(np.array(graph.nodes['position'],np.float32), np.array(graph.edgelist,np.int32), sample_length)
-
+          smpl = smpl[:,0]
         else:
           data, association = dataman.obtain_data('vessel_graph_property', vesselgroup, 'auto', property_name)
           smpl = generate_samples(graph, data, association, sample_length)

@@ -49,7 +49,6 @@ mode - see Mode enum
 #if BOOST_VERSION>106300
 template<class T>
 np::ndarray sample_edges(np::ndarray pos, np::ndarray edges, np::ndarray data, float sample_len, int mode)
-
 {
   int cnt = edges.get_shape()[0];
 
@@ -98,7 +97,8 @@ np::ndarray sample_edges(np::ndarray pos, np::ndarray edges, np::ndarray data, f
       }
       else
       {
-        c[k][0] = py::extract<T>(data[i][k]);
+        //c[k][0] = py::extract<T>(data[i][k]);
+        c[k][0] = py::extract<T>(data[i]);
       }
     }
     for(int j=0; j<num_samples; ++j)
@@ -122,8 +122,7 @@ np::ndarray sample_edges(np::ndarray pos, np::ndarray edges, np::ndarray data, f
     num_total_samples += num_samples;
   }
 
-  //np::arrayt<T> acc_res(np::empty(2, Int2(num_total_samples, ncomps).cast<Py_ssize_t>().eval().data(), itemtype));
-  py::tuple shape = py::make_tuple(2,num_total_samples, ncomps);
+  py::tuple shape = py::make_tuple(num_total_samples, ncomps);
   np::ndarray acc_res = np::empty(shape, dtype);
   for(int i=0, k=0; i<num_total_samples; ++i)
   {
@@ -215,16 +214,14 @@ np::arraytbase sample_edges(np::arrayt<float> pos, np::arrayt<int> edges, np::ar
 #endif
 
 #if BOOST_VERSION>106300
-py::object sample_edges_weights(np::ndarray pypos, np::ndarray pyedges, float sample_len)
+py::object sample_edges_weights(np::ndarray pos, np::ndarray edges, float sample_len)
 {
-  cout << "new boost" << endl;
+  cout << "new boost in sample_edges_weights" << endl;
   cout.flush();
-  //np::arrayt<float> pos(pypos);
-  //np::arrayt<int> edges(pyedges);
-  int cnt = pyedges.get_shape()[0];
+  int cnt = edges.get_shape()[0];
 
   DynArray<float> tmp(1024, ConsTags::RESERVE);
-
+  int num_total_samples = 0;
   CylinderNetworkSampler sampler;
   //set sample length
   sampler.Init(sample_len, ptree());
@@ -233,12 +230,12 @@ py::object sample_edges_weights(np::ndarray pypos, np::ndarray pyedges, float sa
   {
     //read start and end point of vessel segment in 3 dimensions
     Float3 p0, p1;
-    int a = py::extract<int>(pyedges[i][0]);
-    int b = py::extract<int>(pyedges[i][1]);
+    int a = py::extract<int>(edges[i][0]);
+    int b = py::extract<int>(edges[i][1]);
     for (int j=0; j<3; ++j)
     {
-      p0[j] = py::extract<float>(pypos[a][j]);
-      p1[j] = py::extract<float>(pypos[b][j]);
+      p0[j] = py::extract<float>(pos[a][j]);
+      p1[j] = py::extract<float>(pos[b][j]);
 //       p0[j] = pos(edges(i,0), j);
 //       p1[j] = pos(edges(i,1), j);
     }
@@ -252,13 +249,20 @@ py::object sample_edges_weights(np::ndarray pypos, np::ndarray pyedges, float sa
     {
       tmp.push_back(sampler.weight);
     }
+    num_total_samples=num_total_samples+num_samples;
   }
-  //np::arrayt<float> acc_res(np::empty(1, &tmp.size(), np::getItemtype<float>()));
-  int strides[] = { 1 };
-  int dims[] = { (int)tmp.size() };
-  //return np::copy<float,1>(dims, get_ptr(tmp), strides);
-  py::object own;
-  //return np::from_data(tmp,np::dtype::get_builtin<float>(),py::make_tuple(tmp.size()), py::make_tuple(sizeof(float)),own);
+  
+  py::tuple shape = py::make_tuple(num_total_samples,1);
+  np::dtype dtype = np::dtype::get_builtin<float>();
+  np::ndarray acc_res = np::empty(shape, dtype);
+  for(int i=0,k=0;i<num_total_samples;++i)
+  {
+    for(int j=0;j<1; ++j,++k)
+    {
+      acc_res[i]=tmp[k];
+    }
+  }
+  return acc_res;
 }
 #else
 py::object sample_edges_weights(const nm::array py_pos, const nm::array py_edges, float sample_len)
