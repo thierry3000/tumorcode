@@ -265,7 +265,7 @@ py::object sample_edges_weights(np::ndarray pos, np::ndarray edges, float sample
   return acc_res;
 }
 #else
-py::object sample_edges_weights(const nm::array py_pos, const nm::array py_edges, float sample_len)
+np::arraytbase sample_edges_weights(np::arrayt<float> py_pos, np::arrayt<int> py_edges, float sample_len)
 {
   cout << "old boost" << endl;
   cout.flush();
@@ -273,6 +273,7 @@ py::object sample_edges_weights(const nm::array py_pos, const nm::array py_edges
   np::arrayt<float> pos(py_pos);
   np::arrayt<int> edges(py_edges);
   int cnt = edges.shape()[0];
+  int num_total_samples = 0;
 
   DynArray<float> tmp(1024, ConsTags::RESERVE);
 
@@ -299,11 +300,23 @@ py::object sample_edges_weights(const nm::array py_pos, const nm::array py_edges
     {
       tmp.push_back(sampler.weight);
     }
+    num_total_samples = num_total_samples+num_samples;
   }
   //np::arrayt<float> acc_res(np::empty(1, &tmp.size(), np::getItemtype<float>()));
-  int strides[] = { 1 };
-  int dims[] = { (int)tmp.size() };
-  return np::copy<float,1>(dims, get_ptr(tmp), strides);
+//   int strides[] = { 1 };
+//   int dims[] = { (int)tmp.size() };
+//   return np::copy<float,1>(dims, get_ptr(tmp), strides);
+  // 26.06.2019
+  np::arrayt<float> acc_res(np::empty(2, Int2(num_total_samples, 1).cast<np::ssize_t>().eval().data(), py_pos.itemtype()));
+  //np::arrayt<float> acc_res = np::zeros(num_total_samples,1, np::getItemtype<float>());
+  for(int i=0,k=0;i<num_total_samples;++i)
+  {
+    for(int j=0;j<1; ++j,++k)
+    {
+      acc_res(i,j)=tmp[k];
+    }
+  }
+  return acc_res;
 }
 #endif
 
