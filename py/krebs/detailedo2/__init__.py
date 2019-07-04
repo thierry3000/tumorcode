@@ -151,28 +151,37 @@ def copyVesselnetworkAndComputeFlow(gvdst, gv, bloodflowparams):
 
 def readParameters(po2group):
   print('detailed o2 group found at %s' % po2group)
+  returnDict = dict()
   if('simType' in po2group.parent.attrs.keys()):
     if(po2group.parent.attrs['simType'] == 'MTS'):
       print('assume o2 parameters at: /parameters/o2_sim')
-      p = dict()
       for aKey in po2group.parent.parent.parent['parameters/o2_sim'].attrs.keys():
         temp = po2group.parent.parent.parent['parameters/o2_sim'].attrs[aKey]
         if (type(temp) == type(str())):
-          p[aKey] = temp
+          returnDict[aKey] = temp
         else:
-          p[aKey] = np.asscalar(temp)
+          returnDict[aKey] = np.asscalar(temp)
       #o2_paramset_name = po2group.parent.parent.parent['parameters/o2_sim'].attrs['detailedO2name']
       #p = getattr(parameterSetsO2, o2_paramset_name)
       #p=myutils.hdf_read_dict_hierarchy_attr(po2group.parent.parent['parameters/o2_params'])
   else:
-    p = dict()
-    for aKey in po2group.parent.parent['parameters/o2'].attrs.keys():
-      temp = po2group.parent.parent['parameters/o2'].attrs[aKey]
+#    for aKey in po2group.parent.parent['parameters/o2'].attrs.keys():
+#      temp = po2group.parent.parent['parameters/o2'].attrs[aKey]
+    ''' in old dataset, the parameters were stored as groups'''
+    for aKey in po2group.parent.parent['parameters/o2'].keys():
+      temp = po2group.parent.parent['parameters/o2'][aKey]
       if (type(temp) == type(str())):
-        p[aKey] = temp
-      else:
-        p[aKey] = np.asscalar(temp)
-  return p
+        returnDict[aKey] = temp
+      if ( not type(temp) == type(str())) and not str(aKey) == 'calcflow' and not str(aKey) =='name':
+        ''' T.F. 07/03/2019 
+        I think the behaviour of h5py changed 
+        switch from asscalar to asarray
+        '''
+        #p[aKey] = np.asscalar(temp)
+        #p[aKey] = np.asscalar(np.asarray(temp))
+        print('key: %s' % aKey)
+        returnDict[str(aKey)] = str(temp[()])
+  return returnDict
   
 
 def sampleVessels(po2group, vesselgroup, tumorgroup, sample_length):

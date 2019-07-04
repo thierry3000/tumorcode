@@ -478,10 +478,11 @@ class DataBasicVessel(object):
         r,_    = dataman.obtain_data('vessel_graph_property', vesselgroup, 'edges', 'radius')
         flow,_ = dataman.obtain_data('vessel_graph_property', vesselgroup, 'edges', 'flow')
         return (flow/(math.pi*r*r)), 'edges'
-      #elif property_name == 'flags':
-      #  flags,_    = dataman.obtain_data('vessel_graph_property', vesselgroup, 'edges', 'flags')
+#      elif property_name == 'flags':
+#        flags,_    = dataman.obtain_data('vessel_graph_property', vesselgroup, 'edges', 'flags')
+#        np.asarray(vesselgroup[association][property_name])[:,0], association
       else:
-        return np.asarray(vesselgroup[association][property_name])[:,0], association
+        return np.asarray(vesselgroup[association][property_name]), association
 
     def obtain_data(self, dataman, dataname, *args):
       if dataname == 'vessel_graph':
@@ -529,6 +530,7 @@ class DataVesselSamples(object):
           smpl = smpl[:,0]
         else:
           data, association = dataman.obtain_data('vessel_graph_property', vesselgroup, 'auto', property_name)
+          data = data[:,0]
           smpl = generate_samples(graph, data, association, sample_length)
         return smpl
 

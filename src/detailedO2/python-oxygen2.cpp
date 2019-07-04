@@ -352,7 +352,7 @@ static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
 }
 
 #if BOOST_VERSION>106300
-np::ndarray PyComputeSaturation(const np::ndarray &py_po2, const py::dict &py_parameters)
+static py::object PyComputeSaturation(const np::ndarray &py_po2, const py::dict &py_parameters)
 {
   cout << "PyComputeSaturation called" << endl;
   cout << "BOOST_VERSION>106300 found" << endl;
@@ -363,7 +363,8 @@ np::ndarray PyComputeSaturation(const np::ndarray &py_po2, const py::dict &py_pa
   //std::string D_plasma_cpp_string = py::extract<std::string>(py_parameters["vessel_group_path"]);
   //double D_plasma_cpp_double = py::extract<double>(py_parameters["D_plasma"]);
   DetailedPO2::Parameters params = py::extract<DetailedPO2::Parameters>(py_parameters);
-  const int return_length = py_po2.get_shape()[0];
+  //Py_ssize_t return_length = py_po2.get_shape()[0];
+  int return_length = py_po2.get_shape()[0];
   cout << "shape of py_po2: " << endl
   << py_po2.get_shape()[0] << endl 
   <<py_po2.get_shape()[1] << endl;
@@ -372,18 +373,17 @@ np::ndarray PyComputeSaturation(const np::ndarray &py_po2, const py::dict &py_pa
 #ifndef NDEBUG
   cout << "make empty in PyComputeSaturation: " << return_length << endl;
 #endif
-  cout << "return_length: " << return_length << endl;
-  //py::tuple shape = py::make_tuple(3, 1);
-  //np::dtype dtype = np::dtype::get_builtin<double>();
-  //np::ndarray a = np::zeros(shape, dtype);
-  np::ndarray result = np::zeros(py::make_tuple(return_length,1), np::dtype::get_builtin<float>());
-  //np::ndarray result = np::zeros(py::make_tuple(py_po2.shape(0)), np::dtype::get_builtin<float>());
-  cout << "bla" << endl;cout.flush();
+  cout << "Saturation will be calculated with: " << endl;
+  cout << format("sat_curve_exponent: %0.2f\n") % params.sat_curve_exponent;
+  cout << format("sat_curve_p50: %0.2f\n") % params.sat_curve_p50;
+  py::tuple edges_shape = py::make_tuple(return_length,1);
+  np::dtype dtype = np::dtype::get_builtin<float>();
+  np::ndarray result = np::zeros(edges_shape, dtype);
+  
   for (int i=0; i<return_length; i++)
   {
-    //data[i] = params.Saturation(py::extract<float>(py_po2[i]));
-    auto bla = params.Saturation(py::extract<float>(py_po2[i]));
-    result[i] = bla;
+    float bla = params.Saturation(py::extract<float>(py_po2[i]));
+    result[i][0] = bla;
   }
   cout << "returning from PyComputeSaturation" << endl;
   return result;
@@ -846,7 +846,7 @@ struct DetailedO2ParamsFromPy
       bool isEverythingInDictAString;
       try
       {
-        std::string buffer = py::extract<std::string>(o["D_plasma"]);
+        std::string buffer = py::extract<std::string>(o["max_iter"]);
         isEverythingInDictAString = true;
       }
       catch(std::exception &e)

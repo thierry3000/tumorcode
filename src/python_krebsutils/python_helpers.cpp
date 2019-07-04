@@ -263,12 +263,14 @@ void checkedExtractFromDict_all_strings<std::string>(const py::dict &d, const ch
     std::string buffer = py::extract<std::string>(d[name]);
     variableToFill = buffer;
   }
-  catch (const py::error_already_set &e) 
+  catch (const py::error_already_set &) 
   {
-    std::cerr << "_all_strings" << endl;
+    std::cerr << "_all_strings STRING" << endl;
     std::cerr << format("unable to extract parameter: '%s' from detailed O2 parameters --> USING default value\n") % name;
-    //variableToFill = static_cast<T>(string(0.0));
-    //throw e; // don't every try to handle this!
+    PyObject *e, *v, *t;
+
+    // get the error indicators
+    PyErr_Fetch(&e, &v, &t);
   }
 }
 template<>
@@ -279,12 +281,14 @@ void checkedExtractFromDict_all_strings<int>(const py::dict &d, const char *name
     int buffer = std::stoi(py::extract<std::string>(d[name]));
     variableToFill = buffer;
   }
-  catch (const py::error_already_set &e) 
+  catch (const py::error_already_set &) 
   {
-    std::cerr << "_all_strings" << endl;
+    std::cerr << "_all_strings INT" << endl;
     std::cerr << format("unable to extract parameter: '%s' from detailed O2 parameters --> USING default value\n") % name;
-    //variableToFill = static_cast<T>(string(0.0));
-    //throw e; // don't every try to handle this!
+    PyObject *e, *v, *t;
+
+    // get the error indicators
+    PyErr_Fetch(&e, &v, &t);
   }
 }
 template<>
@@ -295,13 +299,32 @@ void checkedExtractFromDict_all_strings<double>(const py::dict &d, const char *n
     double buffer = std::stod(py::extract<std::string>(d[name]));
     variableToFill = buffer;
   }
-  catch (const py::error_already_set &e) 
+  catch (const py::error_already_set&) 
   {
-    std::cerr << "_all_strings" << endl;
+    std::cerr << "_all_strings DOUBLE" << endl;
     std::cerr << format("unable to extract parameter: '%s' from detailed O2 parameters --> USING default value\n") % name;
-    //variableToFill = static_cast<T>(string(0.0));
-    //throw e; // don't every try to handle this!
-  }
+    PyObject *e, *v, *t;
+
+    // get the error indicators
+    PyErr_Fetch(&e, &v, &t);
+    // prevent C++ from unwinding the stack and throw an execption
+    /*
+     * https://misspent.wordpress.com/2009/10/11/boost-python-and-handling-python-exceptions/
+     */
+
+    // wrap them in objects to
+    // ensure ref-count decrementing
+    //py::object e_obj(handle<>(e));
+    //py::object v_obj(handle<>(v));
+    //py::object t_obj(handle<>(t));
+
+  
+
+    // We've determined that we don't
+    // want to handle the exception, so
+    // we reset it for later processing
+    //py::PyErr_Restore(e, v, t);
+}
 }
 template<>
 void checkedExtractFromDict_all_strings<bool>(const py::dict &d, const char *name, bool &variableToFill)
@@ -318,12 +341,14 @@ void checkedExtractFromDict_all_strings<bool>(const py::dict &d, const char *nam
       variableToFill= false;
     }
   }
-  catch (const py::error_already_set &e) 
+  catch (const py::error_already_set &) 
   {
-    std::cerr << "_all_strings" << endl;
+    std::cerr << "_all_strings BOOL" << endl;
     std::cerr << format("unable to extract parameter: '%s' from detailed O2 parameters --> USING default value\n") % name;
-    //variableToFill = static_cast<T>(string(0.0));
-    //throw e; // don't every try to handle this!
+    PyObject *e, *v, *t;
+
+    // get the error indicators
+    PyErr_Fetch(&e, &v, &t);
   }
 }
 //template void checkedExtractFromDict_all_strings<double>(const py::dict &d, const char *name, double &variableToFill);

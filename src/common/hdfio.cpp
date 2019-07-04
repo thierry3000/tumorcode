@@ -536,21 +536,47 @@ void ReadHdfGraph(const H5::Group &g, VesselList3d *vl )
   readDataSetFromGroup(*p_gnodes, string("roots"), root_indices);
   for(int i=0; i<root_indices.size(); ++i)
     vl->GetNode(root_indices[i])->flags.AddBits(BOUNDARY);
-
-/**
- * Error handling is now done inside the hdf5 interface
- */
+  
   DynArray <int> bc_node_index;
   DynArray <int> bctyp_index;
   DynArray <float> values_of_bcs;
   DynArray <float> bc_conductivity_value;
-  /* for old files the boundary arrays are not present
-    */
-  readDataSetFromGroup(*p_gnodes, string("bc_node_index"),bc_node_index );
-  readDataSetFromGroup(*p_gnodes, string("bc_type"),bctyp_index );
-  readDataSetFromGroup(*p_gnodes, string("bc_value"),values_of_bcs );
-  readDataSetFromGroup(*p_gnodes, string("bc_conductivity_value"),bc_conductivity_value );
   
+  try
+  {
+    H5::DataSet dset=p_gnodes->openDataSet(string("bc_node_index"));
+    /* for old files the boundary arrays are not present
+    */
+    readDataSetFromGroup(*p_gnodes, string("bc_node_index"),bc_node_index );
+    readDataSetFromGroup(*p_gnodes, string("bc_type"),bctyp_index );
+    readDataSetFromGroup(*p_gnodes, string("bc_value"),values_of_bcs );
+    readDataSetFromGroup(*p_gnodes, string("bc_conductivity_value"),bc_conductivity_value );
+  }
+  catch(H5::Exception &e)
+  {
+    cout << "Error in ReadHdfGraph" << endl;
+    cout << "bc_node_index not found. Maybe old standard?" << endl;
+    readDataSetFromGroup(*p_gnodes, string("roots"),bc_node_index );
+    DynArray <float> all_pressures;
+    readDataSetFromGroup(*p_gnodes, string("pressure"), all_pressures );
+    bctyp_index.resize(bc_node_index.size());
+    values_of_bcs.resize(bc_node_index.size());
+    bc_conductivity_value.resize(bc_node_index.size());
+    for(int i=0;i<bc_node_index.size(); ++i)
+    {
+      //cout << i << endl;
+      bctyp_index[i] = (int)FlowBC::PIN;
+      values_of_bcs[i] = all_pressures[bc_node_index[i]];
+      bc_conductivity_value[i] = 42.42;
+      //cout << i << endl;
+    }
+    //cout << bc_node_index[0] << endl;
+    e.printErrorStack();
+  }
+  
+/**
+ * Error handling is now done inside the hdf5 interface
+ */
   for(int i=0; i<bc_node_index.size(); ++i)
   {
     #ifdef DEBUG
@@ -586,6 +612,9 @@ void ReadHdfGraph(const H5::Group &g, VesselList3d *vl )
     v->flags = flags[i];
     v->r = aflt[i];
   }
+#ifndef NDEBUG
+  cout << "finished ReadHdfGraph" << endl;
+#endif
 }
 
 template<class T>
