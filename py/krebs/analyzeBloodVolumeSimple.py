@@ -176,7 +176,7 @@ def boxplotFromData_rBV(data, pp, data2=None):
     aColor = violin2['cmedians'].get_color()
     aColor = aColor[0,0:3]
     red_patch = matplotlib.patches.Patch(color=aColor)
-    label = ['Tumorcode', 'adaption']
+    label = ['Tumorcode', 'Adaptation']
     fake_handels = [blue_patch, red_patch]
     ax2.legend(fake_handels, label)
 #  else:
@@ -203,7 +203,7 @@ def boxplotFromData_s2v(data, pp, data2=None):
     aColor = violin2['cmedians'].get_color()
     aColor = aColor[0,0:3]
     red_patch = matplotlib.patches.Patch(color=aColor)
-    label = ['Tumorcode', 'adaption']
+    label = ['Tumorcode', 'Adaptation']
     fake_handels = [blue_patch, red_patch]
     ax2.legend(fake_handels, label, loc='upper center')
   else:
@@ -211,10 +211,10 @@ def boxplotFromData_s2v(data, pp, data2=None):
     aColor = violin1['cmedians'].get_color()
     aColor = aColor[0,0:3]
     blue_patch = matplotlib.patches.Patch(color=aColor)
-    label = ['adaption']
+    label = ['Adaptation']
 #    fake_handels = [blue_patch]
 #    ax2.legend(fake_handels, label, loc='upper center')
-  ax2.set_xticklabels([r'all', r'artery', r'vein',r'capillary'])
+  ax2.set_xticklabels([r's2v in 1/$\mu$m', r'artery', r'vein',r'capillary'])
   
   
   

@@ -158,6 +158,7 @@ def plot_diameter(vessel_grp,pp):
       ax2.set_xlim([20,52])
     ax2.set_ylabel(r'diameter/ $\mu m$', fontsize=18)
     ax2.set_xlabel(r'pressure/ $mmHg$', fontsize=18)
+    ax2.xaxis.labelpad = 0.5
     if goodArguments.apj:
       ax2.set_ylim([5,100])
       ax2.set_xlim([10,100])
@@ -232,6 +233,7 @@ def plot_hydrodynamic_stimuli(vessel_grp,pp):
     ax.legend(loc=[0.8,0.3], markerscale=2.5, fontsize=15)
     ax.grid()
     ax.set_xlabel('pressure/ mmHg', fontsize=18)
+    ax.xaxis.labelpad = 0.5
     ax.set_ylabel(r'signal $S_1$, $S_2$',fontsize=18)
     if goodArguments.apj:
       print("goodArguments.FileNames: %s" % goodArguments.FileNames[0].name)
