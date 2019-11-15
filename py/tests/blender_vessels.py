@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 ''' inspired by
 https://github.com/njanakiev/blender-scripting.git
+https://www.dailymotion.com/video/x2pcw13
 '''
 '''
 call with
@@ -9,6 +10,7 @@ not -b for background
     -P for python
 '''
 import bpy
+import bmesh
 import numpy as np
 from math import pi
 from mathutils import Euler
@@ -24,6 +26,12 @@ else:
 sys.path.append(cwd)
 import utils
 
+''' in tumor code each segment has a fix lenght.
+for visual representation each segment will 
+be splittet into 
+num_seg
+'''
+num_seg=30
 #find blender installation path
 print("bpy is at: %s" % os.path.dirname(bpy.data.filepath))
 def createSphere(origin=(0, 0, 0)):
@@ -31,92 +39,109 @@ def createSphere(origin=(0, 0, 0)):
     bpy.ops.mesh.primitive_ico_sphere_add(location=origin)
     obj = bpy.context.object
     return obj
-def createVessel(a=np.array((0,0,0)), b=np.array((1,0,0)), r=10):
-  #calculate vessel length
-  direction_vector = b-a;
-  vessel_length = np.linalg.norm(b-a);
-  print("vessel length: %f" % vessel_length)
-  #calcualte center of mass
-  print(a)
-  print(b)
-  print(b-a)
-  midpoint = a + 0.5*(b-a);
-  print("vessel center of mass: %s" % midpoint)
-  print("euler angels:")
-  beta =np.arccos(direction_vector[2])
-  sin_beta = np.sqrt(1-direction_vector[2]*direction_vector[2])
-  alpha=np.arctan2(direction_vector[0],direction_vector[2])
-  padj=np.sqrt(direction_vector[0]*direction_vector[0]+direction_vector[2]*direction_vector[2])
-  gamma=np.arctan2(padj,direction_vector[1])
-  
-  angel_with_xz_plane = np.arccos(np.dot([0,1,0],(b-a))/vessel_length)
-  angel_with_xy_plane = pi/2-np.arccos(np.dot([0,0,1],(b-a))/vessel_length)
-  #angel_with_z = 0
-  print("yz: %f, xz: %f, xy: %f" % (alpha, beta,gamma))
-  #bpy.ops.mesh.primitive_cylinder_add(radius=r, depth=2, end_fill_type='NOTHING', view_align=False, enter_editmode=False, location=(midpoint[0],midpoint[1],midpoint[2]), rotation=(alpha, beta, gamma))
-  
-  bpy.ops.mesh.primitive_cylinder_add(radius=r, depth=1, end_fill_type='NOTHING', view_align=False, enter_editmode=False, location=(midpoint[0],midpoint[1],midpoint[2]))
-  #bpy.ops.mesh.primitive_cylinder_add(radius=r, depth=1, end_fill_type='NOTHING', view_align=False, enter_editmode=False, location=(0,0,0))
-  bpy.ops.transform.resize(value=(1.0, 1.0, vessel_length), constraint_axis=(False, False, True), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1, release_confirm=True, use_accurate=False)
-  bpy.context.object.rotation_mode = 'XYZ'
-  bpy.context.object.rotation_euler[0] = alpha
-  bpy.context.object.rotation_euler[1] = beta
-  bpy.context.object.rotation_euler[2] = -gamma
 
-  #bpy.ops.transform.rotate(value=pi/4, axis=(1, 0, 0), constraint_axis=(True, False, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1, release_confirm=True, use_accurate=False)
-  #bpy.ops.transform.resize(value=(1.0, 1.0, vessel_length), constraint_axis=(False, False, True), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1, release_confirm=True, use_accurate=False)
-  #bpy.ops.transform.rotate(value=angel_with_z, axis=(0, 0, 1), constraint_axis=(False, False, True), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1, release_confirm=True, use_accurate=False)
-  #bpy.ops.transform.rotate(value=angel_with_x, axis=(1, 0, 0), constraint_axis=(True, False, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1, release_confirm=True, use_accurate=False)
-  #bpy.ops.transform.rotate(value=angel_with_y, axis=(0, 1, 0), constraint_axis=(False, True, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1, release_confirm=True, use_accurate=False)
-#  bpy.ops.transform.rotate(value=angel_with_z, axis=(0, 0, 1), constraint_axis=(True, False, False), constraint_orientation='GLOBAL', mirror=False, proportional='DISABLED', proportional_edit_falloff='SMOOTH', proportional_size=1, release_confirm=True, use_accurate=False)
-  bpy.ops.object.convert(target='MESH')
-  bpy.ops.object.modifier_add(type='SUBSURF')
-  bpy.context.object.modifiers["Subsurf"].levels = 4
-  bpy.context.object.modifiers["Subsurf"].render_levels = 4
-  bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Subsurf")
-  bpy.ops.object.editmode_toggle()
-  bpy.ops.mesh.flip_normals()
-  bpy.ops.object.editmode_toggle()
+
+def createVessel_Path(a=np.array((0,0,0)), b=np.array((1,0,0)), r=2.5):
+  #create simple circle template
+  
+  bpy.ops.curve.primitive_bezier_circle_add(radius=r,view_align=False, enter_editmode=False, location=(0, 0, 0))
+  dummy_circ = bpy.context.object
+  print("dummy_circ:")
+  print(dummy_circ)
+  #curve to draw the circle along
+  cu = bpy.data.curves.new("MyCurveData", "CURVE")
+  
+  pseudoCylinder = bpy.data.objects.new("MyCurveObject", cu)
+  polyline = cu.splines.new('POLY')
+
+  polyline.points.add(num_seg-1)
+  '''calcultion will be needed here
+  from point a to point b
+  '''
+  diff_vec = b-a;
+  for i in range(num_seg):
+    this_point = a+(i/num_seg)*diff_vec;
+    polyline.points[i].co = (this_point[0],this_point[1],this_point[2],1)
+
+  cu.dimensions = '3D'
+  cu.bevel_object = bpy.data.objects["BezierCircle"]
+  
+  #bpy.context.scene.objects.link(pseudoCylinder)
+  #bpy.context.scene.objects.active= pseudoCylinder
+  
+  
+  me = pseudoCylinder.to_mesh(bpy.context.scene,False, 'PREVIEW')
+  # add an object
+  o = bpy.data.objects.new("MBallMesh", me)
+  bpy.context.scene.objects.link(o)
+  o.matrix_world = pseudoCylinder.matrix_world
+
+    # not keep original
+  #bpy.context.scene.objects.unlink(o)
+  
+  
+  bpy.context.scene.objects.active = o
+  
+  #decimate
+#  decimate = bpy.context.object.modifiers.new('Decimate', 'DECIMATE')
+#  print(decimate)
+#  decimate.decimate_type='UNSUBDIV'
+#  decimate.iterations=0
+#  bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Decimate")
+  
+  #subsurface
+#  bpy.ops.object.modifier_add(type='SUBSURF')
+#  bpy.context.object.modifiers["Subsurf"].levels = 2
+#  bpy.context.object.modifiers["Subsurf"].render_levels = 2
+#  bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Subsurf")
+  
+  #flip normals
+#  bpy.ops.object.editmode_toggle()
+#  bpy.ops.mesh.flip_normals()
+#  bpy.ops.object.editmode_toggle()
   
   
   #create displacement texture by clouds
   displacetex = bpy.data.textures.new('Texture', 'CLOUDS')
-  displacetex.noise_scale = 2.1
+  displacetex.noise_scale = 1.1
   
   # Create and apply displace modifier
   displace = bpy.context.object.modifiers.new('Displace', 'DISPLACE')
   displace.texture = displacetex
-  #displace.texture_coords = 'OBJECT'
+  displace.texture_coords = 'OBJECT'
   #displace.texture_coords_object = empty
-  displace.mid_level = 0.5
-  displace.strength = 3.6
-
+  displace.mid_level = 3.
+  displace.strength = 6.
+  bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Displace")
+  
   obj = bpy.context.object
   return obj
-
-def createVessel_Path():
-  bpy.ops.curve.primitive_nurbs_path_add(radius=1, view_align=False, enter_editmode=False, location=(0, 0, 0))
-
+  
 if __name__ == '__main__':
     # Remove all elements
     utils.removeAll()
 
+    bpy.ops.object.lamp_add(type='SUN', radius=1, view_align=False, location=(0, 0, 50), rotation=(0, 0, -1.5708), layers=(True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
+
     # Create camera
-    bpy.ops.object.add(type='CAMERA', location=(0, 0, 20))
+    bpy.ops.object.add(type='CAMERA', location=(35, 0, 80))
     cam = bpy.context.object
-    cam.rotation_euler = Euler((0, 0, pi/2), 'XYZ')
+    cam.rotation_euler = Euler((0.3, 0, pi/2), 'XYZ')
     # Make this the current camera
     bpy.context.scene.camera = cam
 
     # Create lamps
-    utils.rainbowLights()
+    #utils.rainbowLights()
 
     # Create object and its material
     #sphere = createSphere()
     #utils.setSmooth(sphere, 3)
-    vessel_a = createVessel(a=np.array((0,0,0)), b=np.array((10,10,0)), r=2.5)
-    vessel_b = createVessel(a=np.array((0,0,0)), b=np.array((10,-10,0)), r=2.5)
-    vessel_c = createVessel(a=np.array((0,0,0)), b=np.array((-10,0,0)), r=3.15)
+    vessel_a = createVessel_Path(a=np.array((0,0,0)), b=np.array((100,100,0)), r=2.5)
+    vessel_b = createVessel_Path(a=np.array((0,0,0)), b=np.array((100,-100,0)), r=2.5)
+    vessel_b = createVessel_Path(a=np.array((0,0,0)), b=np.array((-100,0,0)), r=3.15)
+#    vessel_c = createVessel(a=np.array((0,0,0)), b=np.array((-10,0,0)), r=3.15)
+#    vessel_d = createVessel(a=np.array((-20,0,0)), b=np.array((-10,0,0)), r=3.5)
+    
     #utils.setSmooth(vessel,3)
 
     # Specify folder to save rendering
