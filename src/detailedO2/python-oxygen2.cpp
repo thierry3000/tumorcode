@@ -29,6 +29,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/foreach.hpp>
 #include <boost/python/errors.hpp>
 #include <boost/iterator/transform_iterator.hpp>
+#include <boost/python/errors.hpp>
+#include <boost/python/object.hpp>
+#include <boost/python/handle.hpp>
+
 
 /**
  * @brief Sets tissue phases on the lattice sites
@@ -182,7 +186,15 @@ static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
     e.printErrorStack();
     cerr << "could not extract blood flow parameters from python... using default values from constructor" << endl;
   }
-  
+#ifdef EPETRA_MPI
+    std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+    int mpi_is_initialized = 0;
+    int prov;
+    MPI_Initialized(&mpi_is_initialized);
+    if (!mpi_is_initialized)
+        //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+        MPI_Init_thread(0, NULL, 1,&prov);
+#endif
   CalcFlow(*s.vl, bfparams);
   
   try //create recomputed_flow in hdf
@@ -256,6 +268,10 @@ static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
   catch(H5::Exception &e)
   {
     e.printErrorStack();
+  }
+  catch (const py::error_already_set&)
+  {
+    std::cout << "maybe here" << std::endl;
   }
     
     /* OUTPUT */
@@ -844,15 +860,24 @@ struct DetailedO2ParamsFromPy
        * string 
        */
       bool isEverythingInDictAString;
+      isEverythingInDictAString=false;
+      // Remember AttributeError for later comparison
+      py::object attributeError = py::import("exceptions").attr("AttributeError");
       try
       {
-        std::string buffer = py::extract<std::string>(o["max_iter"]);
+        std::unique_ptr<std::string> buffer(new std::string("42"));
+        *buffer = py::extract<std::string>(o["max_iter"]);
         isEverythingInDictAString = true;
       }
-      catch(std::exception &e)
+//       catch(std::exception &e)
+//       {
+//         isEverythingInDictAString = false;
+//         //e.what();
+//       }
+      catch (const py::error_already_set&)
       {
-        isEverythingInDictAString = false;
-        e.what();
+          isEverythingInDictAString = false;
+          PyErr_Clear();
       }
       if (isEverythingInDictAString)
       {
@@ -1088,6 +1113,10 @@ BOOST_PYTHON_MODULE(libdetailedo2_d)
 BOOST_PYTHON_MODULE(libdetailedo2_)
 #endif
 {
+  Py_Initialize();
+#if BOOST_VERSION>106300
+  np::initialize();
+#endif
   PyEval_InitThreads();
   my::checkAbort = PyCheckAbort; // since this is the python module, this is set to use the python signal check function
   DetailedPO2::export_oxygen_computation();
