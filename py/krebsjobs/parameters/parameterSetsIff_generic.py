@@ -30,7 +30,7 @@ irinotecan_factor = np.sqrt(540./587.)
 
 #from drug_variant42-inj   
 iff_default = dict(
-  num_threads = 6,
+  #num_threads = 6,
   tumor = dict(
     #out_intervall = 100,  #fake tumor only??
     #tumor_speed = 2.,
