@@ -55,6 +55,15 @@ void run_iffsim(const py::str &param_info_str, const string &outfilename, py::ob
     std::istringstream param_stream(param_string);
     boost::property_tree::read_info(param_stream, pt_params);
   }
+#ifdef EPETRA_MPI
+  std::cout << "EPETRA_MPI flag is set!\n" << std::endl;
+  int mpi_is_initialized = 0;
+  int prov;
+  MPI_Initialized(&mpi_is_initialized);
+  if (!mpi_is_initialized)
+      //MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE,&prov);
+      MPI_Init_thread(0, NULL, 1,&prov);
+#endif
   IffDrugApp3d app;
   app.Main(pt_params, outfilename, drug_measurement_function);
 }
@@ -77,5 +86,7 @@ BOOST_PYTHON_MODULE(libiff_)
 #if BOOST_VERSION>106300
   np::initialize();
 #endif
+  PyEval_InitThreads();
+  my::checkAbort = PyCheckAbort; // since this is the python
   Iff::export_iffsim();
 }

@@ -472,7 +472,7 @@ int  IffDrugApp3d::Main(const ptree &read_params, const string &outfilename, py:
   // fail if a parameter is not in the default list
   if (unknown_params.begin() != unknown_params.end())
   {
-    std::cerr << "--- WARNING: Unknown input parameters detected ---" << endl;
+    std::cerr << "--- WARNING: Unknown IFF input parameters detected ---" << endl;
     boost::property_tree::write_info(std::cerr, unknown_params);
     std::cerr << "-------------------------------------------------" << endl;
     throw std::invalid_argument("parameter fail!");
