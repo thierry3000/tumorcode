@@ -950,6 +950,8 @@ class MeanValueArray(object):
 
   @staticmethod
   def fromHistogram1d(bins, x, y, w = 1.):
+    if not x.shape == y.shape:
+      x=x.transpose()
     if isinstance(w, (float, int)):
       w = w * np.ones(x.shape, dtype=np.float32)
     cnt, _ = np.histogram(x, bins=bins, weights = w)

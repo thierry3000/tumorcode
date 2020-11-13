@@ -589,7 +589,10 @@ def vessels_require_(vesselgroup, g, name):
     r = g.edges['radius']
     l = g.edges['length']
     h = g.edges['hematocrit']
+    r = r[:,0]
+    h = h[:,0]
     c = calc_vessel_conductivities(r, l, h)
+    c = c.reshape(-1,1)
     g.edges['conductivity'] = c
 
   elif 'edge_pressure' == name:
