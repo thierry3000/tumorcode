@@ -43,7 +43,8 @@ import qsub
 #import vtkcommon
 from mystruct import Struct
 import myutils
-
+import krebs
+from krebs import plotBulkTissue
 from plotBulkTissue import commonOutputName, colorbar, contour, imslice, imshow
 from analyzeGeneral import calc_distmap, CalcPhiVessels, DataDistanceFromCenter, DataBasicVessel
 
@@ -172,7 +173,10 @@ class DataTissue(object):
     obtain_data = lambda *args: dataman.obtain_data(args[0], f, args[1:])
 
     if dataname == 'ld':
-      ld = krebsutils.read_lattice_data_from_hdf(f['field_ld'])
+      #ld = krebsutils.read_lattice_data_from_hdf(f['field_ld'])
+      ld = krebsutils.read_lattice_data_from_hdf_by_filename(str(f.filename), '/field_ld')
+      print('lattice data:')
+      print(ld)
       return ld
 
     ld = obtain_data('ld')
@@ -183,7 +187,7 @@ class DataTissue(object):
         return np.asarray(gmeasure[name])
 
       def write(gmeasure, name):
-        phi_vessels = CalcPhiVessels(dataman, f['iff/vessels'], ld, scaling = 1.)
+        phi_vessels = CalcPhiVessels(dataman, f['vessels'], ld, scaling = 1.)
         gmeasure.create_dataset(name, data = phi_vessels, compression = 9)
 
       return myutils.hdf_data_caching(read, write, f, ('measurements', 'phi_vessels'), (None,2))
@@ -238,7 +242,11 @@ class DataTissue(object):
 
     #####
     if dataname == 'iffvelocity':
-      v = np.asarray(f['iff/iff_velocity'])
+      try:
+        v = np.asarray(f['iff_velocity'])
+      except KeyError:
+        print('mist')
+      #v = np.asarray(f['iff/iff_velocity'])
       v = np.rollaxis(v, 3, 0)
       return v # first dimension is the vector component of the velocity
 
@@ -534,10 +542,10 @@ class DataRadialIff(object):
 
     def write(gmeasure, groupname):
       ld = obtain_data('ld')
-      gmeasure.try_del('radial')
-      gmeasure.try_del('samples')
+      #gmeasure.try_del('radial')
+      #gmeasure.try_del('samples')
 
-      vesselgroup = f['iff/vessels']
+      vesselgroup = f['vessels']
       if not 'flow' in vesselgroup['edges']:
         def replace_ds(name, data):
           if name in vesselgroup:
@@ -545,13 +553,18 @@ class DataRadialIff(object):
           else:
             vesselgroup.create_dataset(name, data = data, compression = 9)
         (pressure, flow, hematocrit, flags) = krebsutils.calc_vessel_hydrodynamics(vesselgroup, return_flags=True)
+        #create 2D array from vector
+        flow = flow.reshape(-1,1)
+        pressure = pressure.reshape(-1,1)
+        flags = flags.reshape(-1,1)
         vesselgroup.create_dataset('edges/flow', data = flow, compression = 9)
         replace_ds('nodes/pressure', pressure)
         replace_ds('edges/flags', flags)
 
       # read circulated vessels
-      vessels = krebsutils.read_vesselgraph(f['iff/vessels'], ['flow','pressure','conductivity', 'position', 'flags', 'wall_conductivity', 'radius'])
+      vessels = krebsutils.read_vesselgraph(f['vessels'], ['flow','pressure','conductivity', 'position', 'flags', 'wall_conductivity', 'radius'])
       vessels = vessels.get_filtered(edge_indices = np.nonzero(vessels.edges['flags'] & krebsutils.CIRCULATED)[0])
+      #vessels['radius'] = vessels['radius'][:,0]
       q = vessels['pressure']
       print q.min(), q.max(), np.average(q)
 
@@ -562,7 +575,9 @@ class DataRadialIff(object):
       #
       smpl_pos  = plotVessels.generate_samples(vessels, 'position', 'nodes', sample_length)
       smpl_dist = krebsutils.sample_field(smpl_pos, distmap, ld, linear_interpolation=True, extrapolation_value = far)
+      smpl_dist = smpl_dist.transpose()
       smpl_rad  = krebsutils.sample_field(smpl_pos, radialmap, ld, linear_interpolation=True, extrapolation_value = far)
+      smpl_rad = smpl_rad.transpose()
       smpl_r = dict(vs_r = smpl_rad, vs_dr = smpl_dist)
 
       gmeasure.require_group('radial').require_group('vs_r').create_dataset('bins', data = np.average((bins_rad[:-1],bins_rad[1:]), axis=0))
@@ -575,6 +590,9 @@ class DataRadialIff(object):
       del sample_mask0, sample_mask1
 
       def store_samples(name, smpl):
+#        if(not smpl.shape == sample_mask.shape):
+#            smpl=smpl.reshape(-1,1)
+#            smpl=smpl.transpose()
         samplesdata[name] = downcast(smpl[sample_mask])
 
       store_samples('r', smpl_rad)
@@ -607,6 +625,7 @@ class DataRadialIff(object):
       store_fielddata('iff_pressure', ifpressure)
 
       smpl_ifp = krebsutils.sample_field(smpl_pos.astype(np.float32), ifpressure.astype(np.float32), ld, linear_interpolation=True)
+      smpl_ifp = smpl_ifp.transpose()
       del ifpressure
 
       store_fielddata('iff_sources', np.asarray(g['iff_sources']))
@@ -850,7 +869,7 @@ def plot_radial(files, dataman, pdfpages):
 
   pdfpages.savefig(fig)
 
-  if 1:
+  if 0:
     yscale = 'log'
     samplegetter = lambda f,name: dataman('iff_samples', f, name, 0.05)
     samples = defaultdict(list)
@@ -1596,7 +1615,7 @@ def do_plotting(filenames):
       files = [ h5py.File(fn, 'r+') for fn in filenames ]
       plot_global_header(files, dataman, pdfpages)
       plot_radial(files, dataman, pdfpages)
-      plot_single_images2(files[0], dataman, pdfpages)
+      #plot_single_images2(files[0], dataman, pdfpages)
 
 
 if __name__ == "__main__":
