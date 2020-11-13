@@ -419,16 +419,23 @@ np::arraytbase edge_to_node_property_t(int num_nodes, const np::arrayt<int> &edg
 py::object flood_fill(const np::ndarray &py_field, const Int3 &startpos)
 {
 //   np::arrayt<uchar> field(py_field);
-  np::ndarray field(py_field);
+  //np::ndarray field(py_field);
   assert(py_field.get_nd() == 3);
-  py::tuple shape = py::tuple(py_field.get_shape());
-  np::ndarray res = np::zeros(shape,np::dtype::get_builtin<uchar>());
+  auto shape_as_Py_intptr_t = py_field.get_shape();
+  std::cout << shape_as_Py_intptr_t[0] << "," << shape_as_Py_intptr_t[1]<< "," << shape_as_Py_intptr_t[2] << std::endl;
+  //py::tuple shape = py::tuple(py_field.get_shape());
+  np::ndarray res = np::zeros(py_field.get_nd(),shape_as_Py_intptr_t,np::dtype::get_builtin<uint>());
   //np::arrayt<uchar> res(np::zeros(field.rank(), field.shape(), np::getItemtype<uchar>()));
   LatticeDataQuad3d ld;
-  ld.Init(Int3(py_field.get_shape()[0], py_field.get_shape()[1], py_field.get_shape()[2]), 1.);
+  ld.Init(Int3(shape_as_Py_intptr_t[0], shape_as_Py_intptr_t[1], shape_as_Py_intptr_t[2]), 1.);
 
+//   auto bla = startpos[0];
+//   bool bla2 = ld.IsInsideLattice(startpos);
+//   auto bal3 = py_field[startpos[0]][startpos[1]][startpos[2]];
+  
   if (!ld.IsInsideLattice(startpos) ||
-      field(startpos[0], startpos[1], startpos[2])) return res;
+      py_field[startpos[0]][startpos[1]][startpos[2]]) 
+    return res;
   
   DynArray<Int3> stack(1024,ConsTags::RESERVE);
   stack.push_back(startpos);
@@ -441,12 +448,13 @@ py::object flood_fill(const np::ndarray &py_field, const Int3 &startpos)
     {
       Int3 pnb = ld.NbLattice(p,i);
       if(!ld.IsInsideLattice(pnb) ||
-         res(pnb[0],pnb[1],pnb[2]) ||
-         field(pnb[0],pnb[1],pnb[2]))
+         res[pnb[0]][pnb[1]][pnb[2]] ||
+         py_field[pnb[0]][pnb[1]][pnb[2]])
         continue;
       stack.push_back(pnb);
     }
   }
+  std::cout << "done flood_fill " << std::endl;
   return res;
 }
 #else
@@ -486,10 +494,16 @@ py::object flood_fill(const nm::array &py_field, const Int3 &startpos)
 #if ((BOOST_VERSION/100)%1000) > 63
 py::object distancemap(const np::ndarray &py_field)
 {
+  int theDim = py_field.get_nd();
+  std::cout << "theDim in distancemap: " << theDim << std::endl;
+  std::cout.flush();
+  assert(theDim == 3);
+  auto shape_as_Py_intptr_t = py_field.get_shape();
+  std::cout << shape_as_Py_intptr_t[0] << "," << shape_as_Py_intptr_t[1]<< "," << shape_as_Py_intptr_t[2] << std::endl;
   //np::arrayt<uchar> field(py_field);
 //   np::arrayt<float> res = np::zeros(field.rank(), field.shape(), np::getItemtype<float>());
-  py::tuple shape = py::tuple(py_field.get_shape());
-  np::ndarray res = np::zeros(shape, np::dtype::get_builtin<float>());
+  //py::tuple shape = py::tuple(py_field.get_shape());
+  np::ndarray res = np::zeros(py_field.get_nd(),shape_as_Py_intptr_t, np::dtype::get_builtin<float>());
 
   Array3d<float> arr3d = Array3dFromPy<float>(res);
   LatticeDataQuad3d ld;
@@ -554,24 +568,40 @@ py::object distancemap(const nm::array &py_field)
 }
 #endif
 
-#if ((BOOST_VERSION/100)%1000) > 63
+#if BOOST_VERSION>106300
 template<class T>
-py::object diff_field(np::ndarray py_field, int axis, double prefactor)
+np::ndarray diff_field(const np::ndarray &py_field, int axis, double prefactor)
 {
+  auto shape_of_py_field_as_Py_intptr_t = py_field.get_shape();
+  
+#ifndef NDEBUG
+  std::cout << "in diff_field with templated data type" << std::endl;
+  std::cout << shape_of_py_field_as_Py_intptr_t[0] << ","<< shape_of_py_field_as_Py_intptr_t[1] << ","<< shape_of_py_field_as_Py_intptr_t[2] << std::endl;
+#endif
 //   Array3d<T> arr3d = Array3dFromPy<T>(py_field);
 //   Int3 ex(0);
 //   for (int i=0; i<dim; ++i) ex[i] = -1;
 //   arr3d = arr3d[arr3d.getBox().Extend(ex)];
 //   CopyBorder(arr3d, dim, 1);
+  
+//   std::unique_ptr<Array3d<T>> field_ptr = std::make_unique<Array3dFromPy<T>>(py_field);
+  
+  //*field_ptr = Array3dFromPy<T>(py_field);
   Array3d<T> field = Array3dFromPy<T>(py_field);
-  const BBox3 bb = field.getBox();
+  
+  std::unique_ptr<Array3d<T>> my_p_to_field( new Array3d<T>( std::move(field) ) );
+  
+  
+  const BBox3 bb = my_p_to_field->getBox();
   //Array3d<T> field(ExtendForDim(bb, 3, 1));
   //field[bb].fill(arr3d);
   //CopyBorder(field[bb], 3, 1);
 
   //np::arrayt<T> py_res = np::zeros(3, ::Size(bb).cast<Py_ssize_t>().eval().data(), np::getItemtype<T>());
-  np::ndarray py_res = np::zeros(py::tuple(::Size(bb).cast<Py_ssize_t>().eval().data()), np::dtype::get_builtin<T>());
-  Array3d<T> res = Array3dFromPy<T>(py_res);
+  np::ndarray py_res = np::zeros(py_field.get_nd(),shape_of_py_field_as_Py_intptr_t, np::dtype::get_builtin<T>());
+//   std::unique_ptr<Array3d<T>> my_p_to_py_res( new Array3d<T>( std::move(py_res) ) );
+//   std::unique_ptr<Array3d<T>> myResPointer;
+//   *myResPointer = Array3dFromPy<T>(py_res);
 
   FOR_BBOX3(p, bb)
   {
@@ -585,7 +615,7 @@ py::object diff_field(np::ndarray py_field, int axis, double prefactor)
       --p0[axis];
     else
       f = 1.;
-    res(p) = f*prefactor*(field(p1)-field(p0));
+    py_res[p[0]][p[1]][p[2]] = f*prefactor*((*my_p_to_field)(p1)-(*my_p_to_field)(p0));
   }
 
   return py_res;
