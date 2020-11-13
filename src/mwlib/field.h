@@ -764,7 +764,7 @@ public:
 
   Array3d(const Int3 &_l, const Int3 &_m, const T* mem, std::size_t buffer_size, bool owned) : Super(_l, _m, mem, buffer_size, owned)
   {
-#ifdef DEBUG
+#ifndef NDEBUG
     printf("Am I using this?");
 #endif
   }

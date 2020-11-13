@@ -248,16 +248,20 @@ static FlReal PyCalcRelViscosity( FlReal r, FlReal h, string rheologyStr)
 #if BOOST_VERSION>106300
 static py::object PyCalcViscosities(np::ndarray pyRad, np::ndarray pyHema, const BloodFlowParameters &bloodFlowParameters)
 {
+#ifndef NDEBUG
+  std::cout<< "in PyCalcViscosities" << std::endl;
+#endif
   CheckArray1(FlReal, pyRad, 0); // do not check dimension 
   //np::arrayt<FlReal> rad(pyRad);
   const int ecnt = pyRad.get_shape()[0];
   CheckArray1(FlReal, pyHema, ecnt); // same shape as pyHema
   //np::arrayt<FlReal> hema(pyHema);
   // output
-  np::ndarray visc = np::empty(py::tuple(pyRad.get_shape()), np::dtype::get_builtin<FlReal>());
+  np::ndarray visc = np::empty(pyRad.get_nd(),pyRad.get_shape(),np::dtype::get_builtin<FlReal>());
+  //np::ndarray visc = np::empty(py::tuple(pyRad.get_shape()), np::dtype::get_builtin<FlReal>());
   
   // WARNING: this need cleaning up because it is copy pasted from CalcViscosities
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for(int i=0; i<ecnt; ++i)
   {
     float x = bloodFlowParameters.viscosityPlasma;
@@ -265,6 +269,9 @@ static py::object PyCalcViscosities(np::ndarray pyRad, np::ndarray pyHema, const
     myAssert(x > 0. && std::isfinite(x));
     visc[i] = x;
   }
+#ifndef NDEBUG
+  std::cout<< "exit PyCalcViscosities" << std::endl;
+#endif
   return visc;
 }
 #else
@@ -279,7 +286,7 @@ static py::object PyCalcViscosities(nm::array pyRad, nm::array pyHema, const Blo
   np::arrayt<FlReal> visc(np::empty(1, rad.shape(), np::getItemtype<FlReal>()));
   
   // WARNING: this need cleaning up because it is copy pasted from CalcViscosities
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for(int i=0; i<ecnt; ++i)
   {
     float x = bloodFlowParameters.viscosityPlasma;
@@ -293,8 +300,11 @@ static py::object PyCalcViscosities(nm::array pyRad, nm::array pyHema, const Blo
 
 
 #if BOOST_VERSION>106300
-static py::object PyCalcConductivities(np::ndarray pyRad, np::ndarray pyLen, np::ndarray pyVisc)
+static py::object PyCalcConductivities(np::ndarray &pyRad, np::ndarray &pyLen, np::ndarray &pyVisc)
 {
+#ifndef NDEBUG
+  std::cout<< "in PyCalcConductivities" << std::endl;
+#endif
   CheckArray1(FlReal, pyRad, 0); // do not check dimension 
   //np::arrayt<FlReal> rad(pyRad);
   const int ecnt = pyRad.get_shape()[0];
@@ -304,15 +314,19 @@ static py::object PyCalcConductivities(np::ndarray pyRad, np::ndarray pyLen, np:
   //np::arrayt<FlReal> visc(pyVisc);
   // output
   //np::arrayt<FlReal> cond(np::empty(1, rad.shape(), np::getItemtype<FlReal>()));
-  np::ndarray cond = np::empty(py::tuple(pyRad.get_shape()), np::dtype::get_builtin<FlReal>());
+  np::ndarray cond = np::empty(pyRad.get_nd(),pyRad.get_shape(),np::dtype::get_builtin<FlReal>());
+  //np::ndarray cond = np::empty(py::tuple(pyRad.get_shape()), np::dtype::get_builtin<FlReal>());
   // WARNING: this need cleaning up because it is copy pasted from CalcConductivities
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for(int i=0; i<ecnt; ++i)
   {
     FlReal coeff = CalcFlowCoeff(py::extract<FlReal>(pyVisc[i]),py::extract<FlReal>(pyRad[i]),py::extract<FlReal>(pyLen[i]));
     myAssert(coeff > 0. && std::isfinite(coeff));
     cond[i] = coeff;
   }
+#ifndef NDEBUG
+  std::cout<< "exit PyCalcConductivities" << std::endl;
+#endif
   return cond;
 }
 #else

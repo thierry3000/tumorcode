@@ -48,12 +48,18 @@ mode - see Mode enum
 */
 #if BOOST_VERSION>106300
 template<class T>
-np::ndarray sample_edges(np::ndarray pos, np::ndarray edges, np::ndarray data, float sample_len, int mode)
+np::ndarray sample_edges(np::ndarray &pos, np::ndarray &edges, const np::ndarray &data, float sample_len, int mode)
 {
+#ifndef NDEBUG
+  std::cout << "in sample_edges with templated Data type" << std::endl;
+  auto shape_of_data_as_Py_intptr_t = data.get_shape();
+  std::cout << shape_of_data_as_Py_intptr_t[0] << ","<< shape_of_data_as_Py_intptr_t[1] << ","<< shape_of_data_as_Py_intptr_t[2] << std::endl;
+#endif
   int cnt = edges.get_shape()[0];
 
-//   int ncomps = data.rank() > 1 ? pos.shape()[1] : 1;
-  int ncomps = data.get_nd() > 1 ? pos.get_shape()[1] : 1;
+//  int ncomps = data.rank() > 1 ? pos.shape()[1] : 1;
+  int abla=data.shape(1);
+  int ncomps = abla > 1 ? pos.get_shape()[1] : 1;
   np::dtype dtype = data.get_dtype();
   //int itemtype = data.itemtype();
   T c[16][2];
@@ -87,6 +93,12 @@ np::ndarray sample_edges(np::ndarray pos, np::ndarray edges, np::ndarray data, f
         myAssert(mode&DATA_LINEAR);
         int a = py::extract<int>(edges[i][0]);
         int b = py::extract<int>(edges[i][1]);
+        /**
+         * this is were plotIff.py crashes
+         * unfortunatelly the storage of pressures 
+         * in hdf5 files are not consistently across different versions.
+         * 
+         */
         c[k][0] = py::extract<T>(data[a][k]);
         c[k][1] = py::extract<T>(data[b][k]);
       }
@@ -131,6 +143,9 @@ np::ndarray sample_edges(np::ndarray pos, np::ndarray edges, np::ndarray data, f
       acc_res[i][j] = tmp[k];
     }
   }
+#ifndef NDEBUG
+  std::cout << "exit sample_edges with templated Data type" << std::endl;
+#endif
   return acc_res;
 }
 #else
