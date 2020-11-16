@@ -32,7 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <boost/python/errors.hpp>
 #include <boost/python/object.hpp>
 #include <boost/python/handle.hpp>
-
+#include <regex>
 
 /**
  * @brief Sets tissue phases on the lattice sites
@@ -144,7 +144,7 @@ static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
   s.params.input_file_name = py::extract<string>(py_parameters.get("input_file_name", "none"));
   s.params.input_group_path = py::extract<string>(py_parameters.get("input_group_path", "none")); 
   s.params.vessel_group_path = py::extract<string>(py_parameters.get("vessel_group_path", "none"));
-  const string output_file_name = py::extract<string>(py_parameters.get("output_file_name", "none"));
+  string output_file_name = py::extract<string>(py_parameters.get("output_file_name", "none"));
   const string tumor_file_name = py::extract<string>(py_parameters.get("tumor_file_name", "none"));
   const string tumor_group_path = py::extract<string>(py_parameters.get("tumor_group_path", "none"));
   const string out_grp_path = py::extract<string>(py_parameters.get("output_group_path", "none"));
@@ -158,10 +158,17 @@ static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
   H5::H5File vesselInputFile;
   try
   {
-    vesselInputFile = H5::H5File( s.params.input_file_name , H5F_ACC_RDONLY);
+    vesselInputFile =  H5::H5File( s.params.input_file_name , H5F_ACC_RDONLY);
     H5::Group vesselgroup = vesselInputFile.openGroup(string("/") + s.params.input_group_path);
     s.vl = ReadVesselList3d(vesselgroup, make_ptree("filter",false));
+    //boost::replace_all(output_file_name, "/", "_");
+    //s.replace(s.find("$name"), sizeof("$name") - 1, "Somename");
+    output_file_name = std::regex_replace(output_file_name, std::regex(string("/")), string("_"));
     o2File = H5::H5File( output_file_name, H5F_ACC_TRUNC );
+#ifndef NDEBUG
+    std::cout << &o2File << std::endl;
+#endif
+    std::cout << "bla" << std::endl;
   }  
   catch( H5::FileIException &error )
   {
@@ -196,13 +203,19 @@ static void PyComputePO2(py::dict &py_parameters, py::object &py_bfparams)
         MPI_Init_thread(0, NULL, 1,&prov);
 #endif
   CalcFlow(*s.vl, bfparams);
-  
+  H5::Group recomp;
+  H5::Group vess_recomp;
   try //create recomputed_flow in hdf
   {
-    H5::Group vess_recomp = H5::Group(o2File.createGroup("recomputed_flow").createGroup("vessels")); // groupname should end by vesselgroup
-    ptree getEverytingPossible = make_ptree("w_adaption", false);
-    WriteVesselList3d(*s.vl, vess_recomp, getEverytingPossible);
-    vess_recomp.close();
+    //std::cout << "dello" << std::endl;
+    //H5::H5File bla = H5::H5File( "bla.h5", H5F_ACC_TRUNC );
+    std::cout << &o2File << std::endl;
+    recomp = o2File.createGroup("/recomputed_flow");
+    vess_recomp = recomp.createGroup("vessels");
+//     //H5::Group vess_recomp = H5::Group(o2File.createGroup("recomputed_flow").createGroup("vessels")); // groupname should end by vesselgroup
+     ptree getEverytingPossible = make_ptree("w_adaption", false);
+     WriteVesselList3d(*s.vl, vess_recomp, getEverytingPossible);
+    //vess_recomp.close();
   }
   catch(H5::Exception &e)
   {

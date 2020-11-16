@@ -1994,6 +1994,7 @@ void DetailedPO2Sim::WriteDataOutput(H5::Group &po2_out_group)
 {
   //H5::Group po2_out_group;
   H5::Group outputgroup;
+  H5::Group outputgroup_buff;
   H5::Group h5_matrix_builder_info;
   H5::Group h5_ld_group;
   
@@ -2005,8 +2006,15 @@ void DetailedPO2Sim::WriteDataOutput(H5::Group &po2_out_group)
   try
   {
     //po2_out_group = o2File.createGroup(string("/po2"));
-    outputgroup = po2_out_group.createGroup(params.input_group_path);
-    h5_o2_lattice = outputgroup.createGroup("field_ld");
+    //outputgroup = po2_out_group.createGroup(string(params.input_group_path));
+    /**
+     * this is a HACK!!!!
+     * acutally one should create groups recursively depending on the location given in params.input_group_path...
+     */
+    //outputgroup = po2_out_group.createGroup(string("theOutput"));
+    outputgroup_buff = po2_out_group.createGroup(string("po2"));
+    outputgroup = outputgroup_buff.createGroup(string("vessels"));
+    h5_o2_lattice = outputgroup.createGroup(string("field_ld"));
     //h5_meta_data = h5_params.createGroup("metadata");
     //h5_o2_params = h5_params.createGroup("o2");
     //h5_bf_params = h5_params.createGroup("calcflow");
@@ -2068,6 +2076,7 @@ void DetailedPO2Sim::WriteDataOutput(H5::Group &po2_out_group)
   catch( H5::Exception &e)
   {
     e.printErrorStack();
+    e.printError();
   }
   
   writeAttrToH5(outputgroup, string("SOURCE_VESSELS_FILE"), params.input_file_name);
