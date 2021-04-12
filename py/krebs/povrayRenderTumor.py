@@ -38,11 +38,17 @@ import math
 import copy
 
 
-def addBulkTissueTumor(epv, tumorgroup, trafo, options):
+def addBulkTissueTumor(epv, tumorgroup, options):
+    print('addBulkTissueTumor called!!!')
     ld = krebsutils.read_lattice_data_from_hdf_by_filename(str(tumorgroup.file.filename), str(tumorgroup['conc'].attrs['LATTICE_PATH']))
-    ld = transform_ld(trafo, ld)
+    ''' T.F. 2021 I need to think about the lattice transformation for the bulk tissue in more detail'''
+    #ld = trafo.transform_ld(trafo, )
+    wbbox = options.wbbox
+    trafo = povrayEasy.calc_centering_normalization_trafo(wbbox)
 
     ds_necro    = np.asarray(tumorgroup['necro'])
+    ds_necro    = trafo.transform_scalar(ds_necro)
+    
     data        = np.clip(np.asarray(tumorgroup['conc']), 0., 1.) # - np.asanyarray(tumorgroup['necro']), 0., 1.)
 
     ds_levelset = -np.minimum(np.asarray(tumorgroup['ls']), 0.4 - ds_necro)
@@ -54,10 +60,12 @@ def addBulkTissueTumor(epv, tumorgroup, trafo, options):
 #    pyplot.imshow(ds_levelset[:,:,8])
 #    pyplot.contour(ds_levelset[:,:,8],[0.])
 #    pyplot.show()
-    if 'tumor_clip' in options:
-      clip = clipFactory(options.tumor_clip)
-    else:
-      clip = clipFactory('None')
+    
+    ''' T.F. 2021 this is not properly done '''
+#    if 'tumor_clip' in options:
+#      clip = povrayEasy.clipFactory(options.tumor_clip)
+#    else:
+#      clip = povrayEasy.clipFactory(options.tumor_clip)
 
     voldata_ls    = epv.declareVolumeData(ds_levelset, ld.GetWorldBox())
     voldata_cells = epv.declareVolumeData(data, ld.GetWorldBox())
@@ -78,7 +86,8 @@ def addBulkTissueTumor(epv, tumorgroup, trafo, options):
         }
       }""" % (value_bounds[0], (value_bounds[1]-value_bounds[0]), voldata_cells.name)
     #style = " texture { pigment { color rgb<1,0.8,0.3> }  finish { specular 0.3 }}"
-    epv.addIsosurface(voldata_ls, 0., lambda : style, clip, style)
+    #epv.addIsosurface(voldata_ls, 0., lambda : style, clip, style)
+    epv.addIsosurface(voldata_ls, 0., lambda : style, None, style)
 
 
 
@@ -123,6 +132,7 @@ def renderScene(vesselgroup, tumorgroup, imagefn, options):
         options.tumor_clip = ('pie', -50*trafo.w)
 
       if vesselgroup is not None:
+        print('vesselgroup found')
         graph = krebsutils.read_vessels_from_hdf(vesselgroup, ['position', 'flags', 'radius', 'pressure'], return_graph=True)
         if options.filteruncirculated:
           graph = graph.get_filtered(edge_indices = myutils.bbitwise_and(graph['flags'], krebsutils.CIRCULATED))        
@@ -137,6 +147,7 @@ def renderScene(vesselgroup, tumorgroup, imagefn, options):
         epv.addVesselTree2(epv, graph, trafo, options)
         
       if tumorgroup is not None and 'conc' in tumorgroup:
+        print('tumorgroup found')
         addBulkTissueTumor(epv, tumorgroup, trafo, options)
       
       if (tumorgroup is not None and tumorgroup.attrs['TYPE'] == 'faketumor'):
@@ -185,6 +196,11 @@ def render_different_data_types( vesselgroup, tumorgroup, imagefn, options, cell
       options.imageFileName = splitext(basename(fn))[0]+'_'+ myutils.sanitize_posixpath(vesselgroup.name).replace('/','-')+'_'+data_name+filenamepostfix #+'.'+ options.format
     with povrayEasy.EasyPovRayRender(options) as epv:
       povrayEasy.CreateScene2(vesselgroup,epv, graph, options)
+      if tumorgroup['conc']:
+        print('bulktissue tumor found')
+        addBulkTissueTumor(epv, tumorgroup, options)
+      else:
+        print('no bulktissue tumor found')
       if options.noOverlay:
         epv.render(options.imageFileName)
       else:

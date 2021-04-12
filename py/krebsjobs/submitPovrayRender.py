@@ -118,6 +118,7 @@ class RenderJob(object):
                     self.imageFilename,
                     self.params, cell_group = f[self.group_name]['cells'])
         else:
+          print('rendering bulktissue tumor')
           render_different_data_types(f[self.group_name]['vessels'],
                     f[self.group_name]['tumor'],
                     self.imageFilename,
